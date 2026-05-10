@@ -1,5 +1,7 @@
 import { WorldDcPicker } from '../features/settings/WorldDcPicker';
 import { LevelsEditor } from '../features/settings/LevelsEditor';
+import { PackToggles } from '../features/settings/PackToggles';
+import { AddItemSearch } from '../features/settings/AddItemSearch';
 
 export default function Settings() {
   return (
@@ -13,8 +15,12 @@ export default function Settings() {
         <LevelsEditor />
       </section>
       <section>
-        <h2 className="font-display text-lg text-gold mb-3 tracking-wide">Watchlist</h2>
-        <p className="text-text-low text-sm italic">Pack toggles + custom items in the next task.</p>
+        <h2 className="font-display text-lg text-gold mb-3 tracking-wide">Starter packs</h2>
+        <PackToggles />
+      </section>
+      <section>
+        <h2 className="font-display text-lg text-gold mb-3 tracking-wide">Add custom items</h2>
+        <AddItemSearch />
       </section>
     </div>
   );
