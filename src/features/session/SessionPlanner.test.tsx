@@ -1,0 +1,67 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import SessionPlanner from './SessionPlanner';
+import { useSettingsStore, defaultSettings } from '../settings/store';
+import { useWatchlistStore, defaultWatchlist } from '../items/watchlistStore';
+import { useUiStore, defaultUi } from '../ui/uiStore';
+import { clearRecipeCache } from '../../lib/recipeCache';
+
+beforeEach(async () => {
+  localStorage.clear();
+  useSettingsStore.setState(defaultSettings());
+  useWatchlistStore.setState(defaultWatchlist());
+  useUiStore.setState(defaultUi());
+  await clearRecipeCache();
+  vi.restoreAllMocks();
+});
+
+function withProviders(node: React.ReactNode) {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return (
+    <QueryClientProvider client={qc}>
+      <MemoryRouter>{node}</MemoryRouter>
+    </QueryClientProvider>
+  );
+}
+
+describe('SessionPlanner', () => {
+  it('renders an item suggestion when market + recipe data resolve', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string) => {
+      if (url.includes('universalis.app')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            items: {
+              '49281': { listings: [{ hq: false, pricePerUnit: 250000 }], recentHistory: [], regularSaleVelocity: 4, lastUploadTime: Date.now() },
+              '7': { listings: [{ hq: false, pricePerUnit: 1000 }], recentHistory: [], regularSaleVelocity: 0, lastUploadTime: Date.now() },
+            },
+          }),
+        });
+      }
+      const isFor49281 = url.includes('ItemResult%3D49281');
+      return Promise.resolve({
+        ok: true,
+        json: async () => isFor49281
+          ? {
+            results: [{
+              fields: {
+                ItemResult: { value: 49281 },
+                CraftType: { fields: { Name: 'Leatherworker' } },
+                RecipeLevelTable: { fields: { ClassJobLevel: 100 } },
+                Ingredient0: { value: 7 }, AmountIngredient0: 5,
+              },
+            }],
+          }
+          : { results: [] },
+      });
+    }));
+
+    render(withProviders(<SessionPlanner />));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Courtly Lover's Temple Chain of Striking/)).toBeInTheDocument();
+    }, { timeout: 5000 });
+  });
+});
