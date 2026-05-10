@@ -37,4 +37,14 @@ describe('filterAndSort', () => {
     const out = filterAndSort(rows, { catFilter: 'All', craftFilter: 'All', search: '', sortKey: 'name', sortDir: 'asc' });
     expect(out.map((r) => r.id)).toEqual([1, 2, 3]);
   });
+
+  it('sorts by gilDay desc with null gilPerDay last', () => {
+    const rowsWithProfit = [
+      { ...base, id: 1, gilPerDay: 100 },
+      { ...base, id: 2, gilPerDay: null },
+      { ...base, id: 3, gilPerDay: 500 },
+    ];
+    const out = filterAndSort(rowsWithProfit, { catFilter: 'All', craftFilter: 'All', search: '', sortKey: 'gilDay', sortDir: 'desc' });
+    expect(out.map((r) => r.id)).toEqual([3, 1, 2]);
+  });
 });

@@ -11,15 +11,20 @@ describe('ui store', () => {
     const s = useUiStore.getState();
     expect(s.catFilter).toBe('All');
     expect(s.craftFilter).toBe('All');
-    expect(s.sortKey).toBe('score');
+    expect(s.sortKey).toBe('gilDay');
     expect(s.sortDir).toBe('desc');
     expect(s.search).toBe('');
   });
 
   it('setSort toggles direction when clicking the same key', () => {
-    useUiStore.getState().setSort('score');
+    // Start with gilDay desc (the default)
+    expect(useUiStore.getState().sortKey).toBe('gilDay');
+    expect(useUiStore.getState().sortDir).toBe('desc');
+    // Toggle it
+    useUiStore.getState().setSort('gilDay');
     expect(useUiStore.getState().sortDir).toBe('asc');
-    useUiStore.getState().setSort('score');
+    // Toggle back
+    useUiStore.getState().setSort('gilDay');
     expect(useUiStore.getState().sortDir).toBe('desc');
   });
 

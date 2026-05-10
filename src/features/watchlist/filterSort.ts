@@ -17,6 +17,8 @@ function getSortValue(r: WatchlistRow, key: SortKey): string | number {
     case 'phantom': return r.pAvgHQ ?? r.pAvgNQ ?? r.pMinNQ ?? 0;
     case 'dc': return r.dcMinHQ ?? r.dcMinNQ ?? 0;
     case 'spd': return r.dcSpd;
+    case 'profit': return r.profit ?? -Infinity;
+    case 'gilDay': return r.gilPerDay ?? -Infinity;
     case 'score':
     default: return r.rawScore;
   }

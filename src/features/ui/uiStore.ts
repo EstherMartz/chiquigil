@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-export type SortKey = 'name' | 'crafter' | 'lvl' | 'phantom' | 'dc' | 'spd' | 'score';
+export type SortKey = 'name' | 'crafter' | 'lvl' | 'phantom' | 'dc' | 'spd' | 'profit' | 'gilDay' | 'score';
 export type SortDir = 'asc' | 'desc';
 
 export interface UiState {
@@ -18,7 +18,7 @@ export interface UiState {
 }
 
 export function defaultUi(): Pick<UiState, '_v' | 'catFilter' | 'craftFilter' | 'search' | 'sortKey' | 'sortDir'> {
-  return { _v: 1, catFilter: 'All', craftFilter: 'All', search: '', sortKey: 'score', sortDir: 'desc' };
+  return { _v: 1, catFilter: 'All', craftFilter: 'All', search: '', sortKey: 'gilDay', sortDir: 'desc' };
 }
 
 const ASC_DEFAULT_KEYS: SortKey[] = ['name', 'crafter'];
@@ -37,6 +37,13 @@ export const useUiStore = create<UiState>()(
         return { sortKey: k, sortDir: ASC_DEFAULT_KEYS.includes(k) ? 'asc' : 'desc' };
       }),
     }),
-    { name: 'ffxiv-helper:ui' },
+    {
+      name: 'ffxiv-helper:ui',
+      version: 2,
+      migrate: (state, version) => {
+        if (version < 2) return defaultUi();
+        return state as UiState;
+      },
+    },
   ),
 );

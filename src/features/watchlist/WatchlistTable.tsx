@@ -1,17 +1,16 @@
 import { useUiStore, type SortKey } from '../ui/uiStore';
 import type { WatchlistRow } from './buildRows';
 import { CraftTag } from './CraftTag';
-import { ScoreBar } from './ScoreBar';
 import { fmtGil } from '../../lib/format';
 
 const COLS: { key: SortKey; label: string; align?: 'right'; hideOnMobile?: boolean }[] = [
   { key: 'name', label: 'Item' },
   { key: 'crafter', label: 'Craft' },
   { key: 'lvl', label: 'Lvl', align: 'right', hideOnMobile: true },
-  { key: 'phantom', label: 'Phantom', align: 'right', hideOnMobile: true },
-  { key: 'dc', label: 'Chaos DC min', align: 'right' },
-  { key: 'spd', label: 'DC sales/day', align: 'right', hideOnMobile: true },
-  { key: 'score', label: 'Score', align: 'right' },
+  { key: 'dc', label: 'Sale', align: 'right' },
+  { key: 'profit', label: 'Profit', align: 'right' },
+  { key: 'gilDay', label: 'Gil/day', align: 'right' },
+  { key: 'spd', label: 'Velocity', align: 'right', hideOnMobile: true },
 ];
 
 export function WatchlistTable({ rows }: { rows: WatchlistRow[] }) {
@@ -68,19 +67,26 @@ export function WatchlistTable({ rows }: { rows: WatchlistRow[] }) {
               </td>
               <td className="px-3 py-2.5"><CraftTag crafter={r.crafter} status={r.craftStatus} /></td>
               <td className="px-3 py-2.5 font-mono text-right text-text-low hidden md:table-cell">{r.lvl}</td>
-              <td className="px-3 py-2.5 font-mono text-right hidden md:table-cell">
-                {r.pAvgHQ ? <>{fmtGil(r.pAvgHQ)} <span className="text-text-low text-[10px]">avg HQ</span></>
-                  : r.pAvgNQ ? <>{fmtGil(r.pAvgNQ)} <span className="text-text-low text-[10px]">avg NQ</span></>
-                  : r.pMinNQ ? <>{fmtGil(r.pMinNQ)} <span className="text-text-low text-[10px]">list NQ</span></>
-                  : <span className="text-text-low">—</span>}
-              </td>
               <td className="px-3 py-2.5 font-mono text-right">
-                {r.dcMinHQ ? <>{fmtGil(r.dcMinHQ)} <span className="text-text-low text-[10px]">HQ</span></>
+                {r.craftable === false
+                  ? <span className="text-text-low text-[10px] tracking-widest uppercase">sale-only</span>
+                  : r.dcMinHQ ? <>{fmtGil(r.dcMinHQ)} <span className="text-text-low text-[10px]">HQ</span></>
                   : r.dcMinNQ ? <>{fmtGil(r.dcMinNQ)} <span className="text-text-low text-[10px]">NQ</span></>
                   : <span className="text-text-low">—</span>}
               </td>
+              <td className="px-3 py-2.5 font-mono text-right">
+                {r.craftable === false
+                  ? <span className="text-text-low">—</span>
+                  : r.craftable === null
+                    ? <span className="text-text-low">…</span>
+                    : r.profit != null
+                      ? <span className={r.profit > 0 ? 'text-jade' : 'text-crimson'}>{fmtGil(r.profit)}</span>
+                      : <span className="text-text-low">—</span>}
+              </td>
+              <td className="px-3 py-2.5 font-mono text-right">
+                {r.gilPerDay != null ? fmtGil(Math.round(r.gilPerDay)) : <span className="text-text-low">—</span>}
+              </td>
               <td className="px-3 py-2.5 font-mono text-right hidden md:table-cell">{r.dcSpd.toFixed(1)}</td>
-              <td className="px-3 py-2.5 text-right"><ScoreBar score={r.score} /></td>
             </tr>
           ))}
         </tbody>

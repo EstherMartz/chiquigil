@@ -6,12 +6,14 @@ import Watchlist from './Watchlist';
 import { useSettingsStore, defaultSettings } from '../features/settings/store';
 import { useWatchlistStore, defaultWatchlist } from '../features/items/watchlistStore';
 import { useUiStore, defaultUi } from '../features/ui/uiStore';
+import { clearRecipeCache } from '../lib/recipeCache';
 
-beforeEach(() => {
+beforeEach(async () => {
   localStorage.clear();
   useSettingsStore.setState(defaultSettings());
   useWatchlistStore.setState(defaultWatchlist());
   useUiStore.setState(defaultUi());
+  await clearRecipeCache();
   vi.restoreAllMocks();
 });
 
@@ -26,14 +28,23 @@ function withProviders(node: React.ReactNode) {
 
 describe('Watchlist route', () => {
   it('renders rows from a mocked Universalis response', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockImplementation(() => Promise.resolve({
-      ok: true,
-      json: async () => ({
-        items: {
-          '49281': { listings: [{ hq: false, pricePerUnit: 250000 }], recentHistory: [], regularSaleVelocity: 2.5, lastUploadTime: Date.now() },
-        },
-      }),
-    })));
+    vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string) => {
+      if (url.includes('universalis.app')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            items: {
+              '49281': { listings: [{ hq: false, pricePerUnit: 250000 }], recentHistory: [], regularSaleVelocity: 2.5, lastUploadTime: Date.now() },
+            },
+          }),
+        });
+      }
+      // XIVAPI recipe lookup — return empty results for all items (sale-only)
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ results: [] }),
+      });
+    }));
 
     render(withProviders(<Watchlist />));
 
