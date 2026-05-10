@@ -66,4 +66,22 @@ describe('watchlist store', () => {
     useWatchlistStore.getState().setCraftTime(42, 0);
     expect(useWatchlistStore.getState().perItemFlags[42]).toEqual({ craftIntermediates: true });
   });
+
+  it('excludedItems starts empty', () => {
+    expect(useWatchlistStore.getState().excludedItems).toEqual([]);
+  });
+
+  it('toggleExcluded adds and removes ids idempotently', () => {
+    useWatchlistStore.getState().toggleExcluded(99);
+    expect(useWatchlistStore.getState().excludedItems).toEqual([99]);
+    useWatchlistStore.getState().toggleExcluded(99);
+    expect(useWatchlistStore.getState().excludedItems).toEqual([]);
+  });
+
+  it('toggleExcluded preserves other excluded ids', () => {
+    useWatchlistStore.getState().toggleExcluded(1);
+    useWatchlistStore.getState().toggleExcluded(2);
+    useWatchlistStore.getState().toggleExcluded(1);
+    expect(useWatchlistStore.getState().excludedItems).toEqual([2]);
+  });
 });

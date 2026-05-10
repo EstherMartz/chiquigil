@@ -9,15 +9,17 @@ export interface WatchlistState {
   starterPacks: StarterPackToggles;
   customItems: TrackedItem[];
   perItemFlags: FlagMap;
+  excludedItems: number[];
   togglePack: (id: StarterPackId) => void;
   addCustomItem: (item: TrackedItem) => void;
   removeCustomItem: (id: number) => void;
   setCraftIntermediates: (itemId: number, value: boolean) => void;
   setCraftTime: (itemId: number, seconds: number | undefined) => void;
+  toggleExcluded: (itemId: number) => void;
 }
 
-export function defaultWatchlist(): Pick<WatchlistState, '_v' | 'starterPacks' | 'customItems' | 'perItemFlags'> {
-  return { _v: 1, starterPacks: defaultStarterToggles(), customItems: [], perItemFlags: {} };
+export function defaultWatchlist(): Pick<WatchlistState, '_v' | 'starterPacks' | 'customItems' | 'perItemFlags' | 'excludedItems'> {
+  return { _v: 1, starterPacks: defaultStarterToggles(), customItems: [], perItemFlags: {}, excludedItems: [] };
 }
 
 export const useWatchlistStore = create<WatchlistState>()(
@@ -45,6 +47,11 @@ export const useWatchlistStore = create<WatchlistState>()(
         }
         return { perItemFlags: next };
       }),
+      toggleExcluded: (itemId) => set((s) => ({
+        excludedItems: s.excludedItems.includes(itemId)
+          ? s.excludedItems.filter((id) => id !== itemId)
+          : [...s.excludedItems, itemId],
+      })),
     }),
     { name: 'ffxiv-helper:watchlist' },
   ),
