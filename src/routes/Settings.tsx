@@ -2,6 +2,7 @@ import { WorldDcPicker } from '../features/settings/WorldDcPicker';
 import { LevelsEditor } from '../features/settings/LevelsEditor';
 import { PackToggles } from '../features/settings/PackToggles';
 import { AddItemSearch } from '../features/settings/AddItemSearch';
+import { ExportImportPanel } from '../features/settings/ExportImportPanel';
 import { clearRecipeCache } from '../lib/recipeCache';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSettingsStore } from '../features/settings/store';
@@ -88,6 +89,14 @@ export default function Settings() {
         >
           Clear recipe cache
         </button>
+      </section>
+      <section>
+        <h2 className="font-display text-lg text-gold mb-3 tracking-wide">Backup &amp; restore</h2>
+        <p className="text-text-low text-sm mb-3">
+          Export saves your retainer levels, world/DC, watchlist, starter pack toggles, custom items,
+          and per-item overrides as a JSON file. Import overwrites your current state.
+        </p>
+        <ExportImportPanel />
       </section>
     </div>
   );
