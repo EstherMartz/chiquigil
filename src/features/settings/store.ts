@@ -10,13 +10,17 @@ export interface SettingsState {
   dc: string;
   retainerLevels: CrafterLevels;
   overheadMinutes: number;
+  batchCapDays: number;
+  defaultCraftTimeSeconds: number;
   setWorld: (w: string) => void;
   setDc: (d: string) => void;
   setRetainerLevel: (c: keyof CrafterLevels, lvl: number) => void;
   setOverheadMinutes: (n: number) => void;
+  setBatchCapDays: (n: number) => void;
+  setDefaultCraftTimeSeconds: (n: number) => void;
 }
 
-export function defaultSettings(): Pick<SettingsState, '_v' | 'world' | 'dc' | 'retainerLevels' | 'overheadMinutes'> {
+export function defaultSettings(): Pick<SettingsState, '_v' | 'world' | 'dc' | 'retainerLevels' | 'overheadMinutes' | 'batchCapDays' | 'defaultCraftTimeSeconds'> {
   return {
     _v: 1,
     world: 'Phantom',
@@ -25,6 +29,8 @@ export function defaultSettings(): Pick<SettingsState, '_v' | 'world' | 'dc' | '
       CRP: 93, BSM: 33, ARM: 42, GSM: 83, LTW: 100, WVR: 100, ALC: 90, CUL: 100,
     },
     overheadMinutes: 5,
+    batchCapDays: 3,
+    defaultCraftTimeSeconds: 60,
   };
 }
 
@@ -36,6 +42,8 @@ export const useSettingsStore = create<SettingsState>()(
       setDc: (dc) => set({ dc }),
       setRetainerLevel: (c, lvl) => set((s) => ({ retainerLevels: { ...s.retainerLevels, [c]: lvl } })),
       setOverheadMinutes: (overheadMinutes) => set({ overheadMinutes }),
+      setBatchCapDays: (batchCapDays) => set({ batchCapDays }),
+      setDefaultCraftTimeSeconds: (defaultCraftTimeSeconds) => set({ defaultCraftTimeSeconds }),
     }),
     { name: 'ffxiv-helper:settings' },
   ),

@@ -33,4 +33,20 @@ describe('settings store', () => {
     expect(raw).toBeTruthy();
     expect(JSON.parse(raw!).state.retainerLevels.CRP).toBe(99);
   });
+
+  it('starts with batchCapDays = 3 and defaultCraftTimeSeconds = 60', () => {
+    const s = useSettingsStore.getState();
+    expect(s.batchCapDays).toBe(3);
+    expect(s.defaultCraftTimeSeconds).toBe(60);
+  });
+
+  it('setBatchCapDays clamps user input via simple assignment (no validation in store)', () => {
+    useSettingsStore.getState().setBatchCapDays(7);
+    expect(useSettingsStore.getState().batchCapDays).toBe(7);
+  });
+
+  it('setDefaultCraftTimeSeconds updates default time', () => {
+    useSettingsStore.getState().setDefaultCraftTimeSeconds(90);
+    expect(useSettingsStore.getState().defaultCraftTimeSeconds).toBe(90);
+  });
 });
