@@ -37,4 +37,15 @@ describe('watchlist store', () => {
     useWatchlistStore.getState().removeCustomItem(1);
     expect(useWatchlistStore.getState().customItems.map((i) => i.id)).toEqual([2]);
   });
+
+  it('perItemFlags starts empty', () => {
+    expect(useWatchlistStore.getState().perItemFlags).toEqual({});
+  });
+
+  it('setCraftIntermediates flips a single item flag', () => {
+    useWatchlistStore.getState().setCraftIntermediates(123, true);
+    expect(useWatchlistStore.getState().perItemFlags[123]?.craftIntermediates).toBe(true);
+    useWatchlistStore.getState().setCraftIntermediates(123, false);
+    expect(useWatchlistStore.getState().perItemFlags[123]?.craftIntermediates).toBe(false);
+  });
 });

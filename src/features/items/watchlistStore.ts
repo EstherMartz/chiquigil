@@ -2,18 +2,21 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { TrackedItem } from './types';
 import { defaultStarterToggles, type StarterPackId, type StarterPackToggles } from './starterPacks';
+import type { FlagMap } from '../profit/computeProfit';
 
 export interface WatchlistState {
   _v: 1;
   starterPacks: StarterPackToggles;
   customItems: TrackedItem[];
+  perItemFlags: FlagMap;
   togglePack: (id: StarterPackId) => void;
   addCustomItem: (item: TrackedItem) => void;
   removeCustomItem: (id: number) => void;
+  setCraftIntermediates: (itemId: number, value: boolean) => void;
 }
 
-export function defaultWatchlist(): Pick<WatchlistState, '_v' | 'starterPacks' | 'customItems'> {
-  return { _v: 1, starterPacks: defaultStarterToggles(), customItems: [] };
+export function defaultWatchlist(): Pick<WatchlistState, '_v' | 'starterPacks' | 'customItems' | 'perItemFlags'> {
+  return { _v: 1, starterPacks: defaultStarterToggles(), customItems: [], perItemFlags: {} };
 }
 
 export const useWatchlistStore = create<WatchlistState>()(
@@ -25,6 +28,9 @@ export const useWatchlistStore = create<WatchlistState>()(
         s.customItems.some((i) => i.id === item.id) ? s : { customItems: [...s.customItems, item] }
       )),
       removeCustomItem: (id) => set((s) => ({ customItems: s.customItems.filter((i) => i.id !== id) })),
+      setCraftIntermediates: (itemId, value) => set((s) => ({
+        perItemFlags: { ...s.perItemFlags, [itemId]: { ...s.perItemFlags[itemId], craftIntermediates: value } },
+      })),
     }),
     { name: 'ffxiv-helper:watchlist' },
   ),
