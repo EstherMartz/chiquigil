@@ -11,6 +11,9 @@ interface Props {
   dc: MarketData;
   craftIntermediates: boolean;
   onToggleCraftIntermediates: (value: boolean) => void;
+  craftTimeSeconds: number | undefined;
+  defaultCraftTimeSeconds: number;
+  onChangeCraftTime: (seconds: number | undefined) => void;
   onClose: () => void;
 }
 
@@ -22,6 +25,9 @@ export function RecipeModal({
   dc,
   craftIntermediates,
   onToggleCraftIntermediates,
+  craftTimeSeconds,
+  defaultCraftTimeSeconds,
+  onChangeCraftTime,
   onClose,
 }: Props) {
   const ingredientName = (id: number) => (recipeMap.get(id) ? `(craftable) #${id}` : `#${id}`);
@@ -81,6 +87,22 @@ export function RecipeModal({
             onChange={(e) => onToggleCraftIntermediates(e.target.checked)}
           />
           <span>Recurse: craft intermediates myself (one level deep)</span>
+        </label>
+
+        <label className="flex items-center gap-2 text-sm mb-4">
+          <span className="font-mono text-[10px] tracking-widest text-text-low uppercase">Craft time (sec)</span>
+          <input
+            type="number"
+            min={0}
+            placeholder={`auto: ${Math.min(180, defaultCraftTimeSeconds + Math.max(0, recipe.recipeLevel - 50))}`}
+            value={craftTimeSeconds ?? ''}
+            onChange={(e) => {
+              const v = e.target.value === '' ? undefined : Math.max(0, Number(e.target.value) || 0);
+              onChangeCraftTime(v);
+            }}
+            className="bg-bg-card border border-border-base px-2 py-1 font-mono text-sm w-24"
+          />
+          <span className="text-text-low text-xs">empty = use heuristic</span>
         </label>
 
         <div className="text-xs text-text-low font-mono">

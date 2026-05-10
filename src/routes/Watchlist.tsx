@@ -14,8 +14,8 @@ import { Spinner } from '../components/Spinner';
 import { StatusBanner } from '../components/StatusBanner';
 
 export default function Watchlist() {
-  const { world, dc, retainerLevels } = useSettingsStore();
-  const { starterPacks, customItems, perItemFlags, setCraftIntermediates } = useWatchlistStore();
+  const { world, dc, retainerLevels, defaultCraftTimeSeconds } = useSettingsStore();
+  const { starterPacks, customItems, perItemFlags, setCraftIntermediates, setCraftTime } = useWatchlistStore();
   const ui = useUiStore();
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
 
@@ -74,6 +74,9 @@ export default function Watchlist() {
           dc={market.data.dc}
           craftIntermediates={!!perItemFlags[selected.id]?.craftIntermediates}
           onToggleCraftIntermediates={(v) => setCraftIntermediates(selected.id, v)}
+          craftTimeSeconds={perItemFlags[selected.id]?.craftTimeSeconds}
+          defaultCraftTimeSeconds={defaultCraftTimeSeconds}
+          onChangeCraftTime={(v) => setCraftTime(selected.id, v ?? 0)}
           onClose={() => setSelectedItemId(null)}
         />
       )}
