@@ -12,7 +12,7 @@ export function SessionResults({ result }: { result: SessionResult | null }) {
   }
   return (
     <div className="border border-border-base bg-bg-card">
-      <div className="px-4 py-3 border-b border-border-base flex justify-between items-baseline">
+      <div className="sticky top-0 z-10 bg-bg-card px-4 py-3 border-b border-border-base flex justify-between items-baseline">
         <div className="font-mono text-[10px] tracking-widest text-text-low uppercase">
           {result.picks.length} items · {Math.round(result.totalSeconds / 60)} min
         </div>

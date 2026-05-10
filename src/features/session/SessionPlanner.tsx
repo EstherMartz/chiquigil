@@ -110,11 +110,12 @@ export default function SessionPlanner() {
               <button
                 key={s.id}
                 onClick={() => setStrategy(s.id)}
-                className={`px-4 py-2 border font-mono text-xs tracking-wider uppercase ${
+                className={`px-4 py-3 sm:py-2 border font-mono text-xs tracking-wider uppercase min-w-[140px] sm:min-w-0 ${
                   strategy === s.id ? 'border-gold text-gold bg-bg-card-hi' : 'border-border-base text-text-dim hover:text-aether'
                 }`}
               >
-                {s.label} <span className="text-[10px] text-text-low ml-2 normal-case">{s.tag}</span>
+                <div>{s.label}</div>
+                <div className="text-[10px] text-text-low normal-case mt-0.5">{s.tag}</div>
               </button>
             ))}
           </div>
