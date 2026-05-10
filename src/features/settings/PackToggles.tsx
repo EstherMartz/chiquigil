@@ -17,7 +17,7 @@ export function PackToggles() {
                 <span className="flex items-center gap-2">
                   <span
                     role="button"
-                    onClick={(e) => { e.preventDefault(); togglePack(p.id); }}
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); togglePack(p.id); }}
                     className={`px-2 py-0.5 border text-[10px] tracking-widest uppercase ${
                       on ? 'border-gold text-gold bg-bg-card-hi' : 'border-border-base text-text-dim'
                     }`}
