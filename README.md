@@ -37,6 +37,22 @@ The watchlist now shows true profit per craft (sale price − material cost from
 
 First load on a fresh browser hits XIVAPI once per tracked item (~80 calls). Subsequent loads are near-instant from cache. If XIVAPI is slow, the watchlist still renders with market data only and shows ⋯ in the profit column until recipes resolve.
 
+## Phase 3 — Session recommender
+
+The Home page is now a session planner. Tell it how many minutes you have, pick a strategy, optionally lock to a single crafter or a min-profit threshold — it picks 6–8 items from your watchlist that fit the time and maximize gil/min.
+
+- **Time budget** is total wall-clock minutes. Overhead (default 5 min, configurable in Settings) is subtracted before packing.
+- **Batch quantity** per item is capped at `velocity × batchCapDays` (default 3 days, configurable). Won't suggest crafting 30 of something that sells 1/day.
+- **Diversity rule:** at most 3 items from the same gear set per session.
+- **Per-item craft time** defaults to a heuristic (60s + 1s per recipe level over 50, capped at 180s). Override per item in the recipe modal.
+- **Strategies:**
+  - *Balanced* (default): pure gil/minute.
+  - *Quick Win*: favors items that move fast (penalizes <3 sales/day).
+  - *Patient*: favors fat-margin items.
+- **Sale-only items** (Materia XII, dyes) are skipped — no recipe = no craft time = nothing to pack.
+
+Items below your levels (`craftStatus !== 'ok'`) are excluded automatically.
+
 ## Legacy
 
 The original single-file artifact lives in `legacy/phantom_crafting_tracker.html` for reference.
