@@ -2,6 +2,8 @@ import type { TrackedItem } from '../items/types';
 import type { MarketData, MarketItem } from '../../lib/universalis';
 import { craftStatus, type CraftStatus, type CrafterLevels } from '../items/craftStatus';
 import { computeRawScore, normalizeScores } from '../../lib/score';
+import type { Recipe } from '../../lib/recipes';
+import { computeProfit, type FlagMap } from '../profit/computeProfit';
 
 export interface WatchlistRow extends TrackedItem {
   pMinNQ: number | null;
@@ -18,6 +20,12 @@ export interface WatchlistRow extends TrackedItem {
   score: number;
   staleDays: number | null;
   craftStatus: CraftStatus;
+  // Phase 2 fields:
+  craftable: boolean | null;
+  materialCost: number | null;
+  salePrice: number | null;
+  profit: number | null;
+  gilPerDay: number | null;
 }
 
 function refPrice(p: MarketItem | undefined, d: MarketItem | undefined): number {
@@ -29,6 +37,8 @@ export function buildRows(
   phantom: MarketData,
   dc: MarketData,
   levels: CrafterLevels,
+  recipeMap: Map<number, Recipe | null>,
+  flags: FlagMap,
   now: number,
 ): WatchlistRow[] {
   const partial = items.map((item) => {
@@ -38,6 +48,11 @@ export function buildRows(
     const staleDays = lastUpload ? (now - lastUpload) / 86_400_000 : null;
     const price = refPrice(p, d);
     const velocity = d?.velocity ?? p?.velocity ?? 0;
+
+    const recipeEntry = recipeMap.has(item.id) ? recipeMap.get(item.id)! : undefined;
+    const craftable = recipeEntry === undefined ? null : recipeEntry !== null;
+    const profitResult = recipeEntry ? computeProfit(item, recipeEntry, recipeMap, phantom, dc, flags) : null;
+
     return {
       ...item,
       pMinNQ: p?.minNQ ?? null,
@@ -53,6 +68,11 @@ export function buildRows(
       rawScore: computeRawScore({ refPrice: price, velocity }),
       staleDays,
       craftStatus: craftStatus(item, levels),
+      craftable,
+      materialCost: profitResult?.materialCost ?? null,
+      salePrice: profitResult?.salePrice ?? null,
+      profit: profitResult?.profit ?? null,
+      gilPerDay: profitResult ? profitResult.profit * velocity : null,
     };
   });
 

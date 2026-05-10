@@ -27,7 +27,7 @@ export default function Watchlist() {
 
   const rows = useMemo(() => {
     if (!market.data) return [];
-    return buildRows(items, market.data.phantom, market.data.dc, retainerLevels, Date.now());
+    return buildRows(items, market.data.phantom, market.data.dc, retainerLevels, new Map(), {}, Date.now());
   }, [items, market.data, retainerLevels]);
 
   const filtered = useMemo(() => filterAndSort(rows, ui), [rows, ui]);

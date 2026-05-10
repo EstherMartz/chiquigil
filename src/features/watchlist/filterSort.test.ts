@@ -7,6 +7,7 @@ const base: WatchlistRow = {
   pMinNQ: null, pMinHQ: null, pAvgNQ: null, pAvgHQ: null, pSpd: 0, pListings: 0,
   dcMinNQ: null, dcMinHQ: null, dcSpd: 0,
   refPrice: 0, rawScore: 0, score: 0, staleDays: null, craftStatus: 'ok',
+  craftable: null, materialCost: null, salePrice: null, profit: null, gilPerDay: null,
 };
 
 const rows: WatchlistRow[] = [
