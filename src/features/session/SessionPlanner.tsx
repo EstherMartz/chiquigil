@@ -11,6 +11,12 @@ import { SessionResults } from './SessionResults';
 import { Spinner } from '../../components/Spinner';
 import { StatusBanner } from '../../components/StatusBanner';
 import type { CrafterCode } from '../items/types';
+import { HomePanel } from '../home/HomePanel';
+import { SessionDefaults } from '../settings/SessionDefaults';
+import { LevelsEditor } from '../settings/LevelsEditor';
+import { WorldDcPicker } from '../settings/WorldDcPicker';
+import { PackToggles } from '../settings/PackToggles';
+import { AddItemSearch } from '../settings/AddItemSearch';
 
 const STRATEGIES: { id: SessionStrategy; label: string; tag: string }[] = [
   { id: 'balanced',  label: 'Balanced',    tag: 'mix of margin and movement' },
@@ -121,6 +127,31 @@ export default function SessionPlanner() {
           </div>
         </div>
       </section>
+
+      <HomePanel title="Session defaults">
+        <SessionDefaults />
+      </HomePanel>
+
+      <HomePanel title="Retainer levels">
+        <LevelsEditor />
+      </HomePanel>
+
+      <HomePanel title="World &amp; Data Center">
+        <WorldDcPicker />
+      </HomePanel>
+
+      <HomePanel title="Watchlist" hint="packs + custom items">
+        <div className="space-y-6">
+          <div>
+            <h4 className="font-mono text-[10px] tracking-widest text-text-low uppercase mb-2">Starter packs</h4>
+            <PackToggles />
+          </div>
+          <div>
+            <h4 className="font-mono text-[10px] tracking-widest text-text-low uppercase mb-2">Custom items</h4>
+            <AddItemSearch />
+          </div>
+        </div>
+      </HomePanel>
 
       {(market.isLoading || recipes.isLoading) && <Spinner label="Loading market + recipe data…" />}
       {market.isError && <StatusBanner kind="error">Universalis fetch failed.</StatusBanner>}
