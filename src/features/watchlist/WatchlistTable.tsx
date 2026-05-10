@@ -4,13 +4,13 @@ import { CraftTag } from './CraftTag';
 import { ScoreBar } from './ScoreBar';
 import { fmtGil } from '../../lib/format';
 
-const COLS: { key: SortKey; label: string; align?: 'right' }[] = [
+const COLS: { key: SortKey; label: string; align?: 'right'; hideOnMobile?: boolean }[] = [
   { key: 'name', label: 'Item' },
   { key: 'crafter', label: 'Craft' },
-  { key: 'lvl', label: 'Lvl', align: 'right' },
-  { key: 'phantom', label: 'Phantom', align: 'right' },
+  { key: 'lvl', label: 'Lvl', align: 'right', hideOnMobile: true },
+  { key: 'phantom', label: 'Phantom', align: 'right', hideOnMobile: true },
   { key: 'dc', label: 'Chaos DC min', align: 'right' },
-  { key: 'spd', label: 'DC sales/day', align: 'right' },
+  { key: 'spd', label: 'DC sales/day', align: 'right', hideOnMobile: true },
   { key: 'score', label: 'Score', align: 'right' },
 ];
 
@@ -39,7 +39,7 @@ export function WatchlistTable({ rows }: { rows: WatchlistRow[] }) {
                   onClick={() => setSort(c.key)}
                   className={`px-3 py-2 bg-bg-card-hi font-mono text-[10px] tracking-widest uppercase cursor-pointer select-none whitespace-nowrap sticky top-0 z-10 ${
                     sorted ? 'text-gold' : 'text-text-dim hover:text-aether'
-                  } ${c.align === 'right' ? 'text-right' : 'text-left'}`}
+                  } ${c.align === 'right' ? 'text-right' : 'text-left'} ${c.hideOnMobile ? 'hidden md:table-cell' : ''}`}
                 >
                   {c.label}{arrow}
                 </th>
@@ -67,8 +67,8 @@ export function WatchlistTable({ rows }: { rows: WatchlistRow[] }) {
                 </div>
               </td>
               <td className="px-3 py-2.5"><CraftTag crafter={r.crafter} status={r.craftStatus} /></td>
-              <td className="px-3 py-2.5 font-mono text-right text-text-low">{r.lvl}</td>
-              <td className="px-3 py-2.5 font-mono text-right">
+              <td className="px-3 py-2.5 font-mono text-right text-text-low hidden md:table-cell">{r.lvl}</td>
+              <td className="px-3 py-2.5 font-mono text-right hidden md:table-cell">
                 {r.pAvgHQ ? <>{fmtGil(r.pAvgHQ)} <span className="text-text-low text-[10px]">avg HQ</span></>
                   : r.pAvgNQ ? <>{fmtGil(r.pAvgNQ)} <span className="text-text-low text-[10px]">avg NQ</span></>
                   : r.pMinNQ ? <>{fmtGil(r.pMinNQ)} <span className="text-text-low text-[10px]">list NQ</span></>
@@ -79,7 +79,7 @@ export function WatchlistTable({ rows }: { rows: WatchlistRow[] }) {
                   : r.dcMinNQ ? <>{fmtGil(r.dcMinNQ)} <span className="text-text-low text-[10px]">NQ</span></>
                   : <span className="text-text-low">—</span>}
               </td>
-              <td className="px-3 py-2.5 font-mono text-right">{r.dcSpd.toFixed(1)}</td>
+              <td className="px-3 py-2.5 font-mono text-right hidden md:table-cell">{r.dcSpd.toFixed(1)}</td>
               <td className="px-3 py-2.5 text-right"><ScoreBar score={r.score} /></td>
             </tr>
           ))}

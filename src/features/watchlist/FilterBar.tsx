@@ -41,7 +41,7 @@ export function FilterBar() {
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         placeholder="Search items…"
-        className="bg-bg-card border border-border-base text-text-cream font-mono text-xs px-3 py-2 w-52 ml-auto focus:outline-none focus:border-aether"
+        className="bg-bg-card border border-border-base text-text-cream font-mono text-xs px-3 py-2 w-full sm:w-52 sm:ml-auto focus:outline-none focus:border-aether"
       />
     </div>
   );
