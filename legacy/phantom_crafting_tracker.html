@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phantom Crafting Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep: #0a0d18;
+    --bg-card: #131725;
+    --bg-card-hi: #1a1f30;
+    --border: #28304a;
+    --border-hi: #3d476a;
+    --text-cream: #e8d8b0;
+    --text-dim: #9a9080;
+    --text-low: #6a6354;
+    --aether: #6ec5ce;
+    --aether-soft: #4a8a91;
+    --gold: #d4a958;
+    --gold-hi: #f0c878;
+    --crimson: #c2604a;
+    --jade: #6ab06f;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--bg-deep);
+    color: var(--text-cream);
+    font-family: 'Fraunces', Georgia, serif;
+    min-height: 100vh;
+    line-height: 1.5;
+  }
+
+  body {
+    background:
+      radial-gradient(circle at 15% -10%, rgba(110, 197, 206, 0.06), transparent 50%),
+      radial-gradient(circle at 90% 110%, rgba(212, 169, 88, 0.05), transparent 55%),
+      var(--bg-deep);
+    padding: 32px 16px 80px;
+  }
+
+  .container {
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  /* HEADER */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 24px;
+    margin-bottom: 28px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 20px;
+    align-items: end;
+  }
+  .title-block .eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    color: var(--aether);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  h1 {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 38px;
+    letter-spacing: 0.04em;
+    color: var(--text-cream);
+    line-height: 1.1;
+  }
+  h1 span.accent {
+    color: var(--gold);
+    font-style: italic;
+  }
+  .subtitle {
+    margin-top: 8px;
+    color: var(--text-dim);
+    font-size: 14px;
+    font-style: italic;
+  }
+  .header-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-end;
+  }
+  .status-line {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-low);
+    letter-spacing: 0.05em;
+  }
+  .status-line .dot {
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--jade);
+    margin-right: 6px;
+    animation: pulse 2s infinite;
+  }
+  .status-line.error .dot { background: var(--crimson); animation: none; }
+  .status-line.loading .dot { background: var(--gold); }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  button {
+    font-family: 'Cinzel', serif;
+    font-size: 12px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    background: var(--bg-card);
+    color: var(--text-cream);
+    border: 1px solid var(--border-hi);
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    font-weight: 500;
+  }
+  button:hover {
+    border-color: var(--aether);
+    color: var(--aether);
+    background: var(--bg-card-hi);
+  }
+  button.primary {
+    background: var(--bg-card-hi);
+    border-color: var(--gold);
+    color: var(--gold);
+  }
+  button.primary:hover {
+    background: var(--gold);
+    color: var(--bg-deep);
+  }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* CRAFTER PROFILE STRIP */
+  .crafter-strip {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 8px;
+    margin-bottom: 28px;
+    padding: 16px 20px;
+    background: linear-gradient(180deg, var(--bg-card) 0%, transparent 100%);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+  }
+  .crafter-tile {
+    text-align: center;
+    padding: 4px;
+    border-radius: 2px;
+    transition: background 0.15s ease;
+  }
+  .crafter-tile .name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+  .crafter-tile .level {
+    font-family: 'Cinzel', serif;
+    font-size: 22px;
+    font-weight: 600;
+    margin-top: 2px;
+  }
+  .crafter-tile.maxed .level { color: var(--gold-hi); }
+  .crafter-tile.high .level { color: var(--text-cream); }
+  .crafter-tile.mid .level { color: var(--text-dim); }
+  .crafter-tile.low .level { color: var(--text-low); }
+
+  /* CONTROLS */
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 18px;
+  }
+  .filter-group {
+    display: flex;
+    gap: 0;
+    border: 1px solid var(--border);
+  }
+  .filter-group .chip {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    background: transparent;
+    color: var(--text-dim);
+    border: none;
+    border-right: 1px solid var(--border);
+    padding: 8px 14px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.15s;
+  }
+  .filter-group .chip:last-child { border-right: none; }
+  .filter-group .chip.active {
+    background: var(--bg-card-hi);
+    color: var(--gold);
+  }
+  .filter-group .chip:hover { color: var(--aether); }
+  .filter-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--text-low);
+    text-transform: uppercase;
+    margin-right: 8px;
+  }
+  .search-input {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-cream);
+    padding: 8px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    width: 200px;
+    margin-left: auto;
+  }
+  .search-input:focus {
+    outline: none;
+    border-color: var(--aether);
+  }
+
+  /* TABLE */
+  .table-wrap {
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    overflow-x: auto;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  th, td {
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  th {
+    background: var(--bg-card-hi);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    font-weight: 500;
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+  th:hover { color: var(--aether); }
+  th.sorted { color: var(--gold); }
+  th.sorted::after {
+    content: '';
+    display: inline-block;
+    margin-left: 4px;
+    border: 4px solid transparent;
+  }
+  th.sort-asc::after { border-bottom-color: var(--gold); border-top: 0; }
+  th.sort-desc::after { border-top-color: var(--gold); border-bottom: 0; }
+  td {
+    font-family: 'Fraunces', serif;
+  }
+  td.num {
+    font-family: 'JetBrains Mono', monospace;
+    text-align: right;
+    color: var(--text-cream);
+  }
+  td.dim { color: var(--text-low); }
+  tbody tr:hover { background: var(--bg-card-hi); }
+
+  .item-name {
+    font-weight: 500;
+    color: var(--text-cream);
+  }
+  .item-name a {
+    color: inherit;
+    text-decoration: none;
+    border-bottom: 1px dotted transparent;
+    transition: border-color 0.15s;
+  }
+  .item-name a:hover { border-bottom-color: var(--aether); }
+  .item-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-low);
+    letter-spacing: 0.05em;
+    margin-top: 2px;
+  }
+
+  .craft-tag {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    padding: 2px 6px;
+    border: 1px solid var(--border-hi);
+    color: var(--text-dim);
+    border-radius: 2px;
+  }
+  .craft-tag.ok { color: var(--jade); border-color: var(--jade); }
+  .craft-tag.short { color: var(--gold); border-color: var(--gold); }
+  .craft-tag.no { color: var(--crimson); border-color: var(--crimson); opacity: 0.7; }
+
+  .score-bar {
+    display: inline-block;
+    width: 60px;
+    height: 4px;
+    background: var(--border);
+    position: relative;
+    vertical-align: middle;
+    margin-right: 8px;
+  }
+  .score-bar > i {
+    display: block;
+    height: 100%;
+    background: linear-gradient(90deg, var(--aether) 0%, var(--gold) 100%);
+  }
+
+  .stale-warn {
+    color: var(--crimson);
+    font-size: 10px;
+    margin-left: 6px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* SESSION PANEL */
+  .session-panel {
+    margin-top: 36px;
+    padding: 24px;
+    border: 1px solid var(--border-hi);
+    background:
+      linear-gradient(180deg, rgba(212, 169, 88, 0.04) 0%, transparent 100%),
+      var(--bg-card);
+    border-radius: 2px;
+  }
+  .session-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 6px;
+  }
+  .session-header h2 {
+    font-family: 'Cinzel', serif;
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--gold);
+  }
+  .session-modes {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+  }
+  .session-output {
+    margin-top: 12px;
+  }
+  .session-empty {
+    color: var(--text-low);
+    font-style: italic;
+    font-size: 13px;
+    padding: 16px 0;
+  }
+  .session-summary {
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-bottom: 14px;
+    line-height: 1.6;
+  }
+  .session-summary strong {
+    color: var(--gold-hi);
+    font-weight: 500;
+  }
+  .session-pick {
+    display: grid;
+    grid-template-columns: 1fr 100px 100px 80px;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    align-items: center;
+  }
+  .session-pick:last-child { border-bottom: none; }
+  .session-pick .pick-name {
+    font-weight: 500;
+  }
+  .session-pick .pick-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-low);
+    letter-spacing: 0.05em;
+    margin-top: 2px;
+  }
+  .session-pick .pick-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    text-align: right;
+    color: var(--text-cream);
+  }
+  .session-pick .pick-num small {
+    display: block;
+    color: var(--text-low);
+    font-size: 10px;
+    margin-top: 1px;
+  }
+  .session-pick .pick-batch {
+    font-family: 'Cinzel', serif;
+    font-size: 18px;
+    color: var(--gold-hi);
+    text-align: right;
+    font-weight: 500;
+  }
+
+  .footnote {
+    margin-top: 36px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--text-low);
+    line-height: 1.6;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.03em;
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    body { padding: 20px 8px 60px; }
+    h1 { font-size: 26px; }
+    header { grid-template-columns: 1fr; }
+    .header-actions { align-items: flex-start; }
+    .crafter-strip { grid-template-columns: repeat(4, 1fr); }
+    .session-pick { grid-template-columns: 1fr 80px; }
+    .session-pick .pick-num.dc, .session-pick .pick-batch { display: none; }
+    table { font-size: 12px; }
+    th, td { padding: 8px 6px; }
+    .search-input { width: 100%; margin-left: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="title-block">
+      <div class="eyebrow">Final Fantasy XIV · Chaos · Phantom</div>
+      <h1>Phantom <span class="accent">Crafting</span> Ledger</h1>
+      <div class="subtitle">Live market intelligence for Esther's retainers</div>
+    </div>
+    <div class="header-actions">
+      <button id="refresh-btn" class="primary">⟳ Refresh Prices</button>
+      <div id="status" class="status-line loading"><span class="dot"></span><span id="status-text">Idle</span></div>
+    </div>
+  </header>
+
+  <!-- Crafter levels -->
+  <div class="crafter-strip" id="crafter-strip"></div>
+
+  <!-- Filters -->
+  <div class="controls">
+    <span class="filter-label">Category</span>
+    <div class="filter-group" id="cat-filter"></div>
+    <span class="filter-label" style="margin-left:12px">Crafter</span>
+    <div class="filter-group" id="craft-filter"></div>
+    <input type="text" class="search-input" id="search" placeholder="Search items…">
+  </div>
+
+  <!-- Main table -->
+  <div class="table-wrap">
+    <table id="data-table">
+      <thead>
+        <tr>
+          <th data-sort="name">Item</th>
+          <th data-sort="crafter">Craft</th>
+          <th data-sort="lvl">Lvl</th>
+          <th data-sort="phantom">Phantom</th>
+          <th data-sort="dc">Chaos DC min</th>
+          <th data-sort="spd">DC sales/day</th>
+          <th data-sort="score" class="sorted sort-desc">Score</th>
+        </tr>
+      </thead>
+      <tbody id="data-body">
+        <tr><td colspan="7" style="text-align:center;padding:60px 0;color:var(--text-low);font-style:italic">Click "Refresh Prices" to fetch live data from Universalis.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Session suggester -->
+  <div class="session-panel">
+    <div class="session-header">
+      <h2>Suggest a Crafting Session</h2>
+    </div>
+    <div class="session-summary" style="margin-bottom: 12px;">
+      Pick a strategy and I'll select 6–8 items worth crafting, prioritising recent sales.
+    </div>
+    <div class="session-modes">
+      <button data-mode="quickwin">Quick Win · volume movers</button>
+      <button data-mode="patient">Patient Profit · fat margins</button>
+      <button data-mode="balanced">Balanced · mix of both</button>
+      <button data-mode="ltw">LTW Session</button>
+      <button data-mode="wvr">WVR Session</button>
+      <button data-mode="crp">CRP Session</button>
+      <button data-mode="gsm">GSM Session</button>
+      <button data-mode="cul">CUL Session</button>
+    </div>
+    <div class="session-output" id="session-output">
+      <div class="session-empty">No session generated yet.</div>
+    </div>
+  </div>
+
+  <div class="footnote">
+    Data: Universalis API · Phantom (id 401) on Chaos DC · Refresh hits the API live.
+    Phantom velocity is shown only when prices differ from DC; the DC numbers are usually a better predictor since buyers shop DC-wide.
+    "Score" = weighted price × velocity, normalised. "Stale" badge appears when the most recent data is &gt; 3 days old.
+    Click an item name to open it on Universalis.
+  </div>
+
+</div>
+
+<script>
+//=============================================================================
+// CRAFTER LEVELS — edit these if your levels change
+//=============================================================================
+const LEVELS = {
+  CRP: 93,
+  BSM: 33,
+  ARM: 42,
+  GSM: 83,
+  LTW: 100,
+  WVR: 100,
+  ALC: 90,
+  CUL: 100,
+};
+const CRAFTER_NAMES = {
+  CRP: 'Carpenter', BSM: 'Blacksmith', ARM: 'Armorer', GSM: 'Goldsmith',
+  LTW: 'Leatherworker', WVR: 'Weaver', ALC: 'Alchemist', CUL: 'Culinarian',
+};
+
+//=============================================================================
+// ITEM DATABASE — curated list of marketable items relevant to Esther
+//=============================================================================
+const ITEMS = [
+  // ============ CURRENT 7.4 RAID GEAR — Courtly Lover's set (ilvl 770) ============
+  // LTW pieces (Striking, Aiming, Scouting)
+  { id:49281, name:"Courtly Lover's Temple Chain of Striking", crafter:'LTW', lvl:100, cat:'Raid', subcat:'Head' },
+  { id:49282, name:"Courtly Lover's Cloak of Striking",        crafter:'LTW', lvl:100, cat:'Raid', subcat:'Body' },
+  { id:49283, name:"Courtly Lover's Armguards of Striking",    crafter:'LTW', lvl:100, cat:'Raid', subcat:'Hands' },
+  { id:49284, name:"Courtly Lover's Brais of Striking",        crafter:'LTW', lvl:100, cat:'Raid', subcat:'Legs' },
+  { id:49285, name:"Courtly Lover's Boots of Striking",        crafter:'LTW', lvl:100, cat:'Raid', subcat:'Feet' },
+  { id:49286, name:"Courtly Lover's Hairpin of Aiming",        crafter:'LTW', lvl:100, cat:'Raid', subcat:'Head' },
+  { id:49287, name:"Courtly Lover's Shirt of Aiming",          crafter:'LTW', lvl:100, cat:'Raid', subcat:'Body' },
+  { id:49288, name:"Courtly Lover's Halfgloves of Aiming",     crafter:'LTW', lvl:100, cat:'Raid', subcat:'Hands' },
+  { id:49289, name:"Courtly Lover's Trousers of Aiming",       crafter:'LTW', lvl:100, cat:'Raid', subcat:'Legs' },
+  { id:49290, name:"Courtly Lover's Shoes of Aiming",          crafter:'LTW', lvl:100, cat:'Raid', subcat:'Feet' },
+  { id:49291, name:"Courtly Lover's Hairpin of Scouting",      crafter:'LTW', lvl:100, cat:'Raid', subcat:'Head' },
+  { id:49292, name:"Courtly Lover's Shirt of Scouting",        crafter:'LTW', lvl:100, cat:'Raid', subcat:'Body' },
+  { id:49293, name:"Courtly Lover's Halfgloves of Scouting",   crafter:'LTW', lvl:100, cat:'Raid', subcat:'Hands' },
+  { id:49294, name:"Courtly Lover's Trousers of Scouting",     crafter:'LTW', lvl:100, cat:'Raid', subcat:'Legs' },
+  { id:49295, name:"Courtly Lover's Shoes of Scouting",        crafter:'LTW', lvl:100, cat:'Raid', subcat:'Feet' },
+  // WVR pieces (Healing, Casting)
+  { id:49296, name:"Courtly Lover's Hood of Healing",          crafter:'WVR', lvl:100, cat:'Raid', subcat:'Head' },
+  { id:49297, name:"Courtly Lover's Longcoat of Healing",      crafter:'WVR', lvl:100, cat:'Raid', subcat:'Body' },
+  { id:49298, name:"Courtly Lover's Gloves of Healing",        crafter:'WVR', lvl:100, cat:'Raid', subcat:'Hands' },
+  { id:49299, name:"Courtly Lover's Pantaloons of Healing",    crafter:'WVR', lvl:100, cat:'Raid', subcat:'Legs' },
+  { id:49300, name:"Courtly Lover's Shoes of Healing",         crafter:'WVR', lvl:100, cat:'Raid', subcat:'Feet' },
+  { id:49301, name:"Courtly Lover's Hood of Casting",          crafter:'WVR', lvl:100, cat:'Raid', subcat:'Head' },
+  { id:49302, name:"Courtly Lover's Longcoat of Casting",      crafter:'WVR', lvl:100, cat:'Raid', subcat:'Body' },
+  { id:49303, name:"Courtly Lover's Gloves of Casting",        crafter:'WVR', lvl:100, cat:'Raid', subcat:'Hands' },
+  { id:49304, name:"Courtly Lover's Pantaloons of Casting",    crafter:'WVR', lvl:100, cat:'Raid', subcat:'Legs' },
+  { id:49305, name:"Courtly Lover's Shoes of Casting",         crafter:'WVR', lvl:100, cat:'Raid', subcat:'Feet' },
+
+  // ============ TINCTURES (ALC) ============
+  { id:49234, name:"Grade 4 Gemdraught of Strength",     crafter:'ALC', lvl:100, cat:'Tincture' },
+  { id:49235, name:"Grade 4 Gemdraught of Dexterity",    crafter:'ALC', lvl:100, cat:'Tincture' },
+  { id:49236, name:"Grade 4 Gemdraught of Vitality",     crafter:'ALC', lvl:100, cat:'Tincture' },
+  { id:49237, name:"Grade 4 Gemdraught of Intelligence", crafter:'ALC', lvl:100, cat:'Tincture' },
+  { id:49238, name:"Grade 4 Gemdraught of Mind",         crafter:'ALC', lvl:100, cat:'Tincture' },
+  { id:49218, name:"Grade 4 Gemsap of Strength",         crafter:'ALC', lvl:100, cat:'Tincture' },
+  { id:49219, name:"Grade 4 Gemsap of Dexterity",        crafter:'ALC', lvl:100, cat:'Tincture' },
+  { id:49220, name:"Grade 4 Gemsap of Vitality",         crafter:'ALC', lvl:100, cat:'Tincture' },
+  { id:49221, name:"Grade 4 Gemsap of Intelligence",     crafter:'ALC', lvl:100, cat:'Tincture' },
+  { id:49222, name:"Grade 4 Gemsap of Mind",             crafter:'ALC', lvl:100, cat:'Tincture' },
+
+  // ============ FOOD (CUL) ============
+  { id:49232, name:"Rock-fist Popoto",         crafter:'CUL', lvl:100, cat:'Food' },
+  { id:49240, name:"Caramel Popcorn",          crafter:'CUL', lvl:100, cat:'Food' },
+  { id:49241, name:"Prune Ponzecake",          crafter:'CUL', lvl:100, cat:'Food' },
+  { id:49242, name:"Prune-packed Fruitcake",   crafter:'CUL', lvl:100, cat:'Food' },
+  { id:49244, name:"Popoto Potage",            crafter:'CUL', lvl:100, cat:'Food' },
+  { id:49245, name:"Rock-fisted Popoto Stew",  crafter:'CUL', lvl:100, cat:'Food' },
+  { id:49246, name:"Rock-fisted Popoto Salad", crafter:'CUL', lvl:100, cat:'Food' },
+  { id:49247, name:"Clam Cake",                crafter:'CUL', lvl:100, cat:'Food' },
+
+  // ============ DYES (WVR) ============
+  { id:13114, name:"General-purpose Pure White Dye",     crafter:'WVR', lvl:50, cat:'Dye' },
+  { id:13115, name:"General-purpose Jet Black Dye",      crafter:'WVR', lvl:50, cat:'Dye' },
+  { id:13116, name:"General-purpose Metallic Silver Dye",crafter:'WVR', lvl:50, cat:'Dye' },
+  { id:13117, name:"General-purpose Metallic Gold Dye",  crafter:'WVR', lvl:50, cat:'Dye' },
+
+  // ============ MATERIA XII (any crafter via spiritbond) ============
+  { id:41771, name:"Heavens' Eye Materia XII",   crafter:'ANY', lvl:100, cat:'Materia' },
+  { id:41772, name:"Savage Aim Materia XII",     crafter:'ANY', lvl:100, cat:'Materia' },
+  { id:41773, name:"Savage Might Materia XII",   crafter:'ANY', lvl:100, cat:'Materia' },
+  { id:41774, name:"Battledance Materia XII",    crafter:'ANY', lvl:100, cat:'Materia' },
+  { id:41781, name:"Quickarm Materia XII",       crafter:'ANY', lvl:100, cat:'Materia' },
+  { id:41782, name:"Quicktongue Materia XII",    crafter:'ANY', lvl:100, cat:'Materia' },
+
+  // ============ GLAMOUR — Lower-level crafted gear ============
+  // Neo-Ishgardian Tops (lvl 80, ilvl 480)
+  { id:29435, name:"Neo-Ishgardian Top of Striking", crafter:'LTW', lvl:80, cat:'Glamour' },
+  { id:29429, name:"Neo-Ishgardian Top of Maiming",  crafter:'ARM', lvl:80, cat:'Glamour' },
+  { id:29441, name:"Neo-Ishgardian Top of Aiming",   crafter:'LTW', lvl:80, cat:'Glamour' },
+  { id:29447, name:"Neo-Ishgardian Top of Scouting", crafter:'LTW', lvl:80, cat:'Glamour' },
+  { id:29459, name:"Neo-Ishgardian Top of Casting",  crafter:'WVR', lvl:80, cat:'Glamour' },
+  { id:29453, name:"Neo-Ishgardian Top of Healing",  crafter:'WVR', lvl:80, cat:'Glamour' },
+  // Diadochos (lvl 90, ilvl 640)
+  { id:39676, name:"Diadochos Coat of Healing",      crafter:'WVR', lvl:90, cat:'Glamour' },
+  { id:39681, name:"Diadochos Coat of Casting",      crafter:'WVR', lvl:90, cat:'Glamour' },
+  { id:40618, name:"Ornate Diadochos Coat of Healing", crafter:'WVR', lvl:90, cat:'Glamour' },
+  { id:40619, name:"Ornate Diadochos Coat of Casting", crafter:'WVR', lvl:90, cat:'Glamour' },
+  { id:39663, name:"Diadochos Bottoms of Striking",  crafter:'LTW', lvl:90, cat:'Glamour' },
+  // Quaintrelle cosmetic
+  { id:23373, name:"Quaintrelle's Hat",              crafter:'WVR', lvl:50, cat:'Glamour' },
+  { id:23374, name:"Quaintrelle's Dress Shoes",      crafter:'WVR', lvl:50, cat:'Glamour' },
+  { id:23001, name:"Quaintrelle's Ruffled Dress",    crafter:'WVR', lvl:50, cat:'Glamour' },
+  { id:23002, name:"Quaintrelle's Ruffled Skirt",    crafter:'WVR', lvl:50, cat:'Glamour' },
+  // Crystarium
+  { id:29234, name:"Crystarium Robe of Casting",     crafter:'WVR', lvl:80, cat:'Glamour' },
+
+  // ============ HOUSING ============
+  // Stuffed plushies
+  { id:12087, name:"Stuffed Carbuncle", crafter:'LTW', lvl:50, cat:'Housing' },
+  { id:8729,  name:"Stuffed Tonberry",  crafter:'LTW', lvl:50, cat:'Housing' },
+  { id:6653,  name:"Stuffed Moogle",    crafter:'WVR', lvl:50, cat:'Housing' },
+  { id:6654,  name:"Stuffed Chocobo",   crafter:'WVR', lvl:50, cat:'Housing' },
+  // Round tables (CRP)
+  { id:6601,  name:"Riviera Round Table", crafter:'CRP', lvl:30, cat:'Housing' },
+  { id:6603,  name:"Glade Round Table",   crafter:'CRP', lvl:30, cat:'Housing' },
+  { id:6602,  name:"Oasis Round Table",   crafter:'CRP', lvl:30, cat:'Housing' },
+  { id:12085, name:"Alpine Round Table",  crafter:'CRP', lvl:60, cat:'Housing' },
+  { id:39411, name:"Faerie Round Table",  crafter:'CRP', lvl:90, cat:'Housing' },
+  // Beds (CRP)
+  { id:6543, name:"Glade Bed", crafter:'CRP', lvl:50, cat:'Housing' },
+  { id:6544, name:"Oasis Bed", crafter:'CRP', lvl:50, cat:'Housing' },
+  // Floor lamps (GSM)
+  { id:6583,  name:"Riviera Floor Lamp", crafter:'GSM', lvl:30, cat:'Housing' },
+  { id:6584,  name:"Glade Floor Lamp",   crafter:'GSM', lvl:30, cat:'Housing' },
+  { id:6585,  name:"Oasis Floor Lamp",   crafter:'GSM', lvl:30, cat:'Housing' },
+  { id:6587,  name:"Tonberry Floor Lamp",crafter:'GSM', lvl:50, cat:'Housing' },
+  { id:14048, name:"Pudding Floor Lamp", crafter:'GSM', lvl:50, cat:'Housing' },
+  // Sharlayan
+  { id:38596, name:"Sharlayan Chair",    crafter:'CRP', lvl:90, cat:'Housing' },
+  { id:38597, name:"Sharlayan Desk",     crafter:'CRP', lvl:90, cat:'Housing' },
+  { id:21831, name:"Sharlayan Cabinet",  crafter:'CRP', lvl:90, cat:'Housing' },
+  { id:21832, name:"Sharlayan Wardrobe", crafter:'CRP', lvl:90, cat:'Housing' },
+  { id:38598, name:"Sharlayan Rug",      crafter:'WVR', lvl:90, cat:'Housing' },
+  // Far East
+  { id:20741, name:"Hingan Andon Lamp",  crafter:'GSM', lvl:70, cat:'Housing' },
+  { id:20211, name:"Doman Bubble Eye",   crafter:'CUL', lvl:70, cat:'Housing' },
+  { id:20776, name:"Far Eastern Antique",crafter:'CRP', lvl:70, cat:'Housing' },
+  // Misc
+  { id:14045, name:"Orchestrion",        crafter:'GSM', lvl:50, cat:'Housing' },
+  { id:28751, name:"Skybuilders' Counter", crafter:'CRP', lvl:80, cat:'Housing' },
+  { id:27282, name:"Crystarium Bench",   crafter:'CRP', lvl:80, cat:'Housing' },
+];
+
+//=============================================================================
+// STATE
+//=============================================================================
+const state = {
+  data: [],            // hydrated items with prices
+  catFilter: 'All',
+  craftFilter: 'All',
+  search: '',
+  sortKey: 'score',
+  sortDir: 'desc',
+  lastFetch: null,
+};
+
+const CATS = ['All', 'Raid', 'Tincture', 'Food', 'Dye', 'Glamour', 'Housing', 'Materia'];
+const CRAFTERS_FILTER = ['All', 'LTW', 'WVR', 'CUL', 'ALC', 'CRP', 'GSM', 'ARM', 'BSM', 'ANY'];
+
+//=============================================================================
+// DATA FETCH
+//=============================================================================
+async function fetchPrices() {
+  const ids = ITEMS.map(i => i.id).join(',');
+  const setStatus = (msg, cls = 'loading') => {
+    document.getElementById('status').className = 'status-line ' + cls;
+    document.getElementById('status-text').textContent = msg;
+  };
+  document.getElementById('refresh-btn').disabled = true;
+
+  try {
+    setStatus('Fetching Phantom + DC market data…');
+    const [phantomRes, dcRes] = await Promise.all([
+      fetch(`https://universalis.app/api/v2/Phantom/${ids}?listings=10&entries=15`),
+      fetch(`https://universalis.app/api/v2/Chaos/${ids}?listings=10&entries=15`),
+    ]);
+    if (!phantomRes.ok || !dcRes.ok) throw new Error(`API error ${phantomRes.status}/${dcRes.status}`);
+    const phantom = await phantomRes.json();
+    const dc = await dcRes.json();
+
+    const now = Date.now();
+    state.data = ITEMS.map(item => {
+      const p = phantom.items?.[item.id] || {};
+      const d = dc.items?.[item.id] || {};
+
+      const pListings = p.listings || [];
+      const pHistory = p.recentHistory || [];
+      const dListings = d.listings || [];
+
+      const minNQ = (arr) => {
+        const v = arr.filter(l => !l.hq).map(l => l.pricePerUnit);
+        return v.length ? Math.min(...v) : null;
+      };
+      const minHQ = (arr) => {
+        const v = arr.filter(l => l.hq).map(l => l.pricePerUnit);
+        return v.length ? Math.min(...v) : null;
+      };
+      const avgRecent = (arr, hq = null) => {
+        const v = arr.filter(s => hq === null ? true : !!s.hq === hq).map(s => s.pricePerUnit);
+        return v.length ? Math.round(v.reduce((a,b) => a+b, 0) / v.length) : null;
+      };
+
+      const pAvgNQ = avgRecent(pHistory, false);
+      const pAvgHQ = avgRecent(pHistory, true);
+      const dSpd = d.regularSaleVelocity || 0;
+      const pSpd = p.regularSaleVelocity || 0;
+      const lastUpload = Math.max(p.lastUploadTime || 0, d.lastUploadTime || 0);
+      const staleDays = lastUpload ? (now - lastUpload) / 86400000 : null;
+
+      // Price for scoring: prefer DC min HQ then NQ then Phantom avg
+      const refPrice = minHQ(dListings) || minNQ(dListings) || pAvgHQ || pAvgNQ || 0;
+
+      // Score: weighted gil opportunity per day, normalised later
+      const rawScore = refPrice * (dSpd || pSpd || 0);
+
+      return {
+        ...item,
+        p_min_nq: minNQ(pListings),
+        p_min_hq: minHQ(pListings),
+        p_avg_nq: pAvgNQ,
+        p_avg_hq: pAvgHQ,
+        p_spd: pSpd,
+        p_listings: pListings.length,
+        dc_min_nq: minNQ(dListings),
+        dc_min_hq: minHQ(dListings),
+        dc_spd: dSpd,
+        dc_listings: dListings.length,
+        ref_price: refPrice,
+        raw_score: rawScore,
+        stale_days: staleDays,
+      };
+    });
+
+    // Normalise scores 0..100
+    const maxScore = Math.max(1, ...state.data.map(i => i.raw_score));
+    state.data.forEach(i => { i.score = Math.round((i.raw_score / maxScore) * 100); });
+
+    state.lastFetch = new Date();
+    setStatus(`Updated ${state.lastFetch.toLocaleTimeString()}`, 'ok');
+    document.getElementById('status').className = 'status-line';
+    render();
+  } catch (e) {
+    console.error(e);
+    setStatus('Failed: ' + e.message, 'error');
+  } finally {
+    document.getElementById('refresh-btn').disabled = false;
+  }
+}
+
+//=============================================================================
+// RENDERING
+//=============================================================================
+function fmt(n) {
+  if (n == null) return '<span class="dim">—</span>';
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(2).replace(/\.?0+$/, '') + 'M';
+  if (n >= 10_000) return Math.round(n / 1000) + 'k';
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'k';
+  return n.toLocaleString();
+}
+
+function craftStatus(item) {
+  if (item.crafter === 'ANY') return 'ok';
+  const myLevel = LEVELS[item.crafter];
+  if (myLevel >= item.lvl) return 'ok';
+  if (myLevel >= item.lvl - 10) return 'short';
+  return 'no';
+}
+
+function renderCrafterStrip() {
+  const order = ['CRP', 'BSM', 'ARM', 'GSM', 'LTW', 'WVR', 'ALC', 'CUL'];
+  const strip = document.getElementById('crafter-strip');
+  strip.innerHTML = order.map(c => {
+    const lvl = LEVELS[c];
+    let cls = 'low';
+    if (lvl === 100) cls = 'maxed';
+    else if (lvl >= 80) cls = 'high';
+    else if (lvl >= 50) cls = 'mid';
+    return `<div class="crafter-tile ${cls}"><div class="name">${c}</div><div class="level">${lvl}</div></div>`;
+  }).join('');
+}
+
+function renderFilters() {
+  document.getElementById('cat-filter').innerHTML = CATS.map(c =>
+    `<button class="chip ${state.catFilter === c ? 'active' : ''}" data-cat="${c}">${c}</button>`
+  ).join('');
+  document.getElementById('craft-filter').innerHTML = CRAFTERS_FILTER.map(c =>
+    `<button class="chip ${state.craftFilter === c ? 'active' : ''}" data-craft="${c}">${c}</button>`
+  ).join('');
+  document.querySelectorAll('#cat-filter .chip').forEach(b => {
+    b.onclick = () => { state.catFilter = b.dataset.cat; renderFilters(); render(); };
+  });
+  document.querySelectorAll('#craft-filter .chip').forEach(b => {
+    b.onclick = () => { state.craftFilter = b.dataset.craft; renderFilters(); render(); };
+  });
+}
+
+function getFiltered() {
+  let rows = state.data;
+  if (state.catFilter !== 'All') rows = rows.filter(r => r.cat === state.catFilter);
+  if (state.craftFilter !== 'All') rows = rows.filter(r => r.crafter === state.craftFilter);
+  if (state.search) {
+    const q = state.search.toLowerCase();
+    rows = rows.filter(r => r.name.toLowerCase().includes(q));
+  }
+  // Sort
+  const dir = state.sortDir === 'asc' ? 1 : -1;
+  rows.sort((a, b) => {
+    let av, bv;
+    switch (state.sortKey) {
+      case 'name': av = a.name; bv = b.name; break;
+      case 'crafter': av = a.crafter; bv = b.crafter; break;
+      case 'lvl': av = a.lvl; bv = b.lvl; break;
+      case 'phantom': av = a.p_avg_hq || a.p_avg_nq || a.p_min_nq || 0; bv = b.p_avg_hq || b.p_avg_nq || b.p_min_nq || 0; break;
+      case 'dc': av = a.dc_min_hq || a.dc_min_nq || 0; bv = b.dc_min_hq || b.dc_min_nq || 0; break;
+      case 'spd': av = a.dc_spd; bv = b.dc_spd; break;
+      case 'score':
+      default: av = a.raw_score || 0; bv = b.raw_score || 0;
+    }
+    if (typeof av === 'string') return av.localeCompare(bv) * dir;
+    return (av - bv) * dir;
+  });
+  return rows;
+}
+
+function render() {
+  const rows = getFiltered();
+  const tbody = document.getElementById('data-body');
+  if (state.data.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:60px 0;color:var(--text-low);font-style:italic">Click "Refresh Prices" to fetch live data from Universalis.</td></tr>';
+    return;
+  }
+  if (rows.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px 0;color:var(--text-low);font-style:italic">No items match those filters.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(r => {
+    const cs = craftStatus(r);
+    const stale = r.stale_days != null && r.stale_days > 3 ? `<span class="stale-warn">${r.stale_days.toFixed(0)}d stale</span>` : '';
+    const phantomCell = r.p_avg_hq ? `${fmt(r.p_avg_hq)} <small style="color:var(--text-low)">avg HQ</small>`
+                      : r.p_avg_nq ? `${fmt(r.p_avg_nq)} <small style="color:var(--text-low)">avg NQ</small>`
+                      : r.p_min_nq ? `${fmt(r.p_min_nq)} <small style="color:var(--text-low)">list NQ</small>`
+                      : '<span class="dim">—</span>';
+    const dcCell = r.dc_min_hq ? `${fmt(r.dc_min_hq)} <small style="color:var(--text-low)">HQ</small>`
+                  : r.dc_min_nq ? `${fmt(r.dc_min_nq)} <small style="color:var(--text-low)">NQ</small>`
+                  : '<span class="dim">—</span>';
+    return `<tr>
+      <td>
+        <div class="item-name"><a href="https://universalis.app/market/${r.id}" target="_blank">${r.name}</a></div>
+        <div class="item-meta">${r.cat}${r.subcat ? ' · ' + r.subcat : ''}${stale}</div>
+      </td>
+      <td><span class="craft-tag ${cs}">${r.crafter}</span></td>
+      <td class="num dim">${r.lvl}</td>
+      <td class="num">${phantomCell}</td>
+      <td class="num">${dcCell}</td>
+      <td class="num">${(r.dc_spd || 0).toFixed(1)}</td>
+      <td class="num">
+        <span class="score-bar"><i style="width:${r.score}%"></i></span>${r.score}
+      </td>
+    </tr>`;
+  }).join('');
+
+  // Header sort indicators
+  document.querySelectorAll('th[data-sort]').forEach(th => {
+    th.classList.remove('sorted', 'sort-asc', 'sort-desc');
+    if (th.dataset.sort === state.sortKey) {
+      th.classList.add('sorted', state.sortDir === 'asc' ? 'sort-asc' : 'sort-desc');
+    }
+  });
+}
+
+//=============================================================================
+// SESSION SUGGESTER
+//=============================================================================
+function sessionPicks(mode) {
+  if (state.data.length === 0) return null;
+
+  // Filter to items with recent data + craftable by Esther
+  const fresh = state.data.filter(r => {
+    const cs = craftStatus(r);
+    if (cs === 'no') return false;
+    if (r.stale_days != null && r.stale_days > 5) return false;
+    if (!r.dc_spd && !r.p_spd) return false;
+    if (!r.ref_price) return false;
+    return true;
+  });
+
+  let pool = fresh;
+
+  // Crafter-specific modes
+  const crafterMode = ['ltw','wvr','crp','gsm','cul'].includes(mode);
+  if (crafterMode) {
+    pool = fresh.filter(r => r.crafter === mode.toUpperCase());
+  }
+
+  // Strategy filters
+  let scored = pool.map(r => {
+    const spd = r.dc_spd || r.p_spd || 0;
+    const price = r.ref_price;
+    const gilPerDay = price * spd;
+    let modeScore;
+    switch (mode) {
+      case 'quickwin':
+        // Favor high velocity (>3/day), modest price
+        modeScore = spd > 3 ? gilPerDay : gilPerDay * 0.3;
+        break;
+      case 'patient':
+        // Favor high price (>50k), some sales
+        modeScore = price > 50000 ? gilPerDay * (price / 50000) : gilPerDay * 0.3;
+        break;
+      case 'balanced':
+      default:
+        modeScore = gilPerDay;
+    }
+    return { ...r, modeScore, gilPerDay };
+  });
+
+  scored.sort((a, b) => b.modeScore - a.modeScore);
+
+  // For balanced/quickwin/patient: pick a mix that doesn't repeat the same set
+  // For crafter modes: just take top N by score
+  let picks = [];
+  const seenSet = new Set();
+  for (const r of scored) {
+    // Avoid clogging with too many of the same item set (e.g. all 5 Striking pieces)
+    const setKey = r.name.split(' of ')[0].split("'s")[0];
+    if (!crafterMode && seenSet.has(setKey) && picks.length >= 3) continue;
+    seenSet.add(setKey);
+    picks.push(r);
+    if (picks.length >= 8) break;
+  }
+
+  return picks;
+}
+
+function renderSession(picks, mode) {
+  const out = document.getElementById('session-output');
+  if (!picks) {
+    out.innerHTML = '<div class="session-empty">Refresh prices first.</div>';
+    return;
+  }
+  if (picks.length === 0) {
+    out.innerHTML = '<div class="session-empty">No items match — try a different mode or check your data.</div>';
+    return;
+  }
+
+  const totalGil = picks.reduce((a, p) => a + p.gilPerDay, 0);
+  const crafters = [...new Set(picks.map(p => p.crafter))];
+  const modeNames = {
+    quickwin: 'Quick Win — high velocity items', patient: 'Patient Profit — fat margin items',
+    balanced: 'Balanced — mix of volume and margin',
+    ltw: 'Leatherworker session', wvr: 'Weaver session', crp: 'Carpenter session',
+    gsm: 'Goldsmith session', cul: 'Culinarian session',
+  };
+
+  let summary = `<strong>${modeNames[mode]}</strong> · ${picks.length} items · `;
+  summary += `crafters: ${crafters.join(', ')} · `;
+  summary += `combined ~<strong>${fmt(Math.round(totalGil))}</strong> gil/day if all sell at DC pace.`;
+
+  // Suggest batch size: items with high SPD get larger batches (~3 days of stock)
+  const rows = picks.map(p => {
+    const spd = p.dc_spd || p.p_spd || 0;
+    const batch = Math.max(1, Math.min(20, Math.round(spd * 3)));
+    const expectedGil = batch * p.ref_price;
+    return `<div class="session-pick">
+      <div>
+        <div class="pick-name"><a style="color:inherit;text-decoration:none;border-bottom:1px dotted var(--border-hi)" href="https://universalis.app/market/${p.id}" target="_blank">${p.name}</a></div>
+        <div class="pick-sub">${p.crafter} lvl ${p.lvl} · ${spd.toFixed(1)}/day · ${fmt(p.ref_price)} unit price</div>
+      </div>
+      <div class="pick-num">
+        ${fmt(p.gilPerDay)}<small>gil/day</small>
+      </div>
+      <div class="pick-num dc">
+        ${fmt(expectedGil)}<small>full batch</small>
+      </div>
+      <div class="pick-batch">×${batch}</div>
+    </div>`;
+  }).join('');
+
+  out.innerHTML = `<div class="session-summary">${summary}</div>${rows}`;
+}
+
+//=============================================================================
+// EVENT WIRING
+//=============================================================================
+document.getElementById('refresh-btn').onclick = fetchPrices;
+document.getElementById('search').oninput = (e) => { state.search = e.target.value; render(); };
+document.querySelectorAll('th[data-sort]').forEach(th => {
+  th.onclick = () => {
+    if (state.sortKey === th.dataset.sort) {
+      state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      state.sortKey = th.dataset.sort;
+      state.sortDir = ['name', 'crafter'].includes(th.dataset.sort) ? 'asc' : 'desc';
+    }
+    render();
+  };
+});
+document.querySelectorAll('.session-modes button').forEach(b => {
+  b.onclick = () => {
+    if (state.data.length === 0) {
+      renderSession(null);
+      return;
+    }
+    const picks = sessionPicks(b.dataset.mode);
+    renderSession(picks, b.dataset.mode);
+  };
+});
+
+// Initial render
+renderCrafterStrip();
+renderFilters();
+// Auto-fetch on load
+fetchPrices();
+</script>
+</body>
+</html>
