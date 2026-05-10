@@ -4,6 +4,7 @@ import { useWatchlistStore } from '../features/items/watchlistStore';
 import { useUiStore } from '../features/ui/uiStore';
 import { useMarketData } from '../features/watchlist/useMarketData';
 import { useRecipes } from '../features/profit/useRecipes';
+import { useItemNames } from '../features/profit/useItemNames';
 import { allItemsFromEnabledPacks } from '../features/items/starterPacks';
 import { buildRows } from '../features/watchlist/buildRows';
 import { filterAndSort } from '../features/watchlist/filterSort';
@@ -28,6 +29,23 @@ export default function Watchlist() {
   const ids = useMemo(() => items.map((i) => i.id), [items]);
   const market = useMarketData(ids, world, dc);
   const recipes = useRecipes(ids);
+
+  const ingredientIds = useMemo(() => {
+    if (!recipes.data) return [];
+    const out = new Set<number>();
+    for (const recipe of recipes.data.values()) {
+      if (!recipe) continue;
+      for (const ing of recipe.ingredients) out.add(ing.itemId);
+    }
+    return [...out];
+  }, [recipes.data]);
+
+  const allNameIds = useMemo(
+    () => [...new Set([...ids, ...ingredientIds])],
+    [ids, ingredientIds],
+  );
+
+  const names = useItemNames(allNameIds);
 
   const rows = useMemo(() => {
     if (!market.data || !recipes.data) return [];
@@ -70,6 +88,7 @@ export default function Watchlist() {
           item={selected}
           recipe={selectedRecipe}
           recipeMap={recipes.data!}
+          nameMap={names.data ?? new Map()}
           phantom={market.data.phantom}
           dc={market.data.dc}
           craftIntermediates={!!perItemFlags[selected.id]?.craftIntermediates}

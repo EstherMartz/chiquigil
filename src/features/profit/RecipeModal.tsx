@@ -7,6 +7,7 @@ interface Props {
   item: TrackedItem;
   recipe: Recipe;
   recipeMap: Map<number, Recipe | null>;
+  nameMap: Map<number, string>;
   phantom: MarketData;
   dc: MarketData;
   craftIntermediates: boolean;
@@ -21,6 +22,7 @@ export function RecipeModal({
   item,
   recipe,
   recipeMap,
+  nameMap,
   phantom,
   dc,
   craftIntermediates,
@@ -30,7 +32,11 @@ export function RecipeModal({
   onChangeCraftTime,
   onClose,
 }: Props) {
-  const ingredientName = (id: number) => (recipeMap.get(id) ? `(craftable) #${id}` : `#${id}`);
+  const ingredientName = (id: number) => {
+    const name = nameMap.get(id);
+    if (!name) return `#${id}`;
+    return recipeMap.get(id) ? `${name} (craftable)` : name;
+  };
 
   return (
     <div
