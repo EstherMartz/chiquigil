@@ -1,0 +1,40 @@
+import { describe, it, expect, beforeEach } from 'vitest';
+import { useWatchlistStore, defaultWatchlist } from './watchlistStore';
+
+beforeEach(() => {
+  localStorage.clear();
+  useWatchlistStore.setState(defaultWatchlist());
+});
+
+describe('watchlist store', () => {
+  it('starts with default starter pack toggles', () => {
+    const s = useWatchlistStore.getState();
+    expect(s.starterPacks['raid-current']).toBe(true);
+    expect(s.starterPacks['housing-faves']).toBe(false);
+    expect(s.customItems).toEqual([]);
+  });
+
+  it('togglePack flips a pack on/off', () => {
+    useWatchlistStore.getState().togglePack('housing-faves');
+    expect(useWatchlistStore.getState().starterPacks['housing-faves']).toBe(true);
+    useWatchlistStore.getState().togglePack('housing-faves');
+    expect(useWatchlistStore.getState().starterPacks['housing-faves']).toBe(false);
+  });
+
+  it('addCustomItem appends and dedupes by id', () => {
+    const item = { id: 12345, name: 'Test Item', crafter: 'CRP' as const, lvl: 90, cat: 'Glamour' as const };
+    useWatchlistStore.getState().addCustomItem(item);
+    useWatchlistStore.getState().addCustomItem(item);
+    expect(useWatchlistStore.getState().customItems).toHaveLength(1);
+    expect(useWatchlistStore.getState().customItems[0].id).toBe(12345);
+  });
+
+  it('removeCustomItem drops by id', () => {
+    const a = { id: 1, name: 'A', crafter: 'CRP' as const, lvl: 1, cat: 'Glamour' as const };
+    const b = { id: 2, name: 'B', crafter: 'WVR' as const, lvl: 1, cat: 'Glamour' as const };
+    useWatchlistStore.getState().addCustomItem(a);
+    useWatchlistStore.getState().addCustomItem(b);
+    useWatchlistStore.getState().removeCustomItem(1);
+    expect(useWatchlistStore.getState().customItems.map((i) => i.id)).toEqual([2]);
+  });
+});
