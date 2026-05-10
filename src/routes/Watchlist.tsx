@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useSettingsStore } from '../features/settings/store';
 import { useWatchlistStore } from '../features/items/watchlistStore';
 import { useUiStore } from '../features/ui/uiStore';
@@ -9,13 +9,15 @@ import { buildRows } from '../features/watchlist/buildRows';
 import { filterAndSort } from '../features/watchlist/filterSort';
 import { WatchlistTable } from '../features/watchlist/WatchlistTable';
 import { FilterBar } from '../features/watchlist/FilterBar';
+import { RecipeModal } from '../features/profit/RecipeModal';
 import { Spinner } from '../components/Spinner';
 import { StatusBanner } from '../components/StatusBanner';
 
 export default function Watchlist() {
   const { world, dc, retainerLevels } = useSettingsStore();
-  const { starterPacks, customItems, perItemFlags } = useWatchlistStore();
+  const { starterPacks, customItems, perItemFlags, setCraftIntermediates } = useWatchlistStore();
   const ui = useUiStore();
+  const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
 
   const items = useMemo(() => {
     const fromPacks = allItemsFromEnabledPacks(starterPacks);
@@ -36,6 +38,9 @@ export default function Watchlist() {
   }, [items, market.data, recipes.data, retainerLevels, perItemFlags]);
 
   const filtered = useMemo(() => filterAndSort(rows, ui), [rows, ui]);
+
+  const selected = selectedItemId != null ? items.find((i) => i.id === selectedItemId) : undefined;
+  const selectedRecipe = selected && recipes.data?.get(selected.id);
 
   return (
     <div className="max-w-7xl mx-auto px-4">
@@ -58,7 +63,20 @@ export default function Watchlist() {
       {(market.isLoading || recipes.isLoading) && (
         <div className="py-6"><Spinner label="Fetching market data + recipes…" /></div>
       )}
-      {!market.isLoading && !recipes.isLoading && <WatchlistTable rows={filtered} />}
+      {!market.isLoading && !recipes.isLoading && <WatchlistTable rows={filtered} onSelect={setSelectedItemId} />}
+
+      {selected && selectedRecipe && market.data && (
+        <RecipeModal
+          item={selected}
+          recipe={selectedRecipe}
+          recipeMap={recipes.data!}
+          phantom={market.data.phantom}
+          dc={market.data.dc}
+          craftIntermediates={!!perItemFlags[selected.id]?.craftIntermediates}
+          onToggleCraftIntermediates={(v) => setCraftIntermediates(selected.id, v)}
+          onClose={() => setSelectedItemId(null)}
+        />
+      )}
     </div>
   );
 }

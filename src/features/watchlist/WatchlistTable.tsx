@@ -13,7 +13,7 @@ const COLS: { key: SortKey; label: string; align?: 'right'; hideOnMobile?: boole
   { key: 'spd', label: 'Velocity', align: 'right', hideOnMobile: true },
 ];
 
-export function WatchlistTable({ rows }: { rows: WatchlistRow[] }) {
+export function WatchlistTable({ rows, onSelect }: { rows: WatchlistRow[]; onSelect: (id: number) => void }) {
   const { sortKey, sortDir, setSort } = useUiStore();
 
   if (rows.length === 0) {
@@ -50,14 +50,12 @@ export function WatchlistTable({ rows }: { rows: WatchlistRow[] }) {
           {rows.map((r) => (
             <tr key={r.id} className="border-t border-border-base hover:bg-bg-card-hi">
               <td className="px-3 py-2.5">
-                <a
-                  href={`https://universalis.app/market/${r.id}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-text-cream hover:border-b hover:border-aether border-b border-transparent"
+                <button
+                  onClick={() => onSelect(r.id)}
+                  className="text-text-cream hover:text-aether text-left"
                 >
                   {r.name}
-                </a>
+                </button>
                 <div className="font-mono text-[10px] text-text-low mt-0.5">
                   {r.cat}{r.subcat ? ` · ${r.subcat}` : ''}
                   {r.staleDays != null && r.staleDays > 3 && (
