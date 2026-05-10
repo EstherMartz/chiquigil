@@ -53,6 +53,15 @@ The Home page is now a session planner. Tell it how many minutes you have, pick 
 
 Items below your levels (`craftStatus !== 'ok'`) are excluded automatically.
 
+## Phase 4 — Polish
+
+- **Real ingredient names** in the recipe modal (XIVAPI item-name cache, IndexedDB).
+- **30-day sparklines** for price + quantity sold per item, fetched lazily when the modal opens.
+- **Backup & restore** in Settings: export your settings + watchlist as JSON; import to restore.
+- **Mobile UX:** sticky session summary, larger strategy chips.
+
+The recipe cache and item-name cache are both in IndexedDB (`ffxiv-helper` DB). "Clear recipe cache" in Settings only clears recipes — names stick around independently.
+
 ## Legacy
 
 The original single-file artifact lives in `legacy/phantom_crafting_tracker.html` for reference.
