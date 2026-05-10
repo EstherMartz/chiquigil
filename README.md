@@ -62,6 +62,16 @@ Items below your levels (`craftStatus !== 'ok'`) are excluded automatically.
 
 The recipe cache and item-name cache are both in IndexedDB (`ffxiv-helper` DB). "Clear recipe cache" in Settings only clears recipes — names stick around independently.
 
+## Home Hub update
+
+Most setup options now live on Home as collapsible panels (closed by default):
+- Session defaults (overhead, default craft, batch cap)
+- Retainer levels
+- World &amp; Data Center
+- Watchlist (starter packs + custom items)
+
+Click a starter pack to expand it and uncheck individual items you don't want — exclusions are remembered. Three new packs added: Materia XI, crafted minions, classic glamour. The Settings page is now just the recipe cache and backup/restore.
+
 ## Legacy
 
 The original single-file artifact lives in `legacy/phantom_crafting_tracker.html` for reference.
