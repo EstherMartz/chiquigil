@@ -1,5 +1,5 @@
 export type CrafterCode = 'CRP' | 'BSM' | 'ARM' | 'GSM' | 'LTW' | 'WVR' | 'ALC' | 'CUL' | 'ANY';
-export type ItemCategory = 'Raid' | 'Tincture' | 'Food' | 'Dye' | 'Glamour' | 'Housing' | 'Materia';
+export type ItemCategory = 'Raid' | 'Tincture' | 'Food' | 'Dye' | 'Glamour' | 'Housing' | 'Materia' | 'Minion';
 
 export interface TrackedItem {
   id: number;
@@ -16,7 +16,10 @@ export type StarterPackId =
   | 'food-7x'
   | 'dyes'
   | 'materia-xii'
+  | 'materia-xi'
+  | 'minions-crafted'
   | 'glamour-faves'
+  | 'glamour-classic'
   | 'housing-faves';
 
 export interface StarterPack {

@@ -70,6 +70,28 @@ const materiaXii: TrackedItem[] = [
   { id: 41782, name: 'Quicktongue Materia XII',  crafter: 'ANY', lvl: 100, cat: 'Materia' },
 ];
 
+const materiaXi: TrackedItem[] = [
+  { id: 41758, name: "Heavens' Eye Materia XI",  crafter: 'ANY', lvl: 100, cat: 'Materia' },
+  { id: 41759, name: 'Savage Aim Materia XI',    crafter: 'ANY', lvl: 100, cat: 'Materia' },
+  { id: 41760, name: 'Savage Might Materia XI',  crafter: 'ANY', lvl: 100, cat: 'Materia' },
+  { id: 41761, name: 'Battledance Materia XI',   crafter: 'ANY', lvl: 100, cat: 'Materia' },
+  { id: 41768, name: 'Quickarm Materia XI',      crafter: 'ANY', lvl: 100, cat: 'Materia' },
+  { id: 41769, name: 'Quicktongue Materia XI',   crafter: 'ANY', lvl: 100, cat: 'Materia' },
+];
+
+const minionsCrafted: TrackedItem[] = [
+  { id: 7558, name: 'Wind-up Moogle',    crafter: 'WVR', lvl: 50, cat: 'Minion' },
+  { id: 6184, name: 'Wind-up Tonberry',  crafter: 'LTW', lvl: 50, cat: 'Minion' },
+  { id: 7560, name: 'Wind-up Sun',       crafter: 'WVR', lvl: 50, cat: 'Minion' },
+  { id: 6212, name: 'Wind-up Cursor',    crafter: 'LTW', lvl: 50, cat: 'Minion' },
+  { id: 10074, name: 'Wind-up Alphinaud', crafter: 'LTW', lvl: 50, cat: 'Minion' },
+  { id: 8721, name: 'Wind-up Nanamo',     crafter: 'CUL', lvl: 50, cat: 'Minion' },
+];
+
+const glamourClassic: TrackedItem[] = [
+  { id: 3018, name: 'Hempen Robe', crafter: 'WVR', lvl: 50, cat: 'Glamour' },
+];
+
 const glamourFaves: TrackedItem[] = [
   { id: 29435, name: 'Neo-Ishgardian Top of Striking', crafter: 'LTW', lvl: 80, cat: 'Glamour' },
   { id: 29429, name: 'Neo-Ishgardian Top of Maiming',  crafter: 'ARM', lvl: 80, cat: 'Glamour' },
@@ -120,13 +142,16 @@ const housingFaves: TrackedItem[] = [
 ];
 
 export const STARTER_PACKS: StarterPack[] = [
-  { id: 'raid-current',   label: 'Current raid set (7.x)',  defaultOn: true,  items: raidCurrent },
-  { id: 'tinctures-g4',   label: 'Tinctures (Grade 4)',     defaultOn: true,  items: tincturesG4 },
-  { id: 'food-7x',        label: 'Food (7.x)',              defaultOn: true,  items: food7x },
-  { id: 'dyes',           label: 'General-purpose dyes',    defaultOn: true,  items: dyes },
-  { id: 'materia-xii',    label: 'Materia XII',             defaultOn: true,  items: materiaXii },
-  { id: 'glamour-faves',  label: 'Glamour favourites',      defaultOn: false, items: glamourFaves },
-  { id: 'housing-faves',  label: 'Housing favourites',      defaultOn: false, items: housingFaves },
+  { id: 'raid-current',    label: 'Current raid set (7.x)',  defaultOn: true,  items: raidCurrent },
+  { id: 'tinctures-g4',    label: 'Tinctures (Grade 4)',     defaultOn: true,  items: tincturesG4 },
+  { id: 'food-7x',         label: 'Food (7.x)',              defaultOn: true,  items: food7x },
+  { id: 'dyes',            label: 'General-purpose dyes',    defaultOn: true,  items: dyes },
+  { id: 'materia-xii',     label: 'Materia XII',             defaultOn: true,  items: materiaXii },
+  { id: 'materia-xi',      label: 'Materia XI',              defaultOn: false, items: materiaXi },
+  { id: 'minions-crafted',  label: 'Crafted minions',        defaultOn: false, items: minionsCrafted },
+  { id: 'glamour-faves',   label: 'Glamour favourites',      defaultOn: false, items: glamourFaves },
+  { id: 'glamour-classic', label: 'Classic glamour',         defaultOn: false, items: glamourClassic },
+  { id: 'housing-faves',   label: 'Housing favourites',      defaultOn: false, items: housingFaves },
 ];
 
 export type StarterPackToggles = Record<StarterPackId, boolean>;

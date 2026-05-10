@@ -1,6 +1,6 @@
 import { useUiStore } from '../ui/uiStore';
 
-const CATS = ['All', 'Raid', 'Tincture', 'Food', 'Dye', 'Glamour', 'Housing', 'Materia'];
+const CATS = ['All', 'Raid', 'Tincture', 'Food', 'Dye', 'Glamour', 'Housing', 'Materia', 'Minion'];
 const CRAFTERS = ['All', 'LTW', 'WVR', 'CUL', 'ALC', 'CRP', 'GSM', 'ARM', 'BSM', 'ANY'];
 
 export function FilterBar() {

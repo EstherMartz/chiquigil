@@ -2,11 +2,11 @@ import { describe, it, expect } from 'vitest';
 import { STARTER_PACKS, allItemsFromEnabledPacks, type StarterPackToggles } from './starterPacks';
 
 describe('STARTER_PACKS', () => {
-  it('has all seven packs', () => {
+  it('has all ten packs', () => {
     const ids = STARTER_PACKS.map((p) => p.id).sort();
     expect(ids).toEqual([
-      'dyes', 'food-7x', 'glamour-faves', 'housing-faves',
-      'materia-xii', 'raid-current', 'tinctures-g4',
+      'dyes', 'food-7x', 'glamour-classic', 'glamour-faves', 'housing-faves',
+      'materia-xi', 'materia-xii', 'minions-crafted', 'raid-current', 'tinctures-g4',
     ]);
   });
 
@@ -26,7 +26,7 @@ describe('STARTER_PACKS', () => {
 
 describe('allItemsFromEnabledPacks', () => {
   it('returns the union of items from enabled packs, deduped by id', () => {
-    const enabled = { 'raid-current': true, 'tinctures-g4': true, 'food-7x': false, 'dyes': false, 'materia-xii': false, 'glamour-faves': false, 'housing-faves': false } as const;
+    const enabled = { 'raid-current': true, 'tinctures-g4': true, 'food-7x': false, 'dyes': false, 'materia-xii': false, 'materia-xi': false, 'minions-crafted': false, 'glamour-faves': false, 'glamour-classic': false, 'housing-faves': false } as const;
     const items = allItemsFromEnabledPacks(enabled);
     const ids = new Set(items.map((i) => i.id));
     expect(ids.size).toBe(items.length);
@@ -38,7 +38,7 @@ describe('allItemsFromEnabledPacks', () => {
   it('respects the excluded set when given', () => {
     const enabled: StarterPackToggles = {
       'raid-current': true, 'tinctures-g4': false, 'food-7x': false, 'dyes': false,
-      'materia-xii': false, 'glamour-faves': false, 'housing-faves': false,
+      'materia-xii': false, 'materia-xi': false, 'minions-crafted': false, 'glamour-faves': false, 'glamour-classic': false, 'housing-faves': false,
     };
     const excluded = new Set([49281]); // a raid item
     const items = allItemsFromEnabledPacks(enabled, excluded);

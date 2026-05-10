@@ -5,7 +5,7 @@ import type { TrackedItem, CrafterCode, ItemCategory } from '../items/types';
 import { Spinner } from '../../components/Spinner';
 
 const CRAFTERS: CrafterCode[] = ['CRP', 'BSM', 'ARM', 'GSM', 'LTW', 'WVR', 'ALC', 'CUL', 'ANY'];
-const CATS: ItemCategory[] = ['Raid', 'Tincture', 'Food', 'Dye', 'Glamour', 'Housing', 'Materia'];
+const CATS: ItemCategory[] = ['Raid', 'Tincture', 'Food', 'Dye', 'Glamour', 'Housing', 'Materia', 'Minion'];
 
 export function AddItemSearch() {
   const [q, setQ] = useState('');
