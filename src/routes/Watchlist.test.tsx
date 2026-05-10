@@ -35,14 +35,29 @@ describe('Watchlist route', () => {
           json: async () => ({
             items: {
               '49281': { listings: [{ hq: false, pricePerUnit: 250000 }], recentHistory: [], regularSaleVelocity: 2.5, lastUploadTime: Date.now() },
+              '7':     { listings: [{ hq: false, pricePerUnit: 1000 }], recentHistory: [], regularSaleVelocity: 0, lastUploadTime: Date.now() },
             },
           }),
         });
       }
-      // XIVAPI recipe lookup — return empty results for all items (sale-only)
+      // XIVAPI recipe for 49281, empty for any other item id
       return Promise.resolve({
         ok: true,
-        json: async () => ({ results: [] }),
+        json: async () => {
+          const isFor49281 = url.includes('ItemResult%3D49281');
+          return isFor49281
+            ? {
+                results: [{
+                  fields: {
+                    ItemResult: { value: 49281 },
+                    CraftType: { fields: { Name: 'Leatherworker' } },
+                    RecipeLevelTable: { fields: { ClassJobLevel: 100 } },
+                    Ingredient0: { value: 7 }, AmountIngredient0: 5,
+                  },
+                }],
+              }
+            : { results: [] };
+        },
       });
     }));
 
@@ -51,5 +66,9 @@ describe('Watchlist route', () => {
     await waitFor(() => {
       expect(screen.getByText(/Courtly Lover's Temple Chain of Striking/)).toBeInTheDocument();
     });
+
+    await waitFor(() => {
+      expect(screen.getByText(/245k/)).toBeInTheDocument();
+    }, { timeout: 3000 });
   });
 });
