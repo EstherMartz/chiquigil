@@ -48,4 +48,22 @@ describe('watchlist store', () => {
     useWatchlistStore.getState().setCraftIntermediates(123, false);
     expect(useWatchlistStore.getState().perItemFlags[123]?.craftIntermediates).toBe(false);
   });
+
+  it('setCraftTime stores per-item override', () => {
+    useWatchlistStore.getState().setCraftTime(42, 90);
+    expect(useWatchlistStore.getState().perItemFlags[42]?.craftTimeSeconds).toBe(90);
+  });
+
+  it('setCraftTime preserves craftIntermediates flag when updating time', () => {
+    useWatchlistStore.getState().setCraftIntermediates(42, true);
+    useWatchlistStore.getState().setCraftTime(42, 75);
+    expect(useWatchlistStore.getState().perItemFlags[42]).toEqual({ craftIntermediates: true, craftTimeSeconds: 75 });
+  });
+
+  it('setCraftTime with 0 or undefined removes the override but keeps other flags', () => {
+    useWatchlistStore.getState().setCraftIntermediates(42, true);
+    useWatchlistStore.getState().setCraftTime(42, 75);
+    useWatchlistStore.getState().setCraftTime(42, 0);
+    expect(useWatchlistStore.getState().perItemFlags[42]).toEqual({ craftIntermediates: true });
+  });
 });

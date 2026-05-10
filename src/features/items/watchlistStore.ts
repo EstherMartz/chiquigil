@@ -13,6 +13,7 @@ export interface WatchlistState {
   addCustomItem: (item: TrackedItem) => void;
   removeCustomItem: (id: number) => void;
   setCraftIntermediates: (itemId: number, value: boolean) => void;
+  setCraftTime: (itemId: number, seconds: number | undefined) => void;
 }
 
 export function defaultWatchlist(): Pick<WatchlistState, '_v' | 'starterPacks' | 'customItems' | 'perItemFlags'> {
@@ -31,6 +32,19 @@ export const useWatchlistStore = create<WatchlistState>()(
       setCraftIntermediates: (itemId, value) => set((s) => ({
         perItemFlags: { ...s.perItemFlags, [itemId]: { ...s.perItemFlags[itemId], craftIntermediates: value } },
       })),
+      setCraftTime: (itemId, seconds) => set((s) => {
+        const next = { ...s.perItemFlags };
+        const existing = next[itemId];
+        if (seconds == null || seconds <= 0) {
+          if (existing) {
+            const { craftTimeSeconds: _drop, ...rest } = existing;
+            next[itemId] = Object.keys(rest).length ? rest : undefined;
+          }
+        } else {
+          next[itemId] = { ...existing, craftTimeSeconds: seconds };
+        }
+        return { perItemFlags: next };
+      }),
     }),
     { name: 'ffxiv-helper:watchlist' },
   ),

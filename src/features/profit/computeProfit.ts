@@ -3,6 +3,7 @@ import type { MarketData } from '../../lib/universalis';
 
 export interface PerItemFlags {
   craftIntermediates?: boolean;
+  craftTimeSeconds?: number;
 }
 export type FlagMap = Record<number, PerItemFlags | undefined>;
 
