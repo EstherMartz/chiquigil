@@ -97,6 +97,7 @@ export default function Watchlist() {
           defaultCraftTimeSeconds={defaultCraftTimeSeconds}
           onChangeCraftTime={(v) => setCraftTime(selected.id, v ?? 0)}
           onClose={() => setSelectedItemId(null)}
+          historyScope={dc}
         />
       )}
     </div>

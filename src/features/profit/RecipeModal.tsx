@@ -2,6 +2,8 @@ import type { Recipe } from '../../lib/recipes';
 import type { MarketData } from '../../lib/universalis';
 import type { TrackedItem } from '../items/types';
 import { fmtGil } from '../../lib/format';
+import { useItemHistory } from './useItemHistory';
+import { Sparkline } from '../../components/Sparkline';
 
 interface Props {
   item: TrackedItem;
@@ -16,6 +18,7 @@ interface Props {
   defaultCraftTimeSeconds: number;
   onChangeCraftTime: (seconds: number | undefined) => void;
   onClose: () => void;
+  historyScope: string;
 }
 
 export function RecipeModal({
@@ -31,12 +34,15 @@ export function RecipeModal({
   defaultCraftTimeSeconds,
   onChangeCraftTime,
   onClose,
+  historyScope,
 }: Props) {
   const ingredientName = (id: number) => {
     const name = nameMap.get(id);
     if (!name) return `#${id}`;
     return recipeMap.get(id) ? `${name} (craftable)` : name;
   };
+
+  const history = useItemHistory(item.id, historyScope, 30);
 
   return (
     <div
@@ -114,6 +120,33 @@ export function RecipeModal({
         <div className="text-xs text-text-low font-mono">
           Note: Phase 2 looks up ingredient names by id only. Names land in Phase 4 via XIVAPI item-name cache.
         </div>
+
+        <section className="border-t border-border-base pt-4 mt-4">
+          <h4 className="font-mono text-[10px] tracking-widest text-text-low uppercase mb-2">30-day history (DC)</h4>
+          {history.isLoading && <span className="font-mono text-xs text-text-low">Loading…</span>}
+          {history.isError && <span className="font-mono text-xs text-crimson">Failed to load history</span>}
+          {history.data && history.data.length === 0 && (
+            <span className="font-mono text-xs text-text-low">No recent sales.</span>
+          )}
+          {history.data && history.data.length > 0 && (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <div className="font-mono text-[10px] text-text-low mb-1">Mean price</div>
+                <Sparkline points={history.data.map((b) => b.meanPrice)} width={200} height={32} className="text-aether" />
+                <div className="font-mono text-[10px] text-text-low mt-1">
+                  {fmtGil(history.data[0].meanPrice)} → {fmtGil(history.data[history.data.length - 1].meanPrice)}
+                </div>
+              </div>
+              <div>
+                <div className="font-mono text-[10px] text-text-low mb-1">Daily quantity sold</div>
+                <Sparkline points={history.data.map((b) => b.quantity)} width={200} height={32} className="text-gold" />
+                <div className="font-mono text-[10px] text-text-low mt-1">
+                  {history.data.length} active days, total {history.data.reduce((a, b) => a + b.quantity, 0)} sold
+                </div>
+              </div>
+            </div>
+          )}
+        </section>
       </div>
     </div>
   );
