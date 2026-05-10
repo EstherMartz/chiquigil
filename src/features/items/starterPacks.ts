@@ -135,13 +135,16 @@ export function defaultStarterToggles(): StarterPackToggles {
   return Object.fromEntries(STARTER_PACKS.map((p) => [p.id, p.defaultOn])) as StarterPackToggles;
 }
 
-export function allItemsFromEnabledPacks(toggles: StarterPackToggles): TrackedItem[] {
+export function allItemsFromEnabledPacks(
+  toggles: StarterPackToggles,
+  excluded: Set<number> = new Set(),
+): TrackedItem[] {
   const seen = new Set<number>();
   const out: TrackedItem[] = [];
   for (const pack of STARTER_PACKS) {
     if (!toggles[pack.id]) continue;
     for (const item of pack.items) {
-      if (seen.has(item.id)) continue;
+      if (seen.has(item.id) || excluded.has(item.id)) continue;
       seen.add(item.id);
       out.push(item);
     }

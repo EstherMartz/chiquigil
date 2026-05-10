@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { STARTER_PACKS, allItemsFromEnabledPacks } from './starterPacks';
+import { STARTER_PACKS, allItemsFromEnabledPacks, type StarterPackToggles } from './starterPacks';
 
 describe('STARTER_PACKS', () => {
   it('has all seven packs', () => {
@@ -33,5 +33,16 @@ describe('allItemsFromEnabledPacks', () => {
     expect(ids.has(49281)).toBe(true); // raid
     expect(ids.has(49234)).toBe(true); // gemdraught of strength
     expect(ids.has(49232)).toBe(false); // food, disabled
+  });
+
+  it('respects the excluded set when given', () => {
+    const enabled: StarterPackToggles = {
+      'raid-current': true, 'tinctures-g4': false, 'food-7x': false, 'dyes': false,
+      'materia-xii': false, 'glamour-faves': false, 'housing-faves': false,
+    };
+    const excluded = new Set([49281]); // a raid item
+    const items = allItemsFromEnabledPacks(enabled, excluded);
+    expect(items.some((i) => i.id === 49281)).toBe(false);
+    expect(items.length).toBeGreaterThan(0);
   });
 });

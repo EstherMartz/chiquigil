@@ -22,7 +22,7 @@ const CRAFTERS: CrafterCode[] = ['CRP', 'BSM', 'ARM', 'GSM', 'LTW', 'WVR', 'ALC'
 
 export default function SessionPlanner() {
   const settings = useSettingsStore();
-  const { starterPacks, customItems, perItemFlags } = useWatchlistStore();
+  const { starterPacks, customItems, perItemFlags, excludedItems } = useWatchlistStore();
 
   const [minutes, setMinutes] = useState(60);
   const [strategy, setStrategy] = useState<SessionStrategy>('balanced');
@@ -30,10 +30,10 @@ export default function SessionPlanner() {
   const [minProfit, setMinProfit] = useState<number | undefined>(undefined);
 
   const items = useMemo(() => {
-    const fromPacks = allItemsFromEnabledPacks(starterPacks);
+    const fromPacks = allItemsFromEnabledPacks(starterPacks, new Set(excludedItems));
     const seen = new Set(fromPacks.map((i) => i.id));
-    return [...fromPacks, ...customItems.filter((i) => !seen.has(i.id))];
-  }, [starterPacks, customItems]);
+    return [...fromPacks, ...customItems.filter((i) => !seen.has(i.id) && !excludedItems.includes(i.id))];
+  }, [starterPacks, customItems, excludedItems]);
 
   const ids = useMemo(() => items.map((i) => i.id), [items]);
   const market = useMarketData(ids, settings.world, settings.dc);

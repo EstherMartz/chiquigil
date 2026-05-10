@@ -16,15 +16,15 @@ import { StatusBanner } from '../components/StatusBanner';
 
 export default function Watchlist() {
   const { world, dc, retainerLevels, defaultCraftTimeSeconds } = useSettingsStore();
-  const { starterPacks, customItems, perItemFlags, setCraftIntermediates, setCraftTime } = useWatchlistStore();
+  const { starterPacks, customItems, perItemFlags, excludedItems, setCraftIntermediates, setCraftTime } = useWatchlistStore();
   const ui = useUiStore();
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
 
   const items = useMemo(() => {
-    const fromPacks = allItemsFromEnabledPacks(starterPacks);
+    const fromPacks = allItemsFromEnabledPacks(starterPacks, new Set(excludedItems));
     const seen = new Set(fromPacks.map((i) => i.id));
-    return [...fromPacks, ...customItems.filter((i) => !seen.has(i.id))];
-  }, [starterPacks, customItems]);
+    return [...fromPacks, ...customItems.filter((i) => !seen.has(i.id) && !excludedItems.includes(i.id))];
+  }, [starterPacks, customItems, excludedItems]);
 
   const ids = useMemo(() => items.map((i) => i.id), [items]);
   const market = useMarketData(ids, world, dc);
