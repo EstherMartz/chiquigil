@@ -1,5 +1,7 @@
 import type { StarterPack, StarterPackId, TrackedItem } from './types';
 
+export type { StarterPackId };
+
 const raidCurrent: TrackedItem[] = [
   { id: 49281, name: "Courtly Lover's Temple Chain of Striking", crafter: 'LTW', lvl: 100, cat: 'Raid', subcat: 'Head' },
   { id: 49282, name: "Courtly Lover's Cloak of Striking",        crafter: 'LTW', lvl: 100, cat: 'Raid', subcat: 'Body' },
