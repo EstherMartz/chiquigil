@@ -78,11 +78,19 @@ describe('PRESETS', () => {
 
   it('categorizes craft presets correctly', () => {
     const craftIds = PRESETS.filter((p) => p.category === 'craft').map((p) => p.id).sort();
-    expect(craftIds).toEqual(['craft-flip', 'undersupply']);
+    expect(craftIds).toEqual(['craft-flip', 'housing-crafts', 'materials-crafts', 'undersupply']);
   });
 
   it('categorizes trading presets correctly', () => {
     const tradingIds = PRESETS.filter((p) => p.category === 'trading').map((p) => p.id).sort();
-    expect(tradingIds).toEqual(['fast-sellers-hq', 'food-potions', 'furnishings', 'mega-value-hq', 'reposts']);
+    expect(tradingIds).toEqual([
+      'fast-sellers-hq',
+      'food-potions',
+      'furnishings',
+      'high-value-materials',
+      'mega-value-hq',
+      'minions-quick-sell',
+      'reposts',
+    ]);
   });
 });

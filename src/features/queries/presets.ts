@@ -53,6 +53,35 @@ export const PRESETS: QueryPreset[] = [
               minPrice: null, maxPrice: null, sort: 'gilFlow', limit: 100,
               scope: 'home', maxListings: null, mode: 'repost', minGap: 10_000 },
   },
+  {
+    id: 'housing-crafts', label: 'Housing Crafts', category: 'craft',
+    desc: 'Craftable housing items ranked by home-world (sale − material cost) × velocity.',
+    filter: { searchCategories: categoriesByGroup('Housing'), hq: 'either', minDealPct: 0, minVelocity: 1,
+              minPrice: null, maxPrice: null, sort: 'gilFlow', limit: 100,
+              scope: 'home', maxListings: null, mode: 'craft', minGap: null },
+  },
+  {
+    id: 'materials-crafts', label: 'Materials Crafts', category: 'craft',
+    desc: 'Craftable materials (intermediates) ranked by home-world (sale − material cost) × velocity.',
+    filter: { searchCategories: categoriesByGroup('Materials'), hq: 'either', minDealPct: 0, minVelocity: 1,
+              minPrice: null, maxPrice: null, sort: 'gilFlow', limit: 100,
+              scope: 'home', maxListings: null, mode: 'craft', minGap: null },
+  },
+  {
+    id: 'high-value-materials', label: 'High-value materials', category: 'trading',
+    desc: 'Materials priced ≥100k on the DC, sorted by gil/day.',
+    filter: { searchCategories: categoriesByGroup('Materials'), hq: 'either', minDealPct: 0, minVelocity: 0,
+              minPrice: 100_000, maxPrice: null, sort: 'gilFlow', limit: 100,
+              scope: 'dc', maxListings: null, mode: 'standard', minGap: null },
+  },
+  {
+    id: 'minions-quick-sell', label: 'Minions quick sell', category: 'trading',
+    desc: 'Minions ≤50k with ≥1 sale/day on the DC. Cheap, fast churn.',
+    // Category 75: Minions — see itemSearchCategories.ts
+    filter: { searchCategories: [75], hq: 'either', minDealPct: 0, minVelocity: 1,
+              minPrice: null, maxPrice: 50_000, sort: 'gilFlow', limit: 100,
+              scope: 'dc', maxListings: null, mode: 'standard', minGap: null },
+  },
 ];
 
 export function getPreset(id: string): QueryPreset | undefined {
