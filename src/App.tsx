@@ -4,6 +4,7 @@ import Home from './routes/Home';
 import Watchlist from './routes/Watchlist';
 import Insights from './routes/Insights';
 import Crafts from './routes/Crafts';
+import Trading from './routes/Trading';
 import Settings from './routes/Settings';
 
 export default function App() {
@@ -15,6 +16,7 @@ export default function App() {
         <Route path="/watchlist" element={<Watchlist />} />
         <Route path="/insights" element={<Insights />} />
         <Route path="/crafts" element={<Crafts />} />
+        <Route path="/trading" element={<Trading />} />
         <Route path="/queries" element={<Navigate to="/crafts" replace />} />
         <Route path="/settings" element={<Settings />} />
       </Routes>
