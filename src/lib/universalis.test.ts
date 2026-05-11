@@ -81,4 +81,12 @@ describe('fetchMarketData', () => {
     const out = await fetchMarketData('Phantom', [1]);
     expect(out['1'].minNQ).toBe(99);
   });
+
+  it('short-circuits to empty result for empty id list (no network call)', async () => {
+    const fetchSpy = vi.fn();
+    vi.stubGlobal('fetch', fetchSpy);
+    const out = await fetchMarketData('Phantom', []);
+    expect(out).toEqual({});
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
 });
