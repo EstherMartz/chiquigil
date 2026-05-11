@@ -2,7 +2,6 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { Header } from './components/layout/Header';
 import Home from './routes/Home';
 import Watchlist from './routes/Watchlist';
-import Insights from './routes/Insights';
 import Crafts from './routes/Crafts';
 import Trading from './routes/Trading';
 import Settings from './routes/Settings';
@@ -14,10 +13,10 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/watchlist" element={<Watchlist />} />
-        <Route path="/insights" element={<Insights />} />
         <Route path="/crafts" element={<Crafts />} />
         <Route path="/trading" element={<Trading />} />
         <Route path="/queries" element={<Navigate to="/crafts" replace />} />
+        <Route path="/insights" element={<Navigate to="/trading" replace />} />
         <Route path="/settings" element={<Settings />} />
       </Routes>
     </div>

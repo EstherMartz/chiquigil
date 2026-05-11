@@ -25,7 +25,6 @@ export function Header() {
         <nav className="flex gap-1 items-center">
           <NavLink to="/" end className={navClass}>Home</NavLink>
           <NavLink to="/watchlist" className={navClass}>Watchlist</NavLink>
-          <NavLink to="/insights" className={navClass}>Insights</NavLink>
           <NavLink to="/crafts" className={navClass}>Crafts</NavLink>
           <NavLink to="/settings" className={navClass}>Settings</NavLink>
           <span className="border-l border-border-base h-5 mx-2" aria-hidden />
