@@ -1,11 +1,20 @@
 import { fmtGil } from '../../lib/format';
 import type { SessionResult, SessionStrategy } from './packSession';
 
+export interface SessionDiagnostics {
+  totalItems: number;
+  withRecipe: number;
+  craftableAtMyLevel: number;
+  profitable: number;
+  candidates: number;
+}
+
 interface Props {
   result: SessionResult | null;
   hasGenerated: boolean;
   strategy: SessionStrategy;
   stale: boolean;
+  diagnostics: SessionDiagnostics | null;
 }
 
 const STRATEGY_LABEL: Record<SessionStrategy, string> = {
@@ -14,7 +23,7 @@ const STRATEGY_LABEL: Record<SessionStrategy, string> = {
   patient: 'Patient',
 };
 
-export function SessionHero({ result, hasGenerated, strategy, stale }: Props) {
+export function SessionHero({ result, hasGenerated, strategy, stale, diagnostics }: Props) {
   if (!hasGenerated) {
     return (
       <article className="border border-border-base bg-bg-card p-6 sm:p-10 min-h-[320px] flex flex-col justify-center relative overflow-hidden">
@@ -42,6 +51,7 @@ export function SessionHero({ result, hasGenerated, strategy, stale }: Props) {
         <p className="font-body text-base text-text-dim mt-3 max-w-prose">
           Try a longer time, lower your minimum profit, widen the crafter, or pick a different strategy.
         </p>
+        {diagnostics && <Diagnostics d={diagnostics} />}
       </article>
     );
   }
@@ -73,6 +83,31 @@ export function SessionHero({ result, hasGenerated, strategy, stale }: Props) {
         <Stat label="Strategy" value={STRATEGY_LABEL[strategy]} small />
       </div>
     </article>
+  );
+}
+
+function Diagnostics({ d }: { d: SessionDiagnostics }) {
+  const rows: { label: string; value: number; lost?: boolean }[] = [
+    { label: 'Items in watchlist', value: d.totalItems },
+    { label: 'With a recipe', value: d.withRecipe, lost: d.withRecipe < d.totalItems },
+    { label: 'Craftable at your level', value: d.craftableAtMyLevel, lost: d.craftableAtMyLevel < d.withRecipe },
+    { label: 'Profitable (sale > materials)', value: d.profitable, lost: d.profitable < d.craftableAtMyLevel },
+    { label: 'Passed your filters', value: d.candidates, lost: d.candidates < d.profitable },
+  ];
+  return (
+    <div className="mt-6 pt-4 border-t border-border-base">
+      <div className="font-mono text-[9px] tracking-[0.3em] uppercase text-text-low mb-2">Why?</div>
+      <dl className="space-y-1 font-mono text-[11px]">
+        {rows.map((r) => (
+          <div key={r.label} className="flex justify-between gap-4">
+            <dt className="text-text-dim">{r.label}</dt>
+            <dd className={`tabular-nums ${r.value === 0 ? 'text-crimson' : r.lost ? 'text-gold' : 'text-text-cream'}`}>
+              {r.value}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </div>
   );
 }
 

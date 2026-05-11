@@ -60,7 +60,7 @@ export default function SessionPlanner() {
   const recipes = useRecipes(ids);
   const dataReady = !!market.data && !!recipes.data;
 
-  const result = useMemo(() => {
+  const computed = useMemo(() => {
     if (!committed || !market.data || !recipes.data) return null;
     const rows = buildRows(
       items,
@@ -77,17 +77,27 @@ export default function SessionPlanner() {
       crafterLock: committed.crafterLock,
       minProfit: committed.minProfit,
     });
-    return packSession(candidates, {
+    const result = packSession(candidates, {
       budgetMinutes: committed.minutes,
       overheadMinutes: settings.overheadMinutes,
       batchCapDays: settings.batchCapDays,
       strategy: committed.strategy,
     });
+    const diagnostics = {
+      totalItems: rows.length,
+      withRecipe: rows.filter((r) => r.craftable === true).length,
+      craftableAtMyLevel: rows.filter((r) => r.craftable === true && r.craftStatus === 'ok').length,
+      profitable: rows.filter((r) => r.craftable === true && r.craftStatus === 'ok' && r.profit != null && r.profit > 0).length,
+      candidates: candidates.length,
+    };
+    return { result, diagnostics };
   }, [
     committed, items, market.data, recipes.data,
     settings.retainerLevels, settings.defaultCraftTimeSeconds, settings.overheadMinutes, settings.batchCapDays,
     perItemFlags,
   ]);
+  const result = computed?.result ?? null;
+  const diagnostics = computed?.diagnostics ?? null;
 
   function generate() {
     setCommitted({ minutes, strategy, crafterLock, minProfit });
@@ -114,6 +124,7 @@ export default function SessionPlanner() {
           hasGenerated={committed != null}
           strategy={committed?.strategy ?? strategy}
           stale={stale}
+          diagnostics={diagnostics}
         />
         <SessionForm
           minutes={minutes} setMinutes={setMinutes}
