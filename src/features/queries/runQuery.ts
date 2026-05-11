@@ -52,6 +52,7 @@ export function runQuery(
     if (m.velocity < filter.minVelocity) continue;
     if (filter.minPrice != null && tier.unit < filter.minPrice) continue;
     if (filter.maxPrice != null && tier.unit > filter.maxPrice) continue;
+    if (filter.maxListings != null && m.listingCount > filter.maxListings) continue;
 
     out.push({
       id: item.id, name: item.name, sc: item.sc,
