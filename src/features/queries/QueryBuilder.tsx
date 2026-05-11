@@ -1,6 +1,6 @@
 import type { ChangeEvent } from 'react';
 import { ITEM_SEARCH_CATEGORIES, categoryLabel } from '../../lib/itemSearchCategories';
-import type { HqMode, QueryFilter, QueryScope, QuerySort } from './types';
+import type { HqMode, QueryFilter, QueryMode, QueryScope, QuerySort } from './types';
 
 interface Props {
   value: QueryFilter;
@@ -161,13 +161,17 @@ export function QueryBuilder({ value, onChange, onRun, busy }: Props) {
           />
         </label>
 
-        <label className="flex items-center gap-2 mt-5 text-sm">
-          <input
-            type="checkbox"
-            checked={value.craftableOnly}
-            onChange={(e) => patch({ craftableOnly: e.target.checked })}
-          />
-          <span>Craftable only <span className="text-text-low font-mono text-[10px]">(adds recipe lookup)</span></span>
+        <label className="block">
+          <span className="font-mono text-[10px] tracking-widest text-text-low uppercase">Mode</span>
+          <select
+            value={value.mode}
+            onChange={(e) => patch({ mode: e.target.value as QueryMode })}
+            className="mt-1 block w-full bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+          >
+            <option value="standard">Standard</option>
+            <option value="craft">Craft-flip</option>
+            <option value="repost">Reposts</option>
+          </select>
         </label>
       </div>
     </div>

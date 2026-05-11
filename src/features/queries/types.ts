@@ -1,6 +1,7 @@
 export type HqMode = 'hq' | 'nq' | 'either';
 export type QuerySort = 'discount' | 'gilFlow' | 'velocity' | 'unitPrice';
 export type QueryScope = 'home' | 'dc';
+export type QueryMode = 'standard' | 'craft' | 'repost';
 
 export interface QueryFilter {
   searchCategories: number[];
@@ -13,7 +14,8 @@ export interface QueryFilter {
   limit: number;
   scope: QueryScope;
   maxListings: number | null;
-  craftableOnly: boolean;
+  mode: QueryMode;
+  minGap: number | null;
 }
 
 export interface QueryPreset {
@@ -47,6 +49,20 @@ export interface CraftFlipRow {
   hq: boolean;
 }
 
+export interface RepostRow {
+  id: number;
+  name: string;
+  sc: number;
+  cheapest: number;
+  wall: number;
+  gap: number;
+  gapPct: number;
+  taxedProfit: number;
+  velocity: number;
+  gilPerDay: number;
+  hq: boolean;
+}
+
 export function filterHash(f: QueryFilter): string {
   return JSON.stringify({
     sc: [...f.searchCategories].sort((a, b) => a - b),
@@ -58,6 +74,7 @@ export function filterHash(f: QueryFilter): string {
     l: f.limit,
     scope: f.scope,
     ml: f.maxListings,
-    co: f.craftableOnly,
+    m: f.mode,
+    g: f.minGap,
   });
 }

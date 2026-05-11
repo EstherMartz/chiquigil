@@ -52,7 +52,7 @@ export default function Queries() {
         async (chunk) => fetchMarketData(target, chunk),
         { chunkSize: 100, concurrency: 4 },
       );
-      const narrowedIds = filter.craftableOnly
+      const narrowedIds = filter.mode === 'craft'
         ? narrowForCraftFlip(snapshot.data.items, result.data, filter)
         : [];
       return {
@@ -83,7 +83,7 @@ export default function Queries() {
   const derived = useMemo(() => {
     if (!run.data || !snapshot.data) return null;
     const f = run.data.filterAtRun;
-    if (f.craftableOnly) {
+    if (f.mode === 'craft') {
       if (run.data.narrowedIds.length === 0) {
         return { kind: 'craft' as const, rows: [] as CraftFlipRow[] };
       }
@@ -127,18 +127,18 @@ export default function Queries() {
             value={filter}
             onChange={onFilterChange}
             onRun={() => run.mutate()}
-            busy={run.isPending || (filter.craftableOnly && recipes.isLoading)}
+            busy={run.isPending || (filter.mode === 'craft' && recipes.isLoading)}
           />
           <div className="font-mono text-[10px] text-text-low">
             {candidateIds.length.toLocaleString()} items in scope
-            {run.data?.filterAtRun.craftableOnly && (
+            {run.data?.filterAtRun.mode === 'craft' && (
               <> · {run.data.narrowedIds.length.toLocaleString()} narrowed for recipe lookup</>
             )}
           </div>
 
           {run.isPending && <Spinner label={`Fetching prices for ${candidateIds.length} items…`} />}
           {run.isError && <StatusBanner kind="error">Query failed: {(run.error as Error).message}</StatusBanner>}
-          {run.data?.filterAtRun.craftableOnly && recipes.isLoading && (
+          {run.data?.filterAtRun.mode === 'craft' && recipes.isLoading && (
             <Spinner label={`Resolving ${run.data.narrowedIds.length} recipes…`} />
           )}
           {recipes.isError && <StatusBanner kind="error">XIVAPI recipe fetch failed.</StatusBanner>}
