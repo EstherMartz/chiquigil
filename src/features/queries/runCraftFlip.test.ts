@@ -23,7 +23,7 @@ function mkPrice(p: Partial<MarketData[string]>): MarketData[string] {
 const baseFilter: QueryFilter = {
   searchCategories: [], hq: 'either', minDealPct: 0, minVelocity: 0,
   minPrice: null, maxPrice: null, sort: 'gilFlow', limit: 100,
-  scope: 'home', maxListings: null, craftableOnly: true,
+  scope: 'home', maxListings: null, mode: 'craft', minGap: null,
 };
 
 // Recipes: item 1 costs (50 NQ ingredient × 2); item 3 has no recipe.

@@ -43,7 +43,7 @@ describe('PRESETS', () => {
       const p = getPreset(id)!;
       expect(p.filter.scope).toBe('dc');
       expect(p.filter.maxListings).toBeNull();
-      expect(p.filter.craftableOnly).toBe(false);
+      expect(p.filter.mode).toBe('standard');
     }
   });
 
@@ -51,7 +51,7 @@ describe('PRESETS', () => {
     const p = getPreset('undersupply')!;
     expect(p.filter.scope).toBe('home');
     expect(p.filter.maxListings).toBe(2);
-    expect(p.filter.craftableOnly).toBe(true);
+    expect(p.filter.mode).toBe('craft');
     expect(p.filter.minVelocity).toBeGreaterThanOrEqual(1);
   });
 
@@ -59,6 +59,14 @@ describe('PRESETS', () => {
     const p = getPreset('craft-flip')!;
     expect(p.filter.scope).toBe('home');
     expect(p.filter.maxListings).toBeNull();
-    expect(p.filter.craftableOnly).toBe(true);
+    expect(p.filter.mode).toBe('craft');
+  });
+
+  it('reposts preset is home-scope mode=repost with minGap 10k', () => {
+    const p = getPreset('reposts')!;
+    expect(p.filter.mode).toBe('repost');
+    expect(p.filter.scope).toBe('home');
+    expect(p.filter.minGap).toBe(10_000);
+    expect(p.filter.minDealPct).toBe(30);
   });
 });

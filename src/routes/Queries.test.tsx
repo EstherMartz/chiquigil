@@ -148,4 +148,55 @@ describe('Queries route', () => {
     );
     expect(screen.queryByText(/Oversupplied/)).toBeNull();
   });
+
+  it('Reposts preset: surfaces wall-gap opportunities, drops tied-sellers', async () => {
+    await putCachedItems([
+      { id: 300, name: 'Pixie Cotton',  sc: 50, ui: 30, ilvl: 90, canHq: true },
+      { id: 301, name: 'Tied Sellers',  sc: 50, ui: 30, ilvl: 90, canHq: true },
+    ]);
+
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        items: {
+          '300': {
+            listings: [
+              { hq: false, pricePerUnit: 80_000,  worldName: 'Phantom' },
+              { hq: false, pricePerUnit: 150_000, worldName: 'Phantom' },
+              { hq: false, pricePerUnit: 150_000, worldName: 'Phantom' },
+              { hq: false, pricePerUnit: 150_000, worldName: 'Phantom' },
+              { hq: false, pricePerUnit: 150_000, worldName: 'Phantom' },
+            ],
+            recentHistory: [],
+            regularSaleVelocity: 1.5,
+            lastUploadTime: Date.now(),
+            averagePriceNQ: 130_000,
+            averagePriceHQ: null,
+          },
+          '301': {
+            listings: [
+              { hq: false, pricePerUnit: 100_000, worldName: 'Phantom' },
+              { hq: false, pricePerUnit: 100_000, worldName: 'Phantom' },
+              { hq: false, pricePerUnit: 100_000, worldName: 'Phantom' },
+            ],
+            recentHistory: [],
+            regularSaleVelocity: 5,
+            lastUploadTime: Date.now(),
+            averagePriceNQ: 100_000,
+            averagePriceHQ: null,
+          },
+        },
+      }),
+    }));
+
+    render(withProviders(<Queries />));
+    fireEvent.click(await screen.findByRole('button', { name: /reposts \(camp\)/i }));
+    fireEvent.click(screen.getByRole('button', { name: /run query/i }));
+
+    await waitFor(
+      () => expect(screen.getByText(/Pixie Cotton/)).toBeInTheDocument(),
+      { timeout: 5000 },
+    );
+    expect(screen.queryByText(/Tied Sellers/)).toBeNull();
+  });
 });
