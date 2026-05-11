@@ -38,3 +38,36 @@ export function parseItemSheetPage(raw: RawSheetPage): SnapshotItem[] {
   }
   return out;
 }
+
+export interface FetchItemSnapshotOpts {
+  pageSize?: number;
+  onProgress?: (totalCollectedSoFar: number) => void;
+}
+
+const SHEET_FIELDS = 'Name,ItemSearchCategory.Name,ItemUICategory.Name,LevelItem,CanBeHq';
+
+function buildPageUrl(after: number, pageSize: number): string {
+  const params = new URLSearchParams({
+    fields: SHEET_FIELDS,
+    limit: String(pageSize),
+  });
+  if (after > 0) params.set('after', String(after));
+  return `https://v2.xivapi.com/api/sheet/Item?${params.toString()}`;
+}
+
+export async function fetchItemSnapshot(opts: FetchItemSnapshotOpts = {}): Promise<SnapshotItem[]> {
+  const pageSize = opts.pageSize ?? 500;
+  const out: SnapshotItem[] = [];
+  let cursor = 0;
+  while (true) {
+    const res = await fetch(buildPageUrl(cursor, pageSize));
+    if (!res.ok) throw new Error(`XIVAPI ${res.status}`);
+    const raw = (await res.json()) as RawSheetPage;
+    const rows = raw.rows ?? [];
+    if (rows.length === 0) break;
+    out.push(...parseItemSheetPage(raw));
+    opts.onProgress?.(out.length);
+    cursor = rows[rows.length - 1].row_id;
+  }
+  return out;
+}

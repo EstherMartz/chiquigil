@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { parseItemSheetPage } from './itemSnapshot';
+import { describe, it, expect, vi } from 'vitest';
+import { fetchItemSnapshot, parseItemSheetPage } from './itemSnapshot';
 
 describe('parseItemSheetPage', () => {
   it('extracts SnapshotItem for marketable rows', () => {
@@ -49,5 +49,39 @@ describe('parseItemSheetPage', () => {
       ],
     };
     expect(parseItemSheetPage(raw)[0].canHq).toBe(false);
+  });
+});
+
+describe('fetchItemSnapshot', () => {
+  it('pages until an empty page comes back, merging results', async () => {
+    const pages = [
+      { rows: [{ row_id: 1, fields: { Name: 'A', ItemSearchCategory: { value: 56 }, ItemUICategory: { value: 65 }, LevelItem: { value: 1 }, CanBeHq: false } }] },
+      { rows: [{ row_id: 2, fields: { Name: 'B', ItemSearchCategory: { value: 56 }, ItemUICategory: { value: 65 }, LevelItem: { value: 2 }, CanBeHq: true } }] },
+      { rows: [] },
+    ];
+    const fetchSpy = vi.fn().mockImplementation(async () => ({ ok: true, json: async () => pages.shift() }));
+    vi.stubGlobal('fetch', fetchSpy);
+
+    const out = await fetchItemSnapshot();
+    expect(out.map((i) => i.id)).toEqual([1, 2]);
+    expect(fetchSpy).toHaveBeenCalledTimes(3);
+  });
+
+  it('invokes progress callback after each non-empty page', async () => {
+    const pages = [
+      { rows: [{ row_id: 1, fields: { Name: 'A', ItemSearchCategory: { value: 1 }, ItemUICategory: { value: 1 }, LevelItem: { value: 1 } } }] },
+      { rows: [{ row_id: 2, fields: { Name: 'B', ItemSearchCategory: { value: 1 }, ItemUICategory: { value: 1 }, LevelItem: { value: 1 } } }] },
+      { rows: [] },
+    ];
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(async () => ({ ok: true, json: async () => pages.shift() })));
+
+    const progress: number[] = [];
+    await fetchItemSnapshot({ onProgress: (n) => progress.push(n) });
+    expect(progress).toEqual([1, 2]);
+  });
+
+  it('throws on a non-OK response', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 503 }));
+    await expect(fetchItemSnapshot()).rejects.toThrow(/XIVAPI 503/);
   });
 });
