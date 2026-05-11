@@ -6,6 +6,8 @@ import { allItemsFromEnabledPacks } from '../items/starterPacks';
 import { findBestDeals } from './bestDeals';
 import { fmtGil } from '../../lib/format';
 import { ItemNameLinks } from '../../components/ItemNameLinks';
+import { LoadMoreFooter } from '../../components/LoadMoreFooter';
+import { useLoadMore } from '../../lib/useLoadMore';
 import { Spinner } from '../../components/Spinner';
 import { StatusBanner } from '../../components/StatusBanner';
 
@@ -27,6 +29,8 @@ export function BestDealsView() {
     if (!market.data) return [];
     return findBestDeals(items, market.data.dc, { minDealPct });
   }, [items, market.data, minDealPct]);
+
+  const lm = useLoadMore(rows, 25);
 
   return (
     <div className="space-y-4">
@@ -66,7 +70,7 @@ export function BestDealsView() {
               </tr>
             </thead>
             <tbody>
-              {rows.map((r) => (
+              {lm.visible.map((r) => (
                 <tr key={r.id} className="border-t border-border-base hover:bg-bg-card-hi">
                   <td className="px-3 py-2.5">
                     <ItemNameLinks id={r.id} name={r.name} sub={r.crafter} />
@@ -78,6 +82,12 @@ export function BestDealsView() {
               ))}
             </tbody>
           </table>
+          <LoadMoreFooter
+            hasMore={lm.hasMore}
+            total={lm.total}
+            shown={lm.shown}
+            onLoadMore={lm.loadMore}
+          />
         </div>
       )}
     </div>

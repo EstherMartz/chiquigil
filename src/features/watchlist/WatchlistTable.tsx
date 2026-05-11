@@ -2,6 +2,8 @@ import { useUiStore, type SortKey } from '../ui/uiStore';
 import type { WatchlistRow } from './buildRows';
 import { CraftTag } from './CraftTag';
 import { fmtGil } from '../../lib/format';
+import { LoadMoreFooter } from '../../components/LoadMoreFooter';
+import { useLoadMore } from '../../lib/useLoadMore';
 
 const COLS: { key: SortKey; label: string; align?: 'right'; hideOnMobile?: boolean }[] = [
   { key: 'name', label: 'Item' },
@@ -15,6 +17,7 @@ const COLS: { key: SortKey; label: string; align?: 'right'; hideOnMobile?: boole
 
 export function WatchlistTable({ rows, onSelect }: { rows: WatchlistRow[]; onSelect: (id: number) => void }) {
   const { sortKey, sortDir, setSort } = useUiStore();
+  const lm = useLoadMore(rows, 25);
 
   if (rows.length === 0) {
     return (
@@ -47,7 +50,7 @@ export function WatchlistTable({ rows, onSelect }: { rows: WatchlistRow[]; onSel
           </tr>
         </thead>
         <tbody>
-          {rows.map((r) => (
+          {lm.visible.map((r) => (
             <tr key={r.id} className="border-t border-border-base hover:bg-bg-card-hi">
               <td className="px-3 py-2.5">
                 <button
@@ -89,6 +92,12 @@ export function WatchlistTable({ rows, onSelect }: { rows: WatchlistRow[]; onSel
           ))}
         </tbody>
       </table>
+      <LoadMoreFooter
+        hasMore={lm.hasMore}
+        total={lm.total}
+        shown={lm.shown}
+        onLoadMore={lm.loadMore}
+      />
     </div>
   );
 }

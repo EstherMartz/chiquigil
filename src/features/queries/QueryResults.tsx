@@ -1,6 +1,8 @@
 import { fmtGil } from '../../lib/format';
 import { categoryLabel } from '../../lib/itemSearchCategories';
 import { ItemNameLinks } from '../../components/ItemNameLinks';
+import { LoadMoreFooter } from '../../components/LoadMoreFooter';
+import { useLoadMore } from '../../lib/useLoadMore';
 import type { QueryResultRow } from './types';
 
 interface Props {
@@ -10,6 +12,7 @@ interface Props {
 }
 
 export function QueryResults({ rows, totalCandidates, skippedChunks }: Props) {
+  const lm = useLoadMore(rows, 25);
   if (rows.length === 0) {
     return (
       <div className="border border-border-base bg-bg-card p-6 text-text-low text-sm italic">
@@ -20,7 +23,7 @@ export function QueryResults({ rows, totalCandidates, skippedChunks }: Props) {
   return (
     <div className="space-y-2">
       <div className="font-mono text-[10px] text-text-low">
-        Showing {rows.length} of {totalCandidates} candidates
+        {rows.length} matches from {totalCandidates} candidates
         {skippedChunks > 0 && <span className="text-crimson"> · {skippedChunks} batch(es) skipped (Universalis error)</span>}
       </div>
       <div className="border border-border-base bg-bg-card overflow-x-auto">
@@ -37,7 +40,7 @@ export function QueryResults({ rows, totalCandidates, skippedChunks }: Props) {
             </tr>
           </thead>
           <tbody>
-            {rows.map((r, i) => (
+            {lm.visible.map((r, i) => (
               <tr key={r.id} className="border-t border-border-base hover:bg-bg-card-hi">
                 <td className="px-3 py-2.5 font-mono text-text-low">{i + 1}</td>
                 <td className="px-3 py-2.5">
@@ -57,6 +60,12 @@ export function QueryResults({ rows, totalCandidates, skippedChunks }: Props) {
             ))}
           </tbody>
         </table>
+        <LoadMoreFooter
+          hasMore={lm.hasMore}
+          total={lm.total}
+          shown={lm.shown}
+          onLoadMore={lm.loadMore}
+        />
       </div>
     </div>
   );
