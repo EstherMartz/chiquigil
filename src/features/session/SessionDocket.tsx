@@ -1,4 +1,5 @@
-import { fmtGil } from '../../lib/format';
+import { fmtGil, universalisItemUrl, garlandItemUrl } from '../../lib/format';
+import { useSettingsStore } from '../settings/store';
 import type { SessionResult } from './packSession';
 
 interface Props {
@@ -7,6 +8,7 @@ interface Props {
 }
 
 export function SessionDocket({ result, hasGenerated }: Props) {
+  const { world } = useSettingsStore();
   if (!hasGenerated || !result || result.picks.length === 0) return null;
   return (
     <section className="mt-10">
@@ -26,9 +28,26 @@ export function SessionDocket({ result, hasGenerated }: Props) {
               {(i + 1).toString().padStart(2, '0')}
             </div>
             <div className="col-span-10 sm:col-span-5">
-              <div className="font-body text-lg sm:text-xl text-text-cream leading-tight">{p.name}</div>
-              <div className="font-mono text-[10px] tracking-widest uppercase text-text-low mt-1">
-                {p.crafter} · {fmtGil(p.unitPrice)} unit · {fmtGil(p.materialCost)} mats
+              <a
+                href={universalisItemUrl(p.id, world)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-body text-lg sm:text-xl text-text-cream leading-tight hover:text-aether hover:underline decoration-1 underline-offset-4 transition-colors"
+                title="Open on Universalis"
+              >
+                {p.name}
+              </a>
+              <div className="font-mono text-[10px] tracking-widest uppercase text-text-low mt-1 flex items-center gap-2 flex-wrap">
+                <span>{p.crafter} · {fmtGil(p.unitPrice)} unit · {fmtGil(p.materialCost)} mats</span>
+                <a
+                  href={garlandItemUrl(p.id)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-aether transition-colors"
+                  title="Open on Garland Tools (recipe, NPC vendors, drop sources)"
+                >
+                  ↗
+                </a>
               </div>
             </div>
             <div className="hidden sm:block col-span-1 text-right font-mono text-xs text-text-dim">

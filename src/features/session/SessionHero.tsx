@@ -1,4 +1,5 @@
-import { fmtGil } from '../../lib/format';
+import { fmtGil, universalisItemUrl, garlandItemUrl } from '../../lib/format';
+import { useSettingsStore } from '../settings/store';
 import type { SessionResult, SessionStrategy } from './packSession';
 
 export interface SessionDiagnostics {
@@ -23,6 +24,7 @@ const STRATEGY_LABEL: Record<SessionStrategy, string> = {
 };
 
 export function SessionHero({ result, hasGenerated, strategy, stale, diagnostics }: Props) {
+  const { world } = useSettingsStore();
   if (!hasGenerated) {
     return (
       <article className="border border-border-base bg-bg-card p-6 sm:p-10 min-h-[320px] flex flex-col justify-center relative overflow-hidden">
@@ -66,10 +68,28 @@ export function SessionHero({ result, hasGenerated, strategy, stale, diagnostics
         Tonight, craft
       </div>
       <h1 className="font-body text-4xl sm:text-5xl md:text-6xl text-gold-hi leading-[1] tracking-tight text-balance">
-        {top.name}.
+        <a
+          href={universalisItemUrl(top.id, world)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hover:text-gold hover:underline decoration-1 underline-offset-4 transition-colors"
+          title="Open on Universalis"
+        >
+          {top.name}
+        </a>
+        <span className="text-gold-hi">.</span>
       </h1>
-      <div className="font-mono text-[10px] tracking-[0.3em] uppercase text-text-low mt-3">
-        {top.crafter} · ×{top.batch} · +{fmtGil(top.totalGil)} expected
+      <div className="font-mono text-[10px] tracking-[0.3em] uppercase text-text-low mt-3 flex items-center gap-3 flex-wrap">
+        <span>{top.crafter} · ×{top.batch} · +{fmtGil(top.totalGil)} expected</span>
+        <a
+          href={garlandItemUrl(top.id)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="border border-border-base px-2 py-0.5 hover:text-aether hover:border-border-hi transition-colors"
+          title="Open on Garland Tools (recipe, NPC vendors, drop sources)"
+        >
+          NPC / Sources ↗
+        </a>
       </div>
       <dl className="mt-4 flex flex-wrap gap-x-5 gap-y-1 font-mono text-[11px] text-text-dim">
         <PickFact label="Sells" value={`${top.velocity.toFixed(1)}/day`} />
