@@ -69,4 +69,83 @@ describe('Queries route', () => {
     await waitFor(() => expect(screen.getByText(/Cheap Meal/)).toBeInTheDocument(), { timeout: 5000 });
     expect(screen.queryByText(/Expensive Meal/)).toBeNull();
   });
+
+  it('Undersupply preset: home-world fetch + lazy recipes + maxListings filter', async () => {
+    await putCachedItems([
+      { id: 200, name: 'Scarce Craft', sc: 56, ui: 65, ilvl: 90, canHq: true },
+      { id: 201, name: 'Oversupplied', sc: 56, ui: 65, ilvl: 90, canHq: true },
+      { id: 299, name: 'Ingredient',   sc: 47, ui: 0,  ilvl: 1,  canHq: false },
+    ]);
+
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(async (url: string) => {
+      // Universalis (item prices) — match by URL pattern
+      if (url.includes('universalis.app/api/v2/')) {
+        return {
+          ok: true,
+          json: async () => ({
+            items: {
+              '200': {
+                listings: [{ hq: true, pricePerUnit: 1000, worldName: 'Phantom' }],
+                recentHistory: [],
+                regularSaleVelocity: 2,
+                lastUploadTime: Date.now(),
+                averagePriceNQ: null,
+                averagePriceHQ: 1200,
+              },
+              '201': {
+                listings: Array.from({ length: 6 }, () => ({ hq: true, pricePerUnit: 1000, worldName: 'Phantom' })),
+                recentHistory: [],
+                regularSaleVelocity: 5,
+                lastUploadTime: Date.now(),
+                averagePriceNQ: null,
+                averagePriceHQ: 1200,
+              },
+              '299': {
+                listings: [{ hq: false, pricePerUnit: 50, worldName: 'Phantom' }],
+                recentHistory: [],
+                regularSaleVelocity: 5,
+                lastUploadTime: Date.now(),
+                averagePriceNQ: 60,
+                averagePriceHQ: null,
+              },
+            },
+          }),
+        };
+      }
+      // XIVAPI recipe search — return a recipe for item 200, nothing for 201
+      if (url.includes('xivapi.com/api/search') && url.includes('ItemResult%3D200')) {
+        return {
+          ok: true,
+          json: async () => ({
+            results: [{
+              fields: {
+                ItemResult: { value: 200 },
+                CraftType: { fields: { Name: 'Leatherworker' } },
+                RecipeLevelTable: { fields: { ClassJobLevel: 90 } },
+                Ingredient0: { value: 299 },
+                AmountIngredient0: 2,
+              },
+            }],
+          }),
+        };
+      }
+      // Any other XIVAPI call (e.g. for items that don't qualify) — return no results
+      if (url.includes('xivapi.com')) {
+        return { ok: true, json: async () => ({ results: [] }) };
+      }
+      return { ok: false, status: 404 };
+    }));
+
+    render(withProviders(<Queries />));
+    fireEvent.click(await screen.findByRole('button', { name: /undersupply/i }));
+    fireEvent.click(screen.getByRole('button', { name: /run query/i }));
+
+    // Item 200 should appear (canHq, 1 listing, velocity 2, recipe resolved).
+    // Item 201 dropped by maxListings (6 > 2).
+    await waitFor(
+      () => expect(screen.getByText(/Scarce Craft/)).toBeInTheDocument(),
+      { timeout: 5000 },
+    );
+    expect(screen.queryByText(/Oversupplied/)).toBeNull();
+  });
 });
