@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type React from 'react';
-import Queries from './Queries';
+import Crafts from './Crafts';
 import { useSettingsStore, defaultSettings } from '../features/settings/store';
 import { clearItemCache, putCachedItems } from '../lib/recipeCache';
 
@@ -23,10 +23,10 @@ function withProviders(node: React.ReactNode) {
   );
 }
 
-describe('Queries route (craft category)', () => {
+describe('Crafts route', () => {
   it('renders only craft preset chips', async () => {
     await putCachedItems([]);
-    render(withProviders(<Queries />));
+    render(withProviders(<Crafts />));
     expect(await screen.findByRole('button', { name: /undersupply/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /craft-flip phantom/i })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /mega value hq/i })).toBeNull();
@@ -38,7 +38,7 @@ describe('Queries route (craft category)', () => {
 
   it('renders the Crafts heading', async () => {
     await putCachedItems([]);
-    render(withProviders(<Queries />));
+    render(withProviders(<Crafts />));
     expect(await screen.findByRole('heading', { name: /^crafts$/i })).toBeInTheDocument();
   });
 
@@ -105,7 +105,7 @@ describe('Queries route (craft category)', () => {
       return { ok: false, status: 404 };
     }));
 
-    render(withProviders(<Queries />));
+    render(withProviders(<Crafts />));
     fireEvent.click(await screen.findByRole('button', { name: /undersupply/i }));
     fireEvent.click(await screen.findByRole('button', { name: /run query/i }));
 

@@ -21,7 +21,7 @@ export function Header() {
           <NavLink to="/" end className={navClass}>Home</NavLink>
           <NavLink to="/watchlist" className={navClass}>Watchlist</NavLink>
           <NavLink to="/insights" className={navClass}>Insights</NavLink>
-          <NavLink to="/queries" className={navClass}>Queries</NavLink>
+          <NavLink to="/crafts" className={navClass}>Crafts</NavLink>
           <NavLink to="/settings" className={navClass}>Settings</NavLink>
         </nav>
       </div>
