@@ -16,6 +16,9 @@ export interface SessionFromCraftFlipOpts {
   perItemFlags: FlagMap;
   crafterLock?: CrafterCode;
   minProfit?: number;
+  ilvlById?: Map<number, number>;
+  minIlvl?: number;
+  maxIlvl?: number;
 }
 
 function setKeyFor(name: string): string {
@@ -36,6 +39,11 @@ export function sessionCandidatesFromCraftFlip(
     if (r.profit <= 0) continue;
     if (opts.minProfit != null && r.profit < opts.minProfit) continue;
     if (opts.crafterLock && crafter !== opts.crafterLock) continue;
+    if (opts.minIlvl != null || opts.maxIlvl != null) {
+      const ilvl = opts.ilvlById?.get(r.id) ?? 0;
+      if (opts.minIlvl != null && ilvl < opts.minIlvl) continue;
+      if (opts.maxIlvl != null && ilvl > opts.maxIlvl) continue;
+    }
     const override = opts.perItemFlags[r.id]?.craftTimeSeconds;
     const craftSeconds = resolveCraftSeconds(lvl, opts.baseSeconds, override);
     const gilPerMinute = r.profit / (craftSeconds / 60);

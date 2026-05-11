@@ -27,6 +27,8 @@ interface Committed {
   strategy: SessionStrategy;
   crafterLock: CrafterCode | undefined;
   minProfit: number | undefined;
+  minIlvl: number | undefined;
+  maxIlvl: number | undefined;
 }
 
 function configsEqual(a: Committed, b: Committed): boolean {
@@ -34,7 +36,9 @@ function configsEqual(a: Committed, b: Committed): boolean {
     a.minutes === b.minutes &&
     a.strategy === b.strategy &&
     a.crafterLock === b.crafterLock &&
-    a.minProfit === b.minProfit
+    a.minProfit === b.minProfit &&
+    a.minIlvl === b.minIlvl &&
+    a.maxIlvl === b.maxIlvl
   );
 }
 
@@ -69,6 +73,8 @@ export default function SessionPlanner() {
   const [strategy, setStrategy] = useState<SessionStrategy>('balanced');
   const [crafterLock, setCrafterLock] = useState<CrafterCode | undefined>(undefined);
   const [minProfit, setMinProfit] = useState<number | undefined>(undefined);
+  const [minIlvl, setMinIlvl] = useState<number | undefined>(undefined);
+  const [maxIlvl, setMaxIlvl] = useState<number | undefined>(undefined);
 
   const [committed, setCommitted] = useState<Committed | null>(null);
   const [benchOpenManual, setBenchOpenManual] = useState<boolean | null>(null);
@@ -76,6 +82,14 @@ export default function SessionPlanner() {
   const allIds = useMemo(() => {
     if (!snapshot.data) return [];
     return snapshot.data.items.map((i) => i.id);
+  }, [snapshot.data]);
+
+  const ilvlById = useMemo(() => {
+    const m = new Map<number, number>();
+    if (snapshot.data) {
+      for (const it of snapshot.data.items) m.set(it.id, it.ilvl);
+    }
+    return m;
   }, [snapshot.data]);
 
   const scan = useMutation<ScanResult>({
@@ -114,6 +128,9 @@ export default function SessionPlanner() {
       perItemFlags,
       crafterLock: committed.crafterLock,
       minProfit: committed.minProfit,
+      ilvlById,
+      minIlvl: committed.minIlvl,
+      maxIlvl: committed.maxIlvl,
     });
     const result = packSession(candidates, {
       budgetMinutes: committed.minutes,
@@ -135,13 +152,13 @@ export default function SessionPlanner() {
       pickable: candidates.length,
     };
     return { result, diagnostics };
-  }, [committed, scan.data, recipes.data, snapshot.data, settings, perItemFlags]);
+  }, [committed, scan.data, recipes.data, snapshot.data, settings, perItemFlags, ilvlById]);
 
   const result = computed?.result ?? null;
   const diagnostics = computed?.diagnostics ?? null;
 
   function generate() {
-    setCommitted({ minutes, strategy, crafterLock, minProfit });
+    setCommitted({ minutes, strategy, crafterLock, minProfit, minIlvl, maxIlvl });
     scan.mutate();
   }
 
@@ -149,7 +166,7 @@ export default function SessionPlanner() {
     if (committed) scan.mutate();
   }
 
-  const stale = committed != null && !configsEqual(committed, { minutes, strategy, crafterLock, minProfit });
+  const stale = committed != null && !configsEqual(committed, { minutes, strategy, crafterLock, minProfit, minIlvl, maxIlvl });
   const benchOpen = benchOpenManual ?? false;
   const dataReady = !!snapshot.data;
 
@@ -177,6 +194,8 @@ export default function SessionPlanner() {
           strategy={strategy} setStrategy={setStrategy}
           crafterLock={crafterLock} setCrafterLock={setCrafterLock}
           minProfit={minProfit} setMinProfit={setMinProfit}
+          minIlvl={minIlvl} setMinIlvl={setMinIlvl}
+          maxIlvl={maxIlvl} setMaxIlvl={setMaxIlvl}
           onGenerate={generate}
           canGenerate={dataReady && !scanning}
           stale={stale}

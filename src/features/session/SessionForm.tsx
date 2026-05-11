@@ -19,6 +19,10 @@ interface Props {
   setCrafterLock: (c: CrafterCode | undefined) => void;
   minProfit: number | undefined;
   setMinProfit: (n: number | undefined) => void;
+  minIlvl: number | undefined;
+  setMinIlvl: (n: number | undefined) => void;
+  maxIlvl: number | undefined;
+  setMaxIlvl: (n: number | undefined) => void;
   onGenerate: () => void;
   canGenerate: boolean;
   stale: boolean;
@@ -74,6 +78,34 @@ export function SessionForm(p: Props) {
           className="mt-1 block w-full bg-bg-deep border border-border-base px-3 py-2 font-mono text-sm focus:border-gold focus:outline-none"
         />
       </label>
+
+      <div>
+        <span className="font-mono text-[9px] tracking-widest text-text-low uppercase block mb-1">Item level</span>
+        <div className="grid grid-cols-2 gap-2">
+          <input
+            type="number"
+            min={0}
+            value={p.minIlvl ?? ''}
+            placeholder="min"
+            onChange={(e) =>
+              p.setMinIlvl(e.target.value === '' ? undefined : Math.max(0, Number(e.target.value) || 0))
+            }
+            className="block w-full bg-bg-deep border border-border-base px-3 py-2 font-mono text-sm focus:border-gold focus:outline-none"
+            aria-label="Minimum item level"
+          />
+          <input
+            type="number"
+            min={0}
+            value={p.maxIlvl ?? ''}
+            placeholder="max"
+            onChange={(e) =>
+              p.setMaxIlvl(e.target.value === '' ? undefined : Math.max(0, Number(e.target.value) || 0))
+            }
+            className="block w-full bg-bg-deep border border-border-base px-3 py-2 font-mono text-sm focus:border-gold focus:outline-none"
+            aria-label="Maximum item level"
+          />
+        </div>
+      </div>
 
       <div>
         <span className="font-mono text-[9px] tracking-widest text-text-low uppercase block mb-2">Strategy</span>
