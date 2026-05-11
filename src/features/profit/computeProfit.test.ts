@@ -14,6 +14,9 @@ function mkMarket(prices: Record<number, { dcMin?: number; pAvgNQ?: number }>): 
       velocity: 0,
       lastUploadTime: 0,
       listingCount: p.dcMin != null ? 1 : 0,
+      worldListings: [],
+      averagePriceNQ: null,
+      averagePriceHQ: null,
     };
   }
   return out;

@@ -21,9 +21,9 @@ describe('parseMarketResponse', () => {
       items: {
         '100': {
           listings: [
-            { hq: false, pricePerUnit: 50 },
-            { hq: true, pricePerUnit: 200 },
-            { hq: true, pricePerUnit: 180 },
+            { hq: false, pricePerUnit: 50, worldName: 'Phantom' },
+            { hq: true, pricePerUnit: 200, worldName: 'Phantom' },
+            { hq: true, pricePerUnit: 180, worldName: 'Lich' },
           ],
           recentHistory: [
             { hq: false, pricePerUnit: 60 },
@@ -31,6 +31,8 @@ describe('parseMarketResponse', () => {
           ],
           regularSaleVelocity: 4.2,
           lastUploadTime: 1715000000000,
+          averagePriceNQ: 70,
+          averagePriceHQ: 210,
         },
       },
     };
@@ -43,6 +45,13 @@ describe('parseMarketResponse', () => {
       velocity: 4.2,
       lastUploadTime: 1715000000000,
       listingCount: 3,
+      worldListings: [
+        { world: 'Phantom', price: 50, hq: false },
+        { world: 'Phantom', price: 200, hq: true },
+        { world: 'Lich', price: 180, hq: true },
+      ],
+      averagePriceNQ: 70,
+      averagePriceHQ: 210,
     });
   });
 
@@ -51,6 +60,7 @@ describe('parseMarketResponse', () => {
     expect(out['7']).toEqual({
       minNQ: null, minHQ: null, avgNQ: null, avgHQ: null,
       velocity: 0, lastUploadTime: 0, listingCount: 0,
+      worldListings: [], averagePriceNQ: null, averagePriceHQ: null,
     });
   });
 });

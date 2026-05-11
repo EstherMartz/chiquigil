@@ -9,14 +9,16 @@ const items: TrackedItem[] = [
   { id: 2, name: 'B', crafter: 'WVR', lvl: 100, cat: 'Raid' },
 ];
 
+const extra = { worldListings: [], averagePriceNQ: null, averagePriceHQ: null };
+
 const phantom: MarketData = {
-  '1': { minNQ: 100, minHQ: 200, avgNQ: 110, avgHQ: 220, velocity: 1, lastUploadTime: Date.now(), listingCount: 1 },
-  '2': { minNQ: 50,  minHQ: null, avgNQ: 55,  avgHQ: null, velocity: 0.2, lastUploadTime: Date.now(), listingCount: 1 },
+  '1': { minNQ: 100, minHQ: 200, avgNQ: 110, avgHQ: 220, velocity: 1, lastUploadTime: Date.now(), listingCount: 1, ...extra },
+  '2': { minNQ: 50,  minHQ: null, avgNQ: 55,  avgHQ: null, velocity: 0.2, lastUploadTime: Date.now(), listingCount: 1, ...extra },
 };
 
 const dc: MarketData = {
-  '1': { minNQ: 90,  minHQ: 180, avgNQ: 95,  avgHQ: 200, velocity: 5, lastUploadTime: Date.now(), listingCount: 5 },
-  '2': { minNQ: 40,  minHQ: null, avgNQ: 45,  avgHQ: null, velocity: 1, lastUploadTime: Date.now(), listingCount: 2 },
+  '1': { minNQ: 90,  minHQ: 180, avgNQ: 95,  avgHQ: 200, velocity: 5, lastUploadTime: Date.now(), listingCount: 5, ...extra },
+  '2': { minNQ: 40,  minHQ: null, avgNQ: 45,  avgHQ: null, velocity: 1, lastUploadTime: Date.now(), listingCount: 2, ...extra },
 };
 
 const levels = { CRP: 100, BSM: 100, ARM: 100, GSM: 100, LTW: 100, WVR: 100, ALC: 100, CUL: 100 };
@@ -66,11 +68,11 @@ describe('buildRows with recipes', () => {
   it('marks rows as craftable when a recipe is present and computes profit', () => {
     const items: TrackedItem[] = [{ id: 1, name: 'Crafted', crafter: 'LTW', lvl: 100, cat: 'Raid' }];
     const phantom: MarketData = {
-      '1': { minNQ: null, minHQ: null, avgNQ: null, avgHQ: null, velocity: 0, lastUploadTime: Date.now(), listingCount: 0 },
+      '1': { minNQ: null, minHQ: null, avgNQ: null, avgHQ: null, velocity: 0, lastUploadTime: Date.now(), listingCount: 0, ...extra },
     };
     const dc: MarketData = {
-      '1': { minNQ: null, minHQ: 1000, avgNQ: null, avgHQ: null, velocity: 4, lastUploadTime: Date.now(), listingCount: 1 },
-      '99': { minNQ: 100, minHQ: null, avgNQ: null, avgHQ: null, velocity: 0, lastUploadTime: Date.now(), listingCount: 1 },
+      '1': { minNQ: null, minHQ: 1000, avgNQ: null, avgHQ: null, velocity: 4, lastUploadTime: Date.now(), listingCount: 1, ...extra },
+      '99': { minNQ: 100, minHQ: null, avgNQ: null, avgHQ: null, velocity: 0, lastUploadTime: Date.now(), listingCount: 1, ...extra },
     };
     const levels = { CRP: 100, BSM: 100, ARM: 100, GSM: 100, LTW: 100, WVR: 100, ALC: 100, CUL: 100 };
     const recipeMap = new Map([[1, recipe1]]);
@@ -86,10 +88,10 @@ describe('buildRows with recipes', () => {
   it('marks rows as sale-only when recipeMap returns null', () => {
     const items: TrackedItem[] = [{ id: 1, name: 'Materia XII', crafter: 'ANY', lvl: 100, cat: 'Materia' }];
     const phantom: MarketData = {
-      '1': { minNQ: null, minHQ: null, avgNQ: null, avgHQ: null, velocity: 0, lastUploadTime: Date.now(), listingCount: 0 },
+      '1': { minNQ: null, minHQ: null, avgNQ: null, avgHQ: null, velocity: 0, lastUploadTime: Date.now(), listingCount: 0, ...extra },
     };
     const dc: MarketData = {
-      '1': { minNQ: 50_000, minHQ: null, avgNQ: null, avgHQ: null, velocity: 2, lastUploadTime: Date.now(), listingCount: 1 },
+      '1': { minNQ: 50_000, minHQ: null, avgNQ: null, avgHQ: null, velocity: 2, lastUploadTime: Date.now(), listingCount: 1, ...extra },
     };
     const levels = { CRP: 100, BSM: 100, ARM: 100, GSM: 100, LTW: 100, WVR: 100, ALC: 100, CUL: 100 };
     const recipeMap = new Map<number, Recipe | null>([[1, null]]);
@@ -104,7 +106,7 @@ describe('buildRows with recipes', () => {
     const items: TrackedItem[] = [{ id: 1, name: 'Unknown', crafter: 'LTW', lvl: 100, cat: 'Raid' }];
     const phantom: MarketData = {};
     const dc: MarketData = {
-      '1': { minNQ: 100, minHQ: null, avgNQ: null, avgHQ: null, velocity: 0, lastUploadTime: Date.now(), listingCount: 1 },
+      '1': { minNQ: 100, minHQ: null, avgNQ: null, avgHQ: null, velocity: 0, lastUploadTime: Date.now(), listingCount: 1, ...extra },
     };
     const levels = { CRP: 100, BSM: 100, ARM: 100, GSM: 100, LTW: 100, WVR: 100, ALC: 100, CUL: 100 };
     const rows = buildRows(items, phantom, dc, levels, new Map(), {}, Date.now());
