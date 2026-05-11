@@ -47,7 +47,7 @@ export default function SessionPlanner() {
   const [minProfit, setMinProfit] = useState<number | undefined>(undefined);
 
   const [committed, setCommitted] = useState<Committed | null>(null);
-  const [benchOpen, setBenchOpen] = useState(false);
+  const [benchOpenManual, setBenchOpenManual] = useState<boolean | null>(null);
 
   const items = useMemo(() => {
     const fromPacks = allItemsFromEnabledPacks(starterPacks, new Set(excludedItems));
@@ -109,6 +109,8 @@ export default function SessionPlanner() {
   }
 
   const stale = committed != null && !configsEqual(committed, { minutes, strategy, crafterLock, minProfit });
+  const watchlistEmpty = items.length === 0;
+  const benchOpen = benchOpenManual ?? watchlistEmpty;
 
   return (
     <div className="max-w-7xl mx-auto px-4">
@@ -151,7 +153,7 @@ export default function SessionPlanner() {
 
       <section className="mt-14">
         <button
-          onClick={() => setBenchOpen(!benchOpen)}
+          onClick={() => setBenchOpenManual(!benchOpen)}
           className="font-mono text-[10px] tracking-[0.4em] uppercase text-text-low hover:text-aether border-b-2 border-border-base pb-2 mb-4 w-full text-left flex justify-between items-center transition-colors"
         >
           <span>The Editor's Bench</span>

@@ -40,18 +40,23 @@ export function SessionHero({ result, hasGenerated, strategy, stale, diagnostics
     );
   }
   if (!result || result.picks.length === 0) {
+    const emptyWatchlist = diagnostics?.totalItems === 0;
     return (
       <article className="border border-crimson bg-bg-card p-6 sm:p-10 min-h-[320px] flex flex-col justify-center">
         <div className="font-mono text-[10px] tracking-[0.4em] uppercase text-crimson mb-4">
-          Nothing fits
+          {emptyWatchlist ? 'Empty Watchlist' : 'Nothing fits'}
         </div>
         <h1 className="font-body text-2xl sm:text-3xl text-text-cream leading-tight italic">
-          No items match your budget tonight.
+          {emptyWatchlist
+            ? 'Your ledger has no items to track yet.'
+            : 'No items match your budget tonight.'}
         </h1>
         <p className="font-body text-base text-text-dim mt-3 max-w-prose">
-          Try a longer time, lower your minimum profit, widen the crafter, or pick a different strategy.
+          {emptyWatchlist
+            ? 'Open the Editor’s Bench below and enable a starter pack (or add custom items) so the Ledger has something to work with.'
+            : 'Try a longer time, lower your minimum profit, widen the crafter, or pick a different strategy.'}
         </p>
-        {diagnostics && <Diagnostics d={diagnostics} />}
+        {diagnostics && !emptyWatchlist && <Diagnostics d={diagnostics} />}
       </article>
     );
   }
