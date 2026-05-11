@@ -32,6 +32,20 @@ export const PRESETS: QueryPreset[] = [
               sort: 'discount', limit: 100,
               scope: 'dc', maxListings: null, craftableOnly: false },
   },
+  {
+    id: 'undersupply', label: 'Undersupply (craft + list)',
+    desc: 'Items selling ≥1/day on your home world with ≤2 home-world listings. Craft and list to fill the gap.',
+    filter: { searchCategories: [], hq: 'either', minDealPct: 0, minVelocity: 1,
+              minPrice: null, maxPrice: null, sort: 'gilFlow', limit: 100,
+              scope: 'home', maxListings: 2, craftableOnly: true },
+  },
+  {
+    id: 'craft-flip', label: 'Craft-flip Phantom',
+    desc: 'Craftable items ranked by home-world (sale − material cost) × velocity.',
+    filter: { searchCategories: [], hq: 'either', minDealPct: 0, minVelocity: 1,
+              minPrice: null, maxPrice: null, sort: 'gilFlow', limit: 100,
+              scope: 'home', maxListings: null, craftableOnly: true },
+  },
 ];
 
 export function getPreset(id: string): QueryPreset | undefined {
