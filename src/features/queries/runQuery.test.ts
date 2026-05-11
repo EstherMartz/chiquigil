@@ -22,6 +22,7 @@ function mkPrice(p: Partial<MarketData[string]>): MarketData[string] {
 const baseFilter: QueryFilter = {
   searchCategories: [], hq: 'either', minDealPct: 0, minVelocity: 0,
   minPrice: null, maxPrice: null, sort: 'discount', limit: 100,
+  scope: 'dc', maxListings: null, craftableOnly: false,
 };
 
 describe('runQuery', () => {
@@ -88,5 +89,22 @@ describe('runQuery', () => {
     expect(out[0].hq).toBe(true);
     expect(out[0].unitPrice).toBe(60);
     expect(out[0].averagePrice).toBe(200);
+  });
+
+  it('applies maxListings when set', () => {
+    const priceMap: MarketData = {
+      1: mkPrice({ minNQ: 50, averagePriceNQ: 100, listingCount: 2 }),
+      2: mkPrice({ minNQ: 50, averagePriceNQ: 100, listingCount: 5 }),
+    };
+    const out = runQuery(snapshot, priceMap, { ...baseFilter, hq: 'nq', maxListings: 2 });
+    expect(out.map((r) => r.id)).toEqual([1]);
+  });
+
+  it('maxListings = null is a no-op', () => {
+    const priceMap: MarketData = {
+      1: mkPrice({ minNQ: 50, averagePriceNQ: 100, listingCount: 99 }),
+    };
+    const out = runQuery(snapshot, priceMap, { ...baseFilter, hq: 'nq', maxListings: null });
+    expect(out.map((r) => r.id)).toEqual([1]);
   });
 });

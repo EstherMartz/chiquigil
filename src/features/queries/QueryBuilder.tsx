@@ -1,6 +1,6 @@
 import type { ChangeEvent } from 'react';
 import { ITEM_SEARCH_CATEGORIES, categoryLabel } from '../../lib/itemSearchCategories';
-import type { HqMode, QueryFilter, QuerySort } from './types';
+import type { HqMode, QueryFilter, QueryScope, QuerySort } from './types';
 
 interface Props {
   value: QueryFilter;
@@ -138,6 +138,37 @@ export function QueryBuilder({ value, onChange, onRun, busy }: Props) {
             {busy ? 'Running…' : 'Run query'}
           </button>
         </div>
+
+        <label className="block">
+          <span className="font-mono text-[10px] tracking-widest text-text-low uppercase">Scope</span>
+          <select
+            value={value.scope}
+            onChange={(e) => patch({ scope: e.target.value as QueryScope })}
+            className="mt-1 block w-full bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+          >
+            <option value="home">Home world</option>
+            <option value="dc">DC</option>
+          </select>
+        </label>
+
+        <label className="block">
+          <span className="font-mono text-[10px] tracking-widest text-text-low uppercase">Max listings</span>
+          <input
+            type="number" min={0} step={1}
+            value={value.maxListings ?? ''}
+            onChange={(e) => patch({ maxListings: nullableIntInput(e) })}
+            className="mt-1 block w-full bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+          />
+        </label>
+
+        <label className="flex items-center gap-2 mt-5 text-sm">
+          <input
+            type="checkbox"
+            checked={value.craftableOnly}
+            onChange={(e) => patch({ craftableOnly: e.target.checked })}
+          />
+          <span>Craftable only <span className="text-text-low font-mono text-[10px]">(adds recipe lookup)</span></span>
+        </label>
       </div>
     </div>
   );

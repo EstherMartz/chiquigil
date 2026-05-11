@@ -37,4 +37,28 @@ describe('PRESETS', () => {
   it('getPreset returns undefined for unknown id', () => {
     expect(getPreset('nope')).toBeUndefined();
   });
+
+  it('existing four presets default to dc scope, no list cap, non-craftable mode', () => {
+    for (const id of ['mega-value-hq', 'fast-sellers-hq', 'food-potions', 'furnishings']) {
+      const p = getPreset(id)!;
+      expect(p.filter.scope).toBe('dc');
+      expect(p.filter.maxListings).toBeNull();
+      expect(p.filter.craftableOnly).toBe(false);
+    }
+  });
+
+  it('undersupply preset is home-scope, maxListings 2, craftable-only', () => {
+    const p = getPreset('undersupply')!;
+    expect(p.filter.scope).toBe('home');
+    expect(p.filter.maxListings).toBe(2);
+    expect(p.filter.craftableOnly).toBe(true);
+    expect(p.filter.minVelocity).toBeGreaterThanOrEqual(1);
+  });
+
+  it('craft-flip preset is home-scope, no list cap, craftable-only', () => {
+    const p = getPreset('craft-flip')!;
+    expect(p.filter.scope).toBe('home');
+    expect(p.filter.maxListings).toBeNull();
+    expect(p.filter.craftableOnly).toBe(true);
+  });
 });
