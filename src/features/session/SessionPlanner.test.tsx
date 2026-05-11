@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import SessionPlanner from './SessionPlanner';
@@ -28,6 +28,7 @@ function withProviders(node: React.ReactNode) {
 
 describe('SessionPlanner', () => {
   it('renders an item suggestion when market + recipe data resolve', async () => {
+    // Multiple async waits (data load, Generate click, result render) — give it room.
     vi.stubGlobal('fetch', vi.fn().mockImplementation((url: string) => {
       if (url.includes('universalis.app')) {
         return Promise.resolve({
@@ -60,8 +61,14 @@ describe('SessionPlanner', () => {
 
     render(withProviders(<SessionPlanner />));
 
+    // Wait for the Generate button to be enabled (data loaded), then click.
+    const generateBtn = await screen.findByRole('button', { name: /generate/i }, { timeout: 5000 });
+    await waitFor(() => expect(generateBtn).not.toBeDisabled(), { timeout: 5000 });
+    fireEvent.click(generateBtn);
+
     await waitFor(() => {
-      expect(screen.getByText(/Courtly Lover's Temple Chain of Striking/)).toBeInTheDocument();
+      // Item name now appears in both the Hero and the Docket — at least one match.
+      expect(screen.getAllByText(/Courtly Lover's Temple Chain of Striking/).length).toBeGreaterThan(0);
     }, { timeout: 5000 });
-  });
+  }, 15_000);
 });

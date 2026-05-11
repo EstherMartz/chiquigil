@@ -1,0 +1,107 @@
+import { fmtGil } from '../../lib/format';
+import type { SessionResult, SessionStrategy } from './packSession';
+
+interface Props {
+  result: SessionResult | null;
+  hasGenerated: boolean;
+  strategy: SessionStrategy;
+  stale: boolean;
+}
+
+const STRATEGY_LABEL: Record<SessionStrategy, string> = {
+  balanced: 'Balanced',
+  quickwin: 'Quick Win',
+  patient: 'Patient',
+};
+
+export function SessionHero({ result, hasGenerated, strategy, stale }: Props) {
+  if (!hasGenerated) {
+    return (
+      <article className="border border-border-base bg-bg-card p-6 sm:p-10 min-h-[320px] flex flex-col justify-center relative overflow-hidden">
+        <div className="font-mono text-[10px] tracking-[0.4em] uppercase text-text-low mb-4">
+          The Brief
+        </div>
+        <h1 className="font-body text-3xl sm:text-4xl text-text-dim italic leading-tight max-w-prose">
+          Set your terms, then run the press.
+        </h1>
+        <p className="font-body text-base text-text-low mt-4 max-w-prose">
+          Choose a time budget and a strategy. The Ledger will tell you what to craft tonight.
+        </p>
+      </article>
+    );
+  }
+  if (!result || result.picks.length === 0) {
+    return (
+      <article className="border border-crimson bg-bg-card p-6 sm:p-10 min-h-[320px] flex flex-col justify-center">
+        <div className="font-mono text-[10px] tracking-[0.4em] uppercase text-crimson mb-4">
+          Nothing fits
+        </div>
+        <h1 className="font-body text-2xl sm:text-3xl text-text-cream leading-tight italic">
+          No items match your budget tonight.
+        </h1>
+        <p className="font-body text-base text-text-dim mt-3 max-w-prose">
+          Try a longer time, lower your minimum profit, widen the crafter, or pick a different strategy.
+        </p>
+      </article>
+    );
+  }
+  const top = result.picks[0];
+  return (
+    <article className="border border-border-base bg-bg-card p-6 sm:p-10 min-h-[320px] relative overflow-hidden">
+      {stale && (
+        <div className="absolute top-3 right-3 font-mono text-[9px] tracking-[0.3em] uppercase text-crimson border border-crimson/50 px-2 py-1">
+          Settings changed
+        </div>
+      )}
+      <div className="font-mono text-[10px] tracking-[0.4em] uppercase text-text-low mb-5">
+        Tonight, craft
+      </div>
+      <h1 className="font-body text-4xl sm:text-5xl md:text-6xl text-gold-hi leading-[1] tracking-tight text-balance">
+        {top.name}.
+      </h1>
+      <div className="font-mono text-[10px] tracking-[0.3em] uppercase text-text-low mt-3">
+        {top.crafter} · ×{top.batch} · +{fmtGil(top.totalGil)} expected
+      </div>
+      <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 border-t border-border-base pt-5">
+        <Stat label="Take" value={`~${fmtGil(result.totalGil)}`} accent />
+        <Stat label="Items" value={String(result.picks.length)} />
+        <Stat
+          label="Time"
+          value={`${Math.round(result.totalSeconds / 60)}`}
+          unit="min"
+        />
+        <Stat label="Strategy" value={STRATEGY_LABEL[strategy]} small />
+      </div>
+    </article>
+  );
+}
+
+function Stat({
+  label,
+  value,
+  unit,
+  accent,
+  small,
+}: {
+  label: string;
+  value: string;
+  unit?: string;
+  accent?: boolean;
+  small?: boolean;
+}) {
+  return (
+    <div>
+      <div className="font-mono text-[9px] tracking-[0.3em] uppercase text-text-low mb-1">
+        {label}
+      </div>
+      <div
+        className={`font-display leading-none ${
+          accent ? 'text-gold' : 'text-text-cream'
+        } ${small ? 'text-base sm:text-lg' : 'text-2xl sm:text-3xl'} tabular-nums`}
+      >
+        {value}
+        {unit && <span className="text-sm text-text-dim ml-1 font-body">{unit}</span>}
+      </div>
+    </div>
+  );
+}

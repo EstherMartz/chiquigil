@@ -7,7 +7,10 @@ import { allItemsFromEnabledPacks } from '../items/starterPacks';
 import { buildRows } from '../watchlist/buildRows';
 import { buildCandidates } from './buildCandidates';
 import { packSession, type SessionStrategy } from './packSession';
-import { SessionResults } from './SessionResults';
+import { SessionMasthead } from './SessionMasthead';
+import { SessionHero } from './SessionHero';
+import { SessionForm } from './SessionForm';
+import { SessionDocket } from './SessionDocket';
 import { Spinner } from '../../components/Spinner';
 import { StatusBanner } from '../../components/StatusBanner';
 import type { CrafterCode } from '../items/types';
@@ -18,13 +21,21 @@ import { WorldDcPicker } from '../settings/WorldDcPicker';
 import { PackToggles } from '../settings/PackToggles';
 import { AddItemSearch } from '../settings/AddItemSearch';
 
-const STRATEGIES: { id: SessionStrategy; label: string; tag: string }[] = [
-  { id: 'balanced',  label: 'Balanced',    tag: 'mix of margin and movement' },
-  { id: 'quickwin',  label: 'Quick Win',   tag: 'favor items that move fast' },
-  { id: 'patient',   label: 'Patient',     tag: 'favor fat-margin items' },
-];
+interface Committed {
+  minutes: number;
+  strategy: SessionStrategy;
+  crafterLock: CrafterCode | undefined;
+  minProfit: number | undefined;
+}
 
-const CRAFTERS: CrafterCode[] = ['CRP', 'BSM', 'ARM', 'GSM', 'LTW', 'WVR', 'ALC', 'CUL'];
+function configsEqual(a: Committed, b: Committed): boolean {
+  return (
+    a.minutes === b.minutes &&
+    a.strategy === b.strategy &&
+    a.crafterLock === b.crafterLock &&
+    a.minProfit === b.minProfit
+  );
+}
 
 export default function SessionPlanner() {
   const settings = useSettingsStore();
@@ -35,6 +46,9 @@ export default function SessionPlanner() {
   const [crafterLock, setCrafterLock] = useState<CrafterCode | undefined>(undefined);
   const [minProfit, setMinProfit] = useState<number | undefined>(undefined);
 
+  const [committed, setCommitted] = useState<Committed | null>(null);
+  const [benchOpen, setBenchOpen] = useState(false);
+
   const items = useMemo(() => {
     const fromPacks = allItemsFromEnabledPacks(starterPacks, new Set(excludedItems));
     const seen = new Set(fromPacks.map((i) => i.id));
@@ -44,120 +58,120 @@ export default function SessionPlanner() {
   const ids = useMemo(() => items.map((i) => i.id), [items]);
   const market = useMarketData(ids, settings.world, settings.dc);
   const recipes = useRecipes(ids);
+  const dataReady = !!market.data && !!recipes.data;
 
   const result = useMemo(() => {
-    if (!market.data || !recipes.data) return null;
-    const rows = buildRows(items, market.data.phantom, market.data.dc, settings.retainerLevels, recipes.data, perItemFlags, Date.now());
+    if (!committed || !market.data || !recipes.data) return null;
+    const rows = buildRows(
+      items,
+      market.data.phantom,
+      market.data.dc,
+      settings.retainerLevels,
+      recipes.data,
+      perItemFlags,
+      Date.now(),
+    );
     const candidates = buildCandidates(rows, {
       baseSeconds: settings.defaultCraftTimeSeconds,
       perItemFlags,
-      crafterLock,
-      minProfit,
+      crafterLock: committed.crafterLock,
+      minProfit: committed.minProfit,
     });
     return packSession(candidates, {
-      budgetMinutes: minutes,
+      budgetMinutes: committed.minutes,
       overheadMinutes: settings.overheadMinutes,
       batchCapDays: settings.batchCapDays,
-      strategy,
+      strategy: committed.strategy,
     });
   }, [
-    items, market.data, recipes.data,
+    committed, items, market.data, recipes.data,
     settings.retainerLevels, settings.defaultCraftTimeSeconds, settings.overheadMinutes, settings.batchCapDays,
-    perItemFlags, minutes, strategy, crafterLock, minProfit,
+    perItemFlags,
   ]);
 
+  function generate() {
+    setCommitted({ minutes, strategy, crafterLock, minProfit });
+  }
+
+  function refresh() {
+    market.refetch();
+    recipes.refetch();
+  }
+
+  const stale = committed != null && !configsEqual(committed, { minutes, strategy, crafterLock, minProfit });
+
   return (
-    <div className="max-w-7xl mx-auto px-4 space-y-6">
-      <section className="border border-border-base bg-bg-card p-5 space-y-5">
-        <h2 className="font-display text-xl text-gold tracking-wide">Plan a session</h2>
+    <div className="max-w-7xl mx-auto px-4">
+      <SessionMasthead
+        dataUpdatedAt={market.dataUpdatedAt ?? null}
+        onRefresh={refresh}
+        isRefreshing={market.isFetching || recipes.isFetching}
+      />
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <label className="block">
-            <span className="font-mono text-[10px] tracking-widest text-text-low uppercase">Time budget (min)</span>
-            <input
-              type="number" min={1} max={600}
-              value={minutes}
-              onChange={(e) => setMinutes(Math.max(1, Number(e.target.value) || 0))}
-              className="mt-1 block w-full bg-bg-card border border-border-base px-3 py-2 font-mono"
-            />
-            <span className="block mt-1 font-mono text-[10px] text-text-low">
-              minus {settings.overheadMinutes} min overhead = {Math.max(0, minutes - settings.overheadMinutes)} min crafting
-            </span>
-          </label>
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
+        <SessionHero
+          result={result}
+          hasGenerated={committed != null}
+          strategy={committed?.strategy ?? strategy}
+          stale={stale}
+        />
+        <SessionForm
+          minutes={minutes} setMinutes={setMinutes}
+          strategy={strategy} setStrategy={setStrategy}
+          crafterLock={crafterLock} setCrafterLock={setCrafterLock}
+          minProfit={minProfit} setMinProfit={setMinProfit}
+          onGenerate={generate}
+          canGenerate={dataReady}
+          stale={stale}
+        />
+      </div>
 
-          <label className="block">
-            <span className="font-mono text-[10px] tracking-widest text-text-low uppercase">Lock to crafter</span>
-            <select
-              value={crafterLock ?? ''}
-              onChange={(e) => setCrafterLock(e.target.value === '' ? undefined : (e.target.value as CrafterCode))}
-              className="mt-1 block w-full bg-bg-card border border-border-base px-3 py-2 font-mono"
-            >
-              <option value="">Any</option>
-              {CRAFTERS.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </label>
+      {(market.isLoading || recipes.isLoading) && (
+        <div className="mt-6"><Spinner label="Loading market + recipe data…" /></div>
+      )}
+      {market.isError && (
+        <div className="mt-6"><StatusBanner kind="error">Universalis fetch failed.</StatusBanner></div>
+      )}
+      {recipes.isError && (
+        <div className="mt-6"><StatusBanner kind="error">XIVAPI fetch failed.</StatusBanner></div>
+      )}
 
-          <label className="block">
-            <span className="font-mono text-[10px] tracking-widest text-text-low uppercase">Min profit (gil)</span>
-            <input
-              type="number" min={0}
-              value={minProfit ?? ''}
-              placeholder="any"
-              onChange={(e) => setMinProfit(e.target.value === '' ? undefined : Math.max(0, Number(e.target.value) || 0))}
-              className="mt-1 block w-full bg-bg-card border border-border-base px-3 py-2 font-mono"
-            />
-          </label>
-        </div>
+      <SessionDocket result={result} hasGenerated={committed != null} />
 
-        <div>
-          <span className="font-mono text-[10px] tracking-widest text-text-low uppercase block mb-2">Strategy</span>
-          <div className="flex flex-wrap gap-2">
-            {STRATEGIES.map((s) => (
-              <button
-                key={s.id}
-                onClick={() => setStrategy(s.id)}
-                className={`px-4 py-3 sm:py-2 border font-mono text-xs tracking-wider uppercase min-w-[140px] sm:min-w-0 ${
-                  strategy === s.id ? 'border-gold text-gold bg-bg-card-hi' : 'border-border-base text-text-dim hover:text-aether'
-                }`}
-              >
-                <div>{s.label}</div>
-                <div className="text-[10px] text-text-low normal-case mt-0.5">{s.tag}</div>
-              </button>
-            ))}
+      <section className="mt-14">
+        <button
+          onClick={() => setBenchOpen(!benchOpen)}
+          className="font-mono text-[10px] tracking-[0.4em] uppercase text-text-low hover:text-aether border-b-2 border-border-base pb-2 mb-4 w-full text-left flex justify-between items-center transition-colors"
+        >
+          <span>The Editor's Bench</span>
+          <span>{benchOpen ? '— hide' : '+ show'}</span>
+        </button>
+        {benchOpen && (
+          <div className="space-y-4">
+            <HomePanel title="Session defaults">
+              <SessionDefaults />
+            </HomePanel>
+            <HomePanel title="Retainer levels">
+              <LevelsEditor />
+            </HomePanel>
+            <HomePanel title="World &amp; Data Center">
+              <WorldDcPicker />
+            </HomePanel>
+            <HomePanel title="Watchlist" hint="packs + custom items">
+              <div className="space-y-6">
+                <div>
+                  <h4 className="font-mono text-[10px] tracking-widest text-text-low uppercase mb-2">Starter packs</h4>
+                  <PackToggles />
+                </div>
+                <div>
+                  <h4 className="font-mono text-[10px] tracking-widest text-text-low uppercase mb-2">Custom items</h4>
+                  <AddItemSearch />
+                </div>
+              </div>
+            </HomePanel>
           </div>
-        </div>
+        )}
       </section>
-
-      <HomePanel title="Session defaults">
-        <SessionDefaults />
-      </HomePanel>
-
-      <HomePanel title="Retainer levels">
-        <LevelsEditor />
-      </HomePanel>
-
-      <HomePanel title="World &amp; Data Center">
-        <WorldDcPicker />
-      </HomePanel>
-
-      <HomePanel title="Watchlist" hint="packs + custom items">
-        <div className="space-y-6">
-          <div>
-            <h4 className="font-mono text-[10px] tracking-widest text-text-low uppercase mb-2">Starter packs</h4>
-            <PackToggles />
-          </div>
-          <div>
-            <h4 className="font-mono text-[10px] tracking-widest text-text-low uppercase mb-2">Custom items</h4>
-            <AddItemSearch />
-          </div>
-        </div>
-      </HomePanel>
-
-      {(market.isLoading || recipes.isLoading) && <Spinner label="Loading market + recipe data…" />}
-      {market.isError && <StatusBanner kind="error">Universalis fetch failed.</StatusBanner>}
-      {recipes.isError && <StatusBanner kind="error">XIVAPI fetch failed.</StatusBanner>}
-
-      <SessionResults result={result} />
     </div>
   );
 }
