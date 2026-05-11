@@ -7,11 +7,13 @@ import { fetchMarketData, type MarketData } from '../lib/universalis';
 import { PRESETS, getPreset } from '../features/queries/presets';
 import { runQuery } from '../features/queries/runQuery';
 import { runCraftFlip, narrowForCraftFlip } from '../features/queries/runCraftFlip';
+import { runRepost } from '../features/queries/runRepost';
 import { useRecipes } from '../features/profit/useRecipes';
 import { QueryBuilder } from '../features/queries/QueryBuilder';
 import { QueryResults } from '../features/queries/QueryResults';
 import { CraftFlipResults } from '../features/queries/CraftFlipResults';
-import type { QueryFilter, QueryResultRow, CraftFlipRow } from '../features/queries/types';
+import { RepostResults } from '../features/queries/RepostResults';
+import type { QueryFilter, QueryResultRow, CraftFlipRow, RepostRow } from '../features/queries/types';
 import { Spinner } from '../components/Spinner';
 import { StatusBanner } from '../components/StatusBanner';
 
@@ -83,16 +85,25 @@ export default function Queries() {
   const derived = useMemo(() => {
     if (!run.data || !snapshot.data) return null;
     const f = run.data.filterAtRun;
-    if (f.mode === 'craft') {
-      if (run.data.narrowedIds.length === 0) {
-        return { kind: 'craft' as const, rows: [] as CraftFlipRow[] };
+    switch (f.mode) {
+      case 'craft': {
+        if (run.data.narrowedIds.length === 0) {
+          return { kind: 'craft' as const, rows: [] as CraftFlipRow[] };
+        }
+        if (!recipes.data) return null;
+        const rows = runCraftFlip(snapshot.data.items, run.data.priceMap, recipes.data, f);
+        return { kind: 'craft' as const, rows };
       }
-      if (!recipes.data) return null;
-      const rows: CraftFlipRow[] = runCraftFlip(snapshot.data.items, run.data.priceMap, recipes.data, f);
-      return { kind: 'craft' as const, rows };
+      case 'repost': {
+        const rows: RepostRow[] = runRepost(snapshot.data.items, run.data.priceMap, f);
+        return { kind: 'repost' as const, rows };
+      }
+      case 'standard':
+      default: {
+        const rows: QueryResultRow[] = runQuery(snapshot.data.items, run.data.priceMap, f);
+        return { kind: 'query' as const, rows };
+      }
     }
-    const rows: QueryResultRow[] = runQuery(snapshot.data.items, run.data.priceMap, f);
-    return { kind: 'query' as const, rows };
   }, [run.data, recipes.data, snapshot.data]);
 
   return (
@@ -154,6 +165,13 @@ export default function Queries() {
             <CraftFlipResults
               rows={derived.rows}
               totalCandidates={run.data?.narrowedIds.length ?? 0}
+              skippedChunks={run.data?.skipped ?? 0}
+            />
+          )}
+          {derived?.kind === 'repost' && (
+            <RepostResults
+              rows={derived.rows}
+              totalCandidates={candidateIds.length}
               skippedChunks={run.data?.skipped ?? 0}
             />
           )}
