@@ -11,6 +11,10 @@ export interface SessionPick {
   profit: number;
   totalSeconds: number;
   totalGil: number;
+  velocity: number;
+  unitPrice: number;
+  materialCost: number;
+  listingCount: number;
 }
 
 export interface SessionResult {
@@ -81,6 +85,10 @@ export function packSession(candidates: SessionCandidate[], opts: PackOpts): Ses
       profit: c.profit,
       totalSeconds,
       totalGil,
+      velocity: c.velocity,
+      unitPrice: c.unitPrice,
+      materialCost: c.materialCost,
+      listingCount: c.listingCount,
     });
     setCounts[c.setKey] = setSoFar + 1;
     remaining -= totalSeconds;

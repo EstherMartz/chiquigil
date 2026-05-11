@@ -71,7 +71,13 @@ export function SessionHero({ result, hasGenerated, strategy, stale, diagnostics
       <div className="font-mono text-[10px] tracking-[0.3em] uppercase text-text-low mt-3">
         {top.crafter} · ×{top.batch} · +{fmtGil(top.totalGil)} expected
       </div>
-      <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 border-t border-border-base pt-5">
+      <dl className="mt-4 flex flex-wrap gap-x-5 gap-y-1 font-mono text-[11px] text-text-dim">
+        <PickFact label="Sells" value={`${top.velocity.toFixed(1)}/day`} />
+        <PickFact label="Listings" value={String(top.listingCount)} warn={top.listingCount < 3} />
+        <PickFact label="Unit" value={fmtGil(top.unitPrice)} />
+        <PickFact label="Mats" value={fmtGil(top.materialCost)} />
+      </dl>
+      <div className="mt-7 grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 border-t border-border-base pt-5">
         <Stat label="Take" value={`~${fmtGil(result.totalGil)}`} accent />
         <Stat label="Items" value={String(result.picks.length)} />
         <Stat
@@ -82,6 +88,15 @@ export function SessionHero({ result, hasGenerated, strategy, stale, diagnostics
         <Stat label="Strategy" value={STRATEGY_LABEL[strategy]} small />
       </div>
     </article>
+  );
+}
+
+function PickFact({ label, value, warn }: { label: string; value: string; warn?: boolean }) {
+  return (
+    <div className="flex gap-1.5">
+      <dt className="text-text-low">{label}</dt>
+      <dd className={warn ? 'text-crimson' : 'text-text-cream'}>{value}</dd>
+    </div>
   );
 }
 

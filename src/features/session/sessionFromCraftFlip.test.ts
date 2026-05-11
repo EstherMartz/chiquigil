@@ -26,7 +26,7 @@ describe('sessionCandidatesFromCraftFlip', () => {
     const out = sessionCandidatesFromCraftFlip(
       [row({ id: 1, name: 'Crafted Boot', profit: 500, velocity: 3 })],
       { recipeMap: new Map([[1, recipe({ classJob: 'WVR', recipeLevel: 80 })]]),
-        levels: HIGH_LEVELS, baseSeconds: 60, perItemFlags: {} },
+        priceMap: {}, levels: HIGH_LEVELS, baseSeconds: 60, perItemFlags: {} },
     );
     expect(out).toHaveLength(1);
     expect(out[0].crafter).toBe('WVR');
@@ -39,7 +39,7 @@ describe('sessionCandidatesFromCraftFlip', () => {
     const out = sessionCandidatesFromCraftFlip(
       [row({ id: 5 })],
       { recipeMap: new Map([[5, null]]),
-        levels: HIGH_LEVELS, baseSeconds: 60, perItemFlags: {} },
+        priceMap: {}, levels: HIGH_LEVELS, baseSeconds: 60, perItemFlags: {} },
     );
     expect(out).toEqual([]);
   });
@@ -48,7 +48,7 @@ describe('sessionCandidatesFromCraftFlip', () => {
     const out = sessionCandidatesFromCraftFlip(
       [row({ id: 1 })],
       { recipeMap: new Map([[1, recipe({ classJob: 'LTW', recipeLevel: 90 })]]),
-        levels: LOW_LEVELS, baseSeconds: 60, perItemFlags: {} },
+        priceMap: {}, levels: LOW_LEVELS, baseSeconds: 60, perItemFlags: {} },
     );
     expect(out).toEqual([]);
   });
@@ -60,7 +60,7 @@ describe('sessionCandidatesFromCraftFlip', () => {
           [1, recipe()],
           [2, recipe({ itemResultId: 2 })],
         ]),
-        levels: HIGH_LEVELS, baseSeconds: 60, perItemFlags: {}, minProfit: 300 },
+        priceMap: {}, levels: HIGH_LEVELS, baseSeconds: 60, perItemFlags: {}, minProfit: 300 },
     );
     expect(out.map((c) => c.id)).toEqual([2]);
   });
@@ -72,7 +72,7 @@ describe('sessionCandidatesFromCraftFlip', () => {
           [1, recipe({ classJob: 'LTW' })],
           [2, recipe({ itemResultId: 2, classJob: 'WVR' })],
         ]),
-        levels: HIGH_LEVELS, baseSeconds: 60, perItemFlags: {}, crafterLock: 'WVR' },
+        priceMap: {}, levels: HIGH_LEVELS, baseSeconds: 60, perItemFlags: {}, crafterLock: 'WVR' },
     );
     expect(out.map((c) => c.id)).toEqual([2]);
   });
@@ -81,10 +81,26 @@ describe('sessionCandidatesFromCraftFlip', () => {
     const out = sessionCandidatesFromCraftFlip(
       [row({ id: 1, profit: 600 })],
       { recipeMap: new Map([[1, recipe()]]),
-        levels: HIGH_LEVELS, baseSeconds: 60, perItemFlags: { 1: { craftTimeSeconds: 30 } } },
+        priceMap: {}, levels: HIGH_LEVELS, baseSeconds: 60, perItemFlags: { 1: { craftTimeSeconds: 30 } } },
     );
     expect(out[0].craftSeconds).toBe(30);
     expect(out[0].gilPerMinute).toBe(600 / (30 / 60));
+  });
+
+  it('carries listingCount from priceMap onto the candidate', () => {
+    const out = sessionCandidatesFromCraftFlip(
+      [row({ id: 1, profit: 500 })],
+      { recipeMap: new Map([[1, recipe()]]),
+        priceMap: {
+          '1': {
+            minNQ: 1000, minHQ: null, avgNQ: 1100, avgHQ: null,
+            velocity: 2, lastUploadTime: 0, listingCount: 7,
+            worldListings: [], averagePriceNQ: null, averagePriceHQ: null,
+          },
+        },
+        levels: HIGH_LEVELS, baseSeconds: 60, perItemFlags: {} },
+    );
+    expect(out[0].listingCount).toBe(7);
   });
 
   it('drops items with profit ≤ 0', () => {
@@ -94,7 +110,7 @@ describe('sessionCandidatesFromCraftFlip', () => {
           [1, recipe()],
           [2, recipe({ itemResultId: 2 })],
         ]),
-        levels: HIGH_LEVELS, baseSeconds: 60, perItemFlags: {} },
+        priceMap: {}, levels: HIGH_LEVELS, baseSeconds: 60, perItemFlags: {} },
     );
     expect(out).toEqual([]);
   });

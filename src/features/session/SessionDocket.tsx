@@ -25,16 +25,23 @@ export function SessionDocket({ result, hasGenerated }: Props) {
             <div className="col-span-2 sm:col-span-1 font-display text-xl sm:text-2xl text-gold tabular-nums">
               {(i + 1).toString().padStart(2, '0')}
             </div>
-            <div className="col-span-10 sm:col-span-6">
+            <div className="col-span-10 sm:col-span-5">
               <div className="font-body text-lg sm:text-xl text-text-cream leading-tight">{p.name}</div>
               <div className="font-mono text-[10px] tracking-widest uppercase text-text-low mt-1">
-                {p.crafter}
+                {p.crafter} · {fmtGil(p.unitPrice)} unit · {fmtGil(p.materialCost)} mats
               </div>
+            </div>
+            <div className="hidden sm:block col-span-1 text-right font-mono text-xs text-text-dim">
+              {p.velocity.toFixed(1)}<span className="text-text-low">/d</span>
+            </div>
+            <div className="hidden sm:block col-span-1 text-right font-mono text-xs">
+              <span className={p.listingCount < 3 ? 'text-crimson' : 'text-text-dim'}>{p.listingCount}</span>
+              <span className="text-text-low"> list</span>
             </div>
             <div className="col-span-3 sm:col-span-1 text-right font-mono text-sm text-gold">
               ×{p.batch}
             </div>
-            <div className="col-span-4 sm:col-span-2 text-right font-mono text-sm text-text-dim">
+            <div className="col-span-4 sm:col-span-1 text-right font-mono text-sm text-text-dim">
               {Math.round(p.totalSeconds / 60)} <span className="text-text-low">min</span>
             </div>
             <div className="col-span-5 sm:col-span-2 text-right font-mono text-base text-jade">

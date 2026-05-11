@@ -13,6 +13,9 @@ export interface SessionCandidate {
   craftSeconds: number;
   gilPerMinute: number;
   setKey: string;
+  unitPrice: number;
+  materialCost: number;
+  listingCount: number;
 }
 
 export interface CandidateOpts {
@@ -47,6 +50,9 @@ export function buildCandidates(rows: WatchlistRow[], opts: CandidateOpts): Sess
       craftSeconds,
       gilPerMinute,
       setKey: setKeyFor(r.name),
+      unitPrice: r.dcMinHQ ?? r.dcMinNQ ?? 0,
+      materialCost: r.materialCost ?? 0,
+      listingCount: 0,
     });
   }
   return out;

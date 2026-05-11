@@ -108,6 +108,7 @@ export default function SessionPlanner() {
     );
     const candidates = sessionCandidatesFromCraftFlip(craftFlipRows, {
       recipeMap: recipes.data,
+      priceMap: scan.data.priceMap,
       levels: settings.retainerLevels,
       baseSeconds: settings.defaultCraftTimeSeconds,
       perItemFlags,
@@ -122,6 +123,7 @@ export default function SessionPlanner() {
     });
     const atMyLevel = sessionCandidatesFromCraftFlip(craftFlipRows, {
       recipeMap: recipes.data,
+      priceMap: scan.data.priceMap,
       levels: settings.retainerLevels,
       baseSeconds: settings.defaultCraftTimeSeconds,
       perItemFlags,
