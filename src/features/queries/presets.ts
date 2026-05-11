@@ -17,6 +17,7 @@ export const PRESETS: QueryPreset[] = [
   {
     id: 'food-potions', label: 'Food & Potions',
     desc: 'Meals + medicine at ≥20% discount.',
+    // Categories: 43 (Medicine), 45 (Meals) — see itemSearchCategories.ts
     filter: { searchCategories: [43, 45], hq: 'either', minDealPct: 20, minVelocity: 0,
               minPrice: null, maxPrice: null, sort: 'discount', limit: 100 },
   },
