@@ -1,5 +1,7 @@
 import { fmtGil, universalisItemUrl, garlandItemUrl } from '../../lib/format';
 import { useSettingsStore } from '../settings/store';
+import { useSnapshotById } from '../queries/useSnapshotById';
+import { CopyButton } from '../../components/CopyButton';
 import type { SessionResult, SessionStrategy } from './packSession';
 
 export interface SessionDiagnostics {
@@ -25,6 +27,7 @@ const STRATEGY_LABEL: Record<SessionStrategy, string> = {
 
 export function SessionHero({ result, hasGenerated, strategy, stale, diagnostics }: Props) {
   const { world } = useSettingsStore();
+  const byId = useSnapshotById();
   if (!hasGenerated) {
     return (
       <article className="border border-border-base bg-bg-card p-6 sm:p-10 min-h-[320px] flex flex-col justify-center relative overflow-hidden">
@@ -57,6 +60,7 @@ export function SessionHero({ result, hasGenerated, strategy, stale, diagnostics
     );
   }
   const top = result.picks[0];
+  const topIlvl = byId.get(top.id)?.ilvl;
   return (
     <article className="border border-border-base bg-bg-card p-6 sm:p-10 min-h-[320px] relative overflow-hidden">
       {stale && (
@@ -64,8 +68,14 @@ export function SessionHero({ result, hasGenerated, strategy, stale, diagnostics
           Settings changed
         </div>
       )}
-      <div className="font-mono text-[10px] tracking-[0.4em] uppercase text-text-low mb-5">
-        Tonight, craft
+      <div className="font-mono text-[10px] tracking-[0.4em] uppercase text-text-low mb-5 flex items-center gap-3 flex-wrap">
+        <span>Tonight, craft</span>
+        {topIlvl != null && topIlvl > 1 && (
+          <span className="font-mono text-gold tracking-widest">i{topIlvl}</span>
+        )}
+        <span className="text-aether border border-border-base px-2 py-0.5 leading-none">
+          {top.crafter}
+        </span>
       </div>
       <h1 className="font-body text-4xl sm:text-5xl md:text-6xl text-gold-hi leading-[1] tracking-tight text-balance">
         <a
@@ -78,9 +88,10 @@ export function SessionHero({ result, hasGenerated, strategy, stale, diagnostics
           {top.name}
         </a>
         <span className="text-gold-hi">.</span>
+        <CopyButton text={top.name} className="ml-3 align-middle" />
       </h1>
       <div className="font-mono text-[10px] tracking-[0.3em] uppercase text-text-low mt-3 flex items-center gap-3 flex-wrap">
-        <span>{top.crafter} · ×{top.batch} · +{fmtGil(top.totalGil)} expected</span>
+        <span>×{top.batch} · +{fmtGil(top.totalGil)} expected</span>
         <a
           href={garlandItemUrl(top.id)}
           target="_blank"

@@ -1,5 +1,7 @@
 import { fmtGil, universalisItemUrl, garlandItemUrl } from '../../lib/format';
 import { useSettingsStore } from '../settings/store';
+import { useSnapshotById } from '../queries/useSnapshotById';
+import { CopyButton } from '../../components/CopyButton';
 import type { SessionResult } from './packSession';
 
 interface Props {
@@ -9,6 +11,7 @@ interface Props {
 
 export function SessionDocket({ result, hasGenerated }: Props) {
   const { world } = useSettingsStore();
+  const byId = useSnapshotById();
   if (!hasGenerated || !result || result.picks.length === 0) return null;
   return (
     <section className="mt-10">
@@ -28,17 +31,28 @@ export function SessionDocket({ result, hasGenerated }: Props) {
               {(i + 1).toString().padStart(2, '0')}
             </div>
             <div className="col-span-10 sm:col-span-5">
-              <a
-                href={universalisItemUrl(p.id, world)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-body text-lg sm:text-xl text-text-cream leading-tight hover:text-aether hover:underline decoration-1 underline-offset-4 transition-colors"
-                title="Open on Universalis"
-              >
-                {p.name}
-              </a>
+              <div className="flex items-baseline gap-2 flex-wrap">
+                {byId.get(p.id)?.ilvl != null && byId.get(p.id)!.ilvl > 1 && (
+                  <span className="font-mono text-[10px] tracking-widest text-gold tabular-nums">
+                    i{byId.get(p.id)!.ilvl}
+                  </span>
+                )}
+                <a
+                  href={universalisItemUrl(p.id, world)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-body text-lg sm:text-xl text-text-cream leading-tight hover:text-aether hover:underline decoration-1 underline-offset-4 transition-colors"
+                  title="Open on Universalis"
+                >
+                  {p.name}
+                </a>
+                <CopyButton text={p.name} />
+              </div>
               <div className="font-mono text-[10px] tracking-widest uppercase text-text-low mt-1 flex items-center gap-2 flex-wrap">
-                <span>{p.crafter} · {fmtGil(p.unitPrice)} unit · {fmtGil(p.materialCost)} mats</span>
+                <span className="text-aether border border-border-base px-1 py-0.5 leading-none">
+                  {p.crafter}
+                </span>
+                <span>{fmtGil(p.unitPrice)} unit · {fmtGil(p.materialCost)} mats</span>
                 <a
                   href={garlandItemUrl(p.id)}
                   target="_blank"
