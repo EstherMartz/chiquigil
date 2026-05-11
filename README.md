@@ -96,9 +96,12 @@ world, per-preset) and ranks items by discount, gil/day, velocity, or unit price
     Craft and list to fill a real supply gap.
   - *Craft-flip Phantom* — craftable items ranked by `(sale − material cost) × velocity`
     on your home world. Lazy recipe lookup over the narrowed candidate set.
+  - *Reposts (camp)* — home-world items where the cheapest listing is ≥10k and ≥30%
+    below the next-distinct price. Buy + relist for instant gil; profit is shown
+    after the 5% Universalis tax.
 - **Builder:** every filter is editable — scope (Home / DC), HQ/NQ, category multi-select,
   min discount, min velocity, max listings, price range, sort, limit, and a
-  Craftable-only toggle that swaps in the craft-flip pipeline.
+  Mode select (Standard / Craft-flip / Reposts) that swaps pipelines.
 
 ## Legacy
 
