@@ -61,4 +61,12 @@ describe('PRESETS', () => {
     expect(p.filter.maxListings).toBeNull();
     expect(p.filter.mode).toBe('craft');
   });
+
+  it('reposts preset is home-scope mode=repost with minGap 10k', () => {
+    const p = getPreset('reposts')!;
+    expect(p.filter.mode).toBe('repost');
+    expect(p.filter.scope).toBe('home');
+    expect(p.filter.minGap).toBe(10_000);
+    expect(p.filter.minDealPct).toBe(30);
+  });
 });

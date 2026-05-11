@@ -46,6 +46,13 @@ export const PRESETS: QueryPreset[] = [
               minPrice: null, maxPrice: null, sort: 'gilFlow', limit: 100,
               scope: 'home', maxListings: null, mode: 'craft', minGap: null },
   },
+  {
+    id: 'reposts', label: 'Reposts (camp)',
+    desc: 'Home-world items where the cheapest listing is ≥10k below the next price (gap ≥30%). Buy + relist for instant gil.',
+    filter: { searchCategories: [], hq: 'either', minDealPct: 30, minVelocity: 1,
+              minPrice: null, maxPrice: null, sort: 'gilFlow', limit: 100,
+              scope: 'home', maxListings: null, mode: 'repost', minGap: 10_000 },
+  },
 ];
 
 export function getPreset(id: string): QueryPreset | undefined {
