@@ -72,6 +72,14 @@ Most setup options now live on Home as collapsible panels (closed by default):
 
 Click a starter pack to expand it and uncheck individual items you don't want — exclusions are remembered. Three new packs added: Materia XI, crafted minions, classic glamour. The Settings page is now just the recipe cache and backup/restore.
 
+## Insights
+
+A new top-level tab with three views — all reuse existing Universalis data, no new API calls:
+
+- **Arbitrage:** items where another Chaos world is cheaper than your home world by ≥ a threshold (default 10k). Computed from per-world listings already in the DC response.
+- **Best deals:** items where the current DC min is below the Universalis average price by ≥ a percentage (default 20%). Surfaces undervalued items in your tracked pool.
+- **Marketshare:** your items ranked by gil/day (`profit × velocity` for craftable, `price × velocity` for sale-only). Optional toggle to include every starter pack (even disabled ones) for a wider view.
+
 ## Legacy
 
 The original single-file artifact lives in `legacy/phantom_crafting_tracker.html` for reference.
