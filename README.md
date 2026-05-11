@@ -72,36 +72,27 @@ Most setup options now live on Home as collapsible panels (closed by default):
 
 Click a starter pack to expand it and uncheck individual items you don't want — exclusions are remembered. Three new packs added: Materia XI, crafted minions, classic glamour. The Settings page is now just the recipe cache and backup/restore.
 
-## Insights
+## Routes
 
-A new top-level tab with three views — all reuse existing Universalis data, no new API calls:
+The app is structured around the craft-for-gil flow. Trading tools (price flips, arbitrage) are preserved but visually demoted.
 
-- **Arbitrage:** items where another Chaos world is cheaper than your home world by ≥ a threshold (default 10k). Computed from per-world listings already in the DC response.
-- **Best deals:** items where the current DC min is below the Universalis average price by ≥ a percentage (default 20%). Surfaces undervalued items in your tracked pool.
-- **Marketshare:** your items ranked by gil/day (`profit × velocity` for craftable, `price × velocity` for sale-only). Optional toggle to include every starter pack (even disabled ones) for a wider view.
-
-## Best Deals Queries
-
-A `/queries` route inspired by Saddlebag Exchange. Scans the Chaos DC (or your home
-world, per-preset) and ranks items by discount, gil/day, velocity, or unit price.
-
-- **Item DB:** one-time fetch of ~80k marketable items from XIVAPI, cached in IndexedDB
-  forever. Refresh from Settings after a game patch.
-- **Bulk fetcher:** chunks IDs into 100-per-batch Universalis calls with concurrency 4.
-  A whole-market scan takes ~10–40s depending on filters.
-- **DC presets:** *Mega Value HQ*, *Fast Sellers HQ*, *Food & Potions*, *Furnishings discount*.
-  Use these to find deals across the DC.
-- **Home-world presets (no travel):**
+- **Home** — Session planner (existing).
+- **Watchlist** — Tracked items with market data. Default sort is gil/day; sale-only items (Materia, dyes) now contribute to the ranking via `unit price × velocity`.
+- **Crafts** — `/crafts`. Saddlebag-style preset queries focused on crafting:
   - *Undersupply (craft + list)* — items selling on your home world with ≤2 listings.
-    Craft and list to fill a real supply gap.
-  - *Craft-flip Phantom* — craftable items ranked by `(sale − material cost) × velocity`
-    on your home world. Lazy recipe lookup over the narrowed candidate set.
-  - *Reposts (camp)* — home-world items where the cheapest listing is ≥10k and ≥30%
-    below the next-distinct price. Buy + relist for instant gil; profit is shown
-    after the 5% Universalis tax.
-- **Builder:** every filter is editable — scope (Home / DC), HQ/NQ, category multi-select,
-  min discount, min velocity, max listings, price range, sort, limit, and a
-  Mode select (Standard / Craft-flip / Reposts) that swaps pipelines.
+  - *Craft-flip Phantom* — craftable items ranked by `(sale − material cost) × velocity` on your home world.
+  - Builder defaults to **Craft-flip** mode, but the Mode select still exposes Standard / Craft-flip / Reposts.
+- **Settings** — Recipe cache + backup/restore (existing).
+- **Trading** — `/trading` (rendered dim in the nav). Three tabs:
+  - *Arbitrage* — cross-world price gaps inside your DC.
+  - *Best deals* — DC-min prices below Universalis average.
+  - *Queries* — preset queries focused on flipping: Mega Value HQ, Fast Sellers HQ, Food & Potions, Furnishings discount, Reposts (camp).
+
+Bookmarks survive: `/queries` redirects to `/crafts`, `/insights` redirects to `/trading`.
+
+### Item DB & bulk fetch
+
+Whole-game presets (under both Crafts and Trading) share a one-time XIVAPI item snapshot (~80k items, ~30s, cached forever in IndexedDB; refresh from Settings after a game patch). Universalis prices are fetched in chunks of 100 IDs with concurrency 4 — a whole-market scan takes ~10–40s.
 
 ## Legacy
 

@@ -1,20 +1,21 @@
 import { useState } from 'react';
 import { ArbitrageView } from '../features/insights/ArbitrageView';
 import { BestDealsView } from '../features/insights/BestDealsView';
-import { MarketshareView } from '../features/insights/MarketshareView';
+import { QueriesView } from '../features/queries/QueriesView';
 
-type Tab = 'arbitrage' | 'deals' | 'marketshare';
+type Tab = 'arbitrage' | 'deals' | 'queries';
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: 'arbitrage',   label: 'Arbitrage' },
-  { id: 'deals',       label: 'Best deals' },
-  { id: 'marketshare', label: 'Marketshare' },
+  { id: 'arbitrage', label: 'Arbitrage' },
+  { id: 'deals',     label: 'Best deals' },
+  { id: 'queries',   label: 'Queries' },
 ];
 
-export default function Insights() {
+export default function Trading() {
   const [tab, setTab] = useState<Tab>('arbitrage');
   return (
     <div className="max-w-7xl mx-auto px-4 space-y-4">
+      <h2 className="font-display text-lg text-gold tracking-wide">Trading</h2>
       <nav className="flex border-b border-border-base">
         {TABS.map((t) => (
           <button
@@ -30,7 +31,7 @@ export default function Insights() {
       </nav>
       {tab === 'arbitrage' && <ArbitrageView />}
       {tab === 'deals' && <BestDealsView />}
-      {tab === 'marketshare' && <MarketshareView />}
+      {tab === 'queries' && <QueriesView category="trading" />}
     </div>
   );
 }

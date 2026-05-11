@@ -69,4 +69,20 @@ describe('PRESETS', () => {
     expect(p.filter.minGap).toBe(10_000);
     expect(p.filter.minDealPct).toBe(30);
   });
+
+  it('every preset has a category (craft or trading)', () => {
+    for (const p of PRESETS) {
+      expect(['craft', 'trading']).toContain(p.category);
+    }
+  });
+
+  it('categorizes craft presets correctly', () => {
+    const craftIds = PRESETS.filter((p) => p.category === 'craft').map((p) => p.id).sort();
+    expect(craftIds).toEqual(['craft-flip', 'undersupply']);
+  });
+
+  it('categorizes trading presets correctly', () => {
+    const tradingIds = PRESETS.filter((p) => p.category === 'trading').map((p) => p.id).sort();
+    expect(tradingIds).toEqual(['fast-sellers-hq', 'food-potions', 'furnishings', 'mega-value-hq', 'reposts']);
+  });
 });

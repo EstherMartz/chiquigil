@@ -1,23 +1,21 @@
 import { useMemo, useState } from 'react';
-import { useSettingsStore } from '../features/settings/store';
-import { useItemSnapshot } from '../features/queries/useItemSnapshot';
+import { useSettingsStore } from '../settings/store';
+import { useItemSnapshot } from './useItemSnapshot';
 import { useMutation } from '@tanstack/react-query';
-import { fetchInBatches } from '../lib/universalisBulk';
-import { fetchMarketData, type MarketData } from '../lib/universalis';
-import { PRESETS, getPreset } from '../features/queries/presets';
-import { runQuery } from '../features/queries/runQuery';
-import { runCraftFlip, narrowForCraftFlip } from '../features/queries/runCraftFlip';
-import { runRepost } from '../features/queries/runRepost';
-import { useRecipes } from '../features/profit/useRecipes';
-import { QueryBuilder } from '../features/queries/QueryBuilder';
-import { QueryResults } from '../features/queries/QueryResults';
-import { CraftFlipResults } from '../features/queries/CraftFlipResults';
-import { RepostResults } from '../features/queries/RepostResults';
-import type { QueryFilter, QueryResultRow, CraftFlipRow, RepostRow } from '../features/queries/types';
-import { Spinner } from '../components/Spinner';
-import { StatusBanner } from '../components/StatusBanner';
-
-const DEFAULT_FILTER: QueryFilter = PRESETS[0].filter;
+import { fetchInBatches } from '../../lib/universalisBulk';
+import { fetchMarketData, type MarketData } from '../../lib/universalis';
+import { PRESETS, getPreset } from './presets';
+import { runQuery } from './runQuery';
+import { runCraftFlip, narrowForCraftFlip } from './runCraftFlip';
+import { runRepost } from './runRepost';
+import { useRecipes } from '../profit/useRecipes';
+import { QueryBuilder } from './QueryBuilder';
+import { QueryResults } from './QueryResults';
+import { CraftFlipResults } from './CraftFlipResults';
+import { RepostResults } from './RepostResults';
+import type { QueryFilter, QueryResultRow, CraftFlipRow, RepostRow, PresetCategory } from './types';
+import { Spinner } from '../../components/Spinner';
+import { StatusBanner } from '../../components/StatusBanner';
 
 interface PriceFetchResult {
   priceMap: MarketData;
@@ -27,11 +25,18 @@ interface PriceFetchResult {
   filterAtRun: QueryFilter;
 }
 
-export default function Queries() {
+interface Props {
+  category: PresetCategory;
+  heading?: string;
+}
+
+export function QueriesView({ category, heading }: Props) {
   const { world, dc } = useSettingsStore();
   const snapshot = useItemSnapshot();
-  const [filter, setFilter] = useState<QueryFilter>(DEFAULT_FILTER);
-  const [activePresetId, setActivePresetId] = useState<string | null>(PRESETS[0].id);
+
+  const presets = useMemo(() => PRESETS.filter((p) => p.category === category), [category]);
+  const [filter, setFilter] = useState<QueryFilter>(presets[0].filter);
+  const [activePresetId, setActivePresetId] = useState<string | null>(presets[0].id);
 
   const candidateIds = useMemo(() => {
     if (!snapshot.data) return [];
@@ -108,10 +113,10 @@ export default function Queries() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 space-y-4">
-      <h2 className="font-display text-lg text-gold tracking-wide">Best Deals Queries</h2>
+      {heading && <h2 className="font-display text-lg text-gold tracking-wide">{heading}</h2>}
 
       <div className="flex flex-wrap gap-2">
-        {PRESETS.map((p) => (
+        {presets.map((p) => (
           <button
             key={p.id}
             onClick={() => applyPreset(p.id)}

@@ -72,7 +72,11 @@ export function buildRows(
       materialCost: profitResult?.materialCost ?? null,
       salePrice: profitResult?.salePrice ?? null,
       profit: profitResult?.profit ?? null,
-      gilPerDay: profitResult ? profitResult.profit * velocity : null,
+      gilPerDay: profitResult
+        ? profitResult.profit * velocity
+        : recipeEntry === null
+          ? (d?.minHQ ?? d?.minNQ ?? 0) * velocity || null
+          : null,
     };
   });
 

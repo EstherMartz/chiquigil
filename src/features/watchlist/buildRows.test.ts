@@ -85,7 +85,7 @@ describe('buildRows with recipes', () => {
     expect(rows[0].gilPerDay).toBe(3200);
   });
 
-  it('marks rows as sale-only when recipeMap returns null', () => {
+  it('marks rows as sale-only when recipeMap returns null and computes gilPerDay from unit × velocity', () => {
     const items: TrackedItem[] = [{ id: 1, name: 'Materia XII', crafter: 'ANY', lvl: 100, cat: 'Materia' }];
     const phantom: MarketData = {
       '1': { minNQ: null, minHQ: null, avgNQ: null, avgHQ: null, velocity: 0, lastUploadTime: Date.now(), listingCount: 0, ...extra },
@@ -99,7 +99,25 @@ describe('buildRows with recipes', () => {
     expect(rows[0].craftable).toBe(false);
     expect(rows[0].profit).toBeNull();
     expect(rows[0].materialCost).toBeNull();
+    // 50_000 × 2 = 100_000
+    expect(rows[0].gilPerDay).toBe(100_000);
+  });
+
+  it('sale-only with zero velocity or no price keeps gilPerDay null', () => {
+    const items: TrackedItem[] = [
+      { id: 1, name: 'No velocity', crafter: 'ANY', lvl: 100, cat: 'Materia' },
+      { id: 2, name: 'No price', crafter: 'ANY', lvl: 100, cat: 'Materia' },
+    ];
+    const phantom: MarketData = {};
+    const dc: MarketData = {
+      '1': { minNQ: 50_000, minHQ: null, avgNQ: null, avgHQ: null, velocity: 0, lastUploadTime: Date.now(), listingCount: 1, ...extra },
+      '2': { minNQ: null,   minHQ: null, avgNQ: null, avgHQ: null, velocity: 3, lastUploadTime: Date.now(), listingCount: 0, ...extra },
+    };
+    const levels = { CRP: 100, BSM: 100, ARM: 100, GSM: 100, LTW: 100, WVR: 100, ALC: 100, CUL: 100 };
+    const recipeMap = new Map<number, Recipe | null>([[1, null], [2, null]]);
+    const rows = buildRows(items, phantom, dc, levels, recipeMap, {}, Date.now());
     expect(rows[0].gilPerDay).toBeNull();
+    expect(rows[1].gilPerDay).toBeNull();
   });
 
   it('treats unresolved recipe (not in map) as not-yet-known: craftable null, profit null', () => {
