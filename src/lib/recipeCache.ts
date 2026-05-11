@@ -1,10 +1,13 @@
 import { openDB, type IDBPDatabase } from 'idb';
 import type { Recipe } from './recipes';
+import type { SnapshotItem } from './itemSnapshot';
 
 const DB_NAME = 'ffxiv-helper';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const RECIPE_STORE = 'recipes';
 const NAME_STORE = 'names';
+const ITEM_STORE = 'items';
+const META_STORE = 'meta';
 
 let dbPromise: Promise<IDBPDatabase> | null = null;
 
@@ -17,6 +20,12 @@ function db(): Promise<IDBPDatabase> {
         }
         if (!database.objectStoreNames.contains(NAME_STORE)) {
           database.createObjectStore(NAME_STORE);
+        }
+        if (!database.objectStoreNames.contains(ITEM_STORE)) {
+          database.createObjectStore(ITEM_STORE);
+        }
+        if (!database.objectStoreNames.contains(META_STORE)) {
+          database.createObjectStore(META_STORE);
         }
       },
     });
@@ -46,4 +55,27 @@ export async function putCachedName(itemId: number, name: string): Promise<void>
 
 export async function clearNameCache(): Promise<void> {
   await (await db()).clear(NAME_STORE);
+}
+
+const ITEM_SNAPSHOT_KEY = 'snapshot';
+const ITEM_SNAPSHOT_TS_KEY = 'snapshotUpdatedAt';
+
+export async function getAllCachedItems(): Promise<SnapshotItem[] | undefined> {
+  return (await db()).get(ITEM_STORE, ITEM_SNAPSHOT_KEY);
+}
+
+export async function putCachedItems(items: SnapshotItem[]): Promise<void> {
+  const handle = await db();
+  await handle.put(ITEM_STORE, items, ITEM_SNAPSHOT_KEY);
+  await handle.put(META_STORE, Date.now(), ITEM_SNAPSHOT_TS_KEY);
+}
+
+export async function clearItemCache(): Promise<void> {
+  const handle = await db();
+  await handle.clear(ITEM_STORE);
+  await handle.delete(META_STORE, ITEM_SNAPSHOT_TS_KEY);
+}
+
+export async function getItemSnapshotUpdatedAt(): Promise<number | undefined> {
+  return (await db()).get(META_STORE, ITEM_SNAPSHOT_TS_KEY);
 }

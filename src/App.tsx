@@ -3,6 +3,7 @@ import { Header } from './components/layout/Header';
 import Home from './routes/Home';
 import Watchlist from './routes/Watchlist';
 import Insights from './routes/Insights';
+import Queries from './routes/Queries';
 import Settings from './routes/Settings';
 
 export default function App() {
@@ -13,6 +14,7 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/watchlist" element={<Watchlist />} />
         <Route path="/insights" element={<Insights />} />
+        <Route path="/queries" element={<Queries />} />
         <Route path="/settings" element={<Settings />} />
       </Routes>
     </div>

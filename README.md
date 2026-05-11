@@ -80,6 +80,20 @@ A new top-level tab with three views — all reuse existing Universalis data, no
 - **Best deals:** items where the current DC min is below the Universalis average price by ≥ a percentage (default 20%). Surfaces undervalued items in your tracked pool.
 - **Marketshare:** your items ranked by gil/day (`profit × velocity` for craftable, `price × velocity` for sale-only). Optional toggle to include every starter pack (even disabled ones) for a wider view.
 
+## Best Deals Queries
+
+A new `/queries` route inspired by Saddlebag Exchange. Scans the entire Chaos DC market
+(not just your tracked watchlist) and ranks items by discount, gil/day, velocity, or
+unit price.
+
+- **Item DB:** one-time fetch of ~80k marketable items from XIVAPI, cached in IndexedDB
+  forever. Refresh from Settings after a game patch.
+- **Bulk fetcher:** chunks IDs into 100-per-batch Universalis calls with concurrency 4.
+  A whole-market scan takes ~10–40s depending on filters.
+- **Presets:** Mega Value HQ, Fast Sellers HQ, Food & Potions, Furnishings discount.
+- **Builder:** every filter (category multi-select, HQ/NQ, min discount, min velocity,
+  price range, sort, limit) is editable for ad-hoc queries.
+
 ## Legacy
 
 The original single-file artifact lives in `legacy/phantom_crafting_tracker.html` for reference.
