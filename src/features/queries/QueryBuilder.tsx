@@ -162,6 +162,17 @@ export function QueryBuilder({ value, onChange, onRun, busy }: Props) {
         </label>
 
         <label className="block">
+          <span className="font-mono text-[10px] tracking-widest text-text-low uppercase">Min gap (gil)</span>
+          <input
+            type="number" min={0} step={1000}
+            value={value.minGap ?? ''}
+            onChange={(e) => patch({ minGap: nullableIntInput(e) })}
+            className="mt-1 block w-full bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+            title="Absolute gil floor for repost gap"
+          />
+        </label>
+
+        <label className="block">
           <span className="font-mono text-[10px] tracking-widest text-text-low uppercase">Mode</span>
           <select
             value={value.mode}
