@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom';
 import { Header } from './components/layout/Header';
 import Home from './routes/Home';
 import Watchlist from './routes/Watchlist';
+import Insights from './routes/Insights';
 import Settings from './routes/Settings';
 
 export default function App() {
@@ -11,6 +12,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/watchlist" element={<Watchlist />} />
+        <Route path="/insights" element={<Insights />} />
         <Route path="/settings" element={<Settings />} />
       </Routes>
     </div>
