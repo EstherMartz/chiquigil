@@ -1,5 +1,6 @@
 export type HqMode = 'hq' | 'nq' | 'either';
 export type QuerySort = 'discount' | 'gilFlow' | 'velocity' | 'unitPrice';
+export type QueryScope = 'home' | 'dc';
 
 export interface QueryFilter {
   searchCategories: number[];
@@ -10,6 +11,9 @@ export interface QueryFilter {
   maxPrice: number | null;
   sort: QuerySort;
   limit: number;
+  scope: QueryScope;
+  maxListings: number | null;
+  craftableOnly: boolean;
 }
 
 export interface QueryPreset {
@@ -31,6 +35,18 @@ export interface QueryResultRow {
   hq: boolean;
 }
 
+export interface CraftFlipRow {
+  id: number;
+  name: string;
+  sc: number;
+  unitPrice: number;
+  materialCost: number;
+  profit: number;
+  velocity: number;
+  gilPerDay: number;
+  hq: boolean;
+}
+
 export function filterHash(f: QueryFilter): string {
   return JSON.stringify({
     sc: [...f.searchCategories].sort((a, b) => a - b),
@@ -40,5 +56,8 @@ export function filterHash(f: QueryFilter): string {
     p: [f.minPrice, f.maxPrice],
     s: f.sort,
     l: f.limit,
+    scope: f.scope,
+    ml: f.maxListings,
+    co: f.craftableOnly,
   });
 }
