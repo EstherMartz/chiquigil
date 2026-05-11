@@ -23,51 +23,23 @@ function withProviders(node: React.ReactNode) {
   );
 }
 
-describe('Queries route', () => {
-  it('renders all four preset chips', async () => {
+describe('Queries route (craft category)', () => {
+  it('renders only craft preset chips', async () => {
     await putCachedItems([]);
     render(withProviders(<Queries />));
-    expect(await screen.findByRole('button', { name: /mega value hq/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /fast sellers hq/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /food & potions/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /furnishings discount/i })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /undersupply/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /craft-flip phantom/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /mega value hq/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /fast sellers hq/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /food & potions/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /furnishings discount/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /reposts \(camp\)/i })).toBeNull();
   });
 
-  it('runs a preset against a mocked snapshot + mocked Universalis', async () => {
-    await putCachedItems([
-      { id: 100, name: 'Cheap Meal', sc: 45, ui: 30, ilvl: 1, canHq: true },
-      { id: 101, name: 'Expensive Meal', sc: 45, ui: 30, ilvl: 1, canHq: true },
-    ]);
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        items: {
-          '100': {
-            listings: [{ hq: false, pricePerUnit: 40, worldName: 'Phantom' }, { hq: true, pricePerUnit: 50, worldName: 'Phantom' }],
-            recentHistory: [],
-            regularSaleVelocity: 1,
-            lastUploadTime: Date.now(),
-            averagePriceNQ: 100,
-            averagePriceHQ: 100,
-          },
-          '101': {
-            listings: [{ hq: false, pricePerUnit: 95, worldName: 'Phantom' }],
-            recentHistory: [],
-            regularSaleVelocity: 1,
-            lastUploadTime: Date.now(),
-            averagePriceNQ: 100,
-            averagePriceHQ: null,
-          },
-        },
-      }),
-    }));
-
+  it('renders the Crafts heading', async () => {
+    await putCachedItems([]);
     render(withProviders(<Queries />));
-    fireEvent.click(await screen.findByRole('button', { name: /food & potions/i }));
-    fireEvent.click(screen.getByRole('button', { name: /run query/i }));
-
-    await waitFor(() => expect(screen.getByText(/Cheap Meal/)).toBeInTheDocument(), { timeout: 5000 });
-    expect(screen.queryByText(/Expensive Meal/)).toBeNull();
+    expect(await screen.findByRole('heading', { name: /^crafts$/i })).toBeInTheDocument();
   });
 
   it('Undersupply preset: home-world fetch + lazy recipes + maxListings filter', async () => {
@@ -78,7 +50,6 @@ describe('Queries route', () => {
     ]);
 
     vi.stubGlobal('fetch', vi.fn().mockImplementation(async (url: string) => {
-      // Universalis (item prices) — match by URL pattern
       if (url.includes('universalis.app/api/v2/')) {
         return {
           ok: true,
@@ -112,7 +83,6 @@ describe('Queries route', () => {
           }),
         };
       }
-      // XIVAPI recipe search — return a recipe for item 200, nothing for 201
       if (url.includes('xivapi.com/api/search') && url.includes('ItemResult%3D200')) {
         return {
           ok: true,
@@ -129,7 +99,6 @@ describe('Queries route', () => {
           }),
         };
       }
-      // Any other XIVAPI call (e.g. for items that don't qualify) — return no results
       if (url.includes('xivapi.com')) {
         return { ok: true, json: async () => ({ results: [] }) };
       }
@@ -138,65 +107,12 @@ describe('Queries route', () => {
 
     render(withProviders(<Queries />));
     fireEvent.click(await screen.findByRole('button', { name: /undersupply/i }));
-    fireEvent.click(screen.getByRole('button', { name: /run query/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /run query/i }));
 
-    // Item 200 should appear (canHq, 1 listing, velocity 2, recipe resolved).
-    // Item 201 dropped by maxListings (6 > 2).
     await waitFor(
       () => expect(screen.getByText(/Scarce Craft/)).toBeInTheDocument(),
       { timeout: 5000 },
     );
     expect(screen.queryByText(/Oversupplied/)).toBeNull();
-  });
-
-  it('Reposts preset: surfaces wall-gap opportunities, drops tied-sellers', async () => {
-    await putCachedItems([
-      { id: 300, name: 'Pixie Cotton',  sc: 50, ui: 30, ilvl: 90, canHq: true },
-      { id: 301, name: 'Tied Sellers',  sc: 50, ui: 30, ilvl: 90, canHq: true },
-    ]);
-
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        items: {
-          '300': {
-            listings: [
-              { hq: false, pricePerUnit: 80_000,  worldName: 'Phantom' },
-              { hq: false, pricePerUnit: 150_000, worldName: 'Phantom' },
-              { hq: false, pricePerUnit: 150_000, worldName: 'Phantom' },
-              { hq: false, pricePerUnit: 150_000, worldName: 'Phantom' },
-              { hq: false, pricePerUnit: 150_000, worldName: 'Phantom' },
-            ],
-            recentHistory: [],
-            regularSaleVelocity: 1.5,
-            lastUploadTime: Date.now(),
-            averagePriceNQ: 130_000,
-            averagePriceHQ: null,
-          },
-          '301': {
-            listings: [
-              { hq: false, pricePerUnit: 100_000, worldName: 'Phantom' },
-              { hq: false, pricePerUnit: 100_000, worldName: 'Phantom' },
-              { hq: false, pricePerUnit: 100_000, worldName: 'Phantom' },
-            ],
-            recentHistory: [],
-            regularSaleVelocity: 5,
-            lastUploadTime: Date.now(),
-            averagePriceNQ: 100_000,
-            averagePriceHQ: null,
-          },
-        },
-      }),
-    }));
-
-    render(withProviders(<Queries />));
-    fireEvent.click(await screen.findByRole('button', { name: /reposts \(camp\)/i }));
-    fireEvent.click(screen.getByRole('button', { name: /run query/i }));
-
-    await waitFor(
-      () => expect(screen.getByText(/Pixie Cotton/)).toBeInTheDocument(),
-      { timeout: 5000 },
-    );
-    expect(screen.queryByText(/Tied Sellers/)).toBeNull();
   });
 });
