@@ -71,6 +71,7 @@ export function parseMarketResponse(raw: RawResponse): MarketData {
 }
 
 export async function fetchMarketData(scope: Scope, ids: number[]): Promise<MarketData> {
+  if (ids.length === 0) return {};
   const res = await fetch(buildMarketUrl(scope, ids));
   if (!res.ok) throw new Error(`Universalis ${res.status}`);
   const raw = (await res.json()) as RawResponse;

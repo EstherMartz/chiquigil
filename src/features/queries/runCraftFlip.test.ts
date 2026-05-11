@@ -110,6 +110,18 @@ describe('runCraftFlip', () => {
     expect(out).toEqual([]);
   });
 
+  it('caps unit price at historical average to defend against listing outliers', () => {
+    // Someone listed item 1 at 10M HQ but the average HQ is 1500. We must use 1500.
+    const priceMap: MarketData = {
+      1: mkPrice({ minHQ: 10_000_000, averagePriceHQ: 1500, velocity: 1, listingCount: 1 }),
+      99: mkPrice({ minNQ: 50, averagePriceNQ: 60, listingCount: 1 }),
+    };
+    const out = runCraftFlip(snapshot, priceMap, recipeMap, { ...baseFilter, minVelocity: 1 });
+    expect(out).toHaveLength(1);
+    expect(out[0].unitPrice).toBe(1500); // capped to avg, NOT 10M
+    expect(out[0].profit).toBe(1400);    // 1500 - 100
+  });
+
   it('sorts by gilFlow desc and slices to limit', () => {
     const recipe2: Recipe = {
       itemResultId: 2, classJob: 'WVR', recipeLevel: 50,

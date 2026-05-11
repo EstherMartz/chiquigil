@@ -4,9 +4,17 @@ import type { Recipe } from '../../lib/recipes';
 import { computeMaterialCost } from '../profit/computeProfit';
 import type { CraftFlipRow, HqMode, QueryFilter, QuerySort } from './types';
 
+// Cap the listing-min at the historical average. Defends against single-listing
+// outliers (a lone 10M troll listing doesn't make us think the item sells for 10M).
+function safeUnit(listingMin: number | null, avg: number | null): number | null {
+  if (listingMin == null) return null;
+  if (avg == null || avg <= 0) return listingMin;
+  return Math.min(listingMin, avg);
+}
+
 function pickTier(m: MarketItem, hq: HqMode, canHq: boolean): { unit: number; isHq: boolean } | null {
-  const hqUnit = m.minHQ;
-  const nqUnit = m.minNQ;
+  const hqUnit = safeUnit(m.minHQ, m.averagePriceHQ);
+  const nqUnit = safeUnit(m.minNQ, m.averagePriceNQ);
   if (hq === 'hq') {
     if (!canHq || hqUnit == null) return null;
     return { unit: hqUnit, isHq: true };

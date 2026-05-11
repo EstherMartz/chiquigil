@@ -5,6 +5,7 @@ import { useMarketData } from '../watchlist/useMarketData';
 import { allItemsFromEnabledPacks } from '../items/starterPacks';
 import { findArbitrage } from './arbitrage';
 import { fmtGil } from '../../lib/format';
+import { ItemNameLinks } from '../../components/ItemNameLinks';
 import { Spinner } from '../../components/Spinner';
 import { StatusBanner } from '../../components/StatusBanner';
 
@@ -70,8 +71,7 @@ export function ArbitrageView() {
               {rows.map((r) => (
                 <tr key={r.id} className="border-t border-border-base hover:bg-bg-card-hi">
                   <td className="px-3 py-2.5">
-                    <div className="text-text-cream">{r.name}</div>
-                    <div className="font-mono text-[10px] text-text-low">{r.crafter}</div>
+                    <ItemNameLinks id={r.id} name={r.name} sub={r.crafter} />
                   </td>
                   <td className="px-3 py-2.5 text-right font-mono">{fmtGil(r.homePrice)}</td>
                   <td className="px-3 py-2.5 text-aether">{r.cheapestOther.world}</td>

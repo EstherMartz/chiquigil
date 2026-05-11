@@ -1,5 +1,6 @@
 import { fmtGil } from '../../lib/format';
 import { categoryLabel } from '../../lib/itemSearchCategories';
+import { ItemNameLinks } from '../../components/ItemNameLinks';
 import type { QueryResultRow } from './types';
 
 interface Props {
@@ -40,8 +41,12 @@ export function QueryResults({ rows, totalCandidates, skippedChunks }: Props) {
               <tr key={r.id} className="border-t border-border-base hover:bg-bg-card-hi">
                 <td className="px-3 py-2.5 font-mono text-text-low">{i + 1}</td>
                 <td className="px-3 py-2.5">
-                  <div className="text-text-cream">{r.name} {r.hq && <span className="text-gold">★</span>}</div>
-                  <div className="font-mono text-[10px] text-text-low">{categoryLabel(r.sc)}</div>
+                  <ItemNameLinks
+                    id={r.id}
+                    name={r.name}
+                    suffix={r.hq && <span className="text-gold"> ★</span>}
+                    sub={categoryLabel(r.sc)}
+                  />
                 </td>
                 <td className="px-3 py-2.5 text-right font-mono">{fmtGil(r.unitPrice)}</td>
                 <td className="px-3 py-2.5 text-right font-mono text-text-low hidden md:table-cell">{fmtGil(r.averagePrice)}</td>
