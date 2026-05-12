@@ -37,9 +37,14 @@ interface GatheringItemFields {
   GatheringItemLevel?: { fields?: { GatheringLevel?: number } } | Link<number>;
   IsHidden?: boolean;
 }
-// GatheringPointBase has 8 indexed slots Item[0]..Item[7] in the canonical EXD
-// column naming. XIVAPI v2 returns them as keyed fields `Item[0]`..`Item[7]`.
-type GatheringPointBaseFields = Partial<Record<`Item[${0|1|2|3|4|5|6|7}]`, Link<number>>>;
+// GatheringPointBase has 8 slots referencing GatheringItem. XIVAPI v2 rejects
+// our `Item` and `Item[0]` field shorthands with 400, so we fetch the full row
+// and parse defensively — the response may come back as either an array under
+// `Item` or as individually keyed fields like `Item[0]`..`Item[7]`.
+type RawSlot = Link<number> | undefined;
+type GatheringPointBaseFields = Record<string, unknown> & {
+  Item?: RawSlot[] | RawSlot;
+};
 interface GatheringPointFields {
   GatheringPointBase?: Link<number>;
 }
@@ -51,11 +56,12 @@ interface GatheringPointTransientFields {
 
 // ---------- Fetch + parse ----------
 
-async function fetchSheet<F>(sheet: string, fields: string): Promise<RawRow<F>[]> {
+async function fetchSheet<F>(sheet: string, fields: string | null): Promise<RawRow<F>[]> {
   const out: RawRow<F>[] = [];
   let after = 0;
   while (true) {
-    const params = new URLSearchParams({ fields, limit: String(PAGE_SIZE) });
+    const params = new URLSearchParams({ limit: String(PAGE_SIZE) });
+    if (fields) params.set('fields', fields);
     if (after > 0) params.set('after', String(after));
     const url = `${BASE.replace(/\/$/, '')}/api/sheet/${sheet}?${params.toString()}`;
     const res = await fetch(url);
@@ -97,10 +103,9 @@ export async function buildGatheringCatalog(opts: BuildOpts = {}): Promise<Gathe
   // All four sheets are independent — fire them concurrently.
   const [gatheringItems, bases, points, transients] = await Promise.all([
     fetchSheet<GatheringItemFields>('GatheringItem', 'Item,GatheringItemLevel.GatheringLevel,IsHidden'),
-    fetchSheet<GatheringPointBaseFields>(
-      'GatheringPointBase',
-      Array.from({ length: 8 }, (_, i) => `Item[${i}]`).join(','),
-    ),
+    // Omit `fields=` — XIVAPI v2 rejects every Item-slot shorthand we tried.
+    // GatheringPointBase has ~800 rows so the full-row payload is fine.
+    fetchSheet<GatheringPointBaseFields>('GatheringPointBase', null),
     fetchSheet<GatheringPointFields>('GatheringPoint', 'GatheringPointBase'),
     fetchSheet<GatheringPointTransientFields>(
       'GatheringPointTransient',
@@ -122,14 +127,25 @@ export async function buildGatheringCatalog(opts: BuildOpts = {}): Promise<Gathe
     });
   }
 
-  // baseRowId → set of gatheringItemRowIds
+  // baseRowId → set of gatheringItemRowIds. Walk the row defensively because
+  // we don't know up-front whether v2 returns an array under `Item` or 8
+  // keyed fields like `Item[0]`..`Item[7]`.
   const baseItems = new Map<number, Set<number>>();
   for (const b of bases) {
     const set = new Set<number>();
-    for (let i = 0; i < 8; i++) {
-      const slot = b.fields[`Item[${i}]` as keyof GatheringPointBaseFields];
-      const giId = slot?.value ?? 0;
-      if (giId > 0) set.add(giId);
+    const itemArr = (b.fields as { Item?: unknown }).Item;
+    if (Array.isArray(itemArr)) {
+      for (const slot of itemArr) {
+        const giId = (slot as Link<number> | undefined)?.value ?? 0;
+        if (giId > 0) set.add(giId);
+      }
+    } else {
+      // Indexed-key fallback.
+      for (let i = 0; i < 8; i++) {
+        const slot = (b.fields as Record<string, Link<number> | undefined>)[`Item[${i}]`];
+        const giId = slot?.value ?? 0;
+        if (giId > 0) set.add(giId);
+      }
     }
     if (set.size > 0) baseItems.set(b.row_id, set);
   }
