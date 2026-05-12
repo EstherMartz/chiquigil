@@ -4,7 +4,7 @@ import { buildRecipeQueryUrl, parseRecipeResponse, fetchRecipeForItem } from './
 describe('buildRecipeQueryUrl', () => {
   it('builds an XIVAPI Recipe-sheet query filtering by ItemResult', () => {
     expect(buildRecipeQueryUrl(49281)).toBe(
-      'https://v2.xivapi.com/api/search?sheets=Recipe&query=ItemResult%3D49281&fields=ItemResult,CraftType.Name,RecipeLevelTable.ClassJobLevel,Ingredient0,AmountIngredient0,Ingredient1,AmountIngredient1,Ingredient2,AmountIngredient2,Ingredient3,AmountIngredient3,Ingredient4,AmountIngredient4,Ingredient5,AmountIngredient5,Ingredient6,AmountIngredient6,Ingredient7,AmountIngredient7,Ingredient8,AmountIngredient8,Ingredient9,AmountIngredient9&limit=1'
+      'https://v2.xivapi.com/api/search?sheets=Recipe&query=ItemResult%3D49281&fields=ItemResult,CraftType.Name,RecipeLevelTable.ClassJobLevel,RecipeLevelTable.Stars,RecipeLevelTable.Difficulty,RecipeLevelTable.Quality,RecipeLevelTable.Durability,DifficultyFactor,QualityFactor,DurabilityFactor,RequiredCraftsmanship,RequiredControl,Ingredient0,AmountIngredient0,Ingredient1,AmountIngredient1,Ingredient2,AmountIngredient2,Ingredient3,AmountIngredient3,Ingredient4,AmountIngredient4,Ingredient5,AmountIngredient5,Ingredient6,AmountIngredient6,Ingredient7,AmountIngredient7,Ingredient8,AmountIngredient8,Ingredient9,AmountIngredient9&limit=1'
     );
   });
 });
@@ -43,6 +43,76 @@ describe('parseRecipeResponse', () => {
         { itemId: 200, amount: 3 },
       ],
     });
+  });
+
+  it('extracts stats when RecipeLevelTable carries them, applying factors', () => {
+    const raw = {
+      results: [{
+        fields: {
+          ItemResult: { value: 1 },
+          CraftType: { fields: { Name: 'Weaver' } },
+          RecipeLevelTable: {
+            fields: {
+              ClassJobLevel: 100,
+              Stars: 4,
+              Difficulty: 10040,
+              Quality: 21200,
+              Durability: 70,
+            },
+          },
+          DifficultyFactor: 100,
+          QualityFactor: 100,
+          DurabilityFactor: 100,
+          RequiredCraftsmanship: 5400,
+          RequiredControl: 5200,
+        },
+      }],
+    };
+    const r = parseRecipeResponse(1, raw);
+    expect(r?.stats).toEqual({
+      durability: 70,
+      progress: 10040,
+      quality: 21200,
+      stars: 4,
+      requiredCraftsmanship: 5400,
+      requiredControl: 5200,
+    });
+  });
+
+  it('applies sub-100 factors to base stats', () => {
+    const raw = {
+      results: [{
+        fields: {
+          ItemResult: { value: 1 },
+          CraftType: { fields: { Name: 'Weaver' } },
+          RecipeLevelTable: {
+            fields: { ClassJobLevel: 100, Difficulty: 1000, Quality: 2000, Durability: 100 },
+          },
+          DifficultyFactor: 50,
+          QualityFactor: 75,
+          DurabilityFactor: 80,
+        },
+      }],
+    };
+    const r = parseRecipeResponse(1, raw);
+    expect(r?.stats).toMatchObject({
+      progress: 500,
+      quality: 1500,
+      durability: 80,
+    });
+  });
+
+  it('omits stats when RecipeLevelTable has none', () => {
+    const raw = {
+      results: [{
+        fields: {
+          ItemResult: { value: 1 },
+          CraftType: { fields: { Name: 'Weaver' } },
+          RecipeLevelTable: { fields: { ClassJobLevel: 100 } },
+        },
+      }],
+    };
+    expect(parseRecipeResponse(1, raw)?.stats).toBeUndefined();
   });
 
   it('maps full crafter names back to codes', () => {

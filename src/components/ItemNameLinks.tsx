@@ -2,6 +2,7 @@ import { universalisItemUrl, garlandItemUrl } from '../lib/format';
 import { useSettingsStore } from '../features/settings/store';
 import { useSnapshotById } from '../features/queries/useSnapshotById';
 import { CopyButton } from './CopyButton';
+import { RecipeHover } from './RecipeHover';
 
 interface Props {
   id: number;
@@ -29,7 +30,7 @@ export function ItemNameLinks({ id, name, suffix, sub, crafter }: Props) {
 
   return (
     <>
-      <span className="inline-flex items-baseline gap-1.5 flex-wrap">
+      <RecipeHover itemId={id} itemName={name}>
         {ilvl != null && ilvl > 1 && (
           <span className="font-mono text-[10px] tracking-widest text-gold tabular-nums">
             i{ilvl}
@@ -46,7 +47,7 @@ export function ItemNameLinks({ id, name, suffix, sub, crafter }: Props) {
         </a>
         {suffix}
         <CopyButton text={name} />
-      </span>
+      </RecipeHover>
       {(sub || crafter) && (
         <div className="font-mono text-[10px] text-text-low mt-0.5 flex items-center gap-2 flex-wrap">
           {sub && <span>{sub}</span>}

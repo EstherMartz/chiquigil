@@ -2,6 +2,7 @@ import { fmtGil, universalisItemUrl, garlandItemUrl } from '../../lib/format';
 import { useSettingsStore } from '../settings/store';
 import { useSnapshotById } from '../queries/useSnapshotById';
 import { CopyButton } from '../../components/CopyButton';
+import { RecipeHover } from '../../components/RecipeHover';
 import type { SessionResult, SessionStrategy } from './packSession';
 
 export interface SessionDiagnostics {
@@ -78,17 +79,19 @@ export function SessionHero({ result, hasGenerated, strategy, stale, diagnostics
         </span>
       </div>
       <h1 className="font-body text-4xl sm:text-5xl md:text-6xl text-gold-hi leading-[1] tracking-tight text-balance">
-        <a
-          href={universalisItemUrl(top.id, world)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="hover:text-gold hover:underline decoration-1 underline-offset-4 transition-colors"
-          title="Open on Universalis"
-        >
-          {top.name}
-        </a>
-        <span className="text-gold-hi">.</span>
-        <CopyButton text={top.name} className="ml-3 align-middle" />
+        <RecipeHover itemId={top.id} itemName={top.name}>
+          <a
+            href={universalisItemUrl(top.id, world)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-gold hover:underline decoration-1 underline-offset-4 transition-colors"
+            title="Open on Universalis"
+          >
+            {top.name}
+          </a>
+          <span className="text-gold-hi">.</span>
+          <CopyButton text={top.name} className="ml-3 align-middle" />
+        </RecipeHover>
       </h1>
       <div className="font-mono text-[10px] tracking-[0.3em] uppercase text-text-low mt-3 flex items-center gap-3 flex-wrap">
         <span>×{top.batch} · +{fmtGil(top.totalGil)} expected</span>

@@ -5,6 +5,15 @@ const FIELDS = [
   'ItemResult',
   'CraftType.Name',
   'RecipeLevelTable.ClassJobLevel',
+  'RecipeLevelTable.Stars',
+  'RecipeLevelTable.Difficulty',
+  'RecipeLevelTable.Quality',
+  'RecipeLevelTable.Durability',
+  'DifficultyFactor',
+  'QualityFactor',
+  'DurabilityFactor',
+  'RequiredCraftsmanship',
+  'RequiredControl',
   ...Array.from({ length: 10 }, (_, i) => [`Ingredient${i}`, `AmountIngredient${i}`]).flat(),
 ].join(',');
 
@@ -13,11 +22,21 @@ export interface Ingredient {
   amount: number;
 }
 
+export interface RecipeStats {
+  durability: number;
+  progress: number;
+  quality: number;
+  stars: number;
+  requiredCraftsmanship: number;
+  requiredControl: number;
+}
+
 export interface Recipe {
   itemResultId: number;
   classJob: CrafterCode;
   recipeLevel: number;
   ingredients: Ingredient[];
+  stats?: RecipeStats;
 }
 
 const NAME_TO_CODE: Record<string, CrafterCode> = {
@@ -37,10 +56,22 @@ export function buildRecipeQueryUrl(itemId: number): string {
 }
 
 interface RawIngredient { value?: number }
+interface RawRecipeLevelTableFields {
+  ClassJobLevel?: number;
+  Stars?: number;
+  Difficulty?: number;
+  Quality?: number;
+  Durability?: number;
+}
 interface RawResultFields {
   ItemResult?: { value?: number };
   CraftType?: { fields?: { Name?: string } };
-  RecipeLevelTable?: { fields?: { ClassJobLevel?: number } };
+  RecipeLevelTable?: { fields?: RawRecipeLevelTableFields };
+  DifficultyFactor?: number;
+  QualityFactor?: number;
+  DurabilityFactor?: number;
+  RequiredCraftsmanship?: number;
+  RequiredControl?: number;
   [k: string]: unknown;
 }
 
@@ -49,7 +80,8 @@ export function parseRecipeResponse(itemId: number, raw: { results?: Array<{ fie
   if (!first) return null;
   const name = first.CraftType?.fields?.Name ?? '';
   const code = NAME_TO_CODE[name] ?? 'ANY';
-  const recipeLevel = first.RecipeLevelTable?.fields?.ClassJobLevel ?? 0;
+  const rlt = first.RecipeLevelTable?.fields;
+  const recipeLevel = rlt?.ClassJobLevel ?? 0;
   const ingredients: Ingredient[] = [];
   for (let i = 0; i < 10; i++) {
     const ing = first[`Ingredient${i}`] as RawIngredient | undefined;
@@ -58,7 +90,21 @@ export function parseRecipeResponse(itemId: number, raw: { results?: Array<{ fie
       ingredients.push({ itemId: ing.value, amount: amt });
     }
   }
-  return { itemResultId: itemId, classJob: code, recipeLevel, ingredients };
+  let stats: RecipeStats | undefined;
+  if (rlt && (rlt.Difficulty != null || rlt.Quality != null || rlt.Durability != null)) {
+    const df = first.DifficultyFactor ?? 100;
+    const qf = first.QualityFactor ?? 100;
+    const durf = first.DurabilityFactor ?? 100;
+    stats = {
+      durability: Math.floor((rlt.Durability ?? 0) * durf / 100),
+      progress: Math.floor((rlt.Difficulty ?? 0) * df / 100),
+      quality: Math.floor((rlt.Quality ?? 0) * qf / 100),
+      stars: rlt.Stars ?? 0,
+      requiredCraftsmanship: first.RequiredCraftsmanship ?? 0,
+      requiredControl: first.RequiredControl ?? 0,
+    };
+  }
+  return { itemResultId: itemId, classJob: code, recipeLevel, ingredients, ...(stats ? { stats } : {}) };
 }
 
 export async function fetchRecipeForItem(itemId: number): Promise<Recipe | null> {

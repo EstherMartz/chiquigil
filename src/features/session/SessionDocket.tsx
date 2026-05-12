@@ -2,6 +2,7 @@ import { fmtGil, universalisItemUrl, garlandItemUrl } from '../../lib/format';
 import { useSettingsStore } from '../settings/store';
 import { useSnapshotById } from '../queries/useSnapshotById';
 import { CopyButton } from '../../components/CopyButton';
+import { RecipeHover } from '../../components/RecipeHover';
 import type { SessionResult } from './packSession';
 
 interface Props {
@@ -31,7 +32,7 @@ export function SessionDocket({ result, hasGenerated }: Props) {
               {(i + 1).toString().padStart(2, '0')}
             </div>
             <div className="col-span-10 sm:col-span-5">
-              <div className="flex items-baseline gap-2 flex-wrap">
+              <RecipeHover itemId={p.id} itemName={p.name}>
                 {byId.get(p.id)?.ilvl != null && byId.get(p.id)!.ilvl > 1 && (
                   <span className="font-mono text-[10px] tracking-widest text-gold tabular-nums">
                     i{byId.get(p.id)!.ilvl}
@@ -47,7 +48,7 @@ export function SessionDocket({ result, hasGenerated }: Props) {
                   {p.name}
                 </a>
                 <CopyButton text={p.name} />
-              </div>
+              </RecipeHover>
               <div className="font-mono text-[10px] tracking-widest uppercase text-text-low mt-1 flex items-center gap-2 flex-wrap">
                 <span className="text-aether border border-border-base px-1 py-0.5 leading-none">
                   {p.crafter}
