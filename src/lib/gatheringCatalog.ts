@@ -93,11 +93,19 @@ export interface BuildOpts {
 export async function buildGatheringCatalog(opts: BuildOpts = {}): Promise<GatheringCatalog> {
   const progress = opts.onProgress ?? (() => {});
 
-  progress('Fetching gathering items…');
-  const gatheringItems = await fetchSheet<GatheringItemFields>(
-    'GatheringItem',
-    'Item,GatheringItemLevel.GatheringLevel,IsHidden',
-  );
+  progress('Fetching gathering sheets in parallel…');
+  // All four sheets are independent — fire them concurrently.
+  const [gatheringItems, bases, points, transients] = await Promise.all([
+    fetchSheet<GatheringItemFields>('GatheringItem', 'Item,GatheringItemLevel.GatheringLevel,IsHidden'),
+    fetchSheet<GatheringPointBaseFields>('GatheringPointBase', 'Item'),
+    fetchSheet<GatheringPointFields>('GatheringPoint', 'GatheringPointBase'),
+    fetchSheet<GatheringPointTransientFields>(
+      'GatheringPointTransient',
+      'EphemeralStartTime,EphemeralEndTime,GatheringRarePopTimeTable',
+    ),
+  ]);
+
+  progress('Joining sheets…');
 
   // gatheringItemRowId → { itemId, level, hidden }
   const giIndex = new Map<number, { itemId: number; level: number; hidden: boolean }>();
@@ -111,12 +119,6 @@ export async function buildGatheringCatalog(opts: BuildOpts = {}): Promise<Gathe
     });
   }
 
-  progress('Fetching gathering point bases…');
-  const bases = await fetchSheet<GatheringPointBaseFields>(
-    'GatheringPointBase',
-    'Item',
-  );
-
   // baseRowId → set of gatheringItemRowIds
   const baseItems = new Map<number, Set<number>>();
   for (const b of bases) {
@@ -128,24 +130,12 @@ export async function buildGatheringCatalog(opts: BuildOpts = {}): Promise<Gathe
     if (set.size > 0) baseItems.set(b.row_id, set);
   }
 
-  progress('Fetching gathering points…');
-  const points = await fetchSheet<GatheringPointFields>(
-    'GatheringPoint',
-    'GatheringPointBase',
-  );
-
   // pointRowId → baseRowId
   const pointBase = new Map<number, number>();
   for (const p of points) {
     const b = p.fields.GatheringPointBase?.value ?? 0;
     if (b > 0) pointBase.set(p.row_id, b);
   }
-
-  progress('Fetching gathering point transients…');
-  const transients = await fetchSheet<GatheringPointTransientFields>(
-    'GatheringPointTransient',
-    'EphemeralStartTime,EphemeralEndTime,GatheringRarePopTimeTable',
-  );
 
   // Set of baseRowIds that have at least one timed point
   const timedBases = new Set<number>();

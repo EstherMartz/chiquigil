@@ -1,5 +1,5 @@
 import { ExportImportPanel } from '../features/settings/ExportImportPanel';
-import { clearRecipeCache } from '../lib/recipeCache';
+import { clearRecipeCache, clearRecipeSnapshot } from '../lib/recipeCache';
 import { useQueryClient } from '@tanstack/react-query';
 import { useItemSnapshot, useRefreshItemSnapshot } from '../features/queries/useItemSnapshot';
 
@@ -10,7 +10,9 @@ export default function Settings() {
 
   async function bustCache() {
     await clearRecipeCache();
+    await clearRecipeSnapshot();
     queryClient.invalidateQueries({ queryKey: ['recipes'] });
+    queryClient.invalidateQueries({ queryKey: ['recipe-snapshot'] });
   }
 
   function fmtDate(ts: number | null | undefined) {

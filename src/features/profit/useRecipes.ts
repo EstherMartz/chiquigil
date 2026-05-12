@@ -1,26 +1,30 @@
-import { useQuery } from '@tanstack/react-query';
-import { fetchRecipeForItem, type Recipe } from '../../lib/recipes';
-import { getCachedRecipe, putCachedRecipe } from '../../lib/recipeCache';
+import { useMemo } from 'react';
+import { useRecipeSnapshot } from '../queries/useRecipeSnapshot';
+import type { Recipe } from '../../lib/recipes';
 
-async function resolveRecipe(itemId: number): Promise<Recipe | null> {
-  const cached = await getCachedRecipe(itemId);
-  if (cached !== undefined) return cached;
-  const fresh = await fetchRecipeForItem(itemId);
-  await putCachedRecipe(itemId, fresh);
-  return fresh;
-}
-
+/**
+ * Returns Map<itemId, Recipe | null> for the given ids by consulting the
+ * bulk recipe snapshot. After the snapshot loads once (~5-15s), every
+ * subsequent call is a local Map.get with no network traffic.
+ *
+ * The return shape mimics a TanStack Query result so existing consumers
+ * (which check .data / .isLoading / .isError) don't need rewiring.
+ */
 export function useRecipes(itemIds: number[]) {
-  const sorted = [...new Set(itemIds)].sort((a, b) => a - b);
-  return useQuery<Map<number, Recipe | null>>({
-    queryKey: ['recipes', sorted],
-    enabled: sorted.length > 0,
-    staleTime: Infinity,
-    queryFn: async () => {
-      const entries = await Promise.all(
-        sorted.map(async (id) => [id, await resolveRecipe(id)] as const),
-      );
-      return new Map(entries);
-    },
-  });
+  const snapshot = useRecipeSnapshot(itemIds.length > 0);
+  const data = useMemo<Map<number, Recipe | null> | undefined>(() => {
+    if (!snapshot.data) return undefined;
+    const m = new Map<number, Recipe | null>();
+    for (const id of itemIds) m.set(id, snapshot.data.get(id) ?? null);
+    return m;
+  }, [snapshot.data, itemIds]);
+  return {
+    data,
+    isLoading: snapshot.isLoading,
+    isFetching: snapshot.isFetching,
+    isError: snapshot.isError,
+    isSuccess: snapshot.isSuccess && data != null,
+    error: snapshot.error,
+    refetch: snapshot.refetch,
+  };
 }

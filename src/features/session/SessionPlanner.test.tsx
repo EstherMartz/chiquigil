@@ -7,7 +7,7 @@ import SessionPlanner from './SessionPlanner';
 import { useSettingsStore, defaultSettings } from '../settings/store';
 import { useWatchlistStore, defaultWatchlist } from '../items/watchlistStore';
 import { useUiStore, defaultUi } from '../ui/uiStore';
-import { clearRecipeCache, clearItemCache, putCachedItems } from '../../lib/recipeCache';
+import { clearRecipeCache, clearItemCache, putCachedItems, clearRecipeSnapshot } from '../../lib/recipeCache';
 
 beforeEach(async () => {
   localStorage.clear();
@@ -15,6 +15,7 @@ beforeEach(async () => {
   useWatchlistStore.setState(defaultWatchlist());
   useUiStore.setState(defaultUi());
   await clearRecipeCache();
+  await clearRecipeSnapshot();
   await clearItemCache();
   vi.restoreAllMocks();
 });
@@ -61,7 +62,29 @@ describe('SessionPlanner', () => {
           }),
         });
       }
-      // XIVAPI recipe: 49281 is LTW lvl 100 with 5x ingredient 7.
+      // XIVAPI: bulk Recipe sheet for the snapshot-backed useRecipes.
+      if (url.includes('/api/sheet/Recipe')) {
+        // First page returns 49281's recipe; subsequent pages empty (loop end).
+        const hasAfter = url.includes('after=');
+        return Promise.resolve({
+          ok: true,
+          json: async () => hasAfter
+            ? { rows: [] }
+            : {
+                rows: [{
+                  row_id: 1,
+                  fields: {
+                    ItemResult: { value: 49281 },
+                    CraftType: { fields: { Name: 'Leatherworker' } },
+                    RecipeLevelTable: { fields: { ClassJobLevel: 100 } },
+                    Ingredient0: { value: 7 },
+                    AmountIngredient0: 5,
+                  },
+                }],
+              },
+        });
+      }
+      // Per-item recipe search (legacy callers — kept harmless).
       const isFor49281 = url.includes('ItemResult%3D49281');
       return Promise.resolve({
         ok: true,

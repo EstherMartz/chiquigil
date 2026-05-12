@@ -6,7 +6,7 @@ import Watchlist from './Watchlist';
 import { useSettingsStore, defaultSettings } from '../features/settings/store';
 import { useWatchlistStore, defaultWatchlist } from '../features/items/watchlistStore';
 import { useUiStore, defaultUi } from '../features/ui/uiStore';
-import { clearRecipeCache } from '../lib/recipeCache';
+import { clearRecipeCache, clearRecipeSnapshot } from '../lib/recipeCache';
 
 beforeEach(async () => {
   localStorage.clear();
@@ -14,6 +14,7 @@ beforeEach(async () => {
   useWatchlistStore.setState(defaultWatchlist());
   useUiStore.setState(defaultUi());
   await clearRecipeCache();
+  await clearRecipeSnapshot();
   vi.restoreAllMocks();
 });
 
@@ -40,7 +41,25 @@ describe('Watchlist route', () => {
           }),
         });
       }
-      // XIVAPI recipe for 49281, empty for any other item id
+      // Bulk Recipe sheet (snapshot-backed useRecipes).
+      if (url.includes('/api/sheet/Recipe')) {
+        const hasAfter = url.includes('after=');
+        return Promise.resolve({
+          ok: true,
+          json: async () => hasAfter ? { rows: [] } : {
+            rows: [{
+              row_id: 1,
+              fields: {
+                ItemResult: { value: 49281 },
+                CraftType: { fields: { Name: 'Leatherworker' } },
+                RecipeLevelTable: { fields: { ClassJobLevel: 100 } },
+                Ingredient0: { value: 7 }, AmountIngredient0: 5,
+              },
+            }],
+          },
+        });
+      }
+      // Legacy per-item recipe search — kept harmless.
       return Promise.resolve({
         ok: true,
         json: async () => {

@@ -4,12 +4,13 @@ import type { SnapshotItem } from './itemSnapshot';
 import type { GatheringInfo } from './gatheringCatalog';
 
 const DB_NAME = 'ffxiv-helper';
-const DB_VERSION = 4;
+const DB_VERSION = 5;
 const RECIPE_STORE = 'recipes';
 const NAME_STORE = 'names';
 const ITEM_STORE = 'items';
 const META_STORE = 'meta';
 const GATHER_STORE = 'gathering';
+const RECIPE_SNAPSHOT_STORE = 'recipeSnapshot';
 
 let dbPromise: Promise<IDBPDatabase> | null = null;
 
@@ -31,6 +32,9 @@ function db(): Promise<IDBPDatabase> {
         }
         if (!database.objectStoreNames.contains(GATHER_STORE)) {
           database.createObjectStore(GATHER_STORE);
+        }
+        if (!database.objectStoreNames.contains(RECIPE_SNAPSHOT_STORE)) {
+          database.createObjectStore(RECIPE_SNAPSHOT_STORE);
         }
       },
     });
@@ -106,4 +110,27 @@ export async function clearGatheringCatalog(): Promise<void> {
 
 export async function getGatheringCatalogUpdatedAt(): Promise<number | undefined> {
   return (await db()).get(META_STORE, GATHER_CATALOG_TS_KEY);
+}
+
+const RECIPE_SNAPSHOT_KEY = 'snapshot';
+const RECIPE_SNAPSHOT_TS_KEY = 'recipeSnapshotUpdatedAt';
+
+export async function getCachedRecipeSnapshot(): Promise<Array<[number, Recipe]> | undefined> {
+  return (await db()).get(RECIPE_SNAPSHOT_STORE, RECIPE_SNAPSHOT_KEY);
+}
+
+export async function putCachedRecipeSnapshot(entries: Array<[number, Recipe]>): Promise<void> {
+  const handle = await db();
+  await handle.put(RECIPE_SNAPSHOT_STORE, entries, RECIPE_SNAPSHOT_KEY);
+  await handle.put(META_STORE, Date.now(), RECIPE_SNAPSHOT_TS_KEY);
+}
+
+export async function clearRecipeSnapshot(): Promise<void> {
+  const handle = await db();
+  await handle.clear(RECIPE_SNAPSHOT_STORE);
+  await handle.delete(META_STORE, RECIPE_SNAPSHOT_TS_KEY);
+}
+
+export async function getRecipeSnapshotUpdatedAt(): Promise<number | undefined> {
+  return (await db()).get(META_STORE, RECIPE_SNAPSHOT_TS_KEY);
 }

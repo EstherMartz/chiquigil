@@ -5,12 +5,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type React from 'react';
 import Crafts from './Crafts';
 import { useSettingsStore, defaultSettings } from '../features/settings/store';
-import { clearItemCache, putCachedItems } from '../lib/recipeCache';
+import { clearItemCache, putCachedItems, clearRecipeSnapshot } from '../lib/recipeCache';
 
 beforeEach(async () => {
   localStorage.clear();
   useSettingsStore.setState(defaultSettings());
   await clearItemCache();
+  await clearRecipeSnapshot();
   vi.restoreAllMocks();
 });
 
@@ -81,6 +82,24 @@ describe('Crafts route', () => {
               },
             },
           }),
+        };
+      }
+      if (url.includes('xivapi.com/api/sheet/Recipe')) {
+        const hasAfter = url.includes('after=');
+        return {
+          ok: true,
+          json: async () => hasAfter ? { rows: [] } : {
+            rows: [{
+              row_id: 1,
+              fields: {
+                ItemResult: { value: 200 },
+                CraftType: { fields: { Name: 'Leatherworker' } },
+                RecipeLevelTable: { fields: { ClassJobLevel: 90 } },
+                Ingredient0: { value: 299 },
+                AmountIngredient0: 2,
+              },
+            }],
+          },
         };
       }
       if (url.includes('xivapi.com/api/search') && url.includes('ItemResult%3D200')) {
