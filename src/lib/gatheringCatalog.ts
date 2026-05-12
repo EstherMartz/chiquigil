@@ -115,6 +115,11 @@ export async function buildGatheringCatalog(opts: BuildOpts = {}): Promise<Gathe
 
   progress('Joining sheets…');
 
+  if (gatheringItems.length > 0) {
+    // eslint-disable-next-line no-console
+    console.info('[gatheringCatalog] sample GatheringItem row:', gatheringItems[0]);
+  }
+
   // gatheringItemRowId → { itemId, level, hidden }
   const giIndex = new Map<number, { itemId: number; level: number; hidden: boolean }>();
   for (const row of gatheringItems) {
@@ -126,28 +131,43 @@ export async function buildGatheringCatalog(opts: BuildOpts = {}): Promise<Gathe
       hidden: row.fields.IsHidden === true,
     });
   }
+  if (giIndex.size === 0 && gatheringItems.length > 0) {
+    // eslint-disable-next-line no-console
+    console.warn('[gatheringCatalog] parsed 0 GatheringItem rows from', gatheringItems.length);
+  }
 
-  // baseRowId → set of gatheringItemRowIds. Walk the row defensively because
-  // we don't know up-front whether v2 returns an array under `Item` or 8
-  // keyed fields like `Item[0]`..`Item[7]`.
+  // Diagnostic: dump the first row's shape so we know what XIVAPI v2 is sending.
+  // Without this we'd silently produce an empty catalog when the response shape
+  // doesn't match what we expected.
+  if (bases.length > 0) {
+    // eslint-disable-next-line no-console
+    console.info('[gatheringCatalog] sample GatheringPointBase row:', bases[0]);
+  }
+
+  // baseRowId → set of gatheringItemRowIds. Cast a wide net: collect any field
+  // whose key starts with "Item" and whose value looks like a link or array of
+  // links. Handles every plausible v2 shape: `Item: [...]`, `Item[N]: {value}`,
+  // `Item0: {value}`, etc.
   const baseItems = new Map<number, Set<number>>();
   for (const b of bases) {
     const set = new Set<number>();
-    const itemArr = (b.fields as { Item?: unknown }).Item;
-    if (Array.isArray(itemArr)) {
-      for (const slot of itemArr) {
-        const giId = (slot as Link<number> | undefined)?.value ?? 0;
-        if (giId > 0) set.add(giId);
-      }
-    } else {
-      // Indexed-key fallback.
-      for (let i = 0; i < 8; i++) {
-        const slot = (b.fields as Record<string, Link<number> | undefined>)[`Item[${i}]`];
-        const giId = slot?.value ?? 0;
-        if (giId > 0) set.add(giId);
+    for (const [key, raw] of Object.entries(b.fields)) {
+      if (!/^Item(\b|[\[0-9])/.test(key)) continue;
+      if (Array.isArray(raw)) {
+        for (const slot of raw) {
+          const v = (slot as Link<number> | undefined)?.value ?? 0;
+          if (v > 0 && v < 1_000_000) set.add(v);
+        }
+      } else if (raw && typeof raw === 'object') {
+        const v = (raw as Link<number>).value ?? 0;
+        if (v > 0 && v < 1_000_000) set.add(v);
       }
     }
     if (set.size > 0) baseItems.set(b.row_id, set);
+  }
+  if (baseItems.size === 0 && bases.length > 0) {
+    // eslint-disable-next-line no-console
+    console.warn('[gatheringCatalog] parsed 0 item slots from', bases.length, 'bases — schema mismatch?');
   }
 
   // pointRowId → baseRowId
@@ -186,6 +206,9 @@ export async function buildGatheringCatalog(opts: BuildOpts = {}): Promise<Gathe
       }
     }
   }
+  // eslint-disable-next-line no-console
+  console.info('[gatheringCatalog] built', catalog.size, 'items',
+    `(${baseItems.size} bases, ${giIndex.size} GatheringItem rows, ${timedBases.size} timed bases)`);
 
   return catalog;
 }
