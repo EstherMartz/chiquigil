@@ -59,13 +59,26 @@ interface GatheringPointTransientFields {
 async function fetchSheet<F>(sheet: string, fields: string | null): Promise<RawRow<F>[]> {
   const out: RawRow<F>[] = [];
   let after = 0;
+  let pageSize = PAGE_SIZE;
+  const MIN_PAGE = 25;
   while (true) {
-    const params = new URLSearchParams({ limit: String(PAGE_SIZE) });
+    const params = new URLSearchParams({ limit: String(pageSize) });
     if (fields) params.set('fields', fields);
     if (after > 0) params.set('after', String(after));
     const url = `${BASE.replace(/\/$/, '')}/api/sheet/${sheet}?${params.toString()}`;
     const res = await fetch(url);
-    if (!res.ok) throw new Error(`XIVAPI ${sheet} ${res.status}`);
+    if (!res.ok) {
+      // Some v2 sheet/field combinations (e.g. GatheringPointBase + Item array)
+      // 400 at limit=500 but succeed at smaller pages. Halve and retry the
+      // same cursor before giving up.
+      if (res.status === 400 && pageSize > MIN_PAGE) {
+        pageSize = Math.max(MIN_PAGE, Math.floor(pageSize / 2));
+        // eslint-disable-next-line no-console
+        console.warn(`[gatheringCatalog] ${sheet} 400 at limit=${pageSize * 2}, retrying at limit=${pageSize}`);
+        continue;
+      }
+      throw new Error(`XIVAPI ${sheet} ${res.status}`);
+    }
     const page = (await res.json()) as RawPage<F>;
     const rows = page.rows ?? [];
     if (rows.length === 0) break;
