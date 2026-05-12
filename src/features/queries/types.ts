@@ -2,7 +2,7 @@ export type HqMode = 'hq' | 'nq' | 'either';
 export type QuerySort = 'discount' | 'gilFlow' | 'velocity' | 'unitPrice';
 export type QueryScope = 'home' | 'dc';
 export type QueryMode = 'standard' | 'craft' | 'repost';
-export type PresetCategory = 'craft' | 'trading';
+export type PresetCategory = 'craft' | 'trading' | 'gathering';
 
 export interface QueryFilter {
   searchCategories: number[];

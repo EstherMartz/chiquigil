@@ -70,9 +70,9 @@ describe('PRESETS', () => {
     expect(p.filter.minDealPct).toBe(30);
   });
 
-  it('every preset has a category (craft or trading)', () => {
+  it('every preset has a category (craft, trading, or gathering)', () => {
     for (const p of PRESETS) {
-      expect(['craft', 'trading']).toContain(p.category);
+      expect(['craft', 'trading', 'gathering']).toContain(p.category);
     }
   });
 
@@ -92,5 +92,23 @@ describe('PRESETS', () => {
       'minions-quick-sell',
       'reposts',
     ]);
+  });
+
+  it('categorizes gathering presets correctly', () => {
+    const ids = PRESETS.filter((p) => p.category === 'gathering').map((p) => p.id).sort();
+    expect(ids).toEqual([
+      'botany-commodities',
+      'fishing-commodities',
+      'gather-commodities',
+      'mining-commodities',
+    ]);
+  });
+
+  it('gathering presets default to NQ and standard mode', () => {
+    for (const p of PRESETS.filter((p) => p.category === 'gathering')) {
+      expect(p.filter.hq).toBe('nq');
+      expect(p.filter.mode).toBe('standard');
+      expect(p.filter.minVelocity).toBeGreaterThanOrEqual(3);
+    }
   });
 });

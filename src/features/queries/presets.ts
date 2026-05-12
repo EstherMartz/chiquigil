@@ -82,6 +82,39 @@ export const PRESETS: QueryPreset[] = [
               minPrice: null, maxPrice: 50_000, sort: 'gilFlow', limit: 100,
               scope: 'dc', maxListings: null, mode: 'standard', minGap: null },
   },
+  {
+    id: 'gather-commodities', label: 'Gatherer commodities', category: 'gathering',
+    desc: 'Raw gathered materials (mining, botany, fishing, ingredients) with ≥5 sales/day on the DC. Sell as-is, no crafting needed.',
+    // 44 Ingredients, 46 Seafood, 47 Stone, 48 Metal, 49 Lumber, 50 Cloth, 53 Reagents, 58 Crystals, 81 Gardening
+    filter: { searchCategories: [44, 46, 47, 48, 49, 50, 53, 58, 81], hq: 'nq',
+              minDealPct: 0, minVelocity: 5, minPrice: null, maxPrice: null,
+              sort: 'gilFlow', limit: 100, scope: 'dc', maxListings: null,
+              mode: 'standard', minGap: null },
+  },
+  {
+    id: 'mining-commodities', label: 'Mining commodities', category: 'gathering',
+    desc: 'Stone, metal, and crystals with ≥3 sales/day on your home world. Mine while AFK.',
+    filter: { searchCategories: [47, 48, 58], hq: 'nq',
+              minDealPct: 0, minVelocity: 3, minPrice: null, maxPrice: null,
+              sort: 'gilFlow', limit: 100, scope: 'home', maxListings: null,
+              mode: 'standard', minGap: null },
+  },
+  {
+    id: 'botany-commodities', label: 'Botany commodities', category: 'gathering',
+    desc: 'Lumber, cloth, reagents, and gardening items with ≥3 sales/day on your home world.',
+    filter: { searchCategories: [49, 50, 53, 81], hq: 'nq',
+              minDealPct: 0, minVelocity: 3, minPrice: null, maxPrice: null,
+              sort: 'gilFlow', limit: 100, scope: 'home', maxListings: null,
+              mode: 'standard', minGap: null },
+  },
+  {
+    id: 'fishing-commodities', label: 'Fishing commodities', category: 'gathering',
+    desc: 'Seafood with ≥3 sales/day on your home world. Set lines, sell daily.',
+    filter: { searchCategories: [46], hq: 'nq',
+              minDealPct: 0, minVelocity: 3, minPrice: null, maxPrice: null,
+              sort: 'gilFlow', limit: 100, scope: 'home', maxListings: null,
+              mode: 'standard', minGap: null },
+  },
 ];
 
 export function getPreset(id: string): QueryPreset | undefined {
