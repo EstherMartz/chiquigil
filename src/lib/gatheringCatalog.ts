@@ -75,6 +75,34 @@ async function fetchSheet<F>(sheet: string, fields: string | null): Promise<RawR
   return out;
 }
 
+/**
+ * Probe the first page of `sheet` with several field-syntax variants and
+ * return the variant whose response actually carries data. Used to escape
+ * the "v2 silently returned 0 fields when our shorthand was wrong" trap.
+ */
+async function probeFieldsSyntax(sheet: string, variants: string[]): Promise<string | null> {
+  for (const fields of variants) {
+    try {
+      const params = new URLSearchParams({ fields, limit: '1' });
+      const url = `${BASE.replace(/\/$/, '')}/api/sheet/${sheet}?${params.toString()}`;
+      const res = await fetch(url);
+      if (!res.ok) continue;
+      const page = (await res.json()) as RawPage<unknown>;
+      const first = page.rows?.[0];
+      if (first && Object.keys(first.fields as object).length > 0) {
+        // eslint-disable-next-line no-console
+        console.info(`[gatheringCatalog] ${sheet} field syntax "${fields}" works`);
+        return fields;
+      }
+    } catch {
+      // ignore and try next
+    }
+  }
+  // eslint-disable-next-line no-console
+  console.warn(`[gatheringCatalog] no field syntax succeeded for ${sheet}; falling back to full-row`);
+  return null;
+}
+
 function gatheringItemLevel(fields: GatheringItemFields): number {
   const lvl = fields.GatheringItemLevel;
   if (lvl && typeof lvl === 'object' && 'fields' in lvl) {
@@ -99,13 +127,24 @@ export interface BuildOpts {
 export async function buildGatheringCatalog(opts: BuildOpts = {}): Promise<GatheringCatalog> {
   const progress = opts.onProgress ?? (() => {});
 
+  progress('Probing GatheringPointBase field syntax…');
+  // XIVAPI v2 rejects `Item` and `Item[0]` outright (400), and omitting the
+  // fields= param returns rows with empty fields. Probe several plausible
+  // syntaxes against a single row, then use whichever shape actually carries
+  // data for the full paginated fetch.
+  const baseFields = await probeFieldsSyntax('GatheringPointBase', [
+    'Item',
+    'Item[0],Item[1],Item[2],Item[3],Item[4],Item[5],Item[6],Item[7]',
+    'Item.0,Item.1,Item.2,Item.3,Item.4,Item.5,Item.6,Item.7',
+    'Item0,Item1,Item2,Item3,Item4,Item5,Item6,Item7',
+    'Items',
+  ]);
+
   progress('Fetching gathering sheets in parallel…');
   // All four sheets are independent — fire them concurrently.
   const [gatheringItems, bases, points, transients] = await Promise.all([
     fetchSheet<GatheringItemFields>('GatheringItem', 'Item,GatheringItemLevel.GatheringLevel,IsHidden'),
-    // Omit `fields=` — XIVAPI v2 rejects every Item-slot shorthand we tried.
-    // GatheringPointBase has ~800 rows so the full-row payload is fine.
-    fetchSheet<GatheringPointBaseFields>('GatheringPointBase', null),
+    fetchSheet<GatheringPointBaseFields>('GatheringPointBase', baseFields),
     fetchSheet<GatheringPointFields>('GatheringPoint', 'GatheringPointBase'),
     fetchSheet<GatheringPointTransientFields>(
       'GatheringPointTransient',
