@@ -156,3 +156,18 @@ export async function putCachedMarketScope<T = unknown>(scope: string, entries: 
 export async function clearMarketCache(): Promise<void> {
   await (await db()).clear(MARKET_STORE);
 }
+
+/** Most-recent entry timestamp across all cached scopes; null if cache is empty. */
+export async function getMarketCacheLastFetchedAt(): Promise<number | null> {
+  const handle = await db();
+  const keys = await handle.getAllKeys(MARKET_STORE);
+  let maxTs = 0;
+  for (const k of keys) {
+    const blob = (await handle.get(MARKET_STORE, k)) as MarketScopeBlob | undefined;
+    if (!blob) continue;
+    for (const [, entry] of blob) {
+      if (entry.ts > maxTs) maxTs = entry.ts;
+    }
+  }
+  return maxTs > 0 ? maxTs : null;
+}

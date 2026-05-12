@@ -5,16 +5,28 @@ import {
   clearRecipeSnapshot,
   clearGatheringCatalog,
   clearMarketCache,
+  putCachedRecipeSnapshot,
+  putCachedGatheringCatalog,
   getItemSnapshotUpdatedAt,
   getRecipeSnapshotUpdatedAt,
   getGatheringCatalogUpdatedAt,
+  getMarketCacheLastFetchedAt,
 } from '../lib/recipeCache';
+import { fetchRecipeSnapshot } from '../lib/recipeSnapshot';
+import { buildGatheringCatalog } from '../lib/gatheringCatalog';
 import { _resetMarketCacheForTests } from '../lib/universalis';
 import { useQueryClient } from '@tanstack/react-query';
 import { useItemSnapshot, useRefreshItemSnapshot } from '../features/queries/useItemSnapshot';
 
 const STALE_DAYS = 7;
 const STALE_MS = STALE_DAYS * 24 * 60 * 60 * 1000;
+
+type DatasetKey = 'item' | 'recipe' | 'gather' | 'market';
+
+interface CacheStatus {
+  ts: number | null;
+  hasData: boolean;
+}
 
 function fmtDate(ts: number | null | undefined): string {
   if (!ts) return 'never';
@@ -30,49 +42,104 @@ export default function Settings() {
   const itemDb = useItemSnapshot();
   const refreshItemDb = useRefreshItemSnapshot();
 
-  const [recipeTs, setRecipeTs] = useState<number | null>(null);
-  const [gatherTs, setGatherTs] = useState<number | null>(null);
-  const [itemTs, setItemTs] = useState<number | null>(null);
+  const [status, setStatus] = useState<Record<DatasetKey, CacheStatus>>({
+    item:   { ts: null, hasData: false },
+    recipe: { ts: null, hasData: false },
+    gather: { ts: null, hasData: false },
+    market: { ts: null, hasData: false },
+  });
+  const [busy, setBusy] = useState<Record<DatasetKey, boolean>>({
+    item: false, recipe: false, gather: false, market: false,
+  });
+  const [allBusy, setAllBusy] = useState(false);
+  const [errors, setErrors] = useState<Record<DatasetKey, string | null>>({
+    item: null, recipe: null, gather: null, market: null,
+  });
 
   async function reloadTimestamps() {
-    setRecipeTs((await getRecipeSnapshotUpdatedAt()) ?? null);
-    setGatherTs((await getGatheringCatalogUpdatedAt()) ?? null);
-    setItemTs((await getItemSnapshotUpdatedAt()) ?? null);
+    const [item, recipe, gather, market] = await Promise.all([
+      getItemSnapshotUpdatedAt(),
+      getRecipeSnapshotUpdatedAt(),
+      getGatheringCatalogUpdatedAt(),
+      getMarketCacheLastFetchedAt(),
+    ]);
+    setStatus({
+      item:   { ts: item ?? null,   hasData: !!itemDb.data && itemDb.data.items.length > 0 },
+      recipe: { ts: recipe ?? null, hasData: recipe != null },
+      gather: { ts: gather ?? null, hasData: gather != null },
+      market: { ts: market,         hasData: market != null },
+    });
   }
   useEffect(() => { reloadTimestamps(); }, [itemDb.data]);
 
-  async function bustRecipeCaches() {
-    await clearRecipeCache();
-    await clearRecipeSnapshot();
-    queryClient.invalidateQueries({ queryKey: ['recipes'] });
-    queryClient.invalidateQueries({ queryKey: ['recipe-snapshot'] });
-    await reloadTimestamps();
+  function setBusyFor(key: DatasetKey, value: boolean) {
+    setBusy((b) => ({ ...b, [key]: value }));
+  }
+  function setErrorFor(key: DatasetKey, msg: string | null) {
+    setErrors((e) => ({ ...e, [key]: msg }));
   }
 
-  async function bustGatheringCatalog() {
-    await clearGatheringCatalog();
-    queryClient.invalidateQueries({ queryKey: ['gathering-catalog'] });
-    await reloadTimestamps();
+  async function refreshItem() {
+    setBusyFor('item', true); setErrorFor('item', null);
+    try { await refreshItemDb(); }
+    catch (e) { setErrorFor('item', (e as Error).message); }
+    finally {
+      await reloadTimestamps();
+      setBusyFor('item', false);
+    }
   }
 
-  async function bustMarketCache() {
-    _resetMarketCacheForTests();
-    await clearMarketCache();
+  async function refreshRecipe() {
+    setBusyFor('recipe', true); setErrorFor('recipe', null);
+    try {
+      await clearRecipeCache();
+      await clearRecipeSnapshot();
+      const fresh = await fetchRecipeSnapshot();
+      await putCachedRecipeSnapshot([...fresh.entries()]);
+      queryClient.invalidateQueries({ queryKey: ['recipes'] });
+      queryClient.invalidateQueries({ queryKey: ['recipe-snapshot'] });
+    } catch (e) { setErrorFor('recipe', (e as Error).message); }
+    finally {
+      await reloadTimestamps();
+      setBusyFor('recipe', false);
+    }
+  }
+
+  async function refreshGather() {
+    setBusyFor('gather', true); setErrorFor('gather', null);
+    try {
+      await clearGatheringCatalog();
+      const fresh = await buildGatheringCatalog();
+      await putCachedGatheringCatalog([...fresh.entries()]);
+      queryClient.invalidateQueries({ queryKey: ['gathering-catalog'] });
+    } catch (e) { setErrorFor('gather', (e as Error).message); }
+    finally {
+      await reloadTimestamps();
+      setBusyFor('gather', false);
+    }
+  }
+
+  async function refreshMarket() {
+    setBusyFor('market', true); setErrorFor('market', null);
+    try {
+      _resetMarketCacheForTests();
+      await clearMarketCache();
+    } catch (e) { setErrorFor('market', (e as Error).message); }
+    finally {
+      await reloadTimestamps();
+      setBusyFor('market', false);
+    }
   }
 
   async function refreshAll() {
+    setAllBusy(true);
     await Promise.all([
-      clearRecipeCache(),
-      clearRecipeSnapshot(),
-      clearGatheringCatalog(),
-      clearMarketCache(),
+      refreshItem(),
+      refreshRecipe(),
+      refreshGather(),
+      refreshMarket(),
     ]);
-    _resetMarketCacheForTests();
-    queryClient.invalidateQueries({ queryKey: ['recipes'] });
-    queryClient.invalidateQueries({ queryKey: ['recipe-snapshot'] });
-    queryClient.invalidateQueries({ queryKey: ['gathering-catalog'] });
-    refreshItemDb();
-    await reloadTimestamps();
+    setAllBusy(false);
   }
 
   return (
@@ -95,36 +162,46 @@ export default function Settings() {
           <tbody className="border-t border-border-base">
             <CacheRow
               label="Item catalog"
-              ts={itemTs}
+              status={status.item}
               detail={itemDb.data ? `${itemDb.data.items.length.toLocaleString()} items` : '—'}
-              onRefresh={refreshItemDb}
+              error={errors.item}
+              busy={busy.item}
+              onRefresh={refreshItem}
             />
             <CacheRow
               label="Recipe snapshot"
-              ts={recipeTs}
+              status={status.recipe}
               detail="all recipes (bulk)"
-              onRefresh={bustRecipeCaches}
+              error={errors.recipe}
+              busy={busy.recipe}
+              onRefresh={refreshRecipe}
             />
             <CacheRow
               label="Gathering catalog"
-              ts={gatherTs}
+              status={status.gather}
               detail="gather nodes + timing"
-              onRefresh={bustGatheringCatalog}
+              error={errors.gather}
+              busy={busy.gather}
+              onRefresh={refreshGather}
             />
             <CacheRow
               label="Universalis prices"
-              ts={null}
+              status={status.market}
               detail="in-memory + IDB, 30-min TTL"
-              onRefresh={bustMarketCache}
+              error={errors.market}
+              busy={busy.market}
+              onRefresh={refreshMarket}
+              hideStale
             />
           </tbody>
         </table>
         <div className="mt-5">
           <button
             onClick={refreshAll}
-            className="font-display text-xs tracking-widest uppercase bg-bg-card-hi border border-gold text-gold px-5 py-2.5 hover:bg-gold hover:text-bg-deep transition-colors"
+            disabled={allBusy}
+            className="font-display text-xs tracking-widest uppercase bg-bg-card-hi border border-gold text-gold px-5 py-2.5 hover:bg-gold hover:text-bg-deep transition-colors disabled:opacity-40"
           >
-            ⟳ Refresh all data
+            {allBusy ? '⟳ Refreshing…' : '⟳ Refresh all data'}
           </button>
         </div>
       </section>
@@ -142,35 +219,41 @@ export default function Settings() {
 
 interface CacheRowProps {
   label: string;
-  ts: number | null;
+  status: CacheStatus;
   detail: string;
+  error: string | null;
+  busy: boolean;
   onRefresh: () => void;
+  hideStale?: boolean;
 }
 
-function CacheRow({ label, ts, detail, onRefresh }: CacheRowProps) {
-  const stale = isStale(ts);
+function CacheRow({ label, status, detail, error, busy, onRefresh, hideStale }: CacheRowProps) {
+  const { ts, hasData } = status;
+  const stale = !hideStale && isStale(ts);
+  let statusDisplay;
+  if (busy) statusDisplay = <span className="text-aether">refreshing…</span>;
+  else if (error) statusDisplay = <span className="text-crimson">error</span>;
+  else if (ts == null && !hasData) statusDisplay = <span className="text-text-low">—</span>;
+  else if (ts == null && hasData) statusDisplay = <span className="text-text-low">legacy</span>;
+  else if (stale) statusDisplay = <span className="text-crimson">stale (&gt;{STALE_DAYS}d)</span>;
+  else statusDisplay = <span className="text-jade">fresh</span>;
+
   return (
     <tr className="border-b border-border-base">
-      <td className="py-2.5 text-text-cream">{label}</td>
-      <td className="py-2.5 text-text-low">
-        {fmtDate(ts)}
+      <td className="py-2.5 text-text-cream align-top">{label}</td>
+      <td className="py-2.5 text-text-low align-top">
+        {ts == null && hasData ? <span className="text-text-low italic">unknown</span> : fmtDate(ts)}
         <div className="text-[10px] text-text-low">{detail}</div>
+        {error && <div className="text-[10px] text-crimson mt-0.5">{error}</div>}
       </td>
-      <td className="py-2.5">
-        {ts == null ? (
-          <span className="text-text-low">—</span>
-        ) : stale ? (
-          <span className="text-crimson">stale (&gt;{STALE_DAYS}d)</span>
-        ) : (
-          <span className="text-jade">fresh</span>
-        )}
-      </td>
-      <td className="py-2.5 text-right">
+      <td className="py-2.5 align-top">{statusDisplay}</td>
+      <td className="py-2.5 text-right align-top">
         <button
           onClick={onRefresh}
-          className="font-mono text-[10px] tracking-widest uppercase border border-crimson text-crimson px-3 py-1.5 hover:bg-crimson hover:text-bg-deep transition-colors"
+          disabled={busy}
+          className="font-mono text-[10px] tracking-widest uppercase border border-crimson text-crimson px-3 py-1.5 hover:bg-crimson hover:text-bg-deep transition-colors disabled:opacity-40"
         >
-          Refresh
+          {busy ? '…' : 'Refresh'}
         </button>
       </td>
     </tr>

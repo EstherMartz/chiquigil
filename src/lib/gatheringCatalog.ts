@@ -37,9 +37,9 @@ interface GatheringItemFields {
   GatheringItemLevel?: { fields?: { GatheringLevel?: number } } | Link<number>;
   IsHidden?: boolean;
 }
-interface GatheringPointBaseFields {
-  Item?: Array<Link<number>>;  // 8-slot array of GatheringItem rowIds
-}
+// GatheringPointBase has 8 indexed slots Item[0]..Item[7] in the canonical EXD
+// column naming. XIVAPI v2 returns them as keyed fields `Item[0]`..`Item[7]`.
+type GatheringPointBaseFields = Partial<Record<`Item[${0|1|2|3|4|5|6|7}]`, Link<number>>>;
 interface GatheringPointFields {
   GatheringPointBase?: Link<number>;
 }
@@ -97,7 +97,10 @@ export async function buildGatheringCatalog(opts: BuildOpts = {}): Promise<Gathe
   // All four sheets are independent — fire them concurrently.
   const [gatheringItems, bases, points, transients] = await Promise.all([
     fetchSheet<GatheringItemFields>('GatheringItem', 'Item,GatheringItemLevel.GatheringLevel,IsHidden'),
-    fetchSheet<GatheringPointBaseFields>('GatheringPointBase', 'Item'),
+    fetchSheet<GatheringPointBaseFields>(
+      'GatheringPointBase',
+      Array.from({ length: 8 }, (_, i) => `Item[${i}]`).join(','),
+    ),
     fetchSheet<GatheringPointFields>('GatheringPoint', 'GatheringPointBase'),
     fetchSheet<GatheringPointTransientFields>(
       'GatheringPointTransient',
@@ -123,8 +126,9 @@ export async function buildGatheringCatalog(opts: BuildOpts = {}): Promise<Gathe
   const baseItems = new Map<number, Set<number>>();
   for (const b of bases) {
     const set = new Set<number>();
-    for (const slot of b.fields.Item ?? []) {
-      const giId = slot.value ?? 0;
+    for (let i = 0; i < 8; i++) {
+      const slot = b.fields[`Item[${i}]` as keyof GatheringPointBaseFields];
+      const giId = slot?.value ?? 0;
       if (giId > 0) set.add(giId);
     }
     if (set.size > 0) baseItems.set(b.row_id, set);
