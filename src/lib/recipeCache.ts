@@ -4,13 +4,14 @@ import type { SnapshotItem } from './itemSnapshot';
 import type { GatheringInfo } from './gatheringCatalog';
 
 const DB_NAME = 'ffxiv-helper';
-const DB_VERSION = 5;
+const DB_VERSION = 6;
 const RECIPE_STORE = 'recipes';
 const NAME_STORE = 'names';
 const ITEM_STORE = 'items';
 const META_STORE = 'meta';
 const GATHER_STORE = 'gathering';
 const RECIPE_SNAPSHOT_STORE = 'recipeSnapshot';
+const MARKET_STORE = 'market';
 
 let dbPromise: Promise<IDBPDatabase> | null = null;
 
@@ -35,6 +36,9 @@ function db(): Promise<IDBPDatabase> {
         }
         if (!database.objectStoreNames.contains(RECIPE_SNAPSHOT_STORE)) {
           database.createObjectStore(RECIPE_SNAPSHOT_STORE);
+        }
+        if (!database.objectStoreNames.contains(MARKET_STORE)) {
+          database.createObjectStore(MARKET_STORE);
         }
       },
     });
@@ -133,4 +137,22 @@ export async function clearRecipeSnapshot(): Promise<void> {
 
 export async function getRecipeSnapshotUpdatedAt(): Promise<number | undefined> {
   return (await db()).get(META_STORE, RECIPE_SNAPSHOT_TS_KEY);
+}
+
+// Market price cache (keyed by scope name; value is Array<[itemId, {ts, data}]>).
+// Stored per-scope as a single blob for write efficiency.
+
+export interface MarketCacheEntry<T = unknown> { ts: number; data: T }
+export type MarketScopeBlob<T = unknown> = Array<[number, MarketCacheEntry<T>]>;
+
+export async function getCachedMarketScope<T = unknown>(scope: string): Promise<MarketScopeBlob<T> | undefined> {
+  return (await db()).get(MARKET_STORE, scope);
+}
+
+export async function putCachedMarketScope<T = unknown>(scope: string, entries: MarketScopeBlob<T>): Promise<void> {
+  await (await db()).put(MARKET_STORE, entries, scope);
+}
+
+export async function clearMarketCache(): Promise<void> {
+  await (await db()).clear(MARKET_STORE);
 }

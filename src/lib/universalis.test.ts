@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { fetchMarketData, buildMarketUrl, parseMarketResponse } from './universalis';
+import {
+  fetchMarketData,
+  buildMarketUrl,
+  parseMarketResponse,
+  _resetMarketCacheForTests,
+} from './universalis';
+import { clearMarketCache } from './recipeCache';
 
 describe('buildMarketUrl', () => {
   it('builds a Phantom URL with all item ids comma-separated', () => {
@@ -66,7 +72,11 @@ describe('parseMarketResponse', () => {
 });
 
 describe('fetchMarketData', () => {
-  beforeEach(() => { vi.restoreAllMocks(); });
+  beforeEach(async () => {
+    vi.restoreAllMocks();
+    _resetMarketCacheForTests();
+    await clearMarketCache();
+  });
 
   it('throws when response not OK', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 500 }));
@@ -88,5 +98,40 @@ describe('fetchMarketData', () => {
     const out = await fetchMarketData('Phantom', []);
     expect(out).toEqual({});
     expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('serves repeated requests from cache within TTL (no extra network calls)', async () => {
+    const fetchSpy = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        items: { '1': { listings: [{ hq: false, pricePerUnit: 99 }], recentHistory: [], regularSaleVelocity: 1, lastUploadTime: 1 } },
+      }),
+    });
+    vi.stubGlobal('fetch', fetchSpy);
+    const a = await fetchMarketData('Phantom', [1]);
+    const b = await fetchMarketData('Phantom', [1]);
+    expect(a['1'].minNQ).toBe(99);
+    expect(b['1'].minNQ).toBe(99);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('fetches only the missing subset on partial cache hit', async () => {
+    const fetchSpy = vi.fn().mockImplementation((url: string) => {
+      // Each call returns whatever ids were requested.
+      const matched = url.match(/\/Phantom\/([\d,]+)\?/);
+      const ids = matched ? matched[1].split(',') : [];
+      const items: Record<string, unknown> = {};
+      for (const id of ids) {
+        items[id] = { listings: [{ hq: false, pricePerUnit: Number(id) * 10 }], recentHistory: [], regularSaleVelocity: 1, lastUploadTime: 1 };
+      }
+      return Promise.resolve({ ok: true, json: async () => ({ items }) });
+    });
+    vi.stubGlobal('fetch', fetchSpy);
+
+    await fetchMarketData('Phantom', [1, 2]);          // fetches 1,2
+    await fetchMarketData('Phantom', [2, 3]);          // should only fetch 3
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    const secondCallUrl = fetchSpy.mock.calls[1][0] as string;
+    expect(secondCallUrl).toContain('/Phantom/3?');
   });
 });
