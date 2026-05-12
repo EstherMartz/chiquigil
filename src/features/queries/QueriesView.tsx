@@ -9,6 +9,7 @@ import { runQuery } from './runQuery';
 import { runCraftFlip, narrowForCraftFlip } from './runCraftFlip';
 import { runRepost } from './runRepost';
 import { useRecipes } from '../profit/useRecipes';
+import { useGatheringCatalog } from './useGatheringCatalog';
 import { QueryBuilder } from './QueryBuilder';
 import { QueryResults } from './QueryResults';
 import { CraftFlipResults } from './CraftFlipResults';
@@ -33,6 +34,9 @@ interface Props {
 export function QueriesView({ category, heading }: Props) {
   const { world, dc } = useSettingsStore();
   const snapshot = useItemSnapshot();
+  const isGathering = category === 'gathering';
+  const gatheringCatalog = useGatheringCatalog();
+  const catalogReady = !isGathering || gatheringCatalog.data != null;
 
   const presets = useMemo(() => PRESETS.filter((p) => p.category === category), [category]);
   const [filter, setFilter] = useState<QueryFilter>(presets[0].filter);
@@ -41,14 +45,16 @@ export function QueriesView({ category, heading }: Props) {
   const candidateIds = useMemo(() => {
     if (!snapshot.data) return [];
     const catSet = filter.searchCategories.length ? new Set(filter.searchCategories) : null;
+    const gatherSet = isGathering ? gatheringCatalog.data : null;
     const out: number[] = [];
     for (const item of snapshot.data.items) {
       if (catSet && !catSet.has(item.sc)) continue;
       if (filter.hq === 'hq' && !item.canHq) continue;
+      if (gatherSet && !gatherSet.has(item.id)) continue;
       out.push(item.id);
     }
     return out;
-  }, [snapshot.data, filter.searchCategories, filter.hq]);
+  }, [snapshot.data, filter.searchCategories, filter.hq, isGathering, gatheringCatalog.data]);
 
   const run = useMutation<PriceFetchResult>({
     mutationFn: async () => {
@@ -136,8 +142,14 @@ export function QueriesView({ category, heading }: Props) {
       {snapshot.isError && (
         <StatusBanner kind="error">XIVAPI item snapshot failed: {(snapshot.error as Error).message}</StatusBanner>
       )}
+      {isGathering && gatheringCatalog.isLoading && (
+        <Spinner label={`Building gathering catalog (one-time)… ${gatheringCatalog.progress || 'starting'}`} />
+      )}
+      {isGathering && gatheringCatalog.isError && (
+        <StatusBanner kind="error">Gathering catalog failed: {(gatheringCatalog.error as Error).message}</StatusBanner>
+      )}
 
-      {snapshot.data && (
+      {snapshot.data && catalogReady && (
         <>
           <QueryBuilder
             value={filter}
@@ -164,6 +176,7 @@ export function QueriesView({ category, heading }: Props) {
               rows={derived.rows}
               totalCandidates={candidateIds.length}
               skippedChunks={run.data?.skipped ?? 0}
+              gatheringCatalog={isGathering ? gatheringCatalog.data : undefined}
             />
           )}
           {derived?.kind === 'craft' && (

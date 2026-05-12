@@ -4,14 +4,16 @@ import { ItemNameLinks } from '../../components/ItemNameLinks';
 import { LoadMoreFooter } from '../../components/LoadMoreFooter';
 import { useLoadMore } from '../../lib/useLoadMore';
 import type { QueryResultRow } from './types';
+import type { GatheringCatalog } from '../../lib/gatheringCatalog';
 
 interface Props {
   rows: QueryResultRow[];
   totalCandidates: number;
   skippedChunks: number;
+  gatheringCatalog?: GatheringCatalog;
 }
 
-export function QueryResults({ rows, totalCandidates, skippedChunks }: Props) {
+export function QueryResults({ rows, totalCandidates, skippedChunks, gatheringCatalog }: Props) {
   const lm = useLoadMore(rows, 25);
   if (rows.length === 0) {
     return (
@@ -47,7 +49,12 @@ export function QueryResults({ rows, totalCandidates, skippedChunks }: Props) {
                   <ItemNameLinks
                     id={r.id}
                     name={r.name}
-                    suffix={r.hq && <span className="text-gold"> ★</span>}
+                    suffix={
+                      <>
+                        {r.hq && <span className="text-gold"> ★</span>}
+                        {gatheringCatalog && <GatherBadge info={gatheringCatalog.get(r.id)} />}
+                      </>
+                    }
                     sub={categoryLabel(r.sc)}
                   />
                 </td>
@@ -68,5 +75,21 @@ export function QueryResults({ rows, totalCandidates, skippedChunks }: Props) {
         />
       </div>
     </div>
+  );
+}
+
+function GatherBadge({ info }: { info: { level: number; timed: boolean; hidden: boolean } | undefined }) {
+  if (!info) return null;
+  return (
+    <span
+      className={`ml-1.5 font-mono text-[9px] tracking-widest uppercase px-1 py-0.5 leading-none border ${
+        info.timed
+          ? 'text-gold border-gold/60'
+          : 'text-aether border-border-base'
+      }`}
+      title={info.timed ? 'Timed gathering node (ephemeral/rare-pop)' : 'Untimed gathering node'}
+    >
+      {info.timed ? '⏱ Timed' : 'Gather'} · Lv {info.level || '?'}
+    </span>
   );
 }
