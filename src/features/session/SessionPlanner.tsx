@@ -98,7 +98,7 @@ export default function SessionPlanner() {
       const result = await fetchInBatches<MarketData[string]>(
         allIds,
         async (chunk) => fetchMarketData(settings.world, chunk),
-        { chunkSize: 100, concurrency: 4 },
+        { chunkSize: 25, concurrency: 4 },
       );
       const narrowedIds = narrowForCraftFlip(snapshot.data.items, result.data, SCAN_FILTER);
       return {

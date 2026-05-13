@@ -63,7 +63,7 @@ export function QueriesView({ category, heading }: Props) {
       const result = await fetchInBatches<MarketData[string]>(
         candidateIds,
         async (chunk) => fetchMarketData(target, chunk),
-        { chunkSize: 100, concurrency: 4 },
+        { chunkSize: 25, concurrency: 4 },
       );
       const narrowedIds = filter.mode === 'craft'
         ? narrowForCraftFlip(snapshot.data.items, result.data, filter)
