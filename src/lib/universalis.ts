@@ -1,4 +1,5 @@
 import { getCachedMarketScope, putCachedMarketScope, type MarketScopeBlob } from './recipeCache';
+import { trimmedMedian } from './priceTrust';
 
 export type Scope = string; // world or DC name, e.g. 'Phantom' | 'Chaos'
 
@@ -9,6 +10,10 @@ export interface MarketItem {
   minHQ: number | null;
   avgNQ: number | null;
   avgHQ: number | null;
+  medianNQ: number | null;
+  medianHQ: number | null;
+  recentSalesNQ: number;
+  recentSalesHQ: number;
   velocity: number;
   lastUploadTime: number;
   listingCount: number;
@@ -52,11 +57,17 @@ export function parseMarketResponse(raw: RawResponse): MarketData {
   for (const [id, item] of Object.entries(items)) {
     const listings = item.listings ?? [];
     const history = item.recentHistory ?? [];
+    const nqHist = history.filter((h) => !h.hq).map((h) => h.pricePerUnit);
+    const hqHist = history.filter((h) => h.hq).map((h) => h.pricePerUnit);
     out[id] = {
       minNQ: minPrice(listings, false),
       minHQ: minPrice(listings, true),
       avgNQ: avgPrice(history, false),
       avgHQ: avgPrice(history, true),
+      medianNQ: trimmedMedian(nqHist),
+      medianHQ: trimmedMedian(hqHist),
+      recentSalesNQ: nqHist.length,
+      recentSalesHQ: hqHist.length,
       velocity: item.regularSaleVelocity ?? 0,
       lastUploadTime: item.lastUploadTime ?? 0,
       listingCount: listings.length,
