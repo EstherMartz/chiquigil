@@ -94,6 +94,8 @@ describe('sessionCandidatesFromCraftFlip', () => {
         priceMap: {
           '1': {
             minNQ: 1000, minHQ: null, avgNQ: 1100, avgHQ: null,
+            medianNQ: null, medianHQ: null,
+            recentSalesNQ: 0, recentSalesHQ: 0,
             velocity: 2, lastUploadTime: 0, listingCount: 7,
             worldListings: [], averagePriceNQ: null, averagePriceHQ: null,
           },

@@ -13,6 +13,8 @@ function dcWith(per: Record<number, { minNQ: number | null; avgNQ: number | null
   for (const [id, p] of Object.entries(per)) {
     out[id] = {
       minNQ: p.minNQ, minHQ: null, avgNQ: null, avgHQ: null,
+      medianNQ: null, medianHQ: null,
+      recentSalesNQ: 0, recentSalesHQ: 0,
       velocity: 0, lastUploadTime: Date.now(), listingCount: 0,
       worldListings: [], averagePriceNQ: p.avgNQ, averagePriceHQ: null,
     };

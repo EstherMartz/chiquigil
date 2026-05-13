@@ -9,7 +9,7 @@ const items: TrackedItem[] = [
   { id: 2, name: 'B', crafter: 'WVR', lvl: 100, cat: 'Raid' },
 ];
 
-const extra = { worldListings: [], averagePriceNQ: null, averagePriceHQ: null };
+const extra = { worldListings: [], averagePriceNQ: null, averagePriceHQ: null, medianNQ: null, medianHQ: null, recentSalesNQ: 0, recentSalesHQ: 0 };
 
 const phantom: MarketData = {
   '1': { minNQ: 100, minHQ: 200, avgNQ: 110, avgHQ: 220, velocity: 1, lastUploadTime: Date.now(), listingCount: 1, ...extra },

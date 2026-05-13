@@ -1,36 +1,37 @@
 import type { SnapshotItem } from '../../lib/itemSnapshot';
 import type { MarketData, MarketItem } from '../../lib/universalis';
 import type { Recipe } from '../../lib/recipes';
+import { MIN_RECENT_SALES, MAX_LISTING_RATIO } from '../../lib/priceTrust';
 import { computeMaterialCost } from '../profit/computeProfit';
 import type { CraftFlipRow, HqMode, QueryFilter, QuerySort } from './types';
 
-// Cap the listing-min at the historical average. Defends against single-listing
-// outliers (a lone 10M troll listing doesn't make us think the item sells for 10M).
-function safeUnit(listingMin: number | null, avg: number | null): number | null {
-  if (listingMin == null) return null;
-  if (avg == null || avg <= 0) return listingMin;
-  return Math.min(listingMin, avg);
-}
+interface TrustedTier { unit: number; isHq: boolean }
 
-function pickTier(m: MarketItem, hq: HqMode, canHq: boolean): { unit: number; isHq: boolean } | null {
-  const hqUnit = safeUnit(m.minHQ, m.averagePriceHQ);
-  const nqUnit = safeUnit(m.minNQ, m.averagePriceNQ);
-  if (hq === 'hq') {
-    if (!canHq || hqUnit == null) return null;
-    return { unit: hqUnit, isHq: true };
+// Trust-checked tier selection. Returns the cheapest reliable tier price, or
+// null when no tier passes the data-confidence floor, the missing-median check,
+// or the listing-vs-median outlier ratio. The returned `unit` is already capped
+// at the tier's trimmed-median price so callers can use it directly for profit
+// math.
+function pickTrustedTier(
+  m: MarketItem,
+  hq: HqMode,
+  canHq: boolean,
+): TrustedTier | null {
+  const candidates: Array<{ rawMin: number | null; median: number | null; recent: number; isHq: boolean }> = [];
+  if ((hq === 'hq' || hq === 'either') && canHq) {
+    candidates.push({ rawMin: m.minHQ, median: m.medianHQ, recent: m.recentSalesHQ, isHq: true });
   }
-  if (hq === 'nq') {
-    if (nqUnit == null) return null;
-    return { unit: nqUnit, isHq: false };
+  if (hq === 'nq' || hq === 'either') {
+    candidates.push({ rawMin: m.minNQ, median: m.medianNQ, recent: m.recentSalesNQ, isHq: false });
   }
-  // 'either' — prefer HQ when item is HQ-capable and HQ price exists; else NQ.
-  if (canHq && hqUnit != null) return { unit: hqUnit, isHq: true };
-  if (nqUnit != null) return { unit: nqUnit, isHq: false };
+  for (const c of candidates) {
+    if (c.rawMin == null) continue;
+    if (c.recent < MIN_RECENT_SALES) continue;
+    if (c.median == null) continue;
+    if (c.rawMin > c.median * MAX_LISTING_RATIO) continue;
+    return { unit: Math.min(c.rawMin, c.median), isHq: c.isHq };
+  }
   return null;
-}
-
-function hasUsableTier(m: MarketItem, hq: HqMode, canHq: boolean): boolean {
-  return pickTier(m, hq, canHq) !== null;
 }
 
 export function narrowForCraftFlip(
@@ -47,7 +48,7 @@ export function narrowForCraftFlip(
     if (!m) continue;
     if (m.velocity < filter.minVelocity) continue;
     if (filter.maxListings != null && m.listingCount > filter.maxListings) continue;
-    if (!hasUsableTier(m, filter.hq, item.canHq)) continue;
+    if (pickTrustedTier(m, filter.hq, item.canHq) == null) continue;
     out.push(item.id);
   }
   return out;
@@ -58,7 +59,7 @@ function compare(a: CraftFlipRow, b: CraftFlipRow, sort: QuerySort): number {
     case 'gilFlow':   return b.gilPerDay - a.gilPerDay;
     case 'velocity':  return b.velocity - a.velocity;
     case 'unitPrice': return b.unitPrice - a.unitPrice;
-    case 'discount':  // profit margin desc
+    case 'discount':
       return (b.profit / Math.max(1, b.unitPrice)) - (a.profit / Math.max(1, a.unitPrice));
   }
 }
@@ -75,10 +76,10 @@ export function runCraftFlip(
   for (const item of snapshot) {
     if (!narrowed.has(item.id)) continue;
     const recipe = recipeMap.get(item.id);
-    if (!recipe) continue;                    // undefined (unresolved) or null (no recipe) — drop
+    if (!recipe) continue;
 
     const m = priceMap[item.id];
-    const tier = pickTier(m, filter.hq, item.canHq);
+    const tier = pickTrustedTier(m, filter.hq, item.canHq);
     if (!tier) continue;
 
     const materialCost = computeMaterialCost(recipe, recipeMap, priceMap, {});

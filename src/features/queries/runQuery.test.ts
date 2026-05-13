@@ -13,6 +13,8 @@ const snapshot: SnapshotItem[] = [
 function mkPrice(p: Partial<MarketData[string]>): MarketData[string] {
   return {
     minNQ: null, minHQ: null, avgNQ: null, avgHQ: null,
+    medianNQ: null, medianHQ: null,
+    recentSalesNQ: 0, recentSalesHQ: 0,
     velocity: 0, lastUploadTime: Date.now(), listingCount: 0,
     worldListings: [], averagePriceNQ: null, averagePriceHQ: null,
     ...p,

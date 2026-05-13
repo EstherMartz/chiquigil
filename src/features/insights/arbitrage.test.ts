@@ -15,6 +15,8 @@ function dcWith(listings: Record<number, { world: string; price: number; hq: boo
       minNQ: ls.find((l) => !l.hq)?.price ?? null,
       minHQ: ls.find((l) => l.hq)?.price ?? null,
       avgNQ: null, avgHQ: null,
+      medianNQ: null, medianHQ: null,
+      recentSalesNQ: 0, recentSalesHQ: 0,
       velocity: 0, lastUploadTime: Date.now(), listingCount: ls.length,
       worldListings: ls.map((l) => ({ world: l.world, price: l.price, hq: l.hq })),
       averagePriceNQ: null, averagePriceHQ: null,

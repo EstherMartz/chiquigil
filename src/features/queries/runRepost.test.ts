@@ -18,6 +18,8 @@ function mkPrice(args: { velocity?: number; listingCount?: number; listings: Arr
     minNQ: nq[0] ?? null,
     minHQ: hq[0] ?? null,
     avgNQ: null, avgHQ: null,
+    medianNQ: null, medianHQ: null,
+    recentSalesNQ: 0, recentSalesHQ: 0,
     velocity: args.velocity ?? 1,
     lastUploadTime: Date.now(),
     listingCount: args.listingCount ?? listings.length,
