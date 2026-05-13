@@ -47,7 +47,7 @@ describe('SessionPlanner', () => {
             items: {
               '49281': {
                 listings: [{ hq: true, pricePerUnit: 250000, worldName: 'Phantom' }],
-                recentHistory: [],
+                recentHistory: Array.from({ length: 6 }, () => ({ hq: true, pricePerUnit: 250000 })),
                 regularSaleVelocity: 4,
                 lastUploadTime: Date.now(),
                 averagePriceHQ: 260000,

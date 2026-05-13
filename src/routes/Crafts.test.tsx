@@ -58,7 +58,7 @@ describe('Crafts route', () => {
             items: {
               '200': {
                 listings: [{ hq: true, pricePerUnit: 1000, worldName: 'Phantom' }],
-                recentHistory: [],
+                recentHistory: Array.from({ length: 6 }, () => ({ hq: true, pricePerUnit: 1000 })),
                 regularSaleVelocity: 2,
                 lastUploadTime: Date.now(),
                 averagePriceNQ: null,
@@ -66,7 +66,7 @@ describe('Crafts route', () => {
               },
               '201': {
                 listings: Array.from({ length: 6 }, () => ({ hq: true, pricePerUnit: 1000, worldName: 'Phantom' })),
-                recentHistory: [],
+                recentHistory: Array.from({ length: 6 }, () => ({ hq: true, pricePerUnit: 1000 })),
                 regularSaleVelocity: 5,
                 lastUploadTime: Date.now(),
                 averagePriceNQ: null,
