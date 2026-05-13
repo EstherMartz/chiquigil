@@ -41,8 +41,8 @@ export const PRESETS: QueryPreset[] = [
   },
   {
     id: 'craft-flip', label: 'Craft-flip Phantom', category: 'craft',
-    desc: 'Craftable items ranked by home-world (sale − material cost) × velocity.',
-    filter: { searchCategories: [], hq: 'either', minDealPct: 0, minVelocity: 1,
+    desc: 'Craftable items with ≥3 sales/day on the home world, ranked by (sale − material cost) × velocity.',
+    filter: { searchCategories: [], hq: 'either', minDealPct: 0, minVelocity: 3,
               minPrice: null, maxPrice: null, sort: 'gilFlow', limit: 100,
               scope: 'home', maxListings: null, mode: 'craft', minGap: null },
   },
