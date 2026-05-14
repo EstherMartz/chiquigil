@@ -25,7 +25,7 @@ export interface PlanRow {
 export interface PlanResult {
   rows: PlanRow[];
   cappedAt: number;
-  skippedZeroPriceIds: number[];
+  skippedZeroPriceRows: ComputePlanRow[];
   totalGil: number;
   totalMinutes: number;
 }
@@ -36,11 +36,11 @@ const GBR_MAX_QTY = 999_999;
 const clampQty = (n: number) => Math.max(GBR_MIN_QTY, Math.min(GBR_MAX_QTY, Math.round(n)));
 
 export function computePlan(rows: ComputePlanRow[], opts: ComputePlanOptions): PlanResult {
-  const skippedZeroPriceIds: number[] = [];
+  const skippedZeroPriceRows: ComputePlanRow[] = [];
   const valid: ComputePlanRow[] = [];
   for (const r of rows.slice(0, opts.itemCount)) {
     if (r.unitPrice <= 0) {
-      skippedZeroPriceIds.push(r.id);
+      skippedZeroPriceRows.push(r);
       continue;
     }
     valid.push(r);
@@ -51,7 +51,7 @@ export function computePlan(rows: ComputePlanRow[], opts: ComputePlanOptions): P
     return {
       rows: [],
       cappedAt: Math.min(opts.itemCount, rows.length),
-      skippedZeroPriceIds,
+      skippedZeroPriceRows,
       totalGil: 0,
       totalMinutes: 0,
     };
@@ -83,7 +83,7 @@ export function computePlan(rows: ComputePlanRow[], opts: ComputePlanOptions): P
   return {
     rows: planRows,
     cappedAt: Math.min(opts.itemCount, rows.length),
-    skippedZeroPriceIds,
+    skippedZeroPriceRows,
     totalGil,
     totalMinutes,
   };

@@ -49,7 +49,7 @@ describe('computePlan', () => {
     // only the valid row participates
     expect(result.rows).toHaveLength(1);
     expect(result.rows[0].id).toBe(1);
-    expect(result.skippedZeroPriceIds).toEqual([2]);
+    expect(result.skippedZeroPriceRows.map((r) => r.id)).toEqual([2]);
   });
 
   it('clamps per-item qty to GBRs 1-999999 range', () => {
@@ -69,5 +69,6 @@ describe('computePlan', () => {
     expect(result.cappedAt).toBe(0);
     expect(result.totalGil).toBe(0);
     expect(result.totalMinutes).toBe(0);
+    expect(result.skippedZeroPriceRows).toEqual([]);
   });
 });

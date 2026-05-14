@@ -4,26 +4,39 @@ import { encodeGbrList } from '../../lib/gatherBuddyExport';
 import { computePlan } from './computePlan';
 import { useGatheringPlanStore } from './gatheringPlanStore';
 import type { QueryResultRow } from '../queries/types';
+import type { GatheringCatalog } from '../../lib/gatheringCatalog';
 
 interface Props {
   rows: QueryResultRow[];
+  catalog?: GatheringCatalog;
 }
 
-export function GatheringPlanner({ rows }: Props) {
+export function GatheringPlanner({ rows, catalog }: Props) {
   const s = useGatheringPlanStore();
   const [copyError, setCopyError] = useState<string | null>(null);
   const [fallbackText, setFallbackText] = useState<string | null>(null);
 
+  const filteredRows = useMemo(() => {
+    if (!catalog) return rows;
+    return rows.filter((r) => {
+      const info = catalog.get(r.id);
+      if (!info) return true; // unknown items: don't filter out
+      if (info.level > s.maxLevel) return false;
+      if (info.timed && !s.includeTimed) return false;
+      return true;
+    });
+  }, [rows, catalog, s.maxLevel, s.includeTimed]);
+
   const result = useMemo(
     () =>
-      computePlan(rows, {
+      computePlan(filteredRows, {
         mode: s.budgetMode,
         itemCount: s.itemCount,
         budgetTimeMin: s.budgetTimeMin,
         budgetGil: s.budgetGil,
         itemsPerMin: s.itemsPerMin,
       }),
-    [rows, s.budgetMode, s.itemCount, s.budgetTimeMin, s.budgetGil, s.itemsPerMin],
+    [filteredRows, s.budgetMode, s.itemCount, s.budgetTimeMin, s.budgetGil, s.itemsPerMin],
   );
 
   const canExport = result.rows.length > 0;
@@ -105,9 +118,30 @@ export function GatheringPlanner({ rows }: Props) {
           />
           / min
         </label>
+
+        <label className="flex items-center gap-1.5" aria-label="Max level">
+          Lvl ≤
+          <input
+            type="number"
+            min={1}
+            max={999}
+            value={s.maxLevel}
+            onChange={(e) => s.setMaxLevel(Number(e.target.value))}
+            className="w-14 bg-bg-card-hi border border-border-base px-1.5 py-0.5"
+          />
+        </label>
+
+        <label className="flex items-center gap-1.5" aria-label="Include timed nodes">
+          <input
+            type="checkbox"
+            checked={s.includeTimed}
+            onChange={(e) => s.setIncludeTimed(e.target.checked)}
+          />
+          Timed
+        </label>
       </div>
 
-      {result.cappedAt < s.itemCount && rows.length > 0 && (
+      {result.cappedAt < s.itemCount && filteredRows.length > 0 && (
         <div className="font-mono text-[10px] text-text-low">
           Only {result.cappedAt} matching item(s) — slider capped.
         </div>
@@ -133,7 +167,16 @@ export function GatheringPlanner({ rows }: Props) {
               <td className="px-2 py-1.5 text-right font-mono text-gold-hi">{fmtGil(r.subtotal)}</td>
             </tr>
           ))}
-          {result.rows.length === 0 && (
+          {result.skippedZeroPriceRows.map((r) => (
+            <tr key={`skip-${r.id}`} className="border-t border-border-base text-text-low">
+              <td className="px-2 py-1.5 font-mono">—</td>
+              <td className="px-2 py-1.5 italic">{r.name}</td>
+              <td className="px-2 py-1.5 text-right font-mono">—</td>
+              <td className="px-2 py-1.5 text-right font-mono">—</td>
+              <td className="px-2 py-1.5 text-right font-mono">—</td>
+            </tr>
+          ))}
+          {result.rows.length === 0 && result.skippedZeroPriceRows.length === 0 && (
             <tr>
               <td colSpan={5} className="px-2 py-3 text-center text-text-low font-mono text-[11px] italic">
                 Run the query below to populate this plan.

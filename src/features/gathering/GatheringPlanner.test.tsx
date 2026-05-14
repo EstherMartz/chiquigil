@@ -3,11 +3,17 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { GatheringPlanner } from './GatheringPlanner';
 import { useGatheringPlanStore, defaultGatheringPlan } from './gatheringPlanStore';
 import type { QueryResultRow } from '../queries/types';
+import type { GatheringCatalog } from '../../lib/gatheringCatalog';
 
 const rows: QueryResultRow[] = [
   { id: 5544, name: 'Cobalt Ore', sc: 1, unitPrice: 100, averagePrice: 100, dealPct: 0, velocity: 5, gilFlow: 600, hq: false },
   { id: 5543, name: 'Rosewood Log', sc: 1, unitPrice: 50, averagePrice: 50, dealPct: 0, velocity: 5, gilFlow: 400, hq: false },
 ];
+
+const catalog: GatheringCatalog = new Map([
+  [5544, { level: 50, timed: false, hidden: false }],
+  [5543, { level: 90, timed: true, hidden: false }],
+]);
 
 beforeEach(() => {
   localStorage.clear();
@@ -69,5 +75,40 @@ describe('GatheringPlanner', () => {
     expect(textarea).toBeDefined();
     expect(textarea!.value).toMatch(/^[A-Za-z0-9+/]+=*$/);
     expect(textarea!.value.length).toBeGreaterThan(0);
+  });
+
+  it('filters out rows above maxLevel', () => {
+    useGatheringPlanStore.getState().setMaxLevel(60);
+    render(<GatheringPlanner rows={rows} catalog={catalog} />);
+    // Only Cobalt Ore (lvl 50) survives the filter; Rosewood Log (lvl 90) is dropped.
+    expect(screen.getByText('Cobalt Ore')).toBeInTheDocument();
+    expect(screen.queryByText('Rosewood Log')).not.toBeInTheDocument();
+  });
+
+  it('hides timed-node rows by default and shows them when includeTimed is on', () => {
+    // Default: includeTimed = false, maxLevel = 90 → Cobalt (untimed) survives, Rosewood (timed) doesn't.
+    const { rerender } = render(<GatheringPlanner rows={rows} catalog={catalog} />);
+    expect(screen.getByText('Cobalt Ore')).toBeInTheDocument();
+    expect(screen.queryByText('Rosewood Log')).not.toBeInTheDocument();
+
+    // Toggle includeTimed on; Rosewood reappears.
+    useGatheringPlanStore.getState().setIncludeTimed(true);
+    rerender(<GatheringPlanner rows={rows} catalog={catalog} />);
+    expect(screen.getByText('Rosewood Log')).toBeInTheDocument();
+  });
+
+  it('renders zero-price rows as a — row instead of dropping them silently', () => {
+    const rowsWithZero: QueryResultRow[] = [
+      { id: 5544, name: 'Cobalt Ore', sc: 1, unitPrice: 100, averagePrice: 100, dealPct: 0, velocity: 5, gilFlow: 600, hq: false },
+      { id: 5543, name: 'Free Sample', sc: 1, unitPrice: 0, averagePrice: 0, dealPct: 0, velocity: 0, gilFlow: 0, hq: false },
+    ];
+    render(<GatheringPlanner rows={rowsWithZero} />);
+    expect(screen.getByText('Cobalt Ore')).toBeInTheDocument();
+    // Skipped row's name appears as italic text. We can locate it by name; the cells beside it should be — markers.
+    const skippedName = screen.getByText('Free Sample');
+    expect(skippedName.tagName.toLowerCase()).toBe('td');
+    // The row should contain at least one — qty cell.
+    const row = skippedName.closest('tr')!;
+    expect(row.textContent).toContain('—');
   });
 });
