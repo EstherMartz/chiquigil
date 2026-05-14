@@ -134,6 +134,17 @@ export const PRESETS: QueryPreset[] = [
               minPrice: 20_000, maxPrice: null, sort: 'gilFlow', limit: 100,
               scope: 'dc', maxListings: null, mode: 'standard', minGap: null },
   },
+  {
+    id: 'glamour-housing', label: 'Glamour housing', category: 'trading',
+    desc: 'Old/rare housing items & fixtures likely to flip well.',
+    // Categories 56, 65, 66, 67: Furnishings, Exterior Fixtures, Interior Fixtures,
+    // Outdoor Furnishings — see itemSearchCategories.ts. Other housing sub-categories
+    // (68–72, 82) are covered by the broader 'furnishings' preset.
+    filter: { searchCategories: [56, 65, 66, 67],
+              hq: 'either', minDealPct: 0, minVelocity: 0.5,
+              minPrice: 20_000, maxPrice: null, sort: 'gilFlow', limit: 100,
+              scope: 'dc', maxListings: null, mode: 'standard', minGap: null },
+  },
 ];
 
 export function getPreset(id: string): QueryPreset | undefined {

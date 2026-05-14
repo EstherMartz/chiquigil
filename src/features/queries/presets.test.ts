@@ -86,6 +86,13 @@ describe('PRESETS', () => {
     expect(p.filter.sort).toBe('gilFlow');
   });
 
+  it('glamour-housing targets four housing categories with a 20k floor', () => {
+    const p = getPreset('glamour-housing')!;
+    expect([...p.filter.searchCategories].sort((a, b) => a - b)).toEqual([56, 65, 66, 67]);
+    expect(p.filter.minPrice).toBe(20_000);
+    expect(p.filter.sort).toBe('gilFlow');
+  });
+
   it('every preset has a category (craft, trading, or gathering)', () => {
     for (const p of PRESETS) {
       expect(['craft', 'trading', 'gathering']).toContain(p.category);
@@ -104,6 +111,7 @@ describe('PRESETS', () => {
       'food-potions',
       'furnishings',
       'glamour-gear',
+      'glamour-housing',
       'high-value-materials',
       'mega-value-hq',
       'minions-quick-sell',
