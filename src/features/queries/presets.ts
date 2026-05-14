@@ -124,6 +124,16 @@ export const PRESETS: QueryPreset[] = [
               minPrice: null, maxPrice: null, sort: 'gilFlow', limit: 100,
               scope: 'dc', maxListings: null, mode: 'standard', minGap: null },
   },
+  {
+    id: 'glamour-gear', label: 'Glamour gear', category: 'trading',
+    desc: 'Old/rare armor & accessories likely to flip well.',
+    // Categories 31–42: Head, Undershirts, Body, Undergarments, Legs, Hands, Feet,
+    // Waist, Necklaces, Earrings, Bracelets, Rings — see itemSearchCategories.ts.
+    filter: { searchCategories: [31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42],
+              hq: 'either', minDealPct: 0, minVelocity: 0.5,
+              minPrice: 20_000, maxPrice: null, sort: 'gilFlow', limit: 100,
+              scope: 'dc', maxListings: null, mode: 'standard', minGap: null },
+  },
 ];
 
 export function getPreset(id: string): QueryPreset | undefined {
