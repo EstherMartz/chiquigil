@@ -179,7 +179,7 @@ export function GatheringPlanner({ rows, catalog }: Props) {
           {result.rows.length === 0 && result.skippedZeroPriceRows.length === 0 && (
             <tr>
               <td colSpan={5} className="px-2 py-3 text-center text-text-low font-mono text-[11px] italic">
-                Run the query below to populate this plan.
+                Click Run query to populate this plan.
               </td>
             </tr>
           )}
