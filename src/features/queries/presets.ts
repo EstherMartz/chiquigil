@@ -115,6 +115,15 @@ export const PRESETS: QueryPreset[] = [
               sort: 'gilFlow', limit: 100, scope: 'home', maxListings: null,
               mode: 'standard', minGap: null },
   },
+  {
+    id: 'treasure-maps', label: 'Treasure maps', category: 'trading',
+    desc: 'Current-tier timeworn maps ranked by gil/day.',
+    // Category 64 (Other) is the bucket FFXIV files timeworn maps under.
+    // The rest of category 64 is filtered out implicitly by gilFlow sort + minVelocity.
+    filter: { searchCategories: [64], hq: 'either', minDealPct: 0, minVelocity: 0.5,
+              minPrice: null, maxPrice: null, sort: 'gilFlow', limit: 100,
+              scope: 'dc', maxListings: null, mode: 'standard', minGap: null },
+  },
 ];
 
 export function getPreset(id: string): QueryPreset | undefined {

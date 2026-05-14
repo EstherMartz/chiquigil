@@ -70,6 +70,14 @@ describe('PRESETS', () => {
     expect(p.filter.minDealPct).toBe(30);
   });
 
+  it('treasure-maps targets category 64 (Other)', () => {
+    const p = getPreset('treasure-maps')!;
+    expect(p.filter.searchCategories).toEqual([64]);
+    expect(p.filter.sort).toBe('gilFlow');
+    expect(p.filter.scope).toBe('dc');
+    expect(p.filter.minVelocity).toBe(0.5);
+  });
+
   it('every preset has a category (craft, trading, or gathering)', () => {
     for (const p of PRESETS) {
       expect(['craft', 'trading', 'gathering']).toContain(p.category);
@@ -91,6 +99,7 @@ describe('PRESETS', () => {
       'mega-value-hq',
       'minions-quick-sell',
       'reposts',
+      'treasure-maps',
     ]);
   });
 
