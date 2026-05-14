@@ -5,6 +5,7 @@ import { computePlan } from './computePlan';
 import { useGatheringPlanStore } from './gatheringPlanStore';
 import type { QueryResultRow } from '../queries/types';
 import type { GatheringCatalog } from '../../lib/gatheringCatalog';
+import { ItemNameLinks } from '../../components/ItemNameLinks';
 
 interface Props {
   rows: QueryResultRow[];
@@ -161,7 +162,9 @@ export function GatheringPlanner({ rows, catalog }: Props) {
           {result.rows.map((r, i) => (
             <tr key={r.id} className="border-t border-border-base">
               <td className="px-2 py-1.5 font-mono text-text-low">{i + 1}</td>
-              <td className="px-2 py-1.5">{r.name}</td>
+              <td className="px-2 py-1.5">
+                <ItemNameLinks id={r.id} name={r.name} />
+              </td>
               <td className="px-2 py-1.5 text-right font-mono">{fmtGil(r.unitPrice)}</td>
               <td className="px-2 py-1.5 text-right font-mono">{r.qty.toLocaleString()}</td>
               <td className="px-2 py-1.5 text-right font-mono text-gold-hi">{fmtGil(r.subtotal)}</td>
@@ -170,7 +173,9 @@ export function GatheringPlanner({ rows, catalog }: Props) {
           {result.skippedZeroPriceRows.map((r) => (
             <tr key={`skip-${r.id}`} className="border-t border-border-base text-text-low">
               <td className="px-2 py-1.5 font-mono">—</td>
-              <td className="px-2 py-1.5 italic">{r.name}</td>
+              <td className="px-2 py-1.5 italic">
+                <ItemNameLinks id={r.id} name={r.name} />
+              </td>
               <td className="px-2 py-1.5 text-right font-mono">—</td>
               <td className="px-2 py-1.5 text-right font-mono">—</td>
               <td className="px-2 py-1.5 text-right font-mono">—</td>
