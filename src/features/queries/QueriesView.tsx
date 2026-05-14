@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSettingsStore } from '../settings/store';
 import { useItemSnapshot } from './useItemSnapshot';
 import { useMutation } from '@tanstack/react-query';
@@ -29,9 +29,10 @@ interface PriceFetchResult {
 interface Props {
   category: PresetCategory;
   heading?: string;
+  onRowsChange?: (rows: QueryResultRow[]) => void;
 }
 
-export function QueriesView({ category, heading }: Props) {
+export function QueriesView({ category, heading, onRowsChange }: Props) {
   const { world, dc } = useSettingsStore();
   const snapshot = useItemSnapshot();
   const isGathering = category === 'gathering';
@@ -116,6 +117,12 @@ export function QueriesView({ category, heading }: Props) {
       }
     }
   }, [run.data, recipes.data, snapshot.data]);
+
+  useEffect(() => {
+    if (!onRowsChange) return;
+    if (derived?.kind === 'query') onRowsChange(derived.rows);
+    else onRowsChange([]);
+  }, [derived, onRowsChange]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 space-y-4">
