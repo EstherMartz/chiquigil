@@ -2,9 +2,10 @@ import { openDB, type IDBPDatabase } from 'idb';
 import type { Recipe } from './recipes';
 import type { SnapshotItem } from './itemSnapshot';
 import type { GatheringInfo } from './gatheringCatalog';
+import type { SnapshotLeve } from './leveSnapshot';
 
 const DB_NAME = 'ffxiv-helper';
-const DB_VERSION = 6;
+const DB_VERSION = 7;
 const RECIPE_STORE = 'recipes';
 const NAME_STORE = 'names';
 const ITEM_STORE = 'items';
@@ -12,6 +13,7 @@ const META_STORE = 'meta';
 const GATHER_STORE = 'gathering';
 const RECIPE_SNAPSHOT_STORE = 'recipeSnapshot';
 const MARKET_STORE = 'market';
+const LEVE_STORE = 'leves';
 
 let dbPromise: Promise<IDBPDatabase> | null = null;
 
@@ -39,6 +41,9 @@ function db(): Promise<IDBPDatabase> {
         }
         if (!database.objectStoreNames.contains(MARKET_STORE)) {
           database.createObjectStore(MARKET_STORE);
+        }
+        if (!database.objectStoreNames.contains(LEVE_STORE)) {
+          database.createObjectStore(LEVE_STORE);
         }
       },
     });
@@ -170,4 +175,27 @@ export async function getMarketCacheLastFetchedAt(): Promise<number | null> {
     }
   }
   return maxTs > 0 ? maxTs : null;
+}
+
+const LEVE_SNAPSHOT_KEY = 'snapshot';
+const LEVE_SNAPSHOT_TS_KEY = 'leveSnapshotUpdatedAt';
+
+export async function getCachedLeves(): Promise<SnapshotLeve[] | undefined> {
+  return (await db()).get(LEVE_STORE, LEVE_SNAPSHOT_KEY);
+}
+
+export async function putCachedLeves(leves: SnapshotLeve[]): Promise<void> {
+  const handle = await db();
+  await handle.put(LEVE_STORE, leves, LEVE_SNAPSHOT_KEY);
+  await handle.put(META_STORE, Date.now(), LEVE_SNAPSHOT_TS_KEY);
+}
+
+export async function clearLeveCache(): Promise<void> {
+  const handle = await db();
+  await handle.clear(LEVE_STORE);
+  await handle.delete(META_STORE, LEVE_SNAPSHOT_TS_KEY);
+}
+
+export async function getLeveSnapshotUpdatedAt(): Promise<number | undefined> {
+  return (await db()).get(META_STORE, LEVE_SNAPSHOT_TS_KEY);
 }
