@@ -6,6 +6,7 @@ import Crafts from './routes/Crafts';
 import Trading from './routes/Trading';
 import Gathering from './routes/Gathering';
 import GatheringPlan from './routes/GatheringPlan';
+import LevePlan from './routes/LevePlan';
 import Settings from './routes/Settings';
 
 export default function App() {
@@ -19,6 +20,7 @@ export default function App() {
         <Route path="/trading" element={<Trading />} />
         <Route path="/gathering" element={<Gathering />} />
         <Route path="/gathering/plan" element={<GatheringPlan />} />
+        <Route path="/leves" element={<LevePlan />} />
         <Route path="/queries" element={<Navigate to="/crafts" replace />} />
         <Route path="/insights" element={<Navigate to="/trading" replace />} />
         <Route path="/settings" element={<Settings />} />
