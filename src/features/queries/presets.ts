@@ -115,6 +115,36 @@ export const PRESETS: QueryPreset[] = [
               sort: 'gilFlow', limit: 100, scope: 'home', maxListings: null,
               mode: 'standard', minGap: null },
   },
+  {
+    id: 'treasure-maps', label: 'Treasure maps', category: 'trading',
+    desc: 'Current-tier timeworn maps ranked by gil/day.',
+    // Category 64 (Other) is the bucket FFXIV files timeworn maps under.
+    // The rest of category 64 is filtered out implicitly by gilFlow sort + minVelocity.
+    filter: { searchCategories: [64], hq: 'either', minDealPct: 0, minVelocity: 0.5,
+              minPrice: null, maxPrice: null, sort: 'gilFlow', limit: 100,
+              scope: 'dc', maxListings: null, mode: 'standard', minGap: null },
+  },
+  {
+    id: 'glamour-gear', label: 'Glamour gear', category: 'trading',
+    desc: 'Old/rare armor & accessories likely to flip well.',
+    // Categories 31–42: Head, Undershirts, Body, Undergarments, Legs, Hands, Feet,
+    // Waist, Necklaces, Earrings, Bracelets, Rings — see itemSearchCategories.ts.
+    filter: { searchCategories: [31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42],
+              hq: 'either', minDealPct: 0, minVelocity: 0.5,
+              minPrice: 20_000, maxPrice: null, sort: 'gilFlow', limit: 100,
+              scope: 'dc', maxListings: null, mode: 'standard', minGap: null },
+  },
+  {
+    id: 'glamour-housing', label: 'Glamour housing', category: 'trading',
+    desc: 'Old/rare housing items & fixtures likely to flip well.',
+    // Categories 56, 65, 66, 67: Furnishings, Exterior Fixtures, Interior Fixtures,
+    // Outdoor Furnishings — see itemSearchCategories.ts. Other housing sub-categories
+    // (68–72, 82) are covered by the broader 'furnishings' preset.
+    filter: { searchCategories: [56, 65, 66, 67],
+              hq: 'either', minDealPct: 0, minVelocity: 0.5,
+              minPrice: 20_000, maxPrice: null, sort: 'gilFlow', limit: 100,
+              scope: 'dc', maxListings: null, mode: 'standard', minGap: null },
+  },
 ];
 
 export function getPreset(id: string): QueryPreset | undefined {

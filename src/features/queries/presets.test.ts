@@ -70,6 +70,29 @@ describe('PRESETS', () => {
     expect(p.filter.minDealPct).toBe(30);
   });
 
+  it('treasure-maps targets category 64 (Other)', () => {
+    const p = getPreset('treasure-maps')!;
+    expect(p.filter.searchCategories).toEqual([64]);
+    expect(p.filter.sort).toBe('gilFlow');
+    expect(p.filter.scope).toBe('dc');
+    expect(p.filter.minVelocity).toBe(0.5);
+  });
+
+  it('glamour-gear targets armor + accessory categories (31–42) with a 20k floor', () => {
+    const p = getPreset('glamour-gear')!;
+    const expected = [31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42];
+    expect([...p.filter.searchCategories].sort((a, b) => a - b)).toEqual(expected);
+    expect(p.filter.minPrice).toBe(20_000);
+    expect(p.filter.sort).toBe('gilFlow');
+  });
+
+  it('glamour-housing targets four housing categories with a 20k floor', () => {
+    const p = getPreset('glamour-housing')!;
+    expect([...p.filter.searchCategories].sort((a, b) => a - b)).toEqual([56, 65, 66, 67]);
+    expect(p.filter.minPrice).toBe(20_000);
+    expect(p.filter.sort).toBe('gilFlow');
+  });
+
   it('every preset has a category (craft, trading, or gathering)', () => {
     for (const p of PRESETS) {
       expect(['craft', 'trading', 'gathering']).toContain(p.category);
@@ -87,10 +110,13 @@ describe('PRESETS', () => {
       'fast-sellers-hq',
       'food-potions',
       'furnishings',
+      'glamour-gear',
+      'glamour-housing',
       'high-value-materials',
       'mega-value-hq',
       'minions-quick-sell',
       'reposts',
+      'treasure-maps',
     ]);
   });
 
