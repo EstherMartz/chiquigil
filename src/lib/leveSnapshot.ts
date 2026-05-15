@@ -36,8 +36,10 @@ export interface SnapshotLeve {
   hqGilMultiplier: number;
   targetItemId: number | null;
   targetItemQty: number | null;
-  _craftLeveId?: number; // temporary: resolved during enrichDohTargets, then deleted
 }
+
+// Internal type for enrichment stage only — not exported to consumers.
+type LeveWithCraftLeveRef = SnapshotLeve & { _craftLeveId?: number };
 
 interface RawFieldLink<T> { value?: T; fields?: T }
 interface RawLeveFields {
@@ -73,8 +75,8 @@ function classifyType(category: string): SnapshotLeve['type'] {
   return 'dow';
 }
 
-export function parseLeveSheetPage(raw: RawLeveSheetPage): SnapshotLeve[] {
-  const out: SnapshotLeve[] = [];
+export function parseLeveSheetPage(raw: RawLeveSheetPage): LeveWithCraftLeveRef[] {
+  const out: LeveWithCraftLeveRef[] = [];
   for (const r of raw.rows ?? []) {
     const f = r.fields ?? {};
     const name = (f.Name ?? '').trim();
@@ -119,7 +121,7 @@ function buildLevePageUrl(after: number, pageSize: number): string {
 
 export async function fetchLeveSnapshot(opts: FetchLeveSnapshotOpts = {}): Promise<SnapshotLeve[]> {
   const pageSize = opts.pageSize ?? 500;
-  const out: SnapshotLeve[] = [];
+  const out: LeveWithCraftLeveRef[] = [];
   let cursor = 0;
   while (true) {
     const res = await fetch(buildLevePageUrl(cursor, pageSize));
@@ -131,13 +133,17 @@ export async function fetchLeveSnapshot(opts: FetchLeveSnapshotOpts = {}): Promi
     opts.onProgress?.(out.length);
     cursor = rows[rows.length - 1].row_id;
   }
-  // Path 1: Inline enrichment approach. Store craftLeveId temporarily on each leve,
-  // then fetch CraftLeve sheet and attach targetItemId/qty. Delete the temporary field.
+  // Inline enrichment approach. Use craftLeveId temporarily to resolve targets,
+  // then delete before returning to consumers.
   await enrichDohTargets(out, pageSize);
-  return out;
+  // Strip the internal field before returning the public type.
+  for (const leve of out) {
+    delete leve._craftLeveId;
+  }
+  return out as SnapshotLeve[];
 }
 
-async function enrichDohTargets(leves: SnapshotLeve[], pageSize: number): Promise<void> {
+async function enrichDohTargets(leves: LeveWithCraftLeveRef[], pageSize: number): Promise<void> {
   // Fetch the entire CraftLeve sheet and index by row_id (= the DataId of the parent Leve).
   const craftLeves = new Map<number, { itemId: number; qty: number }>();
   let cursor = 0;
@@ -164,7 +170,5 @@ async function enrichDohTargets(leves: SnapshotLeve[], pageSize: number): Promis
         leve.targetItemQty = craft.qty;
       }
     }
-    // Delete the temporary field before returning.
-    delete leve._craftLeveId;
   }
 }
