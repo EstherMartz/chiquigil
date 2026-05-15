@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react';
 import { fmtGil } from '../../lib/format';
 import { categoryLabel } from '../../lib/itemSearchCategories';
 import { ItemNameLinks } from '../../components/ItemNameLinks';
@@ -13,8 +14,52 @@ interface Props {
   gatheringCatalog?: GatheringCatalog;
 }
 
+type SortKey = 'name' | 'unitPrice' | 'averagePrice' | 'dealPct' | 'velocity' | 'gilFlow';
+type SortDir = 'asc' | 'desc';
+
+const COLS: { key: SortKey | null; label: string; align?: 'right'; hideOnMobile?: boolean }[] = [
+  { key: null, label: '#' },
+  { key: 'name', label: 'Item' },
+  { key: 'unitPrice', label: 'Current', align: 'right' },
+  { key: 'averagePrice', label: 'Average', align: 'right', hideOnMobile: true },
+  { key: 'dealPct', label: 'Disc.', align: 'right' },
+  { key: 'velocity', label: 'Velocity', align: 'right', hideOnMobile: true },
+  { key: 'gilFlow', label: 'Gil / day', align: 'right' },
+];
+
+const DEFAULT_DIR: Record<SortKey, SortDir> = {
+  name: 'asc',
+  unitPrice: 'asc',
+  averagePrice: 'desc',
+  dealPct: 'desc',
+  velocity: 'desc',
+  gilFlow: 'desc',
+};
+
 export function QueryResults({ rows, totalCandidates, skippedChunks, gatheringCatalog }: Props) {
-  const lm = useLoadMore(rows, 25);
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
+
+  const sortedRows = useMemo(() => {
+    if (!sortKey) return rows;
+    const mul = sortDir === 'asc' ? 1 : -1;
+    return [...rows].sort((a, b) => {
+      if (sortKey === 'name') return a.name.localeCompare(b.name) * mul;
+      return (a[sortKey] - b[sortKey]) * mul;
+    });
+  }, [rows, sortKey, sortDir]);
+
+  const lm = useLoadMore(sortedRows, 25);
+
+  function toggleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortDir(DEFAULT_DIR[key]);
+    }
+  }
+
   if (rows.length === 0) {
     return (
       <div className="border border-border-base bg-bg-card p-6 text-text-low text-sm italic">
@@ -31,14 +76,25 @@ export function QueryResults({ rows, totalCandidates, skippedChunks, gatheringCa
       <div className="border border-border-base bg-bg-card overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-text-dim font-mono text-[10px] tracking-widest uppercase">
-              <th className="text-left px-3 py-2">#</th>
-              <th className="text-left px-3 py-2">Item</th>
-              <th className="text-right px-3 py-2">Current</th>
-              <th className="text-right px-3 py-2 hidden md:table-cell">Average</th>
-              <th className="text-right px-3 py-2">Disc.</th>
-              <th className="text-right px-3 py-2 hidden md:table-cell">Velocity</th>
-              <th className="text-right px-3 py-2">Gil / day</th>
+            <tr className="font-mono text-[10px] tracking-widest uppercase">
+              {COLS.map((c) => {
+                const sortable = c.key !== null;
+                const sorted = sortable && sortKey === c.key;
+                const arrow = sorted ? (sortDir === 'asc' ? ' ▲' : ' ▼') : '';
+                const align = c.align === 'right' ? 'text-right' : 'text-left';
+                const hide = c.hideOnMobile ? 'hidden md:table-cell' : '';
+                const tone = sorted ? 'text-gold' : 'text-text-dim';
+                const interactive = sortable ? 'cursor-pointer select-none hover:text-aether' : '';
+                return (
+                  <th
+                    key={c.label}
+                    onClick={sortable ? () => toggleSort(c.key as SortKey) : undefined}
+                    className={`px-3 py-2 ${align} ${hide} ${tone} ${interactive}`}
+                  >
+                    {c.label}{arrow}
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody>
