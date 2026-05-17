@@ -3,6 +3,7 @@ import type { MarketData, MarketItem } from '../../lib/universalis';
 import type { Recipe } from '../../lib/recipes';
 import { MIN_RECENT_SALES, MAX_LISTING_RATIO } from '../../lib/priceTrust';
 import type { HqMode, MaterialFlipFilter, MaterialFlipRow } from './types';
+import { dcOf, CHAOS_WORLDS, EU_WORLDS } from '../../lib/europeWorlds';
 
 interface SaleTier { unit: number; isHq: boolean }
 
@@ -38,6 +39,29 @@ function bestRegionIngredientPrice(m: MarketItem | undefined, worldFilter: (w: s
   return Math.min(...nq.map((l) => l.price));
 }
 
+function findBestSingleStop(
+  ingredients: { itemId: number; amount: number }[],
+  ingMap: MarketData,
+  candidateWorlds: Iterable<string>,
+  homeWorld: string,
+  homeMatCost: number,
+): { world: string; cost: number } {
+  let best = { world: homeWorld, cost: homeMatCost };
+  for (const world of candidateWorlds) {
+    let total = 0;
+    let complete = true;
+    for (const ing of ingredients) {
+      const m = ingMap[ing.itemId];
+      if (!m) { complete = false; break; }
+      const here = m.worldListings.filter((l) => !l.hq && l.world === world);
+      if (here.length === 0) { complete = false; break; }
+      total += Math.min(...here.map((l) => l.price)) * ing.amount;
+    }
+    if (complete && total < best.cost) best = { world, cost: total };
+  }
+  return best;
+}
+
 export function runMaterialFlip(
   snapshot: SnapshotItem[],
   saleMap: MarketData,
@@ -48,9 +72,6 @@ export function runMaterialFlip(
 ): MaterialFlipRow[] {
   const out: MaterialFlipRow[] = [];
   const catSet = filter.searchCategories.length ? new Set(filter.searchCategories) : null;
-
-  // Single-stop calculation is added in Task 5. Placeholder values for now.
-  const worldFilter = (_w: string) => true;
 
   for (const item of snapshot) {
     if (catSet && !catSet.has(item.sc)) continue;
@@ -67,6 +88,9 @@ export function runMaterialFlip(
     const recipe = recipeMap.get(item.id);
     if (!recipe) continue;
 
+    const candidateWorlds = filter.includeLightDc ? EU_WORLDS : CHAOS_WORLDS;
+    const worldFilter = (w: string) => candidateWorlds.has(w);
+
     let homeMatCost = 0;
     let bestPerIngredientCost = 0;
     for (const ing of recipe.ingredients) {
@@ -80,12 +104,18 @@ export function runMaterialFlip(
     const perIngredientSavings = homeMatCost - bestPerIngredientCost;
     if (perIngredientSavings < filter.minSavings) continue;
 
+    const singleStop = findBestSingleStop(
+      recipe.ingredients, ingMap, candidateWorlds, homeWorld, homeMatCost,
+    );
+
     out.push({
       id: item.id, name: item.name, sc: item.sc, hq: tier.isHq,
       salePrice: tier.unit, velocity: sale.velocity,
       homeMatCost, bestPerIngredientCost, perIngredientSavings,
-      // Filled in by Task 5:
-      bestSingleWorld: '', singleStopCost: 0, singleStopSavings: 0, needsDcTravel: false,
+      bestSingleWorld: singleStop.world,
+      singleStopCost: singleStop.cost,
+      singleStopSavings: homeMatCost - singleStop.cost,
+      needsDcTravel: dcOf(singleStop.world) === 'Light',
       gilSavedPerDay: perIngredientSavings * sale.velocity,
       pctDiscount: perIngredientSavings / Math.max(1, homeMatCost),
     });

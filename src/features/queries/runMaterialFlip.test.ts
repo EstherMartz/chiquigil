@@ -105,3 +105,96 @@ describe('runMaterialFlip — per-ingredient cheapest', () => {
     expect(out).toEqual([]);  // savings = 0
   });
 });
+
+describe('runMaterialFlip — single-stop world', () => {
+  it('chooses the world that minimizes the full basket, not the most-cheapest-ingredients world', () => {
+    const saleMap: MarketData = {
+      1: mkSale({
+        minHQ: 10_000, medianHQ: 10_000, recentSalesHQ: 8,
+        velocity: 1, listingCount: 1,
+      }),
+    };
+    // Lich is cheapest for ingredient 99 (60 vs 100). Omega is cheapest for
+    // ingredient 100 (400 vs 500). But Omega's basket (100*2 + 400 = 600) beats
+    // Lich's basket (60*2 + 500 = 620). Single-stop should pick Omega.
+    const ingMap: MarketData = {
+      99: mkSale({ worldListings: [
+        listing('Phantom', 100), listing('Lich', 60), listing('Omega', 100),
+      ] }),
+      100: mkSale({ worldListings: [
+        listing('Phantom', 500), listing('Lich', 500), listing('Omega', 400),
+      ] }),
+    };
+    const out = runMaterialFlip(snapshot, saleMap, ingMap, recipes, 'Phantom', baseFilter);
+    expect(out).toHaveLength(1);
+    expect(out[0].bestSingleWorld).toBe('Omega');
+    expect(out[0].singleStopCost).toBe(600);
+    expect(out[0].singleStopSavings).toBe(100);
+    expect(out[0].needsDcTravel).toBe(false);
+  });
+
+  it('flags needsDcTravel when single-stop winner is on Light DC', () => {
+    const saleMap: MarketData = {
+      1: mkSale({
+        minHQ: 10_000, medianHQ: 10_000, recentSalesHQ: 8,
+        velocity: 1, listingCount: 1,
+      }),
+    };
+    const ingMap: MarketData = {
+      99: mkSale({ worldListings: [
+        listing('Phantom', 100), listing('Twintania', 40),
+      ] }),
+      100: mkSale({ worldListings: [
+        listing('Phantom', 500), listing('Twintania', 300),
+      ] }),
+    };
+    const out = runMaterialFlip(snapshot, saleMap, ingMap, recipes, 'Phantom', baseFilter);
+    expect(out[0].bestSingleWorld).toBe('Twintania');
+    expect(out[0].needsDcTravel).toBe(true);
+  });
+
+  it('respects includeLightDc=false by ignoring Light worlds in both calcs', () => {
+    const saleMap: MarketData = {
+      1: mkSale({
+        minHQ: 10_000, medianHQ: 10_000, recentSalesHQ: 8,
+        velocity: 1, listingCount: 1,
+      }),
+    };
+    const ingMap: MarketData = {
+      99: mkSale({ worldListings: [
+        listing('Phantom', 100), listing('Twintania', 10),
+      ] }),
+      100: mkSale({ worldListings: [
+        listing('Phantom', 500), listing('Omega', 400),
+      ] }),
+    };
+    const out = runMaterialFlip(snapshot, saleMap, ingMap, recipes,
+      'Phantom', { ...baseFilter, includeLightDc: false });
+    expect(out).toHaveLength(1);
+    expect(out[0].bestPerIngredientCost).toBe(600);
+    expect(out[0].bestSingleWorld).toBe('Phantom');
+    expect(out[0].singleStopCost).toBe(700);
+  });
+
+  it('falls back to home as the single-stop when no other world has all ingredients', () => {
+    const saleMap: MarketData = {
+      1: mkSale({
+        minHQ: 10_000, medianHQ: 10_000, recentSalesHQ: 8,
+        velocity: 1, listingCount: 1,
+      }),
+    };
+    const ingMap: MarketData = {
+      99: mkSale({ worldListings: [
+        listing('Phantom', 100), listing('Lich', 60),
+      ] }),
+      100: mkSale({ worldListings: [
+        listing('Phantom', 500),
+      ] }),
+    };
+    const out = runMaterialFlip(snapshot, saleMap, ingMap, recipes, 'Phantom', baseFilter);
+    expect(out[0].bestSingleWorld).toBe('Phantom');
+    expect(out[0].singleStopCost).toBe(700);
+    expect(out[0].singleStopSavings).toBe(0);
+    expect(out[0].perIngredientSavings).toBe(80);  // Lich for 99: 700 - (60*2 + 500)
+  });
+});
