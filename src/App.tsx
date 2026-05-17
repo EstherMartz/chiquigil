@@ -7,6 +7,8 @@ import Trading from './routes/Trading';
 import Gathering from './routes/Gathering';
 import GatheringPlan from './routes/GatheringPlan';
 import LevePlan from './routes/LevePlan';
+import GcSeals from './routes/GcSeals';
+import Item from './routes/Item';
 import Settings from './routes/Settings';
 
 export default function App() {
@@ -14,13 +16,16 @@ export default function App() {
     <div className="min-h-screen pt-8 pb-20">
       <Header />
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={<Navigate to="/trading" replace />} />
+        <Route path="/home" element={<Home />} />
         <Route path="/watchlist" element={<Watchlist />} />
         <Route path="/crafts" element={<Crafts />} />
         <Route path="/trading" element={<Trading />} />
         <Route path="/gathering" element={<Gathering />} />
         <Route path="/gathering/plan" element={<GatheringPlan />} />
         <Route path="/leves" element={<LevePlan />} />
+        <Route path="/gc-seals" element={<GcSeals />} />
+        <Route path="/item/:id" element={<Item />} />
         <Route path="/queries" element={<Navigate to="/crafts" replace />} />
         <Route path="/insights" element={<Navigate to="/trading" replace />} />
         <Route path="/settings" element={<Settings />} />

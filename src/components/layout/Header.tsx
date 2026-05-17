@@ -1,4 +1,6 @@
 import { NavLink } from 'react-router-dom';
+import { GlobalItemSearch } from './GlobalItemSearch';
+import { AetheryteChip } from './AetheryteChip';
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
   `px-3 py-2 font-mono text-xs tracking-widest uppercase transition-colors ${
@@ -17,14 +19,22 @@ export function Header() {
             Phantom <span className="text-gold italic">Crafting</span> Ledger
           </h1>
         </div>
-        <nav className="flex gap-1">
-          <NavLink to="/" end className={navClass}>Home</NavLink>
-          <NavLink to="/watchlist" className={navClass}>Watchlist</NavLink>
-          <NavLink to="/crafts" className={navClass}>Crafts</NavLink>
-          <NavLink to="/trading" className={navClass}>Trading</NavLink>
-          <NavLink to="/gathering" className={navClass}>Gathering</NavLink>
-          <NavLink to="/settings" className={navClass}>Settings</NavLink>
-        </nav>
+        <div className="flex flex-col sm:flex-row sm:items-end gap-3 sm:gap-4 min-w-0">
+          <div className="flex items-center gap-3 flex-wrap">
+            <GlobalItemSearch />
+            <AetheryteChip />
+          </div>
+          <nav className="flex flex-wrap gap-1">
+            <NavLink to="/home" className={navClass}>Tonight</NavLink>
+            <NavLink to="/watchlist" className={navClass}>Watchlist</NavLink>
+            <NavLink to="/crafts" className={navClass}>Crafts</NavLink>
+            <NavLink to="/trading" className={navClass}>Trading</NavLink>
+            <NavLink to="/gathering" className={navClass}>Gathering</NavLink>
+            <NavLink to="/leves" className={navClass}>Leves</NavLink>
+            <NavLink to="/gc-seals" className={navClass}>GC Seals</NavLink>
+            <NavLink to="/settings" className={navClass}>Settings</NavLink>
+          </nav>
+        </div>
       </div>
     </header>
   );
