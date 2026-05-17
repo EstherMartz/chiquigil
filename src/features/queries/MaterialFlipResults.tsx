@@ -16,21 +16,20 @@ interface Props {
 }
 
 function SortableHeader({
-  active, dir, onClick, children, align = 'right', hideOnMobile = false,
+  active, onClick, children, align = 'right', hideOnMobile = false,
 }: {
   active: boolean;
-  dir: 'desc';
   onClick: () => void;
   children: React.ReactNode;
   align?: 'left' | 'right';
   hideOnMobile?: boolean;
 }) {
-  const tail = active ? (dir === 'desc' ? ' ▼' : ' ▲') : '';
+  const tail = active ? ' ▼' : '';
   return (
     <th
       className={`px-3 py-2 cursor-pointer select-none text-${align} ${
         hideOnMobile ? 'hidden md:table-cell' : ''
-      } ${active ? 'text-gold' : 'text-text-dim'}`}
+      } ${active ? 'text-gold' : 'text-text-dim hover:text-aether'}`}
       onClick={onClick}
     >
       {children}{tail}
@@ -58,7 +57,7 @@ export function MaterialFlipResults({ rows, totalCandidates, skippedChunks, sort
             <tr className="font-mono text-[10px] tracking-widest uppercase">
               <th className="text-left px-3 py-2 text-text-dim">#</th>
               <th className="text-left px-3 py-2 text-text-dim">Item</th>
-              <SortableHeader active={sort === 'salePrice'} dir="desc" onClick={() => onSortChange('salePrice')}>
+              <SortableHeader active={sort === 'salePrice'} onClick={() => onSortChange('salePrice')}>
                 <InfoTooltip label="Cheapest trusted listing on your home world. Your sell price.">Sale</InfoTooltip>
               </SortableHeader>
               <th className="text-right px-3 py-2 text-text-dim hidden md:table-cell">
@@ -69,12 +68,12 @@ export function MaterialFlipResults({ rows, totalCandidates, skippedChunks, sort
                   Region mats
                 </InfoTooltip>
               </th>
-              <SortableHeader active={sort === 'savePerCraft'} dir="desc" onClick={() => onSortChange('savePerCraft')}>
+              <SortableHeader active={sort === 'savePerCraft'} onClick={() => onSortChange('savePerCraft')}>
                 <InfoTooltip label="Home mats − region mats. Maximum savings per craft if you visit every cheapest world.">
                   Save/craft
                 </InfoTooltip>
               </SortableHeader>
-              <SortableHeader active={sort === 'pctDiscount'} dir="desc" onClick={() => onSortChange('pctDiscount')} hideOnMobile>
+              <SortableHeader active={sort === 'pctDiscount'} onClick={() => onSortChange('pctDiscount')} hideOnMobile>
                 <InfoTooltip label="Savings as a fraction of home material cost.">%</InfoTooltip>
               </SortableHeader>
               <th className="text-left px-3 py-2 text-text-dim hidden md:table-cell">
@@ -82,10 +81,10 @@ export function MaterialFlipResults({ rows, totalCandidates, skippedChunks, sort
                   Best stop
                 </InfoTooltip>
               </th>
-              <SortableHeader active={sort === 'gilSavedPerDay'} dir="desc" onClick={() => onSortChange('gilSavedPerDay')}>
+              <SortableHeader active={sort === 'gilSavedPerDay'} onClick={() => onSortChange('gilSavedPerDay')}>
                 <InfoTooltip label="Save/craft × home velocity. Expected daily gil saved.">Save/day</InfoTooltip>
               </SortableHeader>
-              <SortableHeader active={sort === 'velocity'} dir="desc" onClick={() => onSortChange('velocity')} hideOnMobile>
+              <SortableHeader active={sort === 'velocity'} onClick={() => onSortChange('velocity')} hideOnMobile>
                 <InfoTooltip label="Sales per day on your home world.">Vel</InfoTooltip>
               </SortableHeader>
             </tr>
