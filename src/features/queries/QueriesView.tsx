@@ -38,7 +38,7 @@ interface Props {
 }
 
 export function QueriesView({ category, heading, onRowsChange, initialPresetId }: Props) {
-  const { world, dc } = useSettingsStore();
+  const { world, dc, retainerLevels } = useSettingsStore();
   const [params, setParams] = useSearchParams();
   const snapshot = useItemSnapshot();
   const isGathering = category === 'gathering';
@@ -117,7 +117,7 @@ export function QueriesView({ category, heading, onRowsChange, initialPresetId }
           return { kind: 'craft' as const, rows: [] as CraftFlipRow[] };
         }
         if (!recipes.data) return null;
-        const rows = runCraftFlip(snapshot.data.items, run.data.priceMap, recipes.data, f);
+        const rows = runCraftFlip(snapshot.data.items, run.data.priceMap, recipes.data, f, retainerLevels);
         return { kind: 'craft' as const, rows };
       }
       case 'repost': {

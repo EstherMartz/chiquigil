@@ -55,6 +55,7 @@ const SCAN_FILTER: QueryFilter = {
   maxListings: null,
   mode: 'craft',
   minGap: null,
+  trainedEye: false,
 };
 
 interface ScanResult {

@@ -201,6 +201,19 @@ export function QueryBuilder({ value, onChange, onRun, busy }: Props) {
             <option value="repost">Reposts</option>
           </select>
         </label>
+
+        {value.mode === 'craft' && (
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={value.trainedEye}
+              onChange={(e) => patch({ trainedEye: e.target.checked })}
+            />
+            <span className="font-mono text-[10px] tracking-widest text-text-low uppercase" title="Recipes you can auto-HQ with the level 80 Trained Eye skill (recipe level ≤ crafter level − 10)">
+              Trained Eye only
+            </span>
+          </label>
+        )}
       </div>
     </div>
   );

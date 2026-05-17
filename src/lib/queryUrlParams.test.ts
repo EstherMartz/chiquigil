@@ -15,6 +15,7 @@ const baseFilter: QueryFilter = {
   maxListings: null,
   mode: 'standard',
   minGap: null,
+  trainedEye: false,
 };
 
 describe('queryUrlParams', () => {
@@ -204,6 +205,7 @@ describe('queryUrlParams', () => {
         maxListings: 20,
         mode: 'craft',
         minGap: 5000,
+        trainedEye: false,
       };
       const params = filterToParams(original);
       const decoded = paramsToFilter(params, baseFilter);
@@ -224,6 +226,7 @@ describe('queryUrlParams', () => {
         maxListings: 30,
         mode: 'repost',
         minGap: 1000,
+        trainedEye: false,
       };
       const override: QueryFilter = {
         ...customBase,

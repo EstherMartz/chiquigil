@@ -23,6 +23,7 @@ const DEFAULT_GATHERING_FILTER: QueryFilter = {
   maxListings: null,
   mode: 'standard',
   minGap: null,
+  trainedEye: false,
 };
 
 interface RunResult {
