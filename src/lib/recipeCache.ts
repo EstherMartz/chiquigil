@@ -5,7 +5,7 @@ import type { GatheringInfo } from './gatheringCatalog';
 import type { SnapshotLeve } from './leveSnapshot';
 
 const DB_NAME = 'ffxiv-helper';
-const DB_VERSION = 7;
+const DB_VERSION = 8;
 const RECIPE_STORE = 'recipes';
 const NAME_STORE = 'names';
 const ITEM_STORE = 'items';
@@ -14,6 +14,7 @@ const GATHER_STORE = 'gathering';
 const RECIPE_SNAPSHOT_STORE = 'recipeSnapshot';
 const MARKET_STORE = 'market';
 const LEVE_STORE = 'leves';
+const GILSHOP_STORE = 'gilShop';
 
 let dbPromise: Promise<IDBPDatabase> | null = null;
 
@@ -44,6 +45,9 @@ function db(): Promise<IDBPDatabase> {
         }
         if (!database.objectStoreNames.contains(LEVE_STORE)) {
           database.createObjectStore(LEVE_STORE);
+        }
+        if (!database.objectStoreNames.contains(GILSHOP_STORE)) {
+          database.createObjectStore(GILSHOP_STORE);
         }
       },
     });
@@ -198,4 +202,29 @@ export async function clearLeveCache(): Promise<void> {
 
 export async function getLeveSnapshotUpdatedAt(): Promise<number | undefined> {
   return (await db()).get(META_STORE, LEVE_SNAPSHOT_TS_KEY);
+}
+
+const GILSHOP_SNAPSHOT_KEY = 'snapshot';
+const GILSHOP_SNAPSHOT_TS_KEY = 'vendorSnapshotUpdatedAt';
+
+export async function getCachedVendorSnapshot(): Promise<Map<number, number> | undefined> {
+  const raw = await (await db()).get(GILSHOP_STORE, GILSHOP_SNAPSHOT_KEY) as Array<[number, number]> | undefined;
+  if (!raw) return undefined;
+  return new Map(raw);
+}
+
+export async function putCachedVendorSnapshot(snapshot: Map<number, number>): Promise<void> {
+  const handle = await db();
+  await handle.put(GILSHOP_STORE, [...snapshot.entries()], GILSHOP_SNAPSHOT_KEY);
+  await handle.put(META_STORE, Date.now(), GILSHOP_SNAPSHOT_TS_KEY);
+}
+
+export async function clearVendorSnapshotCache(): Promise<void> {
+  const handle = await db();
+  await handle.clear(GILSHOP_STORE);
+  await handle.delete(META_STORE, GILSHOP_SNAPSHOT_TS_KEY);
+}
+
+export async function getVendorSnapshotUpdatedAt(): Promise<number | undefined> {
+  return (await db()).get(META_STORE, GILSHOP_SNAPSHOT_TS_KEY);
 }
