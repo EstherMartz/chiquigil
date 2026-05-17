@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useSettingsStore } from '../settings/store';
 import { useItemSnapshot } from './useItemSnapshot';
 import { useMutation } from '@tanstack/react-query';
@@ -17,6 +18,8 @@ import { RepostResults } from './RepostResults';
 import type { QueryFilter, QueryResultRow, CraftFlipRow, RepostRow, PresetCategory } from './types';
 import { Spinner } from '../../components/Spinner';
 import { StatusBanner } from '../../components/StatusBanner';
+import { InfoTooltip } from '../../components/InfoTooltip';
+import { filterToParams, paramsToFilter } from '../../lib/queryUrlParams';
 
 interface PriceFetchResult {
   priceMap: MarketData;
@@ -30,18 +33,22 @@ interface Props {
   category: PresetCategory;
   heading?: string;
   onRowsChange?: (rows: QueryResultRow[]) => void;
+  /** Pre-select a preset on first mount (e.g., via `?preset=top-food` deep-link). */
+  initialPresetId?: string;
 }
 
-export function QueriesView({ category, heading, onRowsChange }: Props) {
+export function QueriesView({ category, heading, onRowsChange, initialPresetId }: Props) {
   const { world, dc } = useSettingsStore();
+  const [params, setParams] = useSearchParams();
   const snapshot = useItemSnapshot();
   const isGathering = category === 'gathering';
   const gatheringCatalog = useGatheringCatalog();
   const catalogReady = !isGathering || gatheringCatalog.data != null;
 
   const presets = useMemo(() => PRESETS.filter((p) => p.category === category), [category]);
-  const [filter, setFilter] = useState<QueryFilter>(presets[0].filter);
-  const [activePresetId, setActivePresetId] = useState<string | null>(presets[0].id);
+  const initialPreset = (initialPresetId && presets.find((p) => p.id === initialPresetId)) || presets[0];
+  const [filter, setFilter] = useState<QueryFilter>(() => paramsToFilter(params, initialPreset.filter));
+  const [activePresetId, setActivePresetId] = useState<string | null>(initialPreset.id);
 
   const candidateIds = useMemo(() => {
     if (!snapshot.data) return [];
@@ -80,6 +87,13 @@ export function QueriesView({ category, heading, onRowsChange }: Props) {
   });
 
   const recipes = useRecipes(run.data?.narrowedIds ?? []);
+
+  // Sync filter to URL params
+  useEffect(() => {
+    const next = filterToParams(filter);
+    if (activePresetId) next.set('preset', activePresetId);
+    setParams(next, { replace: true });
+  }, [filter, activePresetId, setParams]);
 
   function applyPreset(id: string) {
     const p = getPreset(id);
@@ -130,16 +144,16 @@ export function QueriesView({ category, heading, onRowsChange }: Props) {
 
       <div className="flex flex-wrap gap-2">
         {presets.map((p) => (
-          <button
-            key={p.id}
-            onClick={() => applyPreset(p.id)}
-            className={`font-mono text-[10px] tracking-widest uppercase px-3 py-2 border ${
-              activePresetId === p.id ? 'border-gold text-gold' : 'border-border-base text-text-dim hover:text-aether'
-            }`}
-            title={p.desc}
-          >
-            {p.label}
-          </button>
+          <InfoTooltip key={p.id} label={p.desc}>
+            <button
+              onClick={() => applyPreset(p.id)}
+              className={`font-mono text-[10px] tracking-widest uppercase px-3 py-2 border ${
+                activePresetId === p.id ? 'border-gold text-gold' : 'border-border-base text-text-dim hover:text-aether'
+              }`}
+            >
+              {p.label}
+            </button>
+          </InfoTooltip>
         ))}
       </div>
 

@@ -1,6 +1,8 @@
 import type { ChangeEvent } from 'react';
+import { useState } from 'react';
 import { ITEM_SEARCH_CATEGORIES, categoryLabel } from '../../lib/itemSearchCategories';
 import type { HqMode, QueryFilter, QueryMode, QueryScope, QuerySort } from './types';
+import { btnPrimary } from '../../components/buttonStyles';
 
 interface Props {
   value: QueryFilter;
@@ -17,7 +19,15 @@ const SORTS: { id: QuerySort; label: string }[] = [
 ];
 
 export function QueryBuilder({ value, onChange, onRun, busy }: Props) {
+  const [copied, setCopied] = useState(false);
+
   function patch(p: Partial<QueryFilter>) { onChange({ ...value, ...p }); }
+
+  async function handleCopyLink() {
+    await navigator.clipboard.writeText(window.location.href);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }
 
   function toggleCat(id: number) {
     const set = new Set(value.searchCategories);
@@ -129,13 +139,20 @@ export function QueryBuilder({ value, onChange, onRun, busy }: Props) {
           />
         </label>
 
-        <div className="flex items-end">
+        <div className="flex items-end gap-2">
           <button
             onClick={onRun}
             disabled={busy}
-            className="w-full font-mono text-[10px] tracking-widest uppercase border border-gold text-gold px-4 py-2 hover:bg-gold hover:text-bg-deep disabled:opacity-50"
+            className={`${btnPrimary} w-full`}
           >
             {busy ? 'Running…' : 'Run query'}
+          </button>
+          <button
+            onClick={handleCopyLink}
+            className="font-mono text-[10px] tracking-widest uppercase border border-border-base text-text-low px-3 py-2 hover:border-aether hover:text-aether transition-colors whitespace-nowrap"
+            title="Copy a shareable link to the current query"
+          >
+            {copied ? '✓ Copied' : 'Copy link'}
           </button>
         </div>
 
