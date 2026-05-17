@@ -7,6 +7,7 @@ import { useGatheringCatalog } from '../features/queries/useGatheringCatalog';
 import { useGarlandItem } from '../features/queries/useGarlandItem';
 import { useUsedInIndex } from '../features/items/useUsedInIndex';
 import { useMarketData } from '../features/watchlist/useMarketData';
+import { SaleHistoryBlock } from '../features/items/SaleHistoryBlock';
 import { AddToWatchlistButton } from '../features/items/AddToWatchlistButton';
 import { fmtGil, garlandItemUrl } from '../lib/format';
 import { Gil } from '../components/Gil';
@@ -105,6 +106,8 @@ export default function Item() {
         phantom={phantomMarket}
         dc={dcMarket}
       />
+
+      <SaleHistoryBlock itemId={itemId} scope={dc} canHq={canHq} />
 
       {recipes.isLoading && !recipe && (
         <div className="py-4"><Spinner label="Loading recipe catalog…" /></div>
