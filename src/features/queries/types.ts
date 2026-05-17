@@ -1,3 +1,5 @@
+import type { CurrencyId } from '../../lib/currencies';
+
 export type HqMode = 'hq' | 'nq' | 'either';
 export type QuerySort = 'discount' | 'gilFlow' | 'velocity' | 'unitPrice';
 export type QueryScope = 'home' | 'dc';
@@ -170,6 +172,46 @@ export function defaultVendorFlipFilter(): VendorFlipFilter {
     maxListings: null,
     hq: 'either',
     sort: 'profitPerDay',
+    limit: 200,
+  };
+}
+
+export type CurrencyFlipSort =
+  | 'gilPerUnit'
+  | 'salePrice'
+  | 'velocity'
+  | 'costPerUnit';
+
+export interface CurrencyFlipFilter {
+  currency: CurrencyId;
+  minGilPerUnit: number;
+  minVelocity: number;
+  maxListings: number | null;
+  hq: HqMode;
+  sort: CurrencyFlipSort;
+  limit: number;
+}
+
+export interface CurrencyFlipRow {
+  id: number;
+  name: string;
+  sc: number;
+  costPerUnit: number;
+  salePrice: number;
+  hq: boolean;
+  gilPerUnit: number;
+  velocity: number;
+  listingCount: number;
+}
+
+export function defaultCurrencyFlipFilter(): CurrencyFlipFilter {
+  return {
+    currency: 'poetics',
+    minGilPerUnit: 0,
+    minVelocity: 0,
+    maxListings: null,
+    hq: 'either',
+    sort: 'gilPerUnit',
     limit: 200,
   };
 }
