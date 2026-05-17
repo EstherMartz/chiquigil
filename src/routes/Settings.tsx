@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react';
 import { ExportImportPanel } from '../features/settings/ExportImportPanel';
+import { SectionHeader } from '../components/SectionHeader';
+import { LevelsEditor } from '../features/settings/LevelsEditor';
+import { useUiStore, type Density } from '../features/ui/uiStore';
+import { btnPrimaryLarge, btnDanger } from '../components/buttonStyles';
 import {
   clearRecipeCache,
   clearRecipeSnapshot,
@@ -41,6 +45,8 @@ export default function Settings() {
   const queryClient = useQueryClient();
   const itemDb = useItemSnapshot();
   const refreshItemDb = useRefreshItemSnapshot();
+  const density = useUiStore((s) => s.density);
+  const setDensity = useUiStore((s) => s.setDensity);
 
   const [status, setStatus] = useState<Record<DatasetKey, CacheStatus>>({
     item:   { ts: null, hasData: false },
@@ -145,7 +151,18 @@ export default function Settings() {
   return (
     <div className="max-w-7xl mx-auto px-4 space-y-10">
       <section>
-        <h2 className="font-display text-lg text-gold mb-3 tracking-wide">Data caches</h2>
+        <SectionHeader label="My Crafters" />
+        <p className="font-mono text-[10px] text-text-low mb-3">
+          Set each DoH job's level. Used to filter craftable items and power the Trained Eye threshold.
+        </p>
+        <LevelsEditor />
+      </section>
+      <section>
+        <SectionHeader label="Display" />
+        <DensityToggle value={density} onChange={setDensity} />
+      </section>
+      <section>
+        <SectionHeader label="Data caches" />
         <p className="text-text-low text-sm mb-4 max-w-prose">
           All catalogs are cached locally and reused across sessions. Universalis prices have a 30-minute
           freshness window. Sheet snapshots are cached indefinitely — refresh after a game patch.
@@ -199,20 +216,45 @@ export default function Settings() {
           <button
             onClick={refreshAll}
             disabled={allBusy}
-            className="font-display text-xs tracking-widest uppercase bg-bg-card-hi border border-gold text-gold px-5 py-2.5 hover:bg-gold hover:text-bg-deep transition-colors disabled:opacity-40"
+            className={btnPrimaryLarge}
           >
             {allBusy ? '⟳ Refreshing…' : '⟳ Refresh all data'}
           </button>
         </div>
       </section>
       <section>
-        <h2 className="font-display text-lg text-gold mb-3 tracking-wide">Backup &amp; restore</h2>
+        <SectionHeader label="Backup & restore" />
         <p className="text-text-low text-sm mb-3">
           Export saves your retainer levels, world/DC, watchlist, starter pack toggles, custom items,
           and per-item overrides as a JSON file. Import overwrites your current state.
         </p>
         <ExportImportPanel />
       </section>
+    </div>
+  );
+}
+
+function DensityToggle({ value, onChange }: { value: Density; onChange: (d: Density) => void }) {
+  const opts: { id: Density; label: string }[] = [
+    { id: 'comfortable', label: 'Comfortable' },
+    { id: 'compact',     label: 'Compact' },
+  ];
+  return (
+    <div className="flex items-center gap-3">
+      <span className="font-mono text-[10px] tracking-widest uppercase text-text-low">Row density</span>
+      <div className="inline-flex border border-border-base">
+        {opts.map((o) => (
+          <button
+            key={o.id}
+            onClick={() => onChange(o.id)}
+            className={`font-mono text-[10px] tracking-widest uppercase px-3 py-1.5 border-r border-border-base last:border-r-0 transition-colors ${
+              value === o.id ? 'bg-bg-card-hi text-gold' : 'text-text-dim hover:text-aether'
+            }`}
+          >
+            {o.label}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -248,11 +290,7 @@ function CacheRow({ label, status, detail, error, busy, onRefresh, hideStale }: 
       </td>
       <td className="py-2.5 align-top">{statusDisplay}</td>
       <td className="py-2.5 text-right align-top">
-        <button
-          onClick={onRefresh}
-          disabled={busy}
-          className="font-mono text-[10px] tracking-widest uppercase border border-crimson text-crimson px-3 py-1.5 hover:bg-crimson hover:text-bg-deep transition-colors disabled:opacity-40"
-        >
+        <button onClick={onRefresh} disabled={busy} className={btnDanger}>
           {busy ? '…' : 'Refresh'}
         </button>
       </td>
