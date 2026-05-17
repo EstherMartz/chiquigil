@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildHistoryUrl, parseHistoryResponse, dailyBuckets } from './universalisHistory';
+import { buildHistoryUrl, parseHistoryResponse, dailyBuckets, buildHistoryUrlWithin, computeWeekDelta } from './universalisHistory';
 
 describe('buildHistoryUrl', () => {
   it('builds a Chaos history URL with entriesToReturn', () => {
@@ -52,5 +52,77 @@ describe('dailyBuckets', () => {
     const out = dailyBuckets([oldEntry, recentEntry], 30);
     expect(out).toHaveLength(1);
     expect(out[0].meanPrice).toBe(60);
+  });
+});
+
+describe('buildHistoryUrlWithin', () => {
+  it('builds the URL with entriesWithin and joined IDs', () => {
+    expect(buildHistoryUrlWithin('Phantom', [1, 2, 3], 1209600))
+      .toBe('https://universalis.app/api/v2/history/Phantom/1,2,3?entriesWithin=1209600');
+  });
+});
+
+describe('computeWeekDelta', () => {
+  const NOW = 1_700_000_000_000;  // arbitrary fixed clock for tests
+  const DAY = 86_400_000;
+  const sec = (ms: number) => Math.floor(ms / 1000);
+
+  it('returns null when there are zero entries', () => {
+    expect(computeWeekDelta([], NOW)).toBeNull();
+  });
+
+  it('returns null when only the recent week has sales (prior week empty)', () => {
+    const entries = [
+      { pricePerUnit: 100, quantity: 1, timestamp: sec(NOW - 2 * DAY), hq: false },
+    ];
+    expect(computeWeekDelta(entries, NOW)).toBeNull();
+  });
+
+  it('returns null when only the prior week has sales (recent week empty)', () => {
+    const entries = [
+      { pricePerUnit: 100, quantity: 1, timestamp: sec(NOW - 10 * DAY), hq: false },
+    ];
+    expect(computeWeekDelta(entries, NOW)).toBeNull();
+  });
+
+  it('computes a positive delta when recent week prices are higher', () => {
+    // Prior week avg = 100, recent week avg = 120 → +20%
+    const entries = [
+      { pricePerUnit: 100, quantity: 1, timestamp: sec(NOW - 10 * DAY), hq: false },
+      { pricePerUnit: 120, quantity: 1, timestamp: sec(NOW - 2 * DAY), hq: false },
+    ];
+    expect(computeWeekDelta(entries, NOW)).toBeCloseTo(20, 5);
+  });
+
+  it('computes a negative delta when recent week prices are lower', () => {
+    // Prior week avg = 100, recent week avg = 90 → -10%
+    const entries = [
+      { pricePerUnit: 100, quantity: 1, timestamp: sec(NOW - 10 * DAY), hq: false },
+      { pricePerUnit: 90, quantity: 1, timestamp: sec(NOW - 1 * DAY), hq: false },
+    ];
+    expect(computeWeekDelta(entries, NOW)).toBeCloseTo(-10, 5);
+  });
+
+  it('weights by quantity (a high-quantity sale moves the average more)', () => {
+    // Prior: one sale of 100 at qty 1, avg = 100
+    // Recent: two sales: 200 at qty 9, 100 at qty 1; weighted = (200*9 + 100*1) / 10 = 190
+    // Delta = (190 - 100) / 100 * 100 = +90%
+    const entries = [
+      { pricePerUnit: 100, quantity: 1, timestamp: sec(NOW - 10 * DAY), hq: false },
+      { pricePerUnit: 200, quantity: 9, timestamp: sec(NOW - 2 * DAY), hq: false },
+      { pricePerUnit: 100, quantity: 1, timestamp: sec(NOW - 1 * DAY), hq: false },
+    ];
+    expect(computeWeekDelta(entries, NOW)).toBeCloseTo(90, 5);
+  });
+
+  it('ignores entries older than 14 days', () => {
+    // Entry at 20 days ago should not affect anything.
+    // Prior: 100 at 10d, recent: 120 at 2d → +20%
+    const entries = [
+      { pricePerUnit: 9999, quantity: 1, timestamp: sec(NOW - 20 * DAY), hq: false },
+      { pricePerUnit: 100, quantity: 1, timestamp: sec(NOW - 10 * DAY), hq: false },
+      { pricePerUnit: 120, quantity: 1, timestamp: sec(NOW - 2 * DAY), hq: false },
+    ];
+    expect(computeWeekDelta(entries, NOW)).toBeCloseTo(20, 5);
   });
 });

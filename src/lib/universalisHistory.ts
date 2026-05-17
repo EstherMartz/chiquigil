@@ -54,3 +54,41 @@ export function dailyBuckets(entries: HistoryEntry[], lookbackDays: number): Dai
       quantity: qty,
     }));
 }
+
+export function buildHistoryUrlWithin(scope: string, ids: number[], withinSeconds: number): string {
+  return `https://universalis.app/api/v2/history/${scope}/${ids.join(',')}?entriesWithin=${withinSeconds}`;
+}
+
+export async function fetchHistoryWithin(
+  scope: string,
+  ids: number[],
+  withinSeconds: number,
+): Promise<Map<number, HistoryEntry[]>> {
+  if (ids.length === 0) return new Map();
+  const res = await fetch(buildHistoryUrlWithin(scope, ids, withinSeconds));
+  if (!res.ok) throw new Error(`Universalis history ${res.status}`);
+  return parseHistoryResponse(await res.json());
+}
+
+/**
+ * Compute the 7-day delta percentage of price between the recent week
+ * (sales in days 0-6) and the prior week (sales in days 7-13). Both
+ * windows are quantity-weighted averages. Returns null when either week
+ * has zero sales (no meaningful comparison possible).
+ */
+export function computeWeekDelta(entries: HistoryEntry[], nowMs: number = Date.now()): number | null {
+  const DAY = 86_400_000;
+  const recentCut = nowMs - 7 * DAY;
+  const priorCut = nowMs - 14 * DAY;
+  let recentQty = 0, recentSum = 0;
+  let priorQty = 0, priorSum = 0;
+  for (const e of entries) {
+    const tsMs = e.timestamp * 1000;
+    if (tsMs >= recentCut) { recentQty += e.quantity; recentSum += e.pricePerUnit * e.quantity; }
+    else if (tsMs >= priorCut) { priorQty += e.quantity; priorSum += e.pricePerUnit * e.quantity; }
+  }
+  if (priorQty === 0 || recentQty === 0) return null;
+  const recentAvg = recentSum / recentQty;
+  const priorAvg = priorSum / priorQty;
+  return ((recentAvg - priorAvg) / priorAvg) * 100;
+}
