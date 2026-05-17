@@ -3,9 +3,10 @@ import type { Recipe } from './recipes';
 import type { SnapshotItem } from './itemSnapshot';
 import type { GatheringInfo } from './gatheringCatalog';
 import type { SnapshotLeve } from './leveSnapshot';
+import type { SpecialShopSnapshot } from './specialShopSnapshot';
 
 const DB_NAME = 'ffxiv-helper';
-const DB_VERSION = 8;
+const DB_VERSION = 9;
 const RECIPE_STORE = 'recipes';
 const NAME_STORE = 'names';
 const ITEM_STORE = 'items';
@@ -15,6 +16,7 @@ const RECIPE_SNAPSHOT_STORE = 'recipeSnapshot';
 const MARKET_STORE = 'market';
 const LEVE_STORE = 'leves';
 const GILSHOP_STORE = 'gilShop';
+const SPECIALSHOP_STORE = 'specialShop';
 
 let dbPromise: Promise<IDBPDatabase> | null = null;
 
@@ -48,6 +50,9 @@ function db(): Promise<IDBPDatabase> {
         }
         if (!database.objectStoreNames.contains(GILSHOP_STORE)) {
           database.createObjectStore(GILSHOP_STORE);
+        }
+        if (!database.objectStoreNames.contains(SPECIALSHOP_STORE)) {
+          database.createObjectStore(SPECIALSHOP_STORE);
         }
       },
     });
@@ -227,4 +232,29 @@ export async function clearVendorSnapshotCache(): Promise<void> {
 
 export async function getVendorSnapshotUpdatedAt(): Promise<number | undefined> {
   return (await db()).get(META_STORE, GILSHOP_SNAPSHOT_TS_KEY);
+}
+
+const SPECIALSHOP_SNAPSHOT_KEY = 'snapshot';
+const SPECIALSHOP_SNAPSHOT_TS_KEY = 'specialShopUpdatedAt';
+
+export async function getCachedSpecialShop(): Promise<SpecialShopSnapshot | undefined> {
+  const raw = await (await db()).get(SPECIALSHOP_STORE, SPECIALSHOP_SNAPSHOT_KEY) as { byCurrency: Array<[string, SpecialShopSnapshot['byCurrency'] extends Map<infer _K, infer V> ? V : never]> } | undefined;
+  if (!raw) return undefined;
+  return { byCurrency: new Map(raw.byCurrency) };
+}
+
+export async function putCachedSpecialShop(snapshot: SpecialShopSnapshot): Promise<void> {
+  const handle = await db();
+  await handle.put(SPECIALSHOP_STORE, { byCurrency: [...snapshot.byCurrency.entries()] }, SPECIALSHOP_SNAPSHOT_KEY);
+  await handle.put(META_STORE, Date.now(), SPECIALSHOP_SNAPSHOT_TS_KEY);
+}
+
+export async function clearSpecialShopCache(): Promise<void> {
+  const handle = await db();
+  await handle.clear(SPECIALSHOP_STORE);
+  await handle.delete(META_STORE, SPECIALSHOP_SNAPSHOT_TS_KEY);
+}
+
+export async function getSpecialShopUpdatedAt(): Promise<number | undefined> {
+  return (await db()).get(META_STORE, SPECIALSHOP_SNAPSHOT_TS_KEY);
 }
