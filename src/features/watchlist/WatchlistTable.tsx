@@ -7,6 +7,8 @@ import { LoadMoreFooter } from '../../components/LoadMoreFooter';
 import { useLoadMore } from '../../lib/useLoadMore';
 import { CATEGORY_TO_TRADING_PRESET } from './categoryPresetMap';
 import { MarketStateBadge } from '../../components/MarketStateBadge';
+import { ExportCsvButton } from '../../components/ExportCsvButton';
+import type { CsvColumn } from '../../lib/csv';
 
 const COLS: { key: SortKey; label: string; align?: 'right'; hideOnMobile?: boolean }[] = [
   { key: 'name', label: 'Item' },
@@ -17,6 +19,25 @@ const COLS: { key: SortKey; label: string; align?: 'right'; hideOnMobile?: boole
   { key: 'profit', label: 'Profit', align: 'right' },
   { key: 'gilDay', label: 'Gil/day', align: 'right' },
   { key: 'spd', label: 'Velocity', align: 'right', hideOnMobile: true },
+];
+
+const WATCHLIST_CSV_COLUMNS: CsvColumn<WatchlistRow>[] = [
+  { key: 'id', label: 'Item ID' },
+  { key: 'name', label: 'Item' },
+  { key: 'crafter', label: 'Crafter' },
+  { key: 'lvl', label: 'Level' },
+  { key: 'cat', label: 'Category' },
+  { key: 'dcMinNQ', label: 'DC Min NQ', value: (r) => r.dcMinNQ ?? 'N/A' },
+  { key: 'dcMinHQ', label: 'DC Min HQ', value: (r) => r.dcMinHQ ?? 'N/A' },
+  { key: 'pMinNQ', label: 'Phantom Min NQ', value: (r) => r.pMinNQ ?? 'N/A' },
+  { key: 'pMinHQ', label: 'Phantom Min HQ', value: (r) => r.pMinHQ ?? 'N/A' },
+  { key: 'pAvgNQ', label: 'Phantom Avg NQ', value: (r) => r.pAvgNQ ?? 'N/A' },
+  { key: 'pAvgHQ', label: 'Phantom Avg HQ', value: (r) => r.pAvgHQ ?? 'N/A' },
+  { key: 'dcSpd', label: 'DC Velocity' },
+  { key: 'delta', label: 'Trend', value: (r) => r.delta ?? 'N/A' },
+  { key: 'materialCost', label: 'Material Cost', value: (r) => r.materialCost ?? 'N/A' },
+  { key: 'profit', label: 'Profit', value: (r) => r.profit ?? 'N/A' },
+  { key: 'gilPerDay', label: 'Gil/day', value: (r) => r.gilPerDay ?? 'N/A' },
 ];
 
 export function WatchlistTable({ rows, onSelect }: { rows: WatchlistRow[]; onSelect: (id: number) => void }) {
@@ -43,8 +64,15 @@ export function WatchlistTable({ rows, onSelect }: { rows: WatchlistRow[]; onSel
   }
 
   return (
-    <div className="border border-border-base bg-bg-card overflow-x-auto">
-      <table className="w-full text-sm border-collapse">
+    <div className="border border-border-base bg-bg-card">
+      <div className="flex justify-between items-center px-3 py-2 border-b border-border-base">
+        <div className="text-text-low font-mono text-[11px]">
+          {lm.shown} of {lm.total}
+        </div>
+        <ExportCsvButton rows={rows} columns={WATCHLIST_CSV_COLUMNS} filename={`watchlist-${new Date().toISOString().slice(0, 10)}.csv`} />
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm border-collapse">
         <thead>
           <tr>
             {COLS.map((c) => {
@@ -119,7 +147,8 @@ export function WatchlistTable({ rows, onSelect }: { rows: WatchlistRow[]; onSel
             </tr>
           ))}
         </tbody>
-      </table>
+        </table>
+      </div>
       <LoadMoreFooter
         hasMore={lm.hasMore}
         total={lm.total}

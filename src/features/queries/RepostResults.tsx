@@ -1,9 +1,12 @@
 import { fmtGil } from '../../lib/format';
 import { categoryLabel } from '../../lib/itemSearchCategories';
 import { ItemNameLinks } from '../../components/ItemNameLinks';
-import { LoadMoreFooter } from '../../components/LoadMoreFooter';
-import { useLoadMore } from '../../lib/useLoadMore';
+import { InfoTooltip } from '../../components/InfoTooltip';
+import { HqStar } from '../../components/HqStar';
+import { ResultTableScaffold, EmptyResults } from './ResultTableScaffold';
+import { useUiStore, rowPadClass } from '../ui/uiStore';
 import type { RepostRow } from './types';
+import type { CsvColumn } from '../../lib/csv';
 
 interface Props {
   rows: RepostRow[];
@@ -11,66 +14,102 @@ interface Props {
   skippedChunks: number;
 }
 
+const CSV_COLUMNS: CsvColumn<RepostRow>[] = [
+  { key: 'id', label: 'Item ID' },
+  { key: 'name', label: 'Item' },
+  { key: 'sc', label: 'Category' },
+  { key: 'cheapest', label: 'Cheapest' },
+  { key: 'wall', label: 'Wall' },
+  { key: 'gap', label: 'Gap' },
+  { key: 'gapPct', label: 'Gap %' },
+  { key: 'taxedProfit', label: 'Profit (after tax)' },
+  { key: 'velocity', label: 'Velocity (sales/day)' },
+  { key: 'gilPerDay', label: 'Gil/day' },
+  { key: 'hq', label: 'HQ' },
+];
+
 export function RepostResults({ rows, totalCandidates, skippedChunks }: Props) {
-  const lm = useLoadMore(rows, 25);
-  if (rows.length === 0) {
-    return (
-      <div className="border border-border-base bg-bg-card p-6 text-text-low text-sm italic">
-        No repost opportunities. Lower Min gap, lower Min discount %, or widen categories.
-      </div>
-    );
-  }
+  const density = useUiStore((s) => s.density);
+  const rowY = rowPadClass(density);
   return (
-    <div className="space-y-2">
-      <div className="font-mono text-[10px] text-text-low">
-        {rows.length} matches from {totalCandidates} candidates
-        {skippedChunks > 0 && <span className="text-crimson"> · {skippedChunks} batch(es) skipped (Universalis error)</span>}
-      </div>
-      <div className="border border-border-base bg-bg-card overflow-x-auto">
+    <ResultTableScaffold
+      rows={rows}
+      totalCandidates={totalCandidates}
+      skippedChunks={skippedChunks}
+      emptyState={
+        <EmptyResults>
+          No walls to leap tonight. Lower Min gap, ease the Min discount %, or open the categories wider.
+        </EmptyResults>
+      }
+      csvColumns={CSV_COLUMNS}
+      csvFilename={`repost-${new Date().toISOString().slice(0, 10)}.csv`}
+      renderTable={(visible) => (
         <table className="w-full text-sm">
           <thead>
             <tr className="text-text-dim font-mono text-[10px] tracking-widest uppercase">
               <th className="text-left px-3 py-2">#</th>
               <th className="text-left px-3 py-2">Item</th>
-              <th className="text-right px-3 py-2">Cheapest</th>
-              <th className="text-right px-3 py-2 hidden md:table-cell">Wall</th>
-              <th className="text-right px-3 py-2 hidden md:table-cell">Gap</th>
-              <th className="text-right px-3 py-2">%</th>
-              <th className="text-right px-3 py-2">Profit (after tax)</th>
-              <th className="text-right px-3 py-2 hidden md:table-cell">Vel</th>
-              <th className="text-right px-3 py-2">Gil / day</th>
+              <th className="text-right px-3 py-2">
+                <InfoTooltip label="Lowest current listing on the home world. The price you'd buy at.">
+                  Cheapest
+                </InfoTooltip>
+              </th>
+              <th className="text-right px-3 py-2 hidden md:table-cell">
+                <InfoTooltip label="Next distinct price tier above the floor. Relist just below this to undercut.">
+                  Wall
+                </InfoTooltip>
+              </th>
+              <th className="text-right px-3 py-2 hidden md:table-cell">
+                <InfoTooltip label="Wall minus cheapest. The headroom available for relisting.">
+                  Gap
+                </InfoTooltip>
+              </th>
+              <th className="text-right px-3 py-2">
+                <InfoTooltip label="Gap as a percentage of the wall price.">
+                  %
+                </InfoTooltip>
+              </th>
+              <th className="text-right px-3 py-2">
+                <InfoTooltip label="Estimated net per item after the 5% marketboard tax on the relisted sale.">
+                  Profit (after tax)
+                </InfoTooltip>
+              </th>
+              <th className="text-right px-3 py-2 hidden md:table-cell">
+                <InfoTooltip label="Sales per day on the home world.">
+                  Vel
+                </InfoTooltip>
+              </th>
+              <th className="text-right px-3 py-2">
+                <InfoTooltip label="Profit × velocity. Expected daily gil if the gap keeps reappearing.">
+                  Gil / day
+                </InfoTooltip>
+              </th>
             </tr>
           </thead>
           <tbody>
-            {lm.visible.map((r, i) => (
+            {visible.map((r, i) => (
               <tr key={r.id} className="border-t border-border-base hover:bg-bg-card-hi">
-                <td className="px-3 py-2.5 font-mono text-text-low">{i + 1}</td>
-                <td className="px-3 py-2.5">
+                <td className={`px-3 ${rowY} font-mono text-text-low`}>{i + 1}</td>
+                <td className={`px-3 ${rowY}`}>
                   <ItemNameLinks
                     id={r.id}
                     name={r.name}
-                    suffix={r.hq && <span className="text-gold"> ★</span>}
+                    suffix={r.hq && <HqStar leading />}
                     sub={categoryLabel(r.sc)}
                   />
                 </td>
-                <td className="px-3 py-2.5 text-right font-mono">{fmtGil(r.cheapest)}</td>
-                <td className="px-3 py-2.5 text-right font-mono text-text-low hidden md:table-cell">{fmtGil(r.wall)}</td>
-                <td className="px-3 py-2.5 text-right font-mono text-jade hidden md:table-cell">+{fmtGil(r.gap)}</td>
-                <td className="px-3 py-2.5 text-right font-mono text-jade">{r.gapPct}%</td>
-                <td className="px-3 py-2.5 text-right font-mono text-jade">+{fmtGil(r.taxedProfit)}</td>
-                <td className="px-3 py-2.5 text-right font-mono hidden md:table-cell">{r.velocity.toFixed(1)}</td>
-                <td className="px-3 py-2.5 text-right font-mono text-gold-hi">{fmtGil(Math.round(r.gilPerDay))}</td>
+                <td className={`px-3 ${rowY} text-right font-mono`}>{fmtGil(r.cheapest)}</td>
+                <td className={`px-3 ${rowY} text-right font-mono text-text-low hidden md:table-cell`}>{fmtGil(r.wall)}</td>
+                <td className={`px-3 ${rowY} text-right font-mono text-jade hidden md:table-cell`}>+{fmtGil(r.gap)}</td>
+                <td className={`px-3 ${rowY} text-right font-mono text-jade`}>{r.gapPct}%</td>
+                <td className={`px-3 ${rowY} text-right font-mono text-jade`}>+{fmtGil(r.taxedProfit)}</td>
+                <td className={`px-3 ${rowY} text-right font-mono hidden md:table-cell`}>{r.velocity.toFixed(1)}</td>
+                <td className={`px-3 ${rowY} text-right font-mono text-gold-hi`}>{fmtGil(Math.round(r.gilPerDay))}</td>
               </tr>
             ))}
           </tbody>
         </table>
-        <LoadMoreFooter
-          hasMore={lm.hasMore}
-          total={lm.total}
-          shown={lm.shown}
-          onLoadMore={lm.loadMore}
-        />
-      </div>
-    </div>
+      )}
+    />
   );
 }

@@ -6,6 +6,7 @@ import { HqStar } from '../../components/HqStar';
 import { ResultTableScaffold, EmptyResults } from './ResultTableScaffold';
 import { useUiStore, rowPadClass } from '../ui/uiStore';
 import type { MaterialFlipRow, MaterialFlipSort } from './types';
+import type { CsvColumn } from '../../lib/csv';
 
 interface Props {
   rows: MaterialFlipRow[];
@@ -14,6 +15,21 @@ interface Props {
   sort: MaterialFlipSort;
   onSortChange: (next: MaterialFlipSort) => void;
 }
+
+const CSV_COLUMNS: CsvColumn<MaterialFlipRow>[] = [
+  { key: 'id', label: 'Item ID' },
+  { key: 'name', label: 'Item' },
+  { key: 'sc', label: 'Category' },
+  { key: 'salePrice', label: 'Sale Price' },
+  { key: 'homeMatCost', label: 'Home Materials' },
+  { key: 'bestPerIngredientCost', label: 'Region Materials' },
+  { key: 'perIngredientSavings', label: 'Save/craft' },
+  { key: 'pctDiscount', label: 'Discount %', value: (r) => Math.round(r.pctDiscount * 100) },
+  { key: 'bestSingleWorld', label: 'Best Stop' },
+  { key: 'gilSavedPerDay', label: 'Save/day' },
+  { key: 'velocity', label: 'Velocity (sales/day)' },
+  { key: 'hq', label: 'HQ' },
+];
 
 function SortableHeader({
   active, onClick, children, align = 'right', hideOnMobile = false,
@@ -51,6 +67,8 @@ export function MaterialFlipResults({ rows, totalCandidates, skippedChunks, sort
           raising Max listings, or including Light DC.
         </EmptyResults>
       }
+      csvColumns={CSV_COLUMNS}
+      csvFilename={`material-flip-${new Date().toISOString().slice(0, 10)}.csv`}
       renderTable={(visible) => (
         <table className="w-full text-sm">
           <thead>
