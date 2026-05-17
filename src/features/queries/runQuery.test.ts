@@ -24,7 +24,7 @@ function mkPrice(p: Partial<MarketData[string]>): MarketData[string] {
 const baseFilter: QueryFilter = {
   searchCategories: [], hq: 'either', minDealPct: 0, minVelocity: 0,
   minPrice: null, maxPrice: null, sort: 'discount', limit: 100,
-  scope: 'dc', maxListings: null, mode: 'standard', minGap: null,
+  scope: 'dc', maxListings: null, mode: 'standard', minGap: null, trainedEye: false,
 };
 
 describe('runQuery', () => {

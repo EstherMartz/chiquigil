@@ -4,6 +4,7 @@ import type { SnapshotItem } from '../../lib/itemSnapshot';
 import type { MarketData } from '../../lib/universalis';
 import type { Recipe } from '../../lib/recipes';
 import type { QueryFilter } from './types';
+import type { CrafterLevels } from '../../features/items/craftStatus';
 
 const snapshot: SnapshotItem[] = [
   { id: 1, name: 'Glamour Top', sc: 56, ui: 65, ilvl: 90, canHq: true },
@@ -25,7 +26,7 @@ function mkPrice(p: Partial<MarketData[string]>): MarketData[string] {
 const baseFilter: QueryFilter = {
   searchCategories: [], hq: 'either', minDealPct: 0, minVelocity: 0,
   minPrice: null, maxPrice: null, sort: 'gilFlow', limit: 100,
-  scope: 'home', maxListings: null, mode: 'craft', minGap: null,
+  scope: 'home', maxListings: null, mode: 'craft', minGap: null, trainedEye: false,
 };
 
 // Recipes: item 1 costs (50 NQ ingredient × 2); item 3 has no recipe.
@@ -223,5 +224,66 @@ describe('runCraftFlip', () => {
     const out = runCraftFlip(snapshot, priceMap, rm,
       { ...baseFilter, minVelocity: 1, limit: 2 });
     expect(out.map((r) => r.id)).toEqual([2, 1]);
+  });
+
+  it('trainedEye=false is a no-op (regression test)', () => {
+    const priceMap: MarketData = {
+      1: mkPrice({ minHQ: 1000, medianHQ: 1200, recentSalesHQ: 8,
+                   velocity: 1, listingCount: 1 }),
+      99: mkPrice({ minNQ: 50, medianNQ: 60, recentSalesNQ: 8,
+                    listingCount: 1 }),
+    };
+    const out = runCraftFlip(snapshot, priceMap, recipeMap,
+      { ...baseFilter, minVelocity: 1, trainedEye: false });
+    expect(out.map((r) => r.id)).toEqual([1]);
+  });
+
+  it('trainedEye=true with sufficient crafter level passes the item', () => {
+    const priceMap: MarketData = {
+      1: mkPrice({ minHQ: 1000, medianHQ: 1200, recentSalesHQ: 8,
+                   velocity: 1, listingCount: 1 }),
+      99: mkPrice({ minNQ: 50, medianNQ: 60, recentSalesNQ: 8,
+                    listingCount: 1 }),
+    };
+    const levels: CrafterLevels = {
+      CRP: 30, BSM: 30, ARM: 30, GSM: 30,
+      LTW: 100, WVR: 30, ALC: 30, CUL: 30,
+    };
+    // recipe1: classJob='LTW', recipeLevel=90, crafterLevel=100
+    // 90 <= 100 - 10 → true, passes
+    const out = runCraftFlip(snapshot, priceMap, recipeMap,
+      { ...baseFilter, minVelocity: 1, trainedEye: true }, levels);
+    expect(out.map((r) => r.id)).toEqual([1]);
+  });
+
+  it('trainedEye=true with insufficient crafter level drops the item', () => {
+    const priceMap: MarketData = {
+      1: mkPrice({ minHQ: 1000, medianHQ: 1200, recentSalesHQ: 8,
+                   velocity: 1, listingCount: 1 }),
+      99: mkPrice({ minNQ: 50, medianNQ: 60, recentSalesNQ: 8,
+                    listingCount: 1 }),
+    };
+    const levels: CrafterLevels = {
+      CRP: 30, BSM: 30, ARM: 30, GSM: 30,
+      LTW: 85, WVR: 30, ALC: 30, CUL: 30,
+    };
+    // recipe1: classJob='LTW', recipeLevel=90, crafterLevel=85
+    // 90 <= 85 - 10 → false, filtered out
+    const out = runCraftFlip(snapshot, priceMap, recipeMap,
+      { ...baseFilter, minVelocity: 1, trainedEye: true }, levels);
+    expect(out).toEqual([]);
+  });
+
+  it('trainedEye=true without levels parameter drops all items', () => {
+    const priceMap: MarketData = {
+      1: mkPrice({ minHQ: 1000, medianHQ: 1200, recentSalesHQ: 8,
+                   velocity: 1, listingCount: 1 }),
+      99: mkPrice({ minNQ: 50, medianNQ: 60, recentSalesNQ: 8,
+                    listingCount: 1 }),
+    };
+    // trainedEye=true but levels undefined
+    const out = runCraftFlip(snapshot, priceMap, recipeMap,
+      { ...baseFilter, minVelocity: 1, trainedEye: true });
+    expect(out).toEqual([]);
   });
 });

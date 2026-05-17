@@ -31,7 +31,7 @@ function mkPrice(args: { velocity?: number; listingCount?: number; listings: Arr
 const baseFilter: QueryFilter = {
   searchCategories: [], hq: 'either', minDealPct: 0, minVelocity: 0,
   minPrice: null, maxPrice: null, sort: 'gilFlow', limit: 100,
-  scope: 'home', maxListings: null, mode: 'repost', minGap: null,
+  scope: 'home', maxListings: null, mode: 'repost', minGap: null, trainedEye: false,
 };
 
 describe('runRepost', () => {

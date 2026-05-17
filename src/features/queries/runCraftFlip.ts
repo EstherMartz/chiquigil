@@ -1,6 +1,7 @@
 import type { SnapshotItem } from '../../lib/itemSnapshot';
 import type { MarketData, MarketItem } from '../../lib/universalis';
 import type { Recipe } from '../../lib/recipes';
+import type { CrafterLevels } from '../items/craftStatus';
 import { MIN_RECENT_SALES, MAX_LISTING_RATIO } from '../../lib/priceTrust';
 import { computeMaterialCost } from '../profit/computeProfit';
 import type { CraftFlipRow, HqMode, QueryFilter, QuerySort } from './types';
@@ -69,6 +70,7 @@ export function runCraftFlip(
   priceMap: MarketData,
   recipeMap: Map<number, Recipe | null>,
   filter: QueryFilter,
+  levels?: CrafterLevels,
 ): CraftFlipRow[] {
   const narrowed = new Set(narrowForCraftFlip(snapshot, priceMap, filter));
   const out: CraftFlipRow[] = [];
@@ -77,6 +79,14 @@ export function runCraftFlip(
     if (!narrowed.has(item.id)) continue;
     const recipe = recipeMap.get(item.id);
     if (!recipe) continue;
+
+    if (filter.trainedEye) {
+      if (!levels) continue;
+      if (recipe.classJob === 'ANY') continue;
+      const crafterLevel = levels[recipe.classJob];
+      if (crafterLevel == null) continue;
+      if (recipe.recipeLevel > crafterLevel - 10) continue;
+    }
 
     const m = priceMap[item.id];
     const tier = pickTrustedTier(m, filter.hq, item.canHq);
