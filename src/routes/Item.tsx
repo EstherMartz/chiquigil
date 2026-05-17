@@ -9,6 +9,7 @@ import { useUsedInIndex } from '../features/items/useUsedInIndex';
 import { useMarketData } from '../features/watchlist/useMarketData';
 import { SaleHistoryBlock } from '../features/items/SaleHistoryBlock';
 import { AddToWatchlistButton } from '../features/items/AddToWatchlistButton';
+import { AddToShoppingListButton } from '../features/shoppingList/AddToShoppingListButton';
 import { fmtGil, garlandItemUrl } from '../lib/format';
 import { Gil } from '../components/Gil';
 import { rarityBorderLeftClass, rarityLabel, rarityTextClass } from '../features/items/rarity';
@@ -161,6 +162,7 @@ function HeaderBlock({ name, ilvl, sc, canHq, rarity, itemId, recipe }: {
       </div>
       <div className="flex flex-wrap gap-2 self-start sm:self-end">
         <AddToWatchlistButton itemId={itemId} itemName={name} ilvl={ilvl} recipe={recipe} />
+        <AddToShoppingListButton itemId={itemId} hasRecipe={recipe != null} />
         <a
           href={garlandItemUrl(itemId)}
           target="_blank"
