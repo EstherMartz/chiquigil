@@ -4,6 +4,7 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Item from './Item';
 import { useSettingsStore, defaultSettings } from '../features/settings/store';
+import { useWatchlistStore, defaultWatchlist } from '../features/items/watchlistStore';
 import {
   clearItemCache, clearRecipeSnapshot, putCachedItems, putCachedRecipeSnapshot,
   clearMarketCache, clearGatheringCatalog,
@@ -92,5 +93,31 @@ describe('Item route', () => {
     });
     const resultLink = await screen.findByRole('link', { name: /maple lumber/i });
     expect(resultLink.getAttribute('href')).toBe('/item/10');
+  });
+
+  it('renders the Add to watchlist button on the item header', async () => {
+    await putCachedItems([
+      { id: 5057, name: 'Earth Shard', sc: 58, ui: 0, ilvl: 1, canHq: false },
+    ]);
+    await putCachedRecipeSnapshot([]);
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 404 }));
+    useWatchlistStore.setState(defaultWatchlist());
+    render(withProviders('/item/5057'));
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /\+ watchlist/i })).toBeInTheDocument();
+    });
+  });
+
+  it('flips to the remove state after adding', async () => {
+    await putCachedItems([
+      { id: 5057, name: 'Earth Shard', sc: 58, ui: 0, ilvl: 1, canHq: false },
+    ]);
+    await putCachedRecipeSnapshot([]);
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 404 }));
+    useWatchlistStore.setState(defaultWatchlist());
+    render(withProviders('/item/5057'));
+    const addBtn = await screen.findByRole('button', { name: /\+ watchlist/i });
+    addBtn.click();
+    expect(await screen.findByRole('button', { name: /on watchlist · remove/i })).toBeInTheDocument();
   });
 });
