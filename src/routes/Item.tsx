@@ -15,6 +15,8 @@ import { Spinner } from '../components/Spinner';
 import { StatusBanner } from '../components/StatusBanner';
 import { SectionHeader } from '../components/SectionHeader';
 import { HqStar } from '../components/HqStar';
+import { ItemNameLinks } from '../components/ItemNameLinks';
+import { dcOf } from '../lib/europeWorlds';
 import type { SnapshotItem } from '../lib/itemSnapshot';
 import type { MarketItem } from '../lib/universalis';
 import type { IngredientSource } from '../lib/garlandData';
@@ -54,7 +56,7 @@ export default function Item() {
     return [...new Set<number>([itemId, ...ingredientIds])];
   }, [itemId, ingredientIds, valid]);
 
-  const market = useMarketData(priceIds, world, dc);
+  const market = useMarketData(priceIds, world, dc, 'Europe');
 
   const usedIn = valid ? (usedInIdx.data.get(itemId) ?? []) : [];
 
@@ -111,6 +113,15 @@ export default function Item() {
           itemNames={snapshot.data?.items}
           phantom={market.data?.phantom}
           garlandIngredients={garland.data?.ingredients}
+        />
+      )}
+
+      {recipe && (
+        <MaterialShoppingBlock
+          recipe={recipe}
+          homeWorld={world}
+          regionMap={market.data?.region}
+          itemNames={snapshot.data?.items}
         />
       )}
 
@@ -378,6 +389,138 @@ function SourcesBlock({ itemId, gather }: {
             View full sources on Garland ↗
           </a>
         </div>
+      </div>
+    </section>
+  );
+}
+
+function findBestSingleStopFor(
+  ingredients: Recipe['ingredients'],
+  regionByIngId: Record<string, MarketItem | undefined>,
+  homeWorld: string,
+  homeBasketCost: number,
+): { world: string; cost: number } {
+  let best = { world: homeWorld, cost: homeBasketCost };
+  const worlds = new Set<string>();
+  for (const ing of ingredients) {
+    const m = regionByIngId[ing.itemId];
+    if (!m) continue;
+    for (const l of m.worldListings) if (!l.hq) worlds.add(l.world);
+  }
+  for (const world of worlds) {
+    let total = 0;
+    let complete = true;
+    for (const ing of ingredients) {
+      const m = regionByIngId[ing.itemId];
+      const here = m?.worldListings.filter((l) => !l.hq && l.world === world) ?? [];
+      if (here.length === 0) { complete = false; break; }
+      total += Math.min(...here.map((l) => l.price)) * ing.amount;
+    }
+    if (complete && total < best.cost) best = { world, cost: total };
+  }
+  return best;
+}
+
+function MaterialShoppingBlock({
+  recipe, homeWorld, regionMap, itemNames,
+}: {
+  recipe: Recipe;
+  homeWorld: string;
+  regionMap: Record<string, MarketItem | undefined> | undefined;
+  itemNames: SnapshotItem[] | undefined;
+}) {
+  if (!regionMap) return null;
+
+  let homeMatCost = 0;
+  let bestPerIngredientCost = 0;
+  const rows = recipe.ingredients.map((ing) => {
+    const m = regionMap[ing.itemId];
+    const homeNq = m?.worldListings.filter((l) => !l.hq && l.world === homeWorld) ?? [];
+    const homeUnit = homeNq.length ? Math.min(...homeNq.map((l) => l.price)) : 0;
+    const allNq = m?.worldListings.filter((l) => !l.hq) ?? [];
+    const cheapest = allNq.length
+      ? allNq.reduce((a, b) => (a.price <= b.price ? a : b))
+      : null;
+    homeMatCost += homeUnit * ing.amount;
+    bestPerIngredientCost += (cheapest?.price ?? homeUnit) * ing.amount;
+    return {
+      ing,
+      name: itemNames?.find((it) => it.id === ing.itemId)?.name ?? `Item #${ing.itemId}`,
+      homeUnit,
+      cheapestWorld: cheapest?.world ?? homeWorld,
+      cheapestUnit: cheapest?.price ?? homeUnit,
+    };
+  });
+  const perIngredientSavings = homeMatCost - bestPerIngredientCost;
+  const singleStop = findBestSingleStopFor(recipe.ingredients, regionMap, homeWorld, homeMatCost);
+  const singleStopSavings = homeMatCost - singleStop.cost;
+  const needsDcTravel = dcOf(singleStop.world) === 'Light';
+
+  if (perIngredientSavings <= 0 && singleStopSavings <= 0) {
+    return (
+      <section id="material-flip">
+        <SectionHeader label="Material shopping (region)" compact />
+        <div className="border border-border-base bg-bg-card p-4 text-text-low text-sm italic">
+          Your home world is already the cheapest source for every ingredient.
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section id="material-flip">
+      <SectionHeader label="Material shopping (region)" compact />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+        <div className="border border-border-base bg-bg-card p-4">
+          <div className="font-mono text-[10px] tracking-widest uppercase text-text-low mb-2">Per-ingredient cheapest</div>
+          <div className="text-sm">Home: <Gil value={homeMatCost} /></div>
+          <div className="text-sm">Region cheapest: <Gil value={bestPerIngredientCost} /></div>
+          <div className="text-sm text-jade">Save: <Gil value={perIngredientSavings} /></div>
+        </div>
+        <div className="border border-border-base bg-bg-card p-4">
+          <div className="font-mono text-[10px] tracking-widest uppercase text-text-low mb-2">Best single stop</div>
+          <div className="text-sm">
+            <span className="text-aether">{singleStop.world}</span>: <Gil value={singleStop.cost} />
+          </div>
+          <div className="text-sm text-jade">Save vs home: <Gil value={singleStopSavings} /></div>
+          <div className="text-xs text-text-low">
+            {needsDcTravel ? 'Requires DC travel ✈' : 'One travel hop, no DC change'}
+          </div>
+        </div>
+      </div>
+      <div className="border border-border-base bg-bg-card overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-text-dim font-mono text-[10px] tracking-widest uppercase">
+              <th className="text-left px-3 py-2">Ingredient</th>
+              <th className="text-right px-3 py-2">Need</th>
+              <th className="text-right px-3 py-2">Home price</th>
+              <th className="text-left px-3 py-2">Cheapest world</th>
+              <th className="text-right px-3 py-2">Cheapest price</th>
+              <th className="text-right px-3 py-2">Save/unit</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => {
+              const save = r.homeUnit - r.cheapestUnit;
+              const isHome = r.cheapestWorld === homeWorld;
+              return (
+                <tr key={r.ing.itemId} className="border-t border-border-base hover:bg-bg-card-hi">
+                  <td className="px-3 py-2">
+                    <ItemNameLinks id={r.ing.itemId} name={r.name} />
+                  </td>
+                  <td className="px-3 py-2 text-right font-mono">{r.ing.amount}</td>
+                  <td className="px-3 py-2 text-right font-mono">{fmtGil(r.homeUnit)}</td>
+                  <td className={`px-3 py-2 ${isHome ? 'text-text-low' : 'text-jade'}`}>{r.cheapestWorld}</td>
+                  <td className="px-3 py-2 text-right font-mono">{fmtGil(r.cheapestUnit)}</td>
+                  <td className={`px-3 py-2 text-right font-mono ${save > 0 ? 'text-jade' : 'text-text-low'}`}>
+                    {save > 0 ? `+${fmtGil(save)}` : '—'}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
     </section>
   );
