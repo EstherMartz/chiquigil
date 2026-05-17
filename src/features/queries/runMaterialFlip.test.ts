@@ -1,0 +1,107 @@
+import { describe, it, expect } from 'vitest';
+import { runMaterialFlip } from './runMaterialFlip';
+import type { SnapshotItem } from '../../lib/itemSnapshot';
+import type { MarketData, MarketItem, WorldListing } from '../../lib/universalis';
+import type { Recipe } from '../../lib/recipes';
+import { defaultMaterialFlipFilter, type MaterialFlipFilter } from './types';
+
+const snapshot: SnapshotItem[] = [
+  { id: 1, name: 'Glamour Top', sc: 56, ui: 65, ilvl: 90, canHq: true },
+];
+
+function mkSale(p: Partial<MarketItem>): MarketItem {
+  return {
+    minNQ: null, minHQ: null, avgNQ: null, avgHQ: null,
+    medianNQ: null, medianHQ: null,
+    recentSalesNQ: 0, recentSalesHQ: 0,
+    velocity: 0, lastUploadTime: Date.now(), listingCount: 0,
+    worldListings: [], averagePriceNQ: null, averagePriceHQ: null,
+    ...p,
+  };
+}
+
+function listing(world: string, price: number, hq = false): WorldListing {
+  return { world, price, hq };
+}
+
+const recipe1: Recipe = {
+  itemResultId: 1, classJob: 'LTW', recipeLevel: 90,
+  ingredients: [{ itemId: 99, amount: 2 }, { itemId: 100, amount: 1 }],
+};
+const recipes = new Map<number, Recipe | null>([[1, recipe1]]);
+
+const baseFilter: MaterialFlipFilter = {
+  ...defaultMaterialFlipFilter(),
+  minSavings: 1, // tiny threshold for fixtures
+};
+
+describe('runMaterialFlip — per-ingredient cheapest', () => {
+  it('computes homeMatCost, bestPerIngredientCost, perIngredientSavings', () => {
+    const saleMap: MarketData = {
+      1: mkSale({
+        minHQ: 10_000, medianHQ: 10_000, recentSalesHQ: 8,
+        velocity: 2, listingCount: 1,
+        worldListings: [listing('Phantom', 10_000, true)],
+      }),
+    };
+    const ingMap: MarketData = {
+      99: mkSale({ worldListings: [
+        listing('Phantom', 100), listing('Lich', 60),
+      ] }),
+      100: mkSale({ worldListings: [
+        listing('Phantom', 500), listing('Omega', 400),
+      ] }),
+    };
+    const out = runMaterialFlip(snapshot, saleMap, ingMap, recipes, 'Phantom', baseFilter);
+    expect(out).toHaveLength(1);
+    const r = out[0];
+    expect(r.homeMatCost).toBe(700);
+    expect(r.bestPerIngredientCost).toBe(520);
+    expect(r.perIngredientSavings).toBe(180);
+    expect(r.salePrice).toBe(10_000);
+    expect(r.velocity).toBe(2);
+    expect(r.gilSavedPerDay).toBe(360);
+    expect(r.pctDiscount).toBeCloseTo(180 / 700);
+    expect(r.hq).toBe(true);
+  });
+
+  it('drops rows with no trusted sale tier', () => {
+    const saleMap: MarketData = {
+      1: mkSale({ velocity: 2, listingCount: 1 }),
+    };
+    const out = runMaterialFlip(snapshot, saleMap, {}, recipes, 'Phantom', baseFilter);
+    expect(out).toEqual([]);
+  });
+
+  it('drops rows below minSavings', () => {
+    const saleMap: MarketData = {
+      1: mkSale({
+        minHQ: 10_000, medianHQ: 10_000, recentSalesHQ: 8,
+        velocity: 2, listingCount: 1,
+      }),
+    };
+    const ingMap: MarketData = {
+      99: mkSale({ worldListings: [listing('Phantom', 100)] }),
+      100: mkSale({ worldListings: [listing('Phantom', 500)] }),
+    };
+    const out = runMaterialFlip(snapshot, saleMap, ingMap, recipes,
+      'Phantom', { ...baseFilter, minSavings: 1000 });
+    expect(out).toEqual([]);
+  });
+
+  it('falls back to home price when ingredient has no region listings', () => {
+    const saleMap: MarketData = {
+      1: mkSale({
+        minHQ: 10_000, medianHQ: 10_000, recentSalesHQ: 8,
+        velocity: 1, listingCount: 1,
+      }),
+    };
+    const ingMap: MarketData = {
+      99: mkSale({ worldListings: [listing('Phantom', 100)] }),
+      // 100 missing entirely
+    };
+    const out = runMaterialFlip(snapshot, saleMap, ingMap, recipes,
+      'Phantom', { ...baseFilter, minSavings: 1 });
+    expect(out).toEqual([]);  // savings = 0
+  });
+});
