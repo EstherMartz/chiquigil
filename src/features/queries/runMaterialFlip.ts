@@ -25,6 +25,26 @@ function pickTrustedSaleTier(m: MarketItem, hq: HqMode, canHq: boolean): SaleTie
   return null;
 }
 
+export function narrowForMaterialFlip(
+  snapshot: SnapshotItem[],
+  saleMap: MarketData,
+  filter: MaterialFlipFilter,
+): number[] {
+  const catSet = filter.searchCategories.length ? new Set(filter.searchCategories) : null;
+  const out: number[] = [];
+  for (const item of snapshot) {
+    if (catSet && !catSet.has(item.sc)) continue;
+    if (filter.hq === 'hq' && !item.canHq) continue;
+    const m = saleMap[item.id];
+    if (!m) continue;
+    if (m.velocity < filter.minVelocity) continue;
+    if (filter.maxListings != null && m.listingCount > filter.maxListings) continue;
+    if (pickTrustedSaleTier(m, filter.hq, item.canHq) == null) continue;
+    out.push(item.id);
+  }
+  return out;
+}
+
 function homeIngredientPrice(m: MarketItem | undefined, homeWorld: string): number {
   if (!m) return 0;
   const nq = m.worldListings.filter((l) => !l.hq && l.world === homeWorld);
@@ -37,6 +57,16 @@ function bestRegionIngredientPrice(m: MarketItem | undefined, worldFilter: (w: s
   const nq = m.worldListings.filter((l) => !l.hq && worldFilter(l.world));
   if (nq.length === 0) return null;
   return Math.min(...nq.map((l) => l.price));
+}
+
+function compareRows(a: MaterialFlipRow, b: MaterialFlipRow, sort: MaterialFlipFilter['sort']): number {
+  switch (sort) {
+    case 'gilSavedPerDay': return b.gilSavedPerDay - a.gilSavedPerDay;
+    case 'savePerCraft':   return b.perIngredientSavings - a.perIngredientSavings;
+    case 'pctDiscount':    return b.pctDiscount - a.pctDiscount;
+    case 'salePrice':      return b.salePrice - a.salePrice;
+    case 'velocity':       return b.velocity - a.velocity;
+  }
 }
 
 function findBestSingleStop(
@@ -120,5 +150,9 @@ export function runMaterialFlip(
       pctDiscount: perIngredientSavings / Math.max(1, homeMatCost),
     });
   }
-  return out;
+  out.sort((a, b) => {
+    const cmp = compareRows(a, b, filter.sort);
+    return cmp !== 0 ? cmp : a.id - b.id;  // stable tie-break by id asc
+  });
+  return out.slice(0, filter.limit);
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { runMaterialFlip } from './runMaterialFlip';
+import { narrowForMaterialFlip, runMaterialFlip } from './runMaterialFlip';
 import type { SnapshotItem } from '../../lib/itemSnapshot';
 import type { MarketData, MarketItem, WorldListing } from '../../lib/universalis';
 import type { Recipe } from '../../lib/recipes';
@@ -196,5 +196,69 @@ describe('runMaterialFlip — single-stop world', () => {
     expect(out[0].singleStopCost).toBe(700);
     expect(out[0].singleStopSavings).toBe(0);
     expect(out[0].perIngredientSavings).toBe(80);  // Lich for 99: 700 - (60*2 + 500)
+  });
+});
+
+describe('narrowForMaterialFlip', () => {
+  it('keeps items that pass velocity + listings + sale-tier trust', () => {
+    const sale: MarketData = {
+      1: mkSale({
+        minHQ: 10_000, medianHQ: 10_000, recentSalesHQ: 8,
+        velocity: 2, listingCount: 1,
+      }),
+    };
+    expect(narrowForMaterialFlip(snapshot, sale, baseFilter)).toEqual([1]);
+  });
+
+  it('drops items below minVelocity / over maxListings / no trusted tier', () => {
+    const sale: MarketData = {
+      1: mkSale({  // no trusted tier
+        velocity: 5, listingCount: 1,
+      }),
+    };
+    expect(narrowForMaterialFlip(snapshot, sale, baseFilter)).toEqual([]);
+  });
+});
+
+describe('runMaterialFlip — sort + slice', () => {
+  const twoItems: SnapshotItem[] = [
+    { id: 1, name: 'A', sc: 56, ui: 0, ilvl: 90, canHq: true },
+    { id: 2, name: 'B', sc: 56, ui: 0, ilvl: 90, canHq: true },
+  ];
+  const recipeA: Recipe = { itemResultId: 1, classJob: 'LTW', recipeLevel: 90, ingredients: [{ itemId: 99, amount: 1 }] };
+  const recipeB: Recipe = { itemResultId: 2, classJob: 'LTW', recipeLevel: 90, ingredients: [{ itemId: 99, amount: 1 }] };
+  const rm = new Map<number, Recipe | null>([[1, recipeA], [2, recipeB]]);
+
+  function fixtures(): { sale: MarketData; ing: MarketData } {
+    return {
+      sale: {
+        1: mkSale({ minHQ: 1000, medianHQ: 1000, recentSalesHQ: 8, velocity: 5, listingCount: 1 }),
+        2: mkSale({ minHQ: 1000, medianHQ: 1000, recentSalesHQ: 8, velocity: 1, listingCount: 1 }),
+      },
+      ing: {
+        99: mkSale({ worldListings: [listing('Phantom', 100), listing('Lich', 50)] }),
+      },
+    };
+  }
+
+  it('default sort = gilSavedPerDay desc', () => {
+    const { sale, ing } = fixtures();
+    // Both rows: savings = 50; A velocity 5 → 250/day; B velocity 1 → 50/day
+    const out = runMaterialFlip(twoItems, sale, ing, rm, 'Phantom', baseFilter);
+    expect(out.map((r) => r.id)).toEqual([1, 2]);
+  });
+
+  it('respects limit', () => {
+    const { sale, ing } = fixtures();
+    const out = runMaterialFlip(twoItems, sale, ing, rm, 'Phantom', { ...baseFilter, limit: 1 });
+    expect(out.map((r) => r.id)).toEqual([1]);
+  });
+
+  it('sort=pctDiscount sorts by pct desc', () => {
+    const { sale, ing } = fixtures();
+    // Both items have identical pctDiscount (50/100); tie-break by id asc.
+    const out = runMaterialFlip(twoItems, sale, ing, rm, 'Phantom',
+      { ...baseFilter, sort: 'pctDiscount' });
+    expect(out.map((r) => r.id)).toEqual([1, 2]);
   });
 });
