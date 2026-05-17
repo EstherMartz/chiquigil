@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { parseSpecialShopPage, type RawSpecialShopPage } from './specialShopSnapshot';
+import type { CurrencyId } from './currencies';
 
-const CURRENCIES_BY_ID = new Map<number, string>([
+const CURRENCIES_BY_ID = new Map<number, CurrencyId>([
   [28, 'poetics'],
   [29, 'mgp'],
   [25199, 'whiteCrafter'],

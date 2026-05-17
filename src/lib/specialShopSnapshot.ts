@@ -1,3 +1,5 @@
+import type { CurrencyId } from './currencies';
+
 const BASE = (import.meta.env?.VITE_XIVAPI_BASE as string | undefined) ?? 'https://v2.xivapi.com';
 const FIELDS = 'Item[].Item@as(raw),Item[].ItemCost@as(raw),Item[].ReceiveCount,Item[].CurrencyCost,Item[].ReceiveHq';
 
@@ -9,7 +11,7 @@ export interface ShopEntry {
 }
 
 export interface SpecialShopSnapshot {
-  byCurrency: Map<string, ShopEntry[]>;  // CurrencyId string keys; runtime guarantees from currencyByItemId lookup
+  byCurrency: Map<CurrencyId, ShopEntry[]>;
 }
 
 interface RawDealSlot {
@@ -25,11 +27,11 @@ interface RawSpecialShopRow {
 }
 export interface RawSpecialShopPage { rows?: RawSpecialShopRow[] }
 
-export interface ParsedShopEntry extends ShopEntry { currency: string }
+export interface ParsedShopEntry extends ShopEntry { currency: CurrencyId }
 
 export function parseSpecialShopPage(
   raw: RawSpecialShopPage,
-  currencyByItemId: Map<number, string>,
+  currencyByItemId: Map<number, CurrencyId>,
 ): ParsedShopEntry[] {
   const out: ParsedShopEntry[] = [];
   for (const row of raw.rows ?? []) {
@@ -80,12 +82,12 @@ function buildPageUrl(after: number, pageSize: number): string {
 }
 
 export async function fetchSpecialShopSnapshot(
-  currencyByItemId: Map<number, string>,
+  currencyByItemId: Map<number, CurrencyId>,
   opts: FetchSpecialShopOpts = {},
 ): Promise<SpecialShopSnapshot> {
   // pageSize=50 hard-cap: XIVAPI v2 enforces a 20k-row-fanout budget; larger pages 400.
   const pageSize = opts.pageSize ?? 50;
-  const byCurrency = new Map<string, ShopEntry[]>();
+  const byCurrency = new Map<CurrencyId, ShopEntry[]>();
   let cursor = 0;
   let totalEntries = 0;
   while (true) {

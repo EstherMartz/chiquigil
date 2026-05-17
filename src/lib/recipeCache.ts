@@ -4,6 +4,7 @@ import type { SnapshotItem } from './itemSnapshot';
 import type { GatheringInfo } from './gatheringCatalog';
 import type { SnapshotLeve } from './leveSnapshot';
 import type { SpecialShopSnapshot } from './specialShopSnapshot';
+import type { CurrencyId } from './currencies';
 
 const DB_NAME = 'ffxiv-helper';
 const DB_VERSION = 9;
@@ -238,7 +239,7 @@ const SPECIALSHOP_SNAPSHOT_KEY = 'snapshot';
 const SPECIALSHOP_SNAPSHOT_TS_KEY = 'specialShopUpdatedAt';
 
 export async function getCachedSpecialShop(): Promise<SpecialShopSnapshot | undefined> {
-  const raw = await (await db()).get(SPECIALSHOP_STORE, SPECIALSHOP_SNAPSHOT_KEY) as { byCurrency: Array<[string, SpecialShopSnapshot['byCurrency'] extends Map<infer _K, infer V> ? V : never]> } | undefined;
+  const raw = await (await db()).get(SPECIALSHOP_STORE, SPECIALSHOP_SNAPSHOT_KEY) as { byCurrency: Array<[CurrencyId, SpecialShopSnapshot['byCurrency'] extends Map<infer _K, infer V> ? V : never]> } | undefined;
   if (!raw) return undefined;
   return { byCurrency: new Map(raw.byCurrency) };
 }
