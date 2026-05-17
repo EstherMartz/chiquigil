@@ -115,9 +115,37 @@ describe('PRESETS', () => {
       'high-value-materials',
       'mega-value-hq',
       'minions-quick-sell',
+      'out-of-stock',
+      'out-of-stock-nq',
       'reposts',
+      'top-dyes',
+      'top-fish',
+      'top-food',
+      'top-materia',
+      'top-minions',
+      'top-tinctures',
       'treasure-maps',
     ]);
+  });
+
+  it('per-Watchlist-category top-sellers presets target the matching single ItemSearchCategory', () => {
+    const byId: Record<string, number> = {
+      'top-food': 45,
+      'top-fish': 46,
+      'top-tinctures': 43,
+      'top-dyes': 54,
+      'top-materia': 57,
+      'top-minions': 75,
+    };
+    for (const [id, sc] of Object.entries(byId)) {
+      const p = getPreset(id)!;
+      expect(p.filter.searchCategories).toEqual([sc]);
+      expect(p.filter.sort).toBe('gilFlow');
+      expect(p.filter.scope).toBe('dc');
+      expect(p.filter.minDealPct).toBe(0);
+      expect(p.filter.minPrice).toBeNull();
+      expect(p.filter.maxPrice).toBeNull();
+    }
   });
 
   it('categorizes gathering presets correctly', () => {
@@ -136,5 +164,23 @@ describe('PRESETS', () => {
       expect(p.filter.mode).toBe('standard');
       expect(p.filter.minVelocity).toBeGreaterThanOrEqual(3);
     }
+  });
+
+  it('out-of-stock preset is home-scope with maxListings=0 and minVelocity 0.14', () => {
+    const p = getPreset('out-of-stock')!;
+    expect(p.filter.scope).toBe('home');
+    expect(p.filter.maxListings).toBe(0);
+    expect(p.filter.minVelocity).toBe(0.14);
+    expect(p.filter.hq).toBe('either');
+    expect(p.filter.mode).toBe('standard');
+  });
+
+  it('out-of-stock-nq preset is home-scope NQ-only with maxListings=0', () => {
+    const p = getPreset('out-of-stock-nq')!;
+    expect(p.filter.scope).toBe('home');
+    expect(p.filter.maxListings).toBe(0);
+    expect(p.filter.hq).toBe('nq');
+    expect(p.filter.minVelocity).toBe(0.14);
+    expect(p.filter.mode).toBe('standard');
   });
 });
