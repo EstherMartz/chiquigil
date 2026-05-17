@@ -1,0 +1,384 @@
+import { useMemo } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import { useSettingsStore } from '../features/settings/store';
+import { useItemSnapshot } from '../features/queries/useItemSnapshot';
+import { useRecipeSnapshot } from '../features/queries/useRecipeSnapshot';
+import { useGatheringCatalog } from '../features/queries/useGatheringCatalog';
+import { useGarlandItem } from '../features/queries/useGarlandItem';
+import { useUsedInIndex } from '../features/items/useUsedInIndex';
+import { useMarketData } from '../features/watchlist/useMarketData';
+import { fmtGil, garlandItemUrl } from '../lib/format';
+import { Gil } from '../components/Gil';
+import { rarityBorderLeftClass, rarityLabel, rarityTextClass } from '../features/items/rarity';
+import { categoryLabel } from '../lib/itemSearchCategories';
+import { Spinner } from '../components/Spinner';
+import { StatusBanner } from '../components/StatusBanner';
+import { SectionHeader } from '../components/SectionHeader';
+import { HqStar } from '../components/HqStar';
+import type { SnapshotItem } from '../lib/itemSnapshot';
+import type { MarketItem } from '../lib/universalis';
+import type { IngredientSource } from '../lib/garlandData';
+import type { Recipe } from '../lib/recipes';
+
+const USED_IN_LIMIT = 20;
+
+const SOURCE_LABEL: Record<IngredientSource, string> = {
+  vendor: 'Vendor',
+  gather: 'Gather',
+  craft: 'Craft',
+  other: '—',
+};
+
+export default function Item() {
+  const { id } = useParams();
+  const itemId = Number(id);
+  const valid = Number.isFinite(itemId) && itemId > 0;
+
+  const { world, dc } = useSettingsStore();
+  const snapshot = useItemSnapshot();
+  const recipes = useRecipeSnapshot(valid);
+  const gathering = useGatheringCatalog();
+  const garland = useGarlandItem(valid ? itemId : null);
+  const usedInIdx = useUsedInIndex();
+
+  const item: SnapshotItem | undefined = useMemo(() => {
+    if (!valid || !snapshot.data) return undefined;
+    return snapshot.data.items.find((i) => i.id === itemId);
+  }, [snapshot.data, itemId, valid]);
+
+  const recipe = valid && recipes.data ? recipes.data.get(itemId) : undefined;
+
+  const ingredientIds = recipe?.ingredients.map((i) => i.itemId) ?? [];
+  const priceIds = useMemo(() => {
+    if (!valid) return [];
+    return [...new Set<number>([itemId, ...ingredientIds])];
+  }, [itemId, ingredientIds, valid]);
+
+  const market = useMarketData(priceIds, world, dc);
+
+  const usedIn = valid ? (usedInIdx.data.get(itemId) ?? []) : [];
+
+  if (!valid) {
+    return (
+      <div className="max-w-3xl mx-auto px-4">
+        <StatusBanner kind="error">Invalid item id.</StatusBanner>
+      </div>
+    );
+  }
+
+  // Fall back to Garland's name/ilvl if the snapshot doesn't have this item.
+  const displayName = item?.name ?? garland.data?.name ?? `Item #${itemId}`;
+  const displayIlvl = item?.ilvl ?? garland.data?.ilvl ?? 0;
+  const displaySc = item?.sc ?? 0;
+  const canHq = item?.canHq ?? false;
+
+  const gather = gathering.data?.get(itemId);
+  const phantomMarket = market.data?.phantom[itemId];
+  const dcMarket = market.data?.dc[itemId];
+
+  return (
+    <div className="max-w-5xl mx-auto px-4 space-y-6">
+      <HeaderBlock
+        name={displayName}
+        ilvl={displayIlvl}
+        sc={displaySc}
+        canHq={canHq}
+        rarity={item?.rarity}
+        itemId={itemId}
+      />
+
+      {snapshot.isLoading && (
+        <div className="py-4"><Spinner label="Loading item catalog…" /></div>
+      )}
+      {market.isError && (
+        <StatusBanner kind="error">Universalis fetch failed: {(market.error as Error).message}</StatusBanner>
+      )}
+
+      <PricesBlock
+        worldLabel={world}
+        dcLabel={dc}
+        loading={market.isLoading}
+        phantom={phantomMarket}
+        dc={dcMarket}
+      />
+
+      {recipes.isLoading && !recipe && (
+        <div className="py-4"><Spinner label="Loading recipe catalog…" /></div>
+      )}
+      {recipe && (
+        <RecipeBlock
+          recipe={recipe}
+          itemNames={snapshot.data?.items}
+          phantom={market.data?.phantom}
+          garlandIngredients={garland.data?.ingredients}
+        />
+      )}
+
+      <UsedInBlock entries={usedIn} itemNames={snapshot.data?.items} />
+
+      <SourcesBlock
+        itemId={itemId}
+        gather={gather}
+      />
+    </div>
+  );
+}
+
+function HeaderBlock({ name, ilvl, sc, canHq, rarity, itemId }: {
+  name: string; ilvl: number; sc: number; canHq: boolean; rarity: number | undefined; itemId: number;
+}) {
+  const rarityBorder = rarityBorderLeftClass(rarity);
+  const rarityName = rarityTextClass(rarity);
+  const rarityTier = rarityLabel(rarity);
+  return (
+    <header className={`border border-border-base bg-bg-card p-5 sm:p-6 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 ${rarityBorder ? `border-l-4 ${rarityBorder}` : ''}`}>
+      <div>
+        <div className="font-mono text-[10px] tracking-[0.3em] uppercase text-text-low mb-1 flex items-center gap-3 flex-wrap">
+          {ilvl > 1 && <span className="text-gold">Item Level {ilvl}</span>}
+          {sc > 0 && <span>{categoryLabel(sc)}</span>}
+          {rarityTier && <span className={rarityName ?? ''}>{rarityTier}</span>}
+          {canHq && <span className="text-gold inline-flex items-center gap-1"><HqStar /> HQ</span>}
+        </div>
+        <h1 className={`font-display text-2xl sm:text-3xl tracking-tight ${rarityName ?? 'text-text-cream'}`}>
+          {name}
+        </h1>
+      </div>
+      <a
+        href={garlandItemUrl(itemId)}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="font-mono text-[10px] tracking-widest uppercase border border-border-base text-aether px-3 py-2 hover:border-aether transition-colors self-start sm:self-end"
+        title="Open on Garland Tools"
+      >
+        Open on Garland ↗
+      </a>
+    </header>
+  );
+}
+
+function PricesBlock({ worldLabel, dcLabel, loading, phantom, dc }: {
+  worldLabel: string; dcLabel: string; loading: boolean;
+  phantom: MarketItem | undefined; dc: MarketItem | undefined;
+}) {
+  return (
+    <section>
+      <SectionHeader label="Prices" compact />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <PriceCard scope={worldLabel} m={phantom} loading={loading} />
+        <PriceCard scope={dcLabel} m={dc} loading={loading} />
+      </div>
+    </section>
+  );
+}
+
+function PriceCard({ scope, m, loading }: { scope: string; m: MarketItem | undefined; loading: boolean }) {
+  return (
+    <div className="border border-border-base bg-bg-card p-4">
+      <div className="font-mono text-[10px] tracking-widest uppercase text-text-low mb-2">{scope}</div>
+      {loading && !m ? (
+        <div className="text-text-low text-sm italic">Loading…</div>
+      ) : !m || (m.minNQ == null && m.minHQ == null) ? (
+        <div className="text-text-low text-sm italic">No marketboard data.</div>
+      ) : (
+        <dl className="grid grid-cols-2 gap-y-1.5 gap-x-4 font-mono text-xs">
+          <PriceRow label="Min NQ" value={m.minNQ} />
+          <PriceRow label="Min HQ" value={m.minHQ} />
+          <PriceRow label="Avg NQ" value={m.averagePriceNQ} dim />
+          <PriceRow label="Avg HQ" value={m.averagePriceHQ} dim />
+          <PriceRow label="Velocity" raw={`${m.velocity.toFixed(1)} /day`} />
+          <PriceRow label="Listings" raw={String(m.listingCount)} />
+        </dl>
+      )}
+    </div>
+  );
+}
+
+function PriceRow({ label, value, raw, dim }: {
+  label: string; value?: number | null; raw?: string; dim?: boolean;
+}) {
+  const text = raw ?? fmtGil(value ?? null);
+  return (
+    <>
+      <dt className="text-text-low">{label}</dt>
+      <dd className={`text-right tabular-nums ${dim ? 'text-text-dim' : 'text-text-cream'}`}>{text}</dd>
+    </>
+  );
+}
+
+function RecipeBlock({ recipe, itemNames, phantom, garlandIngredients }: {
+  recipe: Recipe;
+  itemNames: SnapshotItem[] | undefined;
+  phantom: Record<string, MarketItem> | undefined;
+  garlandIngredients: { id: number; source: IngredientSource }[] | undefined;
+}) {
+  const nameById = useMemo(() => {
+    const m = new Map<number, string>();
+    if (itemNames) for (const i of itemNames) m.set(i.id, i.name);
+    return m;
+  }, [itemNames]);
+
+  const sourceById = useMemo(() => {
+    const m = new Map<number, IngredientSource>();
+    if (garlandIngredients) for (const g of garlandIngredients) m.set(g.id, g.source);
+    return m;
+  }, [garlandIngredients]);
+
+  let total = 0;
+  for (const ing of recipe.ingredients) {
+    const px = phantom?.[String(ing.itemId)]?.minNQ ?? phantom?.[String(ing.itemId)]?.minHQ ?? 0;
+    total += px * ing.amount;
+  }
+
+  return (
+    <section>
+      <SectionHeader label="Crafting recipe" compact />
+      <div className="border border-border-base bg-bg-card p-4">
+        <div className="font-mono text-[11px] tracking-widest uppercase text-text-dim mb-3 flex items-center gap-3 flex-wrap">
+          <span className="text-aether border border-border-base px-2 py-0.5 leading-none">{recipe.classJob}</span>
+          <span>Recipe Lv {recipe.recipeLevel}</span>
+        </div>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-text-low font-mono text-[10px] tracking-widest uppercase">
+              <th className="text-left py-1">Ingredient</th>
+              <th className="text-right py-1">Qty</th>
+              <th className="text-right py-1">Unit (home)</th>
+              <th className="text-right py-1 hidden sm:table-cell">Source</th>
+            </tr>
+          </thead>
+          <tbody>
+            {recipe.ingredients.map((ing) => {
+              const m = phantom?.[String(ing.itemId)];
+              const unit = m?.minNQ ?? m?.minHQ ?? null;
+              const source = sourceById.get(ing.itemId);
+              const name = nameById.get(ing.itemId) ?? `Item #${ing.itemId}`;
+              return (
+                <tr key={ing.itemId} className="border-t border-border-base">
+                  <td className="py-2">
+                    <Link to={`/item/${ing.itemId}`} className="text-text-cream hover:text-aether hover:underline decoration-1 underline-offset-4">
+                      {name}
+                    </Link>
+                  </td>
+                  <td className="py-2 text-right font-mono">{ing.amount}</td>
+                  <td className="py-2 text-right font-mono">{fmtGil(unit)}</td>
+                  <td className="py-2 text-right font-mono text-text-low hidden sm:table-cell">
+                    {source ? SOURCE_LABEL[source] : '—'}
+                  </td>
+                </tr>
+              );
+            })}
+            <tr className="border-t border-border-base">
+              <td colSpan={2} className="py-2 font-mono text-[10px] tracking-widest uppercase text-text-low text-right">
+                Material total (home)
+              </td>
+              <td className="py-2 text-right font-mono text-gold"><Gil value={total} /></td>
+              <td className="hidden sm:table-cell" />
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
+function UsedInBlock({ entries, itemNames }: {
+  entries: { resultId: number; amount: number; classJob: string; recipeLevel: number }[];
+  itemNames: SnapshotItem[] | undefined;
+}) {
+  const nameById = useMemo(() => {
+    const m = new Map<number, string>();
+    if (itemNames) for (const i of itemNames) m.set(i.id, i.name);
+    return m;
+  }, [itemNames]);
+  if (entries.length === 0) return null;
+  const visible = entries.slice(0, USED_IN_LIMIT);
+  const more = entries.length - visible.length;
+  return (
+    <section>
+      <SectionHeader
+        label={`Used in ${entries.length} recipe${entries.length === 1 ? '' : 's'}`}
+        compact
+      />
+      <div className="border border-border-base bg-bg-card overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-text-low font-mono text-[10px] tracking-widest uppercase">
+              <th className="text-left px-3 py-2">Result</th>
+              <th className="text-right px-3 py-2">Per craft</th>
+              <th className="text-right px-3 py-2">Crafter</th>
+              <th className="text-right px-3 py-2">Lvl</th>
+            </tr>
+          </thead>
+          <tbody>
+            {visible.map((e) => {
+              const name = nameById.get(e.resultId) ?? `Item #${e.resultId}`;
+              return (
+                <tr key={e.resultId} className="border-t border-border-base">
+                  <td className="px-3 py-2">
+                    <Link to={`/item/${e.resultId}`} className="text-text-cream hover:text-aether hover:underline decoration-1 underline-offset-4">
+                      {name}
+                    </Link>
+                  </td>
+                  <td className="px-3 py-2 text-right font-mono">×{e.amount}</td>
+                  <td className="px-3 py-2 text-right font-mono text-aether">{e.classJob}</td>
+                  <td className="px-3 py-2 text-right font-mono text-text-low">{e.recipeLevel}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        {more > 0 && (
+          <div className="px-3 py-2 font-mono text-[10px] text-text-low italic border-t border-border-base">
+            …and {more} more.
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function SourcesBlock({ itemId, gather }: {
+  itemId: number;
+  gather: { level: number; timed: boolean; hidden: boolean } | undefined;
+}) {
+  if (!gather) {
+    return (
+      <section>
+        <SectionHeader label="Sources" compact />
+        <div className="border border-border-base bg-bg-card p-4 text-text-low text-sm italic">
+          No gathering data in catalog.{' '}
+          <a
+            href={garlandItemUrl(itemId)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-aether hover:underline decoration-1 underline-offset-4 not-italic"
+          >
+            View full sources on Garland ↗
+          </a>
+        </div>
+      </section>
+    );
+  }
+  return (
+    <section>
+      <SectionHeader label="Sources" compact />
+      <div className="border border-border-base bg-bg-card p-4 space-y-2">
+        <div className="flex items-baseline gap-3 flex-wrap">
+          <span className="font-mono text-[10px] tracking-widest uppercase text-text-low">Gathering</span>
+          <span className="text-text-cream">Lv {gather.level || '?'}</span>
+          {gather.timed && <span className="text-gold font-mono text-[10px] tracking-widest uppercase">⏱ Timed</span>}
+        </div>
+        <div className="text-text-low text-xs italic">
+          <a
+            href={garlandItemUrl(itemId)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-aether hover:underline decoration-1 underline-offset-4 not-italic"
+          >
+            View full sources on Garland ↗
+          </a>
+        </div>
+      </div>
+    </section>
+  );
+}
