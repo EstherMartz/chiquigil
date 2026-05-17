@@ -10,6 +10,7 @@ import LevePlan from './routes/LevePlan';
 import GcSeals from './routes/GcSeals';
 import ShoppingList from './routes/ShoppingList';
 import VendorFlip from './routes/VendorFlip';
+import CurrencyFlip from './routes/CurrencyFlip';
 import Item from './routes/Item';
 import Settings from './routes/Settings';
 
@@ -28,6 +29,7 @@ export default function App() {
         <Route path="/leves" element={<LevePlan />} />
         <Route path="/shopping-list" element={<ShoppingList />} />
         <Route path="/vendor-flip" element={<VendorFlip />} />
+        <Route path="/currency-flip" element={<CurrencyFlip />} />
         <Route path="/gc-seals" element={<GcSeals />} />
         <Route path="/item/:id" element={<Item />} />
         <Route path="/queries" element={<Navigate to="/crafts" replace />} />
