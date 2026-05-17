@@ -17,6 +17,7 @@ export interface QueryFilter {
   maxListings: number | null;
   mode: QueryMode;
   minGap: number | null;
+  trainedEye: boolean;
 }
 
 export interface QueryPreset {
@@ -78,6 +79,7 @@ export function filterHash(f: QueryFilter): string {
     ml: f.maxListings,
     m: f.mode,
     g: f.minGap,
+    te: f.trainedEye,
   });
 }
 
