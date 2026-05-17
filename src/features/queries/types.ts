@@ -128,3 +128,48 @@ export function defaultMaterialFlipFilter(): MaterialFlipFilter {
     minSavings: 1000, includeLightDc: true, sort: 'gilSavedPerDay', limit: 200,
   };
 }
+
+export type VendorFlipSort =
+  | 'profitPerDay'
+  | 'markup'
+  | 'profitPerUnit'
+  | 'salePrice'
+  | 'velocity';
+
+export interface VendorFlipFilter {
+  searchCategories: number[];
+  minProfit: number;        // gil/unit
+  minMarkup: number;        // multiplier (e.g. 2.0 = 2× vendor price)
+  minVelocity: number;      // sales/day
+  maxListings: number | null;
+  hq: HqMode;
+  sort: VendorFlipSort;
+  limit: number;
+}
+
+export interface VendorFlipRow {
+  id: number;
+  name: string;
+  sc: number;
+  vendorPrice: number;
+  salePrice: number;
+  hq: boolean;
+  profitPerUnit: number;
+  markup: number;           // tier.unit / vendorPrice
+  profitPerDay: number;     // profitPerUnit × velocity
+  velocity: number;
+  listingCount: number;
+}
+
+export function defaultVendorFlipFilter(): VendorFlipFilter {
+  return {
+    searchCategories: [],
+    minProfit: 500,
+    minMarkup: 2.0,
+    minVelocity: 0.5,
+    maxListings: null,
+    hq: 'either',
+    sort: 'profitPerDay',
+    limit: 200,
+  };
+}
