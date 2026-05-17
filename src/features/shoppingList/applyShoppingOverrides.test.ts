@@ -118,6 +118,26 @@ describe('applyShoppingOverrides', () => {
     expect(plan.rollup.revenue).toBe(4000);
   });
 
+  it('revenue falls back to cheapest EU NQ world listing when minNQ/minHQ are null', () => {
+    const items: ShoppingListItem[] = [{ id: 99, qty: 2, craftIntermediates: false }];
+    const snapshot: SnapshotItem[] = [mkSnap(99, 'Output', false)];
+    const prices: MarketData = {
+      99: {
+        minNQ: null, minHQ: null, avgNQ: null, avgHQ: null,
+        medianNQ: null, medianHQ: null,
+        recentSalesNQ: 0, recentSalesHQ: 0, velocity: 0,
+        lastUploadTime: 0, listingCount: 2,
+        worldListings: [
+          { world: 'Phantom', price: 800, hq: false },
+          { world: 'Odin', price: 1200, hq: false },
+        ],
+        averagePriceNQ: null, averagePriceHQ: null,
+      },
+    };
+    const plan = applyShoppingOverrides([], items, snapshot, prices, new Map());
+    expect(plan.rollup.revenue).toBe(1600);  // 800 (cheapest EU NQ) * 2
+  });
+
   it('ingredient with no sources → missingIngredients++, bestWorld null', () => {
     const survey: IngredientSurvey[] = [mkSurvey({ id: 5, qty: 1 })];
     const plan = applyShoppingOverrides(survey, [], [], {}, new Map());

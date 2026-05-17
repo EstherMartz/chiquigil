@@ -1,4 +1,5 @@
-import type { MarketData } from '../../lib/universalis';
+import { EU_WORLDS } from '../../lib/europeWorlds';
+import type { MarketData, MarketItem } from '../../lib/universalis';
 import type { SnapshotItem } from '../../lib/itemSnapshot';
 import type { ShoppingListItem } from './shoppingListStore';
 import type { IngredientSurvey } from './shoppingListSurvey';
@@ -14,6 +15,16 @@ function resolveSource(survey: IngredientSurvey, overrides: Map<number, ChosenSo
   return survey.autoSource;
 }
 
+function cheapestEuNqPrice(m: MarketItem): number | null {
+  let best: number | null = null;
+  for (const l of m.worldListings) {
+    if (l.hq) continue;
+    if (!EU_WORLDS.has(l.world)) continue;
+    if (best == null || l.price < best) best = l.price;
+  }
+  return best;
+}
+
 function itemRevenueUnit(itemId: number, snapshot: SnapshotItem[], prices: MarketData): number {
   const item = snapshot.find((s) => s.id === itemId);
   if (!item) return 0;
@@ -21,7 +32,7 @@ function itemRevenueUnit(itemId: number, snapshot: SnapshotItem[], prices: Marke
   if (!m) return 0;
   if (item.canHq && m.minHQ != null) return m.minHQ;
   if (m.minNQ != null) return m.minNQ;
-  return 0;
+  return cheapestEuNqPrice(m) ?? 0;
 }
 
 export function applyShoppingOverrides(
