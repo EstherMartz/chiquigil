@@ -7,7 +7,9 @@ import { useGatheringCatalog } from '../features/queries/useGatheringCatalog';
 import { useGarlandItem } from '../features/queries/useGarlandItem';
 import { useUsedInIndex } from '../features/items/useUsedInIndex';
 import { useMarketData } from '../features/watchlist/useMarketData';
+import { useVendorShopSnapshot } from '../features/queries/useVendorShopSnapshot';
 import { SaleHistoryBlock } from '../features/items/SaleHistoryBlock';
+import { VendorSourceCard } from '../features/items/VendorSourceCard';
 import { AddToWatchlistButton } from '../features/items/AddToWatchlistButton';
 import { AddToShoppingListButton } from '../features/shoppingList/AddToShoppingListButton';
 import { fmtGil, garlandItemUrl } from '../lib/format';
@@ -60,6 +62,8 @@ export default function Item() {
   }, [itemId, ingredientIds, valid]);
 
   const market = useMarketData(priceIds, world, dc, 'Europe');
+  const vendors = useVendorShopSnapshot();
+  const vendorPrice = valid && vendors.data?.vendors.get(itemId);
 
   const usedIn = valid ? (usedInIdx.data.get(itemId) ?? []) : [];
 
@@ -107,6 +111,15 @@ export default function Item() {
         phantom={phantomMarket}
         dc={dcMarket}
       />
+
+      {vendorPrice ? (
+        <VendorSourceCard
+          vendorPrice={vendorPrice}
+          homeMarket={phantomMarket}
+          canHq={canHq}
+          worldLabel={world}
+        />
+      ) : null}
 
       <SaleHistoryBlock itemId={itemId} scope={dc} canHq={canHq} />
 
