@@ -109,4 +109,32 @@ describe('runQuery', () => {
     const out = runQuery(snapshot, priceMap, { ...baseFilter, hq: 'nq', maxListings: null });
     expect(out.map((r) => r.id)).toEqual([1]);
   });
+
+  it('falls back to historical avg when item has no current listings but has recent sales', () => {
+    const priceMap: MarketData = {
+      1: mkPrice({ minNQ: null, averagePriceNQ: 500, velocity: 0.5, listingCount: 0 }),
+      2: mkPrice({ minNQ: null, averagePriceNQ: null, velocity: 0.5, listingCount: 0 }), // no data at all
+    };
+    const out = runQuery(snapshot, priceMap, { ...baseFilter, hq: 'nq', minVelocity: 0.1, maxListings: 0 });
+    expect(out.map((r) => r.id)).toEqual([1]);
+    expect(out[0].unitPrice).toBe(500); // historical avg
+  });
+
+  it('out-of-stock fallback respects minDealPct threshold', () => {
+    const priceMap: MarketData = {
+      1: mkPrice({ minNQ: null, averagePriceNQ: 500, velocity: 0.5, listingCount: 0 }),
+    };
+    const out = runQuery(snapshot, priceMap, { ...baseFilter, hq: 'nq', minVelocity: 0.1, maxListings: 0, minDealPct: 30 });
+    expect(out).toEqual([]); // dealPct = 0 when unit=avg, so it fails minDealPct filter
+  });
+
+  it('out-of-stock fallback works with hq=either, picking the cheaper tier', () => {
+    const priceMap: MarketData = {
+      1: mkPrice({ minHQ: null, averagePriceHQ: 600, minNQ: null, averagePriceNQ: 500, velocity: 0.5, listingCount: 0 }),
+    };
+    const out = runQuery(snapshot, priceMap, { ...baseFilter, hq: 'either', minVelocity: 0.1, maxListings: 0 });
+    expect(out.map((r) => r.id)).toEqual([1]);
+    expect(out[0].hq).toBe(false);
+    expect(out[0].unitPrice).toBe(500); // NQ is cheaper
+  });
 });

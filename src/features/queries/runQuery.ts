@@ -5,17 +5,18 @@ import type { HqMode, QueryFilter, QueryResultRow, QuerySort } from './types';
 function pickTier(m: MarketItem, hq: HqMode): { unit: number; avg: number; isHq: boolean } | null {
   const hqUnit = m.minHQ, hqAvg = m.averagePriceHQ;
   const nqUnit = m.minNQ, nqAvg = m.averagePriceNQ;
-  if (hq === 'hq') {
-    if (hqUnit == null || hqAvg == null || hqAvg <= 0) return null;
-    return { unit: hqUnit, avg: hqAvg, isHq: true };
+
+  function tierFor(unit: number | null, avg: number | null, isHq: boolean) {
+    if (avg == null || avg <= 0) return null;
+    // Out-of-stock fallback: use historical avg as the "unit" so the row survives.
+    return { unit: unit ?? avg, avg, isHq };
   }
-  if (hq === 'nq') {
-    if (nqUnit == null || nqAvg == null || nqAvg <= 0) return null;
-    return { unit: nqUnit, avg: nqAvg, isHq: false };
-  }
-  const candidates: { unit: number; avg: number; isHq: boolean }[] = [];
-  if (hqUnit != null && hqAvg != null && hqAvg > 0) candidates.push({ unit: hqUnit, avg: hqAvg, isHq: true });
-  if (nqUnit != null && nqAvg != null && nqAvg > 0) candidates.push({ unit: nqUnit, avg: nqAvg, isHq: false });
+
+  if (hq === 'hq') return tierFor(hqUnit, hqAvg, true);
+  if (hq === 'nq') return tierFor(nqUnit, nqAvg, false);
+
+  const candidates = [tierFor(hqUnit, hqAvg, true), tierFor(nqUnit, nqAvg, false)]
+    .filter((c): c is { unit: number; avg: number; isHq: boolean } => c !== null);
   if (candidates.length === 0) return null;
   return candidates.reduce((a, b) => (a.unit <= b.unit ? a : b));
 }
