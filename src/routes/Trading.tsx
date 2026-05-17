@@ -1,21 +1,27 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { ArbitrageView } from '../features/insights/ArbitrageView';
 import { BestDealsView } from '../features/insights/BestDealsView';
+import { MaterialFlipView } from '../features/insights/MaterialFlipView';
 import { QueriesView } from '../features/queries/QueriesView';
+import { SectionHeader } from '../components/SectionHeader';
 
-type Tab = 'arbitrage' | 'deals' | 'queries';
+type Tab = 'arbitrage' | 'deals' | 'materialFlip' | 'queries';
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: 'arbitrage', label: 'Arbitrage' },
-  { id: 'deals',     label: 'Best deals' },
-  { id: 'queries',   label: 'Queries' },
+  { id: 'arbitrage',    label: 'Arbitrage' },
+  { id: 'deals',        label: 'Best deals' },
+  { id: 'materialFlip', label: 'Material flip' },
+  { id: 'queries',      label: 'Queries' },
 ];
 
 export default function Trading() {
-  const [tab, setTab] = useState<Tab>('arbitrage');
+  const [params] = useSearchParams();
+  const presetParam = params.get('preset') ?? undefined;
+  const [tab, setTab] = useState<Tab>(presetParam ? 'queries' : 'arbitrage');
   return (
     <div className="max-w-7xl mx-auto px-4 space-y-4">
-      <h2 className="font-display text-lg text-gold tracking-wide">Trading</h2>
+      <SectionHeader label="Trading" />
       <nav className="flex border-b border-border-base">
         {TABS.map((t) => (
           <button
@@ -31,7 +37,8 @@ export default function Trading() {
       </nav>
       {tab === 'arbitrage' && <ArbitrageView />}
       {tab === 'deals' && <BestDealsView />}
-      {tab === 'queries' && <QueriesView category="trading" />}
+      {tab === 'materialFlip' && <MaterialFlipView />}
+      {tab === 'queries' && <QueriesView category="trading" initialPresetId={presetParam} />}
     </div>
   );
 }

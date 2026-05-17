@@ -27,7 +27,7 @@ function withProviders(node: React.ReactNode) {
 }
 
 describe('Trading route', () => {
-  it('renders three tabs with Arbitrage active by default', () => {
+  it('renders four tabs with Arbitrage active by default', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ items: {}, results: [] }),
@@ -35,6 +35,7 @@ describe('Trading route', () => {
     render(withProviders(<Trading />));
     expect(screen.getByRole('button', { name: /arbitrage/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /best deals/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /material flip/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /queries/i })).toBeInTheDocument();
   });
 
@@ -46,6 +47,17 @@ describe('Trading route', () => {
     render(withProviders(<Trading />));
     fireEvent.click(screen.getByRole('button', { name: /best deals/i }));
     expect(screen.getByText(/Min discount/i)).toBeInTheDocument();
+  });
+
+  it('switches to MaterialFlipView when its tab is clicked', () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ items: {}, results: [] }),
+    }));
+    render(withProviders(<Trading />));
+    fireEvent.click(screen.getByRole('button', { name: /material flip/i }));
+    // FilterBar's "Run scan" button is the stable target for this view.
+    expect(screen.getByRole('button', { name: /run scan/i })).toBeInTheDocument();
   });
 
   it('Queries tab renders only trading preset chips', async () => {
