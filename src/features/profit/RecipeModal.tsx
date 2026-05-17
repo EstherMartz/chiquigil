@@ -4,6 +4,7 @@ import type { TrackedItem } from '../items/types';
 import { fmtGil } from '../../lib/format';
 import { useItemHistory } from './useItemHistory';
 import { Sparkline } from '../../components/Sparkline';
+import { AddToShoppingListButton } from '../shoppingList/AddToShoppingListButton';
 
 interface Props {
   item: TrackedItem;
@@ -53,19 +54,22 @@ export function RecipeModal({
         className="bg-bg-card border border-border-hi max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-start mb-4">
+        <div className="flex justify-between items-start mb-4 gap-3">
           <div>
             <div className="font-mono text-[10px] tracking-widest text-aether uppercase">
               {recipe.classJob} · lvl {recipe.recipeLevel}
             </div>
             <h3 className="font-display text-xl text-gold">{item.name}</h3>
           </div>
-          <button
-            onClick={onClose}
-            className="text-text-dim hover:text-aether font-mono text-sm"
-          >
-            ✕ Close
-          </button>
+          <div className="flex items-start gap-2">
+            <AddToShoppingListButton itemId={item.id} hasRecipe={true} />
+            <button
+              onClick={onClose}
+              className="text-text-dim hover:text-aether font-mono text-sm"
+            >
+              ✕ Close
+            </button>
+          </div>
         </div>
 
         <table className="w-full text-sm mb-4">
