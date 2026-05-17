@@ -26,6 +26,8 @@ export interface WatchlistRow extends TrackedItem {
   salePrice: number | null;
   profit: number | null;
   gilPerDay: number | null;
+  // Trend column:
+  delta: number | null;
 }
 
 function refPrice(p: MarketItem | undefined, d: MarketItem | undefined): number {
@@ -77,6 +79,7 @@ export function buildRows(
         : recipeEntry === null
           ? (d?.minHQ ?? d?.minNQ ?? 0) * velocity || null
           : null,
+      delta: null,
     };
   });
 

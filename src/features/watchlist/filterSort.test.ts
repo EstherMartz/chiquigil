@@ -8,6 +8,7 @@ const base: WatchlistRow = {
   dcMinNQ: null, dcMinHQ: null, dcSpd: 0,
   refPrice: 0, rawScore: 0, score: 0, staleDays: null, craftStatus: 'ok',
   craftable: null, materialCost: null, salePrice: null, profit: null, gilPerDay: null,
+  delta: null,
 };
 
 const rows: WatchlistRow[] = [
@@ -18,23 +19,19 @@ const rows: WatchlistRow[] = [
 
 describe('filterAndSort', () => {
   it('filters by category', () => {
-    const out = filterAndSort(rows, { catFilter: 'Tincture', craftFilter: 'All', search: '', sortKey: 'name', sortDir: 'asc' });
+    const out = filterAndSort(rows, { catFilter: 'Tincture', search: '', sortKey: 'name', sortDir: 'asc' });
     expect(out.map((r) => r.id)).toEqual([2, 3]);
   });
-  it('filters by crafter', () => {
-    const out = filterAndSort(rows, { catFilter: 'All', craftFilter: 'LTW', search: '', sortKey: 'name', sortDir: 'asc' });
-    expect(out.map((r) => r.id)).toEqual([1]);
-  });
   it('filters by search (case-insensitive substring)', () => {
-    const out = filterAndSort(rows, { catFilter: 'All', craftFilter: 'All', search: 'BET', sortKey: 'name', sortDir: 'asc' });
+    const out = filterAndSort(rows, { catFilter: 'All', search: 'BET', sortKey: 'name', sortDir: 'asc' });
     expect(out.map((r) => r.id)).toEqual([2]);
   });
   it('sorts by score desc by default', () => {
-    const out = filterAndSort(rows, { catFilter: 'All', craftFilter: 'All', search: '', sortKey: 'score', sortDir: 'desc' });
+    const out = filterAndSort(rows, { catFilter: 'All', search: '', sortKey: 'score', sortDir: 'desc' });
     expect(out.map((r) => r.id)).toEqual([3, 1, 2]);
   });
   it('sorts by name asc', () => {
-    const out = filterAndSort(rows, { catFilter: 'All', craftFilter: 'All', search: '', sortKey: 'name', sortDir: 'asc' });
+    const out = filterAndSort(rows, { catFilter: 'All', search: '', sortKey: 'name', sortDir: 'asc' });
     expect(out.map((r) => r.id)).toEqual([1, 2, 3]);
   });
 
@@ -44,7 +41,7 @@ describe('filterAndSort', () => {
       { ...base, id: 2, gilPerDay: null },
       { ...base, id: 3, gilPerDay: 500 },
     ];
-    const out = filterAndSort(rowsWithProfit, { catFilter: 'All', craftFilter: 'All', search: '', sortKey: 'gilDay', sortDir: 'desc' });
+    const out = filterAndSort(rowsWithProfit, { catFilter: 'All', search: '', sortKey: 'gilDay', sortDir: 'desc' });
     expect(out.map((r) => r.id)).toEqual([3, 1, 2]);
   });
 });

@@ -3,7 +3,6 @@ import type { SortKey, SortDir } from '../ui/uiStore';
 
 export interface FilterSortOpts {
   catFilter: string;
-  craftFilter: string;
   search: string;
   sortKey: SortKey;
   sortDir: SortDir;
@@ -19,6 +18,7 @@ function getSortValue(r: WatchlistRow, key: SortKey): string | number {
     case 'spd': return r.dcSpd;
     case 'profit': return r.profit ?? -Infinity;
     case 'gilDay': return r.gilPerDay ?? -Infinity;
+    case 'trend': return r.delta ?? -Infinity;
     case 'score':
     default: return r.rawScore;
   }
@@ -27,7 +27,6 @@ function getSortValue(r: WatchlistRow, key: SortKey): string | number {
 export function filterAndSort(rows: WatchlistRow[], opts: FilterSortOpts): WatchlistRow[] {
   let out = rows;
   if (opts.catFilter !== 'All') out = out.filter((r) => r.cat === opts.catFilter);
-  if (opts.craftFilter !== 'All') out = out.filter((r) => r.crafter === opts.craftFilter);
   if (opts.search) {
     const q = opts.search.toLowerCase();
     out = out.filter((r) => r.name.toLowerCase().includes(q));
