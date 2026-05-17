@@ -80,3 +80,49 @@ export function filterHash(f: QueryFilter): string {
     g: f.minGap,
   });
 }
+
+export type MaterialFlipSort =
+  | 'gilSavedPerDay'
+  | 'savePerCraft'
+  | 'pctDiscount'
+  | 'salePrice'
+  | 'velocity';
+
+export interface MaterialFlipFilter {
+  searchCategories: number[];
+  hq: HqMode;
+  minVelocity: number;
+  maxListings: number | null;
+  minSavings: number;       // gil — drop rows whose perIngredientSavings is below this
+  includeLightDc: boolean;  // when false, restrict to Chaos worlds
+  sort: MaterialFlipSort;
+  limit: number;
+}
+
+export interface MaterialFlipRow {
+  id: number;
+  name: string;
+  sc: number;
+  hq: boolean;              // sale-side tier chosen by pickTrustedTier
+  salePrice: number;
+  velocity: number;
+
+  homeMatCost: number;
+  bestPerIngredientCost: number;
+  perIngredientSavings: number;
+
+  bestSingleWorld: string;
+  singleStopCost: number;
+  singleStopSavings: number;
+  needsDcTravel: boolean;
+
+  gilSavedPerDay: number;
+  pctDiscount: number;      // 0..1
+}
+
+export function defaultMaterialFlipFilter(): MaterialFlipFilter {
+  return {
+    searchCategories: [], hq: 'either', minVelocity: 1, maxListings: 20,
+    minSavings: 1000, includeLightDc: true, sort: 'gilSavedPerDay', limit: 200,
+  };
+}
