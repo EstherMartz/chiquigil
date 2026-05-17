@@ -62,6 +62,24 @@ vi.mock('../features/settings/store', () => ({
   useSettingsStore: () => ({ world: 'Phantom', dc: 'Chaos' }),
 }));
 
+vi.mock('../features/queries/useVendorShopSnapshot', () => ({
+  useVendorShopSnapshot: () => ({
+    data: { vendors: new Map(), updatedAt: null },
+    isLoading: false,
+    isError: false,
+    error: null,
+  }),
+}));
+
+vi.mock('../features/queries/useSpecialShopSnapshot', () => ({
+  useSpecialShopSnapshot: () => ({
+    data: { snapshot: { byCurrency: new Map() }, updatedAt: null },
+    isLoading: false,
+    isError: false,
+    error: null,
+  }),
+}));
+
 import ShoppingList from './ShoppingList';
 
 beforeEach(() => {

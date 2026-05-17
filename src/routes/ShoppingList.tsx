@@ -4,8 +4,10 @@ import { useItemSnapshot } from '../features/queries/useItemSnapshot';
 import { useRecipes } from '../features/profit/useRecipes';
 import { useMarketData } from '../features/watchlist/useMarketData';
 import { useSettingsStore } from '../features/settings/store';
+import { useVendorShopSnapshot } from '../features/queries/useVendorShopSnapshot';
+import { useSpecialShopSnapshot } from '../features/queries/useSpecialShopSnapshot';
 import { aggregateIngredients } from '../features/shoppingList/aggregateIngredients';
-import { planShopping } from '../features/shoppingList/planShopping';
+import { surveyIngredients } from '../features/shoppingList/shoppingListSurvey';
 import { ShoppingListPanel } from '../features/shoppingList/ShoppingListPanel';
 import { ShoppingListPlan } from '../features/shoppingList/ShoppingListPlan';
 import { Spinner } from '../components/Spinner';
@@ -15,6 +17,8 @@ export default function ShoppingList() {
   const items = useShoppingListStore((s) => s.items);
   const { world, dc } = useSettingsStore();
   const snapshot = useItemSnapshot();
+  const vendor = useVendorShopSnapshot();
+  const shop = useSpecialShopSnapshot();
 
   const itemIds = useMemo(() => items.map((i) => i.id), [items]);
   const recipes = useRecipes(itemIds);
@@ -36,10 +40,12 @@ export default function ShoppingList() {
   // Re-arm when the list changes — user must click Plan again.
   useEffect(() => { setPlanRequested(false); }, [itemIds.length]);
 
-  const plan = useMemo(() => {
+  const survey = useMemo(() => {
     if (!planRequested || !aggregate || !market.data || !snapshot.data) return null;
-    return planShopping(aggregate.demand, items, market.data.region, snapshot.data.items);
-  }, [planRequested, aggregate, market.data, snapshot.data, items]);
+    const vendorMap = vendor.data?.vendors ?? new Map<number, number>();
+    const shopSnapshot = shop.data?.snapshot ?? { byCurrency: new Map() };
+    return surveyIngredients(aggregate.demand, market.data.region, vendorMap, shopSnapshot);
+  }, [planRequested, aggregate, market.data, snapshot.data, vendor.data, shop.data]);
 
   const searchableItems = useMemo(() => {
     if (!snapshot.data || !recipes.data) {
@@ -84,7 +90,15 @@ export default function ShoppingList() {
       {planRequested && recipes.isError && (
         <StatusBanner kind="error">Recipe fetch failed: {(recipes.error as Error).message}</StatusBanner>
       )}
-      {plan && <ShoppingListPlan plan={plan} nameById={nameById} />}
+      {survey && snapshot.data && market.data && (
+        <ShoppingListPlan
+          survey={survey}
+          shoppingItems={items}
+          snapshot={snapshot.data.items}
+          prices={market.data.region}
+          nameById={nameById}
+        />
+      )}
     </div>
   );
 }
