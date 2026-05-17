@@ -10,9 +10,7 @@ interface Props {
 }
 
 export function AddToWatchlistButton({ itemId, itemName, ilvl, recipe }: Props) {
-  const customItems = useWatchlistStore((s) => s.customItems);
-  const addCustomItem = useWatchlistStore((s) => s.addCustomItem);
-  const removeCustomItem = useWatchlistStore((s) => s.removeCustomItem);
+  const { customItems, addCustomItem, removeCustomItem } = useWatchlistStore();
   const onList = customItems.some((i) => i.id === itemId);
 
   function handleAdd() {
