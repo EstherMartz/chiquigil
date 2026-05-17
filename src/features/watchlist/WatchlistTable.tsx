@@ -1,28 +1,43 @@
-import { useUiStore, type SortKey } from '../ui/uiStore';
+import { Link } from 'react-router-dom';
+import { useUiStore, rowPadClass, type SortKey } from '../ui/uiStore';
 import type { WatchlistRow } from './buildRows';
 import { CraftTag } from './CraftTag';
 import { fmtGil } from '../../lib/format';
 import { LoadMoreFooter } from '../../components/LoadMoreFooter';
 import { useLoadMore } from '../../lib/useLoadMore';
+import { CATEGORY_TO_TRADING_PRESET } from './categoryPresetMap';
+import { MarketStateBadge } from '../../components/MarketStateBadge';
 
 const COLS: { key: SortKey; label: string; align?: 'right'; hideOnMobile?: boolean }[] = [
   { key: 'name', label: 'Item' },
   { key: 'crafter', label: 'Craft' },
   { key: 'lvl', label: 'Lvl', align: 'right', hideOnMobile: true },
   { key: 'dc', label: 'Sale', align: 'right' },
+  { key: 'trend', label: 'Trend', hideOnMobile: true },
   { key: 'profit', label: 'Profit', align: 'right' },
   { key: 'gilDay', label: 'Gil/day', align: 'right' },
   { key: 'spd', label: 'Velocity', align: 'right', hideOnMobile: true },
 ];
 
 export function WatchlistTable({ rows, onSelect }: { rows: WatchlistRow[]; onSelect: (id: number) => void }) {
-  const { sortKey, sortDir, setSort } = useUiStore();
+  const { catFilter, sortKey, sortDir, setSort, density } = useUiStore();
   const lm = useLoadMore(rows, 25);
+  const rowY = rowPadClass(density);
 
   if (rows.length === 0) {
+    const presetId = CATEGORY_TO_TRADING_PRESET[catFilter];
     return (
       <div className="border border-border-base bg-bg-card p-12 text-center text-text-low italic">
-        No items match those filters.
+        <div className="text-aether/70 mb-1 text-[18px]" aria-hidden>❖</div>
+        <div>The page is blank for this filter.</div>
+        {presetId && (
+          <Link
+            to={`/trading?preset=${presetId}`}
+            className="not-italic mt-3 inline-block font-mono text-[11px] tracking-widest uppercase text-aether hover:text-gold transition-colors"
+          >
+            Scry the market for top {catFilter.toLowerCase()} →
+          </Link>
+        )}
       </div>
     );
   }
@@ -52,13 +67,23 @@ export function WatchlistTable({ rows, onSelect }: { rows: WatchlistRow[]; onSel
         <tbody>
           {lm.visible.map((r) => (
             <tr key={r.id} className="border-t border-border-base hover:bg-bg-card-hi">
-              <td className="px-3 py-2.5">
-                <button
-                  onClick={() => onSelect(r.id)}
-                  className="text-text-cream hover:text-aether text-left"
-                >
-                  {r.name}
-                </button>
+              <td className={`px-3 ${rowY}`}>
+                <div className="flex items-baseline gap-2">
+                  <Link
+                    to={`/item/${r.id}`}
+                    className="text-text-cream hover:text-aether hover:underline decoration-1 underline-offset-4 text-left"
+                  >
+                    {r.name}
+                  </Link>
+                  <button
+                    onClick={() => onSelect(r.id)}
+                    className="font-mono text-[10px] text-text-low hover:text-aether transition-colors shrink-0"
+                    title="Per-item recipe settings (craft intermediates, craft time, history)"
+                    aria-label="Open per-item settings"
+                  >
+                    ⚙
+                  </button>
+                </div>
                 <div className="font-mono text-[10px] text-text-low mt-0.5">
                   {r.cat}{r.subcat ? ` · ${r.subcat}` : ''}
                   {r.staleDays != null && r.staleDays > 3 && (
@@ -66,16 +91,19 @@ export function WatchlistTable({ rows, onSelect }: { rows: WatchlistRow[]; onSel
                   )}
                 </div>
               </td>
-              <td className="px-3 py-2.5"><CraftTag crafter={r.crafter} status={r.craftStatus} /></td>
-              <td className="px-3 py-2.5 font-mono text-right text-text-low hidden md:table-cell">{r.lvl}</td>
-              <td className="px-3 py-2.5 font-mono text-right">
+              <td className={`px-3 ${rowY}`}><CraftTag crafter={r.crafter} status={r.craftStatus} /></td>
+              <td className={`px-3 ${rowY} font-mono text-right text-text-low hidden md:table-cell`}>{r.lvl}</td>
+              <td className={`px-3 ${rowY} font-mono text-right`}>
                 {r.craftable === false
                   ? <span className="text-text-low text-[10px] tracking-widest uppercase">sale-only</span>
                   : r.dcMinHQ ? <>{fmtGil(r.dcMinHQ)} <span className="text-text-low text-[10px]">HQ</span></>
                   : r.dcMinNQ ? <>{fmtGil(r.dcMinNQ)} <span className="text-text-low text-[10px]">NQ</span></>
                   : <span className="text-text-low">—</span>}
               </td>
-              <td className="px-3 py-2.5 font-mono text-right">
+              <td className={`px-3 ${rowY} hidden md:table-cell`}>
+                <MarketStateBadge delta={r.delta} listings={r.pListings} />
+              </td>
+              <td className={`px-3 ${rowY} font-mono text-right`}>
                 {r.craftable === false
                   ? <span className="text-text-low">—</span>
                   : r.craftable === null
@@ -84,10 +112,10 @@ export function WatchlistTable({ rows, onSelect }: { rows: WatchlistRow[]; onSel
                       ? <span className={r.profit > 0 ? 'text-jade' : 'text-crimson'}>{fmtGil(r.profit)}</span>
                       : <span className="text-text-low">—</span>}
               </td>
-              <td className="px-3 py-2.5 font-mono text-right">
+              <td className={`px-3 ${rowY} font-mono text-right`}>
                 {r.gilPerDay != null ? fmtGil(Math.round(r.gilPerDay)) : <span className="text-text-low">—</span>}
               </td>
-              <td className="px-3 py-2.5 font-mono text-right hidden md:table-cell">{r.dcSpd.toFixed(1)}</td>
+              <td className={`px-3 ${rowY} font-mono text-right hidden md:table-cell`}>{r.dcSpd.toFixed(1)}</td>
             </tr>
           ))}
         </tbody>

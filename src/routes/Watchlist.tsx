@@ -3,6 +3,7 @@ import { useSettingsStore } from '../features/settings/store';
 import { useWatchlistStore } from '../features/items/watchlistStore';
 import { useUiStore } from '../features/ui/uiStore';
 import { useMarketData } from '../features/watchlist/useMarketData';
+import { useWatchlistHistory } from '../features/watchlist/useWatchlistHistory';
 import { useRecipes } from '../features/profit/useRecipes';
 import { useItemNames } from '../features/profit/useItemNames';
 import { allItemsFromEnabledPacks } from '../features/items/starterPacks';
@@ -13,6 +14,7 @@ import { FilterBar } from '../features/watchlist/FilterBar';
 import { RecipeModal } from '../features/profit/RecipeModal';
 import { Spinner } from '../components/Spinner';
 import { StatusBanner } from '../components/StatusBanner';
+import { btnPrimaryLarge } from '../components/buttonStyles';
 
 export default function Watchlist() {
   const { world, dc, retainerLevels, defaultCraftTimeSeconds } = useSettingsStore();
@@ -28,6 +30,7 @@ export default function Watchlist() {
 
   const ids = useMemo(() => items.map((i) => i.id), [items]);
   const market = useMarketData(ids, world, dc);
+  const history = useWatchlistHistory(ids, dc);
   const recipes = useRecipes(ids);
 
   const ingredientIds = useMemo(() => {
@@ -55,7 +58,11 @@ export default function Watchlist() {
     );
   }, [items, market.data, recipes.data, retainerLevels, perItemFlags]);
 
-  const filtered = useMemo(() => filterAndSort(rows, ui), [rows, ui]);
+  const rowsWithDelta = useMemo(() =>
+    rows.map((r) => ({ ...r, delta: history.data?.get(r.id) ?? null })),
+  [rows, history.data]);
+
+  const filtered = useMemo(() => filterAndSort(rowsWithDelta, ui), [rowsWithDelta, ui]);
 
   const selected = selectedItemId != null ? items.find((i) => i.id === selectedItemId) : undefined;
   const selectedRecipe = selected && recipes.data?.get(selected.id);
@@ -67,7 +74,7 @@ export default function Watchlist() {
         <button
           onClick={() => { market.refetch(); recipes.refetch(); }}
           disabled={market.isFetching || recipes.isFetching}
-          className="font-display text-xs tracking-widest uppercase bg-bg-card-hi border border-gold text-gold px-5 py-2.5 disabled:opacity-40 hover:bg-gold hover:text-bg-deep transition-colors"
+          className={btnPrimaryLarge}
         >
           ⟳ Refresh
         </button>
