@@ -5,6 +5,7 @@ import { useItemSnapshot } from '../features/queries/useItemSnapshot';
 import { useRecipeSnapshot } from '../features/queries/useRecipeSnapshot';
 import { useGatheringCatalog } from '../features/queries/useGatheringCatalog';
 import { useGarlandItem } from '../features/queries/useGarlandItem';
+import { useGarlandLocations } from '../features/queries/useGarlandLocations';
 import { useUsedInIndex } from '../features/items/useUsedInIndex';
 import { useMarketData } from '../features/watchlist/useMarketData';
 import { useVendorShopSnapshot } from '../features/queries/useVendorShopSnapshot';
@@ -49,6 +50,7 @@ export default function Item() {
   const recipes = useRecipeSnapshot(valid);
   const gathering = useGatheringCatalog();
   const garland = useGarlandItem(valid ? itemId : null);
+  const locations = useGarlandLocations();
   const usedInIdx = useUsedInIndex();
 
   const item: SnapshotItem | undefined = useMemo(() => {
@@ -72,6 +74,24 @@ export default function Item() {
     () => valid ? findItemCurrencyOffers(itemId, shop.data?.snapshot ?? { byCurrency: new Map() }) : [],
     [itemId, valid, shop.data],
   );
+
+  const vendorNpc = useMemo(() => {
+    if (!vendorPrice || !garland.data?.gilShopNpcs.length) return undefined;
+    const first = garland.data.gilShopNpcs[0];
+    const zone = first.locationId != null ? locations.data?.get(first.locationId) : undefined;
+    return { name: first.name, zone };
+  }, [vendorPrice, garland.data, locations.data]);
+
+  const currencyNpcsByItemId = useMemo(() => {
+    if (!garland.data?.tradeShopNpcs.length) return undefined;
+    const map = new Map<number, { name: string; zone?: string }>();
+    for (const npc of garland.data.tradeShopNpcs) {
+      if (map.has(npc.currencyItemId)) continue;
+      const zone = npc.locationId != null ? locations.data?.get(npc.locationId) : undefined;
+      map.set(npc.currencyItemId, { name: npc.name, zone });
+    }
+    return map.size ? map : undefined;
+  }, [garland.data, locations.data]);
 
   const usedIn = valid ? (usedInIdx.data.get(itemId) ?? []) : [];
 
@@ -126,6 +146,8 @@ export default function Item() {
           homeMarket={phantomMarket}
           canHq={canHq}
           worldLabel={world}
+          npcName={vendorNpc?.name}
+          npcZone={vendorNpc?.zone}
         />
       ) : null}
 
@@ -135,6 +157,7 @@ export default function Item() {
           homeMarket={phantomMarket}
           canHq={canHq}
           worldLabel={world}
+          npcsByCurrencyItemId={currencyNpcsByItemId}
         />
       )}
 
