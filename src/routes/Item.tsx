@@ -13,6 +13,7 @@ import { useSpecialShopSnapshot } from '../features/queries/useSpecialShopSnapsh
 import { SaleHistoryBlock } from '../features/items/SaleHistoryBlock';
 import { VendorSourceCard } from '../features/items/VendorSourceCard';
 import { CurrencySourceCard } from '../features/items/CurrencySourceCard';
+import { CrossWorldListingsBlock } from '../features/items/CrossWorldListingsBlock';
 import { findItemCurrencyOffers } from '../features/items/currencyOffers';
 import { AddToWatchlistButton } from '../features/items/AddToWatchlistButton';
 import { AddToShoppingListButton } from '../features/shoppingList/AddToShoppingListButton';
@@ -112,6 +113,7 @@ export default function Item() {
   const gather = gathering.data?.get(itemId);
   const phantomMarket = market.data?.phantom[itemId];
   const dcMarket = market.data?.dc[itemId];
+  const regionMarket = market.data?.region[itemId];
 
   return (
     <div className="max-w-5xl mx-auto px-4 space-y-6">
@@ -139,6 +141,15 @@ export default function Item() {
         phantom={phantomMarket}
         dc={dcMarket}
       />
+
+      {regionMarket && regionMarket.worldListings.length > 0 && (
+        <CrossWorldListingsBlock
+          listings={regionMarket.worldListings}
+          homeWorld={world}
+          homeMinNQ={phantomMarket?.minNQ ?? null}
+          homeMinHQ={phantomMarket?.minHQ ?? null}
+        />
+      )}
 
       {vendorPrice ? (
         <VendorSourceCard

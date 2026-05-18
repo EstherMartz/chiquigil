@@ -160,4 +160,35 @@ describe('Item route', () => {
     });
     expect(screen.queryByText(/currency source/i)).not.toBeInTheDocument();
   });
+
+  it('renders Cross-world listings section when region data is populated', async () => {
+    await putCachedItems([
+      { id: 5057, name: 'Earth Shard', sc: 58, ui: 0, ilvl: 1, canHq: false },
+    ]);
+    await putCachedRecipeSnapshot([]);
+    // Mock Universalis: home (Phantom), DC (Chaos), region (Europe) all return data.
+    // Region payload carries the cross-world listings the new section renders.
+    const regionItem = {
+      listings: [
+        { hq: false, pricePerUnit: 8, worldName: 'Lich' },
+        { hq: false, pricePerUnit: 10, worldName: 'Phantom' },
+      ],
+      recentHistory: [],
+      regularSaleVelocity: 1,
+      lastUploadTime: 1,
+    };
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(async (url: string) => {
+      if (url.includes('universalis.app')) {
+        return { ok: true, status: 200, json: async () => ({ items: { '5057': regionItem } }) };
+      }
+      return { ok: false, status: 404 };
+    }));
+
+    render(withProviders('/item/5057'));
+
+    await waitFor(() => {
+      expect(screen.getByText(/cross-world listings/i)).toBeInTheDocument();
+    });
+    expect(screen.getByText(/Lich/)).toBeInTheDocument();
+  });
 });
