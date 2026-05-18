@@ -1,3 +1,5 @@
+import { fetchXivapiPage } from './xivapiRetry';
+
 const BASE = (import.meta.env.VITE_XIVAPI_BASE as string | undefined) ?? 'https://v2.xivapi.com';
 
 export interface XivapiItemRow {
@@ -32,7 +34,7 @@ export function parseItemSearchResponse(raw: { results?: RawResult[] }): XivapiI
 
 export async function searchItems(query: string): Promise<XivapiItemRow[]> {
   if (!query.trim()) return [];
-  const res = await fetch(buildItemSearchUrl(query.trim()));
+  const res = await fetchXivapiPage(buildItemSearchUrl(query.trim()));
   if (!res.ok) throw new Error(`XIVAPI ${res.status}`);
   return parseItemSearchResponse(await res.json());
 }

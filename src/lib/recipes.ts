@@ -1,4 +1,5 @@
 import type { CrafterCode } from '../features/items/types';
+import { fetchXivapiPage } from './xivapiRetry';
 
 const BASE = (import.meta.env?.VITE_XIVAPI_BASE as string | undefined) ?? 'https://v2.xivapi.com';
 const FIELDS = [
@@ -108,7 +109,7 @@ export function parseRecipeResponse(itemId: number, raw: { results?: Array<{ fie
 }
 
 export async function fetchRecipeForItem(itemId: number): Promise<Recipe | null> {
-  const res = await fetch(buildRecipeQueryUrl(itemId));
+  const res = await fetchXivapiPage(buildRecipeQueryUrl(itemId));
   if (!res.ok) throw new Error(`XIVAPI ${res.status}`);
   return parseRecipeResponse(itemId, await res.json());
 }

@@ -148,7 +148,7 @@ describe('fetchRecipeForItem', () => {
   });
 
   it('throws on non-OK response', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 500 }));
-    await expect(fetchRecipeForItem(1)).rejects.toThrow('XIVAPI 500');
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 400 }));
+    await expect(fetchRecipeForItem(1)).rejects.toThrow('XIVAPI 400');
   });
 });

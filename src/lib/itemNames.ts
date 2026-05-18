@@ -1,3 +1,5 @@
+import { fetchXivapiPage } from './xivapiRetry';
+
 const BASE = (import.meta.env?.VITE_XIVAPI_BASE as string | undefined) ?? 'https://v2.xivapi.com';
 
 export function buildNamesUrl(ids: number[]): string {
@@ -18,7 +20,7 @@ export function parseNamesResponse(raw: { rows?: RawRow[] }): Map<number, string
 
 export async function fetchItemNames(ids: number[]): Promise<Map<number, string>> {
   if (ids.length === 0) return new Map();
-  const res = await fetch(buildNamesUrl(ids));
+  const res = await fetchXivapiPage(buildNamesUrl(ids));
   if (!res.ok) throw new Error(`XIVAPI ${res.status}`);
   return parseNamesResponse(await res.json());
 }
