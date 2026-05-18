@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import type { MarketItem } from '../../lib/universalis';
-import { MIN_RECENT_SALES, MAX_LISTING_RATIO } from '../../lib/priceTrust';
+import { pickHighestTrustedTier } from '../../lib/priceTrust';
 import { fmtGil } from '../../lib/format';
 import { SectionHeader } from '../../components/SectionHeader';
 import { HqStar } from '../../components/HqStar';
@@ -11,22 +11,6 @@ interface Props {
   homeMarket: MarketItem | undefined;
   canHq: boolean;
   worldLabel: string;
-}
-
-function pickHigherTrustedTier(m: MarketItem, canHq: boolean): { unit: number; isHq: boolean } | null {
-  const candidates: Array<{ rawMin: number | null; median: number | null; recent: number; isHq: boolean }> = [];
-  if (canHq) candidates.push({ rawMin: m.minHQ, median: m.medianHQ, recent: m.recentSalesHQ, isHq: true });
-  candidates.push({ rawMin: m.minNQ, median: m.medianNQ, recent: m.recentSalesNQ, isHq: false });
-  let best: { unit: number; isHq: boolean } | null = null;
-  for (const c of candidates) {
-    if (c.rawMin == null) continue;
-    if (c.recent < MIN_RECENT_SALES) continue;
-    if (c.median == null) continue;
-    if (c.rawMin > c.median * MAX_LISTING_RATIO) continue;
-    const unit = Math.min(c.rawMin, c.median);
-    if (!best || unit > best.unit) best = { unit, isHq: c.isHq };
-  }
-  return best;
 }
 
 function fmtCost(n: number): string {
@@ -41,7 +25,7 @@ interface DisplayRow {
 
 export function CurrencySourceCard({ offers, homeMarket, canHq, worldLabel }: Props) {
   if (offers.length === 0) return null;
-  const tier = homeMarket ? pickHigherTrustedTier(homeMarket, canHq) : null;
+  const tier = homeMarket ? pickHighestTrustedTier(homeMarket, 'either', canHq) : null;
 
   const rows: DisplayRow[] = offers.map((offer) => ({
     offer,

@@ -1,29 +1,9 @@
 import type { SnapshotItem } from '../../lib/itemSnapshot';
 import type { MarketData, MarketItem } from '../../lib/universalis';
 import type { Recipe } from '../../lib/recipes';
-import { MIN_RECENT_SALES, MAX_LISTING_RATIO } from '../../lib/priceTrust';
-import type { HqMode, MaterialFlipFilter, MaterialFlipRow } from './types';
+import { pickFirstTrustedTier } from '../../lib/priceTrust';
+import type { MaterialFlipFilter, MaterialFlipRow } from './types';
 import { dcOf, CHAOS_WORLDS, EU_WORLDS } from '../../lib/europeWorlds';
-
-interface SaleTier { unit: number; isHq: boolean }
-
-function pickTrustedSaleTier(m: MarketItem, hq: HqMode, canHq: boolean): SaleTier | null {
-  const candidates: Array<{ rawMin: number | null; median: number | null; recent: number; isHq: boolean }> = [];
-  if ((hq === 'hq' || hq === 'either') && canHq) {
-    candidates.push({ rawMin: m.minHQ, median: m.medianHQ, recent: m.recentSalesHQ, isHq: true });
-  }
-  if (hq === 'nq' || hq === 'either') {
-    candidates.push({ rawMin: m.minNQ, median: m.medianNQ, recent: m.recentSalesNQ, isHq: false });
-  }
-  for (const c of candidates) {
-    if (c.rawMin == null) continue;
-    if (c.recent < MIN_RECENT_SALES) continue;
-    if (c.median == null) continue;
-    if (c.rawMin > c.median * MAX_LISTING_RATIO) continue;
-    return { unit: Math.min(c.rawMin, c.median), isHq: c.isHq };
-  }
-  return null;
-}
 
 export function narrowForMaterialFlip(
   snapshot: SnapshotItem[],
@@ -39,7 +19,7 @@ export function narrowForMaterialFlip(
     if (!m) continue;
     if (m.velocity < filter.minVelocity) continue;
     if (filter.maxListings != null && m.listingCount > filter.maxListings) continue;
-    if (pickTrustedSaleTier(m, filter.hq, item.canHq) == null) continue;
+    if (pickFirstTrustedTier(m, filter.hq, item.canHq) == null) continue;
     out.push(item.id);
   }
   return out;
@@ -112,7 +92,7 @@ export function runMaterialFlip(
     if (sale.velocity < filter.minVelocity) continue;
     if (filter.maxListings != null && sale.listingCount > filter.maxListings) continue;
 
-    const tier = pickTrustedSaleTier(sale, filter.hq, item.canHq);
+    const tier = pickFirstTrustedTier(sale, filter.hq, item.canHq);
     if (!tier) continue;
 
     const recipe = recipeMap.get(item.id);

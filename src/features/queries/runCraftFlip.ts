@@ -1,39 +1,10 @@
 import type { SnapshotItem } from '../../lib/itemSnapshot';
-import type { MarketData, MarketItem } from '../../lib/universalis';
+import type { MarketData } from '../../lib/universalis';
 import type { Recipe } from '../../lib/recipes';
 import type { CrafterLevels } from '../items/craftStatus';
-import { MIN_RECENT_SALES, MAX_LISTING_RATIO } from '../../lib/priceTrust';
+import { pickFirstTrustedTier } from '../../lib/priceTrust';
 import { computeMaterialCost } from '../profit/computeProfit';
-import type { CraftFlipRow, HqMode, QueryFilter, QuerySort } from './types';
-
-interface TrustedTier { unit: number; isHq: boolean }
-
-// Trust-checked tier selection. Returns the cheapest reliable tier price, or
-// null when no tier passes the data-confidence floor, the missing-median check,
-// or the listing-vs-median outlier ratio. The returned `unit` is already capped
-// at the tier's trimmed-median price so callers can use it directly for profit
-// math.
-function pickTrustedTier(
-  m: MarketItem,
-  hq: HqMode,
-  canHq: boolean,
-): TrustedTier | null {
-  const candidates: Array<{ rawMin: number | null; median: number | null; recent: number; isHq: boolean }> = [];
-  if ((hq === 'hq' || hq === 'either') && canHq) {
-    candidates.push({ rawMin: m.minHQ, median: m.medianHQ, recent: m.recentSalesHQ, isHq: true });
-  }
-  if (hq === 'nq' || hq === 'either') {
-    candidates.push({ rawMin: m.minNQ, median: m.medianNQ, recent: m.recentSalesNQ, isHq: false });
-  }
-  for (const c of candidates) {
-    if (c.rawMin == null) continue;
-    if (c.recent < MIN_RECENT_SALES) continue;
-    if (c.median == null) continue;
-    if (c.rawMin > c.median * MAX_LISTING_RATIO) continue;
-    return { unit: Math.min(c.rawMin, c.median), isHq: c.isHq };
-  }
-  return null;
-}
+import type { CraftFlipRow, QueryFilter, QuerySort } from './types';
 
 export function narrowForCraftFlip(
   snapshot: SnapshotItem[],
@@ -49,7 +20,7 @@ export function narrowForCraftFlip(
     if (!m) continue;
     if (m.velocity < filter.minVelocity) continue;
     if (filter.maxListings != null && m.listingCount > filter.maxListings) continue;
-    if (pickTrustedTier(m, filter.hq, item.canHq) == null) continue;
+    if (pickFirstTrustedTier(m, filter.hq, item.canHq) == null) continue;
     out.push(item.id);
   }
   return out;
@@ -89,7 +60,7 @@ export function runCraftFlip(
     }
 
     const m = priceMap[item.id];
-    const tier = pickTrustedTier(m, filter.hq, item.canHq);
+    const tier = pickFirstTrustedTier(m, filter.hq, item.canHq);
     if (!tier) continue;
 
     const materialCost = computeMaterialCost(recipe, recipeMap, priceMap, {});
