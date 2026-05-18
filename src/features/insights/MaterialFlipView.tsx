@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { useSettingsStore } from '../settings/store';
 import { useItemSnapshot } from '../queries/useItemSnapshot';
-import { useRecipeSnapshot } from '../queries/useRecipeSnapshot';
 import { useRecipes } from '../profit/useRecipes';
 import { fetchInBatches } from '../../lib/universalisBulk';
 import { fetchMarketData, type MarketData } from '../../lib/universalis';
@@ -28,23 +27,20 @@ interface RunResult {
 export function MaterialFlipView() {
   const { world } = useSettingsStore();
   const snapshot = useItemSnapshot();
-  const recipeSnap = useRecipeSnapshot();
   const [filter, setFilter] = useState<MaterialFlipFilter>(defaultMaterialFlipFilter());
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
 
   const candidateIds = useMemo(() => {
-    if (!snapshot.data || !recipeSnap.data) return [];
+    if (!snapshot.data) return [];
     const catSet = filter.searchCategories.length ? new Set(filter.searchCategories) : null;
     const out: number[] = [];
     for (const item of snapshot.data.items) {
       if (catSet && !catSet.has(item.sc)) continue;
       if (filter.hq === 'hq' && !item.canHq) continue;
-      // Only items with a recipe can be "material flipped" — drops ~60% of catalog.
-      if (!recipeSnap.data.has(item.id)) continue;
       out.push(item.id);
     }
     return out;
-  }, [snapshot.data, recipeSnap.data, filter.searchCategories, filter.hq]);
+  }, [snapshot.data, filter.searchCategories, filter.hq]);
 
   const run = useMutation<RunResult>({
     mutationFn: async () => {
@@ -111,7 +107,7 @@ export function MaterialFlipView() {
 
   return (
     <div className="space-y-4">
-      <FilterBar value={filter} onChange={setFilter} onRun={() => { run.reset(); ingFetch.reset(); setProgress(null); run.mutate(); }} busy={run.isPending} notReady={!snapshot.data || !recipeSnap.data} />
+      <FilterBar value={filter} onChange={setFilter} onRun={() => { run.reset(); ingFetch.reset(); setProgress(null); run.mutate(); }} busy={run.isPending} notReady={!snapshot.data} />
 
       <div className="font-mono text-[10px] text-text-low">
         {candidateIds.length.toLocaleString()} candidate items
