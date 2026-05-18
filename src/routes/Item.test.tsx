@@ -8,6 +8,7 @@ import { useWatchlistStore, defaultWatchlist } from '../features/items/watchlist
 import {
   clearItemCache, clearRecipeSnapshot, putCachedItems, putCachedRecipeSnapshot,
   clearMarketCache, clearGatheringCatalog,
+  clearSpecialShopCache, putCachedSpecialShop,
 } from '../lib/recipeCache';
 import { _resetMarketCacheForTests } from '../lib/universalis';
 
@@ -18,6 +19,7 @@ beforeEach(async () => {
   await clearRecipeSnapshot();
   await clearMarketCache();
   await clearGatheringCatalog();
+  await clearSpecialShopCache();
   _resetMarketCacheForTests();
   vi.restoreAllMocks();
 });
@@ -119,5 +121,43 @@ describe('Item route', () => {
     const addBtn = await screen.findByRole('button', { name: /\+ watchlist/i });
     addBtn.click();
     expect(await screen.findByRole('button', { name: /on watchlist · remove/i })).toBeInTheDocument();
+  });
+
+  it('renders the CurrencySourceCard when the item is sold by a special-shop currency', async () => {
+    await putCachedItems([
+      { id: 5057, name: 'Earth Shard', sc: 58, ui: 0, ilvl: 1, canHq: false },
+    ]);
+    await putCachedRecipeSnapshot([]);
+    await putCachedSpecialShop({
+      byCurrency: new Map([
+        ['poetics', [
+          { itemId: 5057, receiveQty: 1, costPerUnit: 10, isHq: false },
+        ]],
+      ]),
+    });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 404 }));
+
+    render(withProviders('/item/5057'));
+
+    await waitFor(() => {
+      expect(screen.getByText(/currency source/i)).toBeInTheDocument();
+    });
+    const poeticsLink = screen.getByRole('link', { name: /^Poetics$/ });
+    expect(poeticsLink.getAttribute('href')).toBe('/currency-flip?currency=poetics');
+  });
+
+  it('hides the CurrencySourceCard when the item is not in the special-shop catalog', async () => {
+    await putCachedItems([
+      { id: 5057, name: 'Earth Shard', sc: 58, ui: 0, ilvl: 1, canHq: false },
+    ]);
+    await putCachedRecipeSnapshot([]);
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 404 }));
+
+    render(withProviders('/item/5057'));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /earth shard/i })).toBeInTheDocument();
+    });
+    expect(screen.queryByText(/currency source/i)).not.toBeInTheDocument();
   });
 });

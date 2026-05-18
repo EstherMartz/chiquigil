@@ -8,8 +8,11 @@ import { useGarlandItem } from '../features/queries/useGarlandItem';
 import { useUsedInIndex } from '../features/items/useUsedInIndex';
 import { useMarketData } from '../features/watchlist/useMarketData';
 import { useVendorShopSnapshot } from '../features/queries/useVendorShopSnapshot';
+import { useSpecialShopSnapshot } from '../features/queries/useSpecialShopSnapshot';
 import { SaleHistoryBlock } from '../features/items/SaleHistoryBlock';
 import { VendorSourceCard } from '../features/items/VendorSourceCard';
+import { CurrencySourceCard } from '../features/items/CurrencySourceCard';
+import { findItemCurrencyOffers } from '../features/items/currencyOffers';
 import { AddToWatchlistButton } from '../features/items/AddToWatchlistButton';
 import { AddToShoppingListButton } from '../features/shoppingList/AddToShoppingListButton';
 import { fmtGil, garlandItemUrl } from '../lib/format';
@@ -64,6 +67,11 @@ export default function Item() {
   const market = useMarketData(priceIds, world, dc, 'Europe');
   const vendors = useVendorShopSnapshot();
   const vendorPrice = valid && vendors.data?.vendors.get(itemId);
+  const shop = useSpecialShopSnapshot();
+  const currencyOffers = useMemo(
+    () => valid ? findItemCurrencyOffers(itemId, shop.data?.snapshot ?? { byCurrency: new Map() }) : [],
+    [itemId, valid, shop.data],
+  );
 
   const usedIn = valid ? (usedInIdx.data.get(itemId) ?? []) : [];
 
@@ -120,6 +128,15 @@ export default function Item() {
           worldLabel={world}
         />
       ) : null}
+
+      {currencyOffers.length > 0 && (
+        <CurrencySourceCard
+          offers={currencyOffers}
+          homeMarket={phantomMarket}
+          canHq={canHq}
+          worldLabel={world}
+        />
+      )}
 
       <SaleHistoryBlock itemId={itemId} scope={dc} canHq={canHq} />
 
