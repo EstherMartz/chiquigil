@@ -164,12 +164,12 @@ Pass these to the respective cards. Both branches degrade silently if either hoo
 
 | Test file | New / Modified | Coverage |
 |---|---|---|
-| `src/lib/garlandData.test.ts` | Modified (+2 tests) | Parser extracts `gilShopNpcs` from `vendors` + partials; extracts `tradeShopNpcs` with `currencyItemId`; both default to `[]` when fields missing |
-| `src/lib/garlandLocations.test.ts` | New (+2 tests) | `parseGarlandLocations` builds Map from `locationIndex`; missing/empty input returns empty Map |
-| `src/features/items/VendorSourceCard.test.tsx` | New (+2 tests) | Renders NPC name + zone when props provided; omits the line when props absent |
-| `src/features/items/CurrencySourceCard.test.tsx` | Modified (+1 test) | Per-row NPC name appears when map matches row's currency; absent map = no append |
+| `src/lib/garlandData.test.ts` | Modified (+5 tests) | Parser extracts `gilShopNpcs` from `vendors` + partials; extracts `tradeShopNpcs` with `currencyItemId`; both default to `[]` when fields missing; gilShopNpcs cap; non-numeric currency skip |
+| `src/lib/garlandLocations.test.ts` | New (+4 tests) | `parseGarlandLocations` builds Map from `locationIndex`; missing/empty input returns empty Map; bad name skipped; non-numeric key skipped |
+| `src/features/items/VendorSourceCard.test.tsx` | New (+3 tests) | Renders NPC name + zone when both props provided; name alone when zone absent; omits the line entirely when props absent |
+| `src/features/items/CurrencySourceCard.test.tsx` | Modified (+3 tests) | Per-row NPC name + zone appears when map matches row's currency; name alone when zone absent; absent map = no append |
 
-Suite: 626 → 633 (+7 tests).
+Suite: 626 → 641 (+15 tests).
 
 ## File list
 
