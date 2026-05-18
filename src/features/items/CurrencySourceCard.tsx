@@ -11,6 +11,7 @@ interface Props {
   homeMarket: MarketItem | undefined;
   canHq: boolean;
   worldLabel: string;
+  npcsByCurrencyItemId?: Map<number, { name: string; zone?: string }>;
 }
 
 function fmtCost(n: number): string {
@@ -23,7 +24,9 @@ interface DisplayRow {
   gilPerUnit: number | null;
 }
 
-export function CurrencySourceCard({ offers, homeMarket, canHq, worldLabel }: Props) {
+export function CurrencySourceCard({
+  offers, homeMarket, canHq, worldLabel, npcsByCurrencyItemId,
+}: Props) {
   if (offers.length === 0) return null;
   const tier = homeMarket ? pickHighestTrustedTier(homeMarket, 'either', canHq) : null;
 
@@ -46,6 +49,7 @@ export function CurrencySourceCard({ offers, homeMarket, canHq, worldLabel }: Pr
       <div className="border border-border-base bg-bg-card p-4 space-y-2">
         {rows.map(({ offer, tier, gilPerUnit }) => {
           const profitable = gilPerUnit != null && gilPerUnit > 0;
+          const npc = npcsByCurrencyItemId?.get(offer.currency.itemId);
           return (
             <div key={offer.currency.id} className="flex items-baseline gap-2 flex-wrap text-sm">
               <Link
@@ -67,6 +71,11 @@ export function CurrencySourceCard({ offers, homeMarket, canHq, worldLabel }: Pr
                   <span className={profitable ? 'text-jade' : 'text-text-low'}>
                     gil/unit <span className="font-mono">{Math.round(gilPerUnit)}</span>
                   </span>
+                </span>
+              )}
+              {npc && (
+                <span className="text-text-low text-xs">
+                  · {npc.name}{npc.zone ? ` · ${npc.zone}` : ''}
                 </span>
               )}
             </div>

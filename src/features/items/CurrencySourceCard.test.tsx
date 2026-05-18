@@ -33,6 +33,7 @@ function renderCard(props: Partial<React.ComponentProps<typeof CurrencySourceCar
         homeMarket={props.homeMarket}
         canHq={props.canHq ?? false}
         worldLabel={props.worldLabel ?? 'Phantom'}
+        npcsByCurrencyItemId={props.npcsByCurrencyItemId}
       />
     </MemoryRouter>,
   );
@@ -75,5 +76,41 @@ describe('CurrencySourceCard', () => {
     renderCard({ offers: [poeticsOffer], homeMarket, canHq: false });
     expect(screen.queryByText(/gil\/unit/i)).not.toBeInTheDocument();
     expect(screen.getByText(/10\s+per unit/i)).toBeInTheDocument();
+  });
+
+  it('renders per-row NPC name + zone when the map matches the row currency itemId', () => {
+    const npcMap = new Map<number, { name: string; zone?: string }>([
+      [28, { name: 'Auriana', zone: 'Mor Dhona' }],
+      [29, { name: 'Ironworks Hand', zone: 'Mor Dhona' }],
+    ]);
+    renderCard({
+      offers: [poeticsOffer, mgpOffer],
+      npcsByCurrencyItemId: npcMap,
+    });
+    const poeticsRow = screen.getByRole('link', { name: /^Poetics$/ }).closest('div')!;
+    expect(poeticsRow.textContent).toMatch(/Auriana/);
+    expect(poeticsRow.textContent).toMatch(/Mor Dhona/);
+    const mgpRow = screen.getByRole('link', { name: /^MGP$/ }).closest('div')!;
+    expect(mgpRow.textContent).toMatch(/Ironworks Hand/);
+  });
+
+  it('renders NPC name without zone separator when zone is absent', () => {
+    const npcMap = new Map<number, { name: string; zone?: string }>([
+      [28, { name: 'Auriana' }],
+    ]);
+    renderCard({
+      offers: [poeticsOffer],
+      npcsByCurrencyItemId: npcMap,
+    });
+    const row = screen.getByRole('link', { name: /^Poetics$/ }).closest('div')!;
+    expect(row.textContent).toMatch(/Auriana/);
+    // Zone absent: 'Auriana' should not be followed by another ' · <word>' segment
+    expect(row.textContent).not.toMatch(/Auriana\s+·\s+\w/);
+  });
+
+  it('omits NPC append when map is undefined', () => {
+    renderCard({ offers: [poeticsOffer] });
+    const row = screen.getByRole('link', { name: /^Poetics$/ }).closest('div')!;
+    expect(row.textContent).not.toMatch(/Auriana/);
   });
 });
