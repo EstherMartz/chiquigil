@@ -6,7 +6,7 @@ import { useMarketData } from '../features/watchlist/useMarketData';
 import { useWatchlistHistory } from '../features/watchlist/useWatchlistHistory';
 import { useRecipes } from '../features/profit/useRecipes';
 import { useItemNames } from '../features/profit/useItemNames';
-import { allItemsFromEnabledPacks } from '../features/items/starterPacks';
+import { useSelectedItems } from '../features/items/useSelectedItems';
 import { buildRows } from '../features/watchlist/buildRows';
 import { filterAndSort } from '../features/watchlist/filterSort';
 import { WatchlistTable } from '../features/watchlist/WatchlistTable';
@@ -18,15 +18,10 @@ import { btnPrimaryLarge } from '../components/buttonStyles';
 
 export default function Watchlist() {
   const { world, dc, retainerLevels, defaultCraftTimeSeconds } = useSettingsStore();
-  const { starterPacks, customItems, perItemFlags, excludedItems, setCraftIntermediates, setCraftTime } = useWatchlistStore();
+  const { perItemFlags, setCraftIntermediates, setCraftTime } = useWatchlistStore();
   const ui = useUiStore();
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
-
-  const items = useMemo(() => {
-    const fromPacks = allItemsFromEnabledPacks(starterPacks, new Set(excludedItems));
-    const seen = new Set(fromPacks.map((i) => i.id));
-    return [...fromPacks, ...customItems.filter((i) => !seen.has(i.id) && !excludedItems.includes(i.id))];
-  }, [starterPacks, customItems, excludedItems]);
+  const items = useSelectedItems();
 
   const ids = useMemo(() => items.map((i) => i.id), [items]);
   const market = useMarketData(ids, world, dc);

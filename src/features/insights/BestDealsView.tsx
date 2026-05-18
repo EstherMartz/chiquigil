@@ -1,8 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useSettingsStore } from '../settings/store';
-import { useWatchlistStore } from '../items/watchlistStore';
 import { useMarketData } from '../watchlist/useMarketData';
-import { allItemsFromEnabledPacks } from '../items/starterPacks';
+import { useSelectedItems } from '../items/useSelectedItems';
 import { findBestDeals } from './bestDeals';
 import { fmtGil } from '../../lib/format';
 import { ItemNameLinks } from '../../components/ItemNameLinks';
@@ -13,14 +12,8 @@ import { StatusBanner } from '../../components/StatusBanner';
 
 export function BestDealsView() {
   const { world, dc } = useSettingsStore();
-  const { starterPacks, customItems, excludedItems } = useWatchlistStore();
   const [minDealPct, setMinDealPct] = useState(20);
-
-  const items = useMemo(() => {
-    const fromPacks = allItemsFromEnabledPacks(starterPacks, new Set(excludedItems));
-    const seen = new Set(fromPacks.map((i) => i.id));
-    return [...fromPacks, ...customItems.filter((i) => !seen.has(i.id) && !excludedItems.includes(i.id))];
-  }, [starterPacks, customItems, excludedItems]);
+  const items = useSelectedItems();
 
   const ids = useMemo(() => items.map((i) => i.id), [items]);
   const market = useMarketData(ids, world, dc);
