@@ -8,3 +8,9 @@ dist
 coverage
 .claude/settings.local.json
 .worktrees
+
+# Smoke-test / Playwright MCP artifacts
+.playwright-mcp/
+*.png
+test-results.txt
+test_output.txt
