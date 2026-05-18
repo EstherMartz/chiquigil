@@ -3,7 +3,17 @@
  *
  * Endpoint shape (subset we rely on):
  *   {
- *     item: { id, name, ilvl, ingredients?: [{ id, amount }], craft?: [{ ingredients }] },
+ *     item: {
+ *       id, name, ilvl,
+ *       ingredients?: [{ id, amount }],
+ *       craft?: [{ ingredients }],
+ *       vendors?: number[],
+ *       tradeShops?: Array<{
+ *         shop: string,
+ *         npcs: number[],
+ *         listings: Array<{ item: [{ id, amount }], currency: [{ id, amount }] }>,
+ *       }>,
+ *     },
  *     partials: [
  *       { type: 'item', id, obj: { n, i?, v?, s?, c?, f?, t?, ... } },
  *       { type: 'npc',  id, obj: { n, l? } },
@@ -20,6 +30,7 @@
  */
 
 const GARLAND_BASE = 'https://www.garlandtools.org/db/doc/item/en/3';
+const MAX_GIL_SHOP_NPCS = 5;
 
 export type IngredientSource = 'vendor' | 'gather' | 'craft' | 'other';
 
@@ -33,11 +44,23 @@ export interface GarlandIngredient {
   nodeName?: string;
 }
 
+export interface GarlandNpcRef {
+  id: number;
+  name: string;
+  locationId?: number;
+}
+
+export interface GarlandTradeShopNpc extends GarlandNpcRef {
+  currencyItemId: number;
+}
+
 export interface GarlandItem {
   id: number;
   name: string;
   ilvl: number;
   ingredients: GarlandIngredient[];
+  gilShopNpcs: GarlandNpcRef[];
+  tradeShopNpcs: GarlandTradeShopNpc[];
 }
 
 interface RawPartialItemObj {
@@ -48,10 +71,20 @@ interface RawPartialItemObj {
   s?: number;
   partials?: Array<[string, number]>;
 }
+interface RawNpcObj { n?: string; l?: number }
 interface RawPartial {
   type?: string;
   id?: number | string;
-  obj?: RawPartialItemObj & { l?: string };
+  obj?: (RawPartialItemObj & RawNpcObj);
+}
+interface RawTradeListing {
+  item?: Array<{ id?: string | number; amount?: number }>;
+  currency?: Array<{ id?: string | number; amount?: number }>;
+}
+interface RawTradeShop {
+  shop?: string;
+  npcs?: number[];
+  listings?: RawTradeListing[];
 }
 interface RawItem {
   id?: number;
@@ -59,6 +92,8 @@ interface RawItem {
   ilvl?: number;
   ingredients?: Array<{ id?: number; amount?: number }>;
   craft?: Array<{ ingredients?: Array<{ id?: number; amount?: number }> }>;
+  vendors?: number[];
+  tradeShops?: RawTradeShop[];
 }
 interface RawResponse { item?: RawItem; partials?: RawPartial[] }
 
@@ -75,12 +110,12 @@ export function parseGarlandItem(raw: RawResponse): GarlandItem | null {
   if (!item || item.id == null) return null;
   const partials = raw.partials ?? [];
   const itemPartials = new Map<number, RawPartialItemObj>();
-  const npcPartials = new Map<number, string>();
+  const npcPartials = new Map<number, RawNpcObj>();
   for (const p of partials) {
     const id = typeof p.id === 'string' ? Number(p.id) : p.id;
     if (id == null || Number.isNaN(id)) continue;
     if (p.type === 'item' && p.obj) itemPartials.set(id, p.obj);
-    else if (p.type === 'npc' && p.obj?.n) npcPartials.set(id, p.obj.n);
+    else if (p.type === 'npc' && p.obj?.n) npcPartials.set(id, p.obj);
   }
   const ingSrc = item.craft?.[0]?.ingredients ?? item.ingredients ?? [];
   const ingredients: GarlandIngredient[] = [];
@@ -97,11 +132,48 @@ export function parseGarlandItem(raw: RawResponse): GarlandItem | null {
       source: classify(part),
     });
   }
+
+  const gilShopNpcs: GarlandNpcRef[] = [];
+  for (const npcId of item.vendors ?? []) {
+    if (gilShopNpcs.length >= MAX_GIL_SHOP_NPCS) break;
+    const partial = npcPartials.get(npcId);
+    if (!partial?.n) continue;
+    gilShopNpcs.push({
+      id: npcId,
+      name: partial.n,
+      ...(partial.l != null ? { locationId: partial.l } : {}),
+    });
+  }
+
+  const tradeShopNpcs: GarlandTradeShopNpc[] = [];
+  const seen = new Set<string>();
+  for (const shop of item.tradeShops ?? []) {
+    for (const listing of shop.listings ?? []) {
+      const currencyId = Number(listing.currency?.[0]?.id);
+      if (!Number.isFinite(currencyId)) continue;
+      for (const npcId of shop.npcs ?? []) {
+        const key = `${npcId}:${currencyId}`;
+        if (seen.has(key)) continue;
+        const partial = npcPartials.get(npcId);
+        if (!partial?.n) continue;
+        seen.add(key);
+        tradeShopNpcs.push({
+          id: npcId,
+          name: partial.n,
+          ...(partial.l != null ? { locationId: partial.l } : {}),
+          currencyItemId: currencyId,
+        });
+      }
+    }
+  }
+
   return {
     id: item.id,
     name: item.name ?? '',
     ilvl: item.ilvl ?? 0,
     ingredients,
+    gilShopNpcs,
+    tradeShopNpcs,
   };
 }
 
