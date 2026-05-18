@@ -51,4 +51,46 @@ describe('VendorSourceCard', () => {
     render(<VendorSourceCard vendorPrice={100} homeMarket={market} canHq={false} worldLabel="Phantom" />);
     expect(screen.queryByText(/profit/i)).not.toBeInTheDocument();
   });
+
+  it('renders NPC name + zone line when both props provided', () => {
+    render(
+      <VendorSourceCard
+        vendorPrice={290}
+        homeMarket={undefined}
+        canHq={false}
+        worldLabel="Phantom"
+        npcName="Storm Quartermaster"
+        npcZone="Limsa Lominsa Upper Decks"
+      />,
+    );
+    expect(
+      screen.getByText(/Storm Quartermaster\s*·\s*Limsa Lominsa Upper Decks/),
+    ).toBeInTheDocument();
+  });
+
+  it('renders NPC name alone when zone is absent', () => {
+    render(
+      <VendorSourceCard
+        vendorPrice={290}
+        homeMarket={undefined}
+        canHq={false}
+        worldLabel="Phantom"
+        npcName="Storm Quartermaster"
+      />,
+    );
+    const line = screen.getByText(/Storm Quartermaster/);
+    expect(line.textContent).not.toContain('·');
+  });
+
+  it('omits the NPC line entirely when npcName is absent', () => {
+    const { container } = render(
+      <VendorSourceCard
+        vendorPrice={290}
+        homeMarket={undefined}
+        canHq={false}
+        worldLabel="Phantom"
+      />,
+    );
+    expect(container.textContent).not.toContain('└─');
+  });
 });

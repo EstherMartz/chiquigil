@@ -8,9 +8,11 @@ interface Props {
   homeMarket: MarketItem | undefined;
   canHq: boolean;
   worldLabel: string;
+  npcName?: string;
+  npcZone?: string;
 }
 
-export function VendorSourceCard({ vendorPrice, homeMarket, canHq, worldLabel }: Props) {
+export function VendorSourceCard({ vendorPrice, homeMarket, canHq, worldLabel, npcName, npcZone }: Props) {
   const tier = homeMarket ? pickHighestTrustedTier(homeMarket, 'either', canHq) : null;
   const profit = tier ? tier.unit - vendorPrice : null;
   const profitClass = profit == null ? 'text-text-low'
@@ -23,6 +25,11 @@ export function VendorSourceCard({ vendorPrice, homeMarket, canHq, worldLabel }:
       <SectionHeader label="Vendor source" compact />
       <div className="border border-border-base bg-bg-card p-4">
         <div className="text-sm">Sold by NPC: <span className="font-mono text-gold">{fmtGil(vendorPrice)}</span></div>
+        {npcName && (
+          <div className="font-mono text-[10px] text-text-low mt-0.5">
+            └─ {npcName}{npcZone ? ` · ${npcZone}` : ''}
+          </div>
+        )}
         {tier && profit != null && (
           <div className="text-xs text-text-low mt-1">
             (vs. {worldLabel} {tier.isHq ? 'HQ' : 'NQ'} <span className="font-mono">{fmtGil(tier.unit)}</span>
