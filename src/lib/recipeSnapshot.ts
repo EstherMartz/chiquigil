@@ -6,6 +6,7 @@
  */
 import type { CrafterCode } from '../features/items/types';
 import { parseRecipeResponse, type Recipe } from './recipes';
+import { fetchXivapiPage } from './xivapiRetry';
 
 const BASE = (import.meta.env?.VITE_XIVAPI_BASE as string | undefined) ?? 'https://v2.xivapi.com';
 const PAGE_SIZE = 500;
@@ -49,7 +50,7 @@ export async function fetchRecipeSnapshot(opts: BuildOpts = {}): Promise<RecipeM
   const out: RecipeMap = new Map();
   let after = 0;
   while (true) {
-    const res = await fetch(buildPageUrl(after));
+    const res = await fetchXivapiPage(buildPageUrl(after));
     if (!res.ok) throw new Error(`XIVAPI Recipe ${res.status}`);
     const page = (await res.json()) as RawPage;
     const rows = page.rows ?? [];

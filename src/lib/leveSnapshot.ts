@@ -119,12 +119,14 @@ function buildLevePageUrl(after: number, pageSize: number): string {
   return `${BASE.replace(/\/$/, '')}/api/sheet/Leve?${params.toString()}`;
 }
 
+import { fetchXivapiPage } from './xivapiRetry';
+
 export async function fetchLeveSnapshot(opts: FetchLeveSnapshotOpts = {}): Promise<SnapshotLeve[]> {
   const pageSize = opts.pageSize ?? 500;
   const out: LeveWithCraftLeveRef[] = [];
   let cursor = 0;
   while (true) {
-    const res = await fetch(buildLevePageUrl(cursor, pageSize));
+    const res = await fetchXivapiPage(buildLevePageUrl(cursor, pageSize));
     if (!res.ok) throw new Error(`XIVAPI Leve ${res.status}`);
     const raw = (await res.json()) as RawLeveSheetPage;
     const rows = raw.rows ?? [];
@@ -149,7 +151,7 @@ async function enrichDohTargets(leves: LeveWithCraftLeveRef[], pageSize: number)
   let cursor = 0;
   while (true) {
     const url = `${BASE.replace(/\/$/, '')}/api/sheet/CraftLeve?fields=Item0,ItemCount0&limit=${pageSize}${cursor > 0 ? `&after=${cursor}` : ''}`;
-    const res = await fetch(url);
+    const res = await fetchXivapiPage(url);
     if (!res.ok) throw new Error(`XIVAPI CraftLeve ${res.status}`);
     const page = (await res.json()) as { rows?: Array<{ row_id: number; fields: { Item0?: { value?: number }; ItemCount0?: number } }> };
     const rows = page.rows ?? [];

@@ -15,6 +15,8 @@
  * One-time fetch, cached in IDB.
  */
 
+import { fetchXivapiPage } from './xivapiRetry';
+
 const BASE = (import.meta.env?.VITE_XIVAPI_BASE as string | undefined) ?? 'https://v2.xivapi.com';
 const PAGE_SIZE = 500;
 
@@ -66,7 +68,7 @@ async function fetchSheet<F>(sheet: string, fields: string | null): Promise<RawR
     if (fields) params.set('fields', fields);
     if (after > 0) params.set('after', String(after));
     const url = `${BASE.replace(/\/$/, '')}/api/sheet/${sheet}?${params.toString()}`;
-    const res = await fetch(url);
+    const res = await fetchXivapiPage(url);
     if (!res.ok) {
       // Some v2 sheet/field combinations (e.g. GatheringPointBase + Item array)
       // 400 at limit=500 but succeed at smaller pages. Halve and retry the
@@ -98,7 +100,7 @@ async function probeFieldsSyntax(sheet: string, variants: string[]): Promise<str
     try {
       const params = new URLSearchParams({ fields, limit: '1' });
       const url = `${BASE.replace(/\/$/, '')}/api/sheet/${sheet}?${params.toString()}`;
-      const res = await fetch(url);
+      const res = await fetchXivapiPage(url);
       if (!res.ok) continue;
       const page = (await res.json()) as RawPage<unknown>;
       const first = page.rows?.[0];

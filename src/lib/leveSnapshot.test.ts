@@ -221,8 +221,8 @@ describe('fetchLeveSnapshot', () => {
   });
 
   it('throws on a non-OK Leve response', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 503 }));
-    await expect(fetchLeveSnapshot()).rejects.toThrow(/XIVAPI Leve 503/);
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 400 }));
+    await expect(fetchLeveSnapshot()).rejects.toThrow(/XIVAPI Leve 400/);
   });
 
   it('throws on a non-OK CraftLeve response', async () => {
@@ -248,8 +248,8 @@ describe('fetchLeveSnapshot', () => {
       },
       // Second Leve page: empty
       { rows: [] },
-      // CraftLeve response with error
-      { ok: false, status: 500 },
+      // CraftLeve response with error (use 400 — non-retried by fetchXivapiPage)
+      { ok: false, status: 400 },
     ];
     const fetchSpy = vi.fn().mockImplementation(async () => {
       const result = pages.shift();
@@ -257,6 +257,6 @@ describe('fetchLeveSnapshot', () => {
       return { ok: true, json: async () => result };
     });
     vi.stubGlobal('fetch', fetchSpy);
-    await expect(fetchLeveSnapshot()).rejects.toThrow(/XIVAPI CraftLeve 500/);
+    await expect(fetchLeveSnapshot()).rejects.toThrow(/XIVAPI CraftLeve 400/);
   });
 });

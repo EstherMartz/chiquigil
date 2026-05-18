@@ -18,8 +18,8 @@ export interface FetchRetryOpts {
 }
 
 export async function fetchXivapiPage(url: string, opts: FetchRetryOpts = {}): Promise<Response> {
-  const attempts = opts.attempts ?? 4;
-  const initialDelay = opts.initialDelayMs ?? 500;
+  const attempts = opts.attempts ?? 6;
+  const initialDelay = opts.initialDelayMs ?? 1000;
   const fetchImpl = opts.fetchImpl ?? fetch;
 
   let lastErr: unknown = null;

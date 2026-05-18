@@ -81,7 +81,7 @@ describe('fetchItemSnapshot', () => {
   });
 
   it('throws on a non-OK response', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 503 }));
-    await expect(fetchItemSnapshot()).rejects.toThrow(/XIVAPI 503/);
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 400 }));
+    await expect(fetchItemSnapshot()).rejects.toThrow(/XIVAPI 400/);
   });
 });

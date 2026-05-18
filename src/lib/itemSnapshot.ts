@@ -59,12 +59,14 @@ function buildPageUrl(after: number, pageSize: number): string {
   return `https://v2.xivapi.com/api/sheet/Item?${params.toString()}`;
 }
 
+import { fetchXivapiPage } from './xivapiRetry';
+
 export async function fetchItemSnapshot(opts: FetchItemSnapshotOpts = {}): Promise<SnapshotItem[]> {
   const pageSize = opts.pageSize ?? 500;
   const out: SnapshotItem[] = [];
   let cursor = 0;
   while (true) {
-    const res = await fetch(buildPageUrl(cursor, pageSize));
+    const res = await fetchXivapiPage(buildPageUrl(cursor, pageSize));
     if (!res.ok) throw new Error(`XIVAPI ${res.status}`);
     const raw = (await res.json()) as RawSheetPage;
     const rows = raw.rows ?? [];
