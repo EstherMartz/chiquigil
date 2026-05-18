@@ -103,7 +103,7 @@ New file `src/features/items/CrossWorldListingsBlock.test.tsx` with 4 tests:
 
 One assertion added to existing `src/routes/Item.test.tsx`: when region data is populated, `Cross-world listings` heading appears.
 
-Suite: 641 → ~646 (+5 tests).
+Suite: 641 → ~648 (+7 tests).
 
 ## File list
 
