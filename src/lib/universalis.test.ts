@@ -145,6 +145,52 @@ describe('fetchMarketData', () => {
     await expect(fetchMarketData('Phantom', [1])).rejects.toThrow('Universalis 500');
   });
 
+  it('treats 404 as no-data and returns empty placeholders without throwing', async () => {
+    // Universalis returns 404 when every requested ID is unresolvable.
+    const fetchSpy = vi.fn().mockResolvedValue({ ok: false, status: 404 });
+    vi.stubGlobal('fetch', fetchSpy);
+    const out = await fetchMarketData('Phantom', [1, 2]);
+    expect(out['1'].minNQ).toBeNull();
+    expect(out['1'].listingCount).toBe(0);
+    expect(out['2'].minNQ).toBeNull();
+    // Subsequent calls within TTL should not re-fetch (placeholders cached).
+    await fetchMarketData('Phantom', [1, 2]);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('parses single-id response (flat shape) correctly', async () => {
+    // Universalis returns the item directly (not nested under `items`) for single-ID requests.
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        itemID: 5057,
+        listings: [{ hq: false, pricePerUnit: 42 }],
+        recentHistory: [],
+        regularSaleVelocity: 1,
+        lastUploadTime: 1,
+      }),
+    }));
+    const out = await fetchMarketData('Phantom', [5057]);
+    expect(out['5057'].minNQ).toBe(42);
+  });
+
+  it('caches empty placeholders for unresolved IDs in a mixed batch', async () => {
+    const fetchSpy = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        items: { '1': { listings: [{ hq: false, pricePerUnit: 99 }], recentHistory: [], regularSaleVelocity: 1, lastUploadTime: 1 } },
+        unresolvedItems: [2],
+      }),
+    });
+    vi.stubGlobal('fetch', fetchSpy);
+    const out = await fetchMarketData('Phantom', [1, 2]);
+    expect(out['1'].minNQ).toBe(99);
+    expect(out['2'].minNQ).toBeNull();
+    // Re-request should not re-fetch the unresolved ID within TTL.
+    await fetchMarketData('Phantom', [2]);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
   it('returns parsed data on success', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,

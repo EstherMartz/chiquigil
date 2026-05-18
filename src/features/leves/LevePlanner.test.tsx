@@ -63,6 +63,6 @@ describe('LevePlanner', () => {
     render(withProviders(<LevePlanner rows={rows} />));
     const link = screen.getByRole('link', { name: /cobalt ingot/i });
     expect(link).toHaveAttribute('href');
-    expect(link.getAttribute('href')).toContain('universalis.app');
+    expect(link.getAttribute('href')).toContain('garlandtools.org');
   });
 });

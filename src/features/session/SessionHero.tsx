@@ -1,8 +1,8 @@
-import { fmtGil, universalisItemUrl, garlandItemUrl } from '../../lib/format';
-import { useSettingsStore } from '../settings/store';
+import { fmtGil, garlandItemUrl } from '../../lib/format';
 import { useSnapshotById } from '../queries/useSnapshotById';
 import { CopyButton } from '../../components/CopyButton';
 import { RecipeHover } from '../../components/RecipeHover';
+import { Gil } from '../../components/Gil';
 import type { SessionResult, SessionStrategy } from './packSession';
 
 export interface SessionDiagnostics {
@@ -27,7 +27,6 @@ const STRATEGY_LABEL: Record<SessionStrategy, string> = {
 };
 
 export function SessionHero({ result, hasGenerated, strategy, stale, diagnostics }: Props) {
-  const { world } = useSettingsStore();
   const byId = useSnapshotById();
   if (!hasGenerated) {
     return (
@@ -81,11 +80,11 @@ export function SessionHero({ result, hasGenerated, strategy, stale, diagnostics
       <h1 className="font-body text-4xl sm:text-5xl md:text-6xl text-gold-hi leading-[1] tracking-tight text-balance">
         <RecipeHover itemId={top.id} itemName={top.name}>
           <a
-            href={universalisItemUrl(top.id, world)}
+            href={garlandItemUrl(top.id)}
             target="_blank"
             rel="noopener noreferrer"
             className="hover:text-gold hover:underline decoration-1 underline-offset-4 transition-colors"
-            title="Open on Universalis"
+            title="Open on Garland Tools (recipe, NPC vendors, drop sources)"
           >
             {top.name}
           </a>
@@ -94,16 +93,7 @@ export function SessionHero({ result, hasGenerated, strategy, stale, diagnostics
         </RecipeHover>
       </h1>
       <div className="font-mono text-[10px] tracking-[0.3em] uppercase text-text-low mt-3 flex items-center gap-3 flex-wrap">
-        <span>×{top.batch} · +{fmtGil(top.totalGil)} expected</span>
-        <a
-          href={garlandItemUrl(top.id)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="border border-border-base px-2 py-0.5 hover:text-aether hover:border-border-hi transition-colors"
-          title="Open on Garland Tools (recipe, NPC vendors, drop sources)"
-        >
-          NPC / Sources ↗
-        </a>
+        <span>×{top.batch} · <Gil value={top.totalGil} display={`+${fmtGil(top.totalGil)}`} className="text-jade" /> expected</span>
       </div>
       <dl className="mt-4 flex flex-wrap gap-x-5 gap-y-1 font-mono text-[11px] text-text-dim">
         <PickFact label="Sells" value={`${top.velocity.toFixed(1)}/day`} />
@@ -112,7 +102,7 @@ export function SessionHero({ result, hasGenerated, strategy, stale, diagnostics
         <PickFact label="Mats" value={fmtGil(top.materialCost)} />
       </dl>
       <div className="mt-7 grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 border-t border-border-base pt-5">
-        <Stat label="Take" value={`~${fmtGil(result.totalGil)}`} accent />
+        <Stat label="Take" value={`~${fmtGil(result.totalGil)}`} accent gil />
         <Stat label="Items" value={String(result.picks.length)} />
         <Stat
           label="Time"
@@ -164,12 +154,14 @@ function Stat({
   unit,
   accent,
   small,
+  gil,
 }: {
   label: string;
   value: string;
   unit?: string;
   accent?: boolean;
   small?: boolean;
+  gil?: boolean;
 }) {
   return (
     <div>
@@ -181,6 +173,7 @@ function Stat({
           accent ? 'text-gold' : 'text-text-cream'
         } ${small ? 'text-base sm:text-lg' : 'text-2xl sm:text-3xl'} tabular-nums`}
       >
+        {gil && <span aria-hidden className="text-gold/70 mr-1.5 text-base sm:text-lg">⊚</span>}
         {value}
         {unit && <span className="text-sm text-text-dim ml-1 font-body">{unit}</span>}
       </div>

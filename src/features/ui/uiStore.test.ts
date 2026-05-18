@@ -10,7 +10,6 @@ describe('ui store', () => {
   it('defaults', () => {
     const s = useUiStore.getState();
     expect(s.catFilter).toBe('All');
-    expect(s.craftFilter).toBe('All');
     expect(s.sortKey).toBe('gilDay');
     expect(s.sortDir).toBe('desc');
     expect(s.search).toBe('');

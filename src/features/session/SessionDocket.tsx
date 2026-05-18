@@ -1,5 +1,4 @@
-import { fmtGil, universalisItemUrl, garlandItemUrl } from '../../lib/format';
-import { useSettingsStore } from '../settings/store';
+import { fmtGil, garlandItemUrl } from '../../lib/format';
 import { useSnapshotById } from '../queries/useSnapshotById';
 import { CopyButton } from '../../components/CopyButton';
 import { RecipeHover } from '../../components/RecipeHover';
@@ -11,7 +10,6 @@ interface Props {
 }
 
 export function SessionDocket({ result, hasGenerated }: Props) {
-  const { world } = useSettingsStore();
   const byId = useSnapshotById();
   if (!hasGenerated || !result || result.picks.length === 0) return null;
   return (
@@ -39,11 +37,11 @@ export function SessionDocket({ result, hasGenerated }: Props) {
                   </span>
                 )}
                 <a
-                  href={universalisItemUrl(p.id, world)}
+                  href={garlandItemUrl(p.id)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="font-body text-lg sm:text-xl text-text-cream leading-tight hover:text-aether hover:underline decoration-1 underline-offset-4 transition-colors"
-                  title="Open on Universalis"
+                  title="Open on Garland Tools (recipe, NPC vendors, drop sources)"
                 >
                   {p.name}
                 </a>
@@ -54,15 +52,6 @@ export function SessionDocket({ result, hasGenerated }: Props) {
                   {p.crafter}
                 </span>
                 <span>{fmtGil(p.unitPrice)} unit · {fmtGil(p.materialCost)} mats</span>
-                <a
-                  href={garlandItemUrl(p.id)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-aether transition-colors"
-                  title="Open on Garland Tools (recipe, NPC vendors, drop sources)"
-                >
-                  ↗
-                </a>
               </div>
             </div>
             <div className="hidden sm:block col-span-1 text-right font-mono text-xs text-text-dim">

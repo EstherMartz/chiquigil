@@ -1,8 +1,8 @@
-import { universalisItemUrl, garlandItemUrl } from '../lib/format';
-import { useSettingsStore } from '../features/settings/store';
+import { garlandItemUrl } from '../lib/format';
 import { useSnapshotById } from '../features/queries/useSnapshotById';
 import { CopyButton } from './CopyButton';
 import { RecipeHover } from './RecipeHover';
+import { crafterBeadClass } from '../features/items/crafterColors';
 
 interface Props {
   id: number;
@@ -18,13 +18,12 @@ interface Props {
 /**
  * Item cell used in result tables. Renders:
  *   <ilvl><name><HQ ★?><copy>
- *   <sub line · crafter chip · ↗ Garland link>
+ *   <sub line · crafter chip>
  *
- * Item name links to the Universalis market page (scoped to the user's home world).
+ * Item name links to the Garland Tools item page (recipe, NPC vendors, drop sources).
  * ilvl is looked up from the cached item snapshot.
  */
 export function ItemNameLinks({ id, name, suffix, sub, crafter }: Props) {
-  const { world } = useSettingsStore();
   const byId = useSnapshotById();
   const ilvl = byId.get(id)?.ilvl;
 
@@ -37,11 +36,11 @@ export function ItemNameLinks({ id, name, suffix, sub, crafter }: Props) {
           </span>
         )}
         <a
-          href={universalisItemUrl(id, world)}
+          href={garlandItemUrl(id)}
           target="_blank"
           rel="noopener noreferrer"
           className="text-text-cream hover:text-aether hover:underline decoration-1 underline-offset-4 transition-colors"
-          title="Open on Universalis"
+          title="Open on Garland Tools (recipe, NPC vendors, drop sources)"
         >
           {name}
         </a>
@@ -52,19 +51,11 @@ export function ItemNameLinks({ id, name, suffix, sub, crafter }: Props) {
         <div className="font-mono text-[10px] text-text-low mt-0.5 flex items-center gap-2 flex-wrap">
           {sub && <span>{sub}</span>}
           {crafter && (
-            <span className="text-aether border border-border-base px-1 py-0.5 leading-none">
+            <span className="inline-flex items-center gap-1 text-text-cream border border-border-base px-1.5 py-0.5 leading-none">
+              <span aria-hidden className={`${crafterBeadClass(crafter)} text-[8px] leading-none`}>●</span>
               {crafter}
             </span>
           )}
-          <a
-            href={garlandItemUrl(id)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-aether transition-colors"
-            title="Open on Garland Tools (recipe, NPC vendors, drop sources)"
-          >
-            ↗
-          </a>
         </div>
       )}
     </>

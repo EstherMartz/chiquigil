@@ -34,7 +34,13 @@ interface RawItem {
   averagePriceNQ?: number;
   averagePriceHQ?: number;
 }
-interface RawResponse { items?: Record<string, RawItem> }
+interface RawResponse {
+  items?: Record<string, RawItem>;
+  itemID?: number;
+  unresolvedItems?: number[];
+}
+
+type SingleItemRawResponse = RawItem & { itemID: number };
 
 export function buildMarketUrl(scope: Scope, ids: number[]): string {
   return `https://universalis.app/api/v2/${scope}/${ids.join(',')}?listings=10&entries=15`;
@@ -53,7 +59,13 @@ function avgPrice(arr: RawHistory[], hq: boolean): number | null {
 
 export function parseMarketResponse(raw: RawResponse): MarketData {
   const out: MarketData = {};
-  const items = raw.items ?? {};
+  // Universalis returns a flat shape when the request is for a single item ID.
+  // Normalize it into the multi-item shape so the parser below can be uniform.
+  const items: Record<string, RawItem> = raw.items ?? (
+    typeof raw.itemID === 'number'
+      ? { [String(raw.itemID)]: raw as SingleItemRawResponse }
+      : {}
+  );
   for (const [id, item] of Object.entries(items)) {
     const listings = item.listings ?? [];
     const history = item.recentHistory ?? [];
@@ -141,6 +153,20 @@ export async function fetchMarketData(scope: Scope, ids: number[]): Promise<Mark
   if (stale.length === 0) return fresh;
 
   const res = await fetch(buildMarketUrl(scope, stale));
+  // Universalis returns 404 when *every* requested ID is unresolvable
+  // (untradeable, never-listed, or invalid). Treat as "no data" so one bad
+  // ID doesn't break the entire watchlist; cache empty placeholders so we
+  // don't hammer the API on every refetch within TTL.
+  if (res.status === 404) {
+    const live: MarketData = {};
+    for (const id of stale) {
+      const empty = emptyMarketItem();
+      live[String(id)] = empty;
+      cache.set(id, { ts: now, data: empty });
+    }
+    schedulePersist(scope);
+    return { ...fresh, ...live };
+  }
   if (!res.ok) throw new Error(`Universalis ${res.status}`);
   const raw = (await res.json()) as RawResponse;
   const live = parseMarketResponse(raw);
@@ -148,9 +174,30 @@ export async function fetchMarketData(scope: Scope, ids: number[]): Promise<Mark
   for (const [idStr, data] of Object.entries(live)) {
     cache.set(Number(idStr), { ts: now, data });
   }
+  // Cache empty placeholders for IDs the server couldn't resolve (mixed batch
+  // with some unknown items) — same TTL benefit as the all-404 case above.
+  const resolved = new Set(Object.keys(live));
+  for (const id of stale) {
+    if (resolved.has(String(id))) continue;
+    const empty = emptyMarketItem();
+    live[String(id)] = empty;
+    cache.set(id, { ts: now, data: empty });
+  }
   schedulePersist(scope);
 
   return { ...fresh, ...live };
+}
+
+function emptyMarketItem(): MarketItem {
+  return {
+    minNQ: null, minHQ: null,
+    avgNQ: null, avgHQ: null,
+    medianNQ: null, medianHQ: null,
+    recentSalesNQ: 0, recentSalesHQ: 0,
+    velocity: 0, lastUploadTime: 0, listingCount: 0,
+    worldListings: [],
+    averagePriceNQ: null, averagePriceHQ: null,
+  };
 }
 
 /** Test/dev helper: drop in-memory + scheduled persistence (does not clear IDB). */

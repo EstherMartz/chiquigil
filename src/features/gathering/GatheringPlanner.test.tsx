@@ -121,6 +121,6 @@ describe('GatheringPlanner', () => {
     render(withProviders(<GatheringPlanner rows={rows} />));
     const link = screen.getByRole('link', { name: /cobalt ore/i });
     expect(link).toHaveAttribute('href');
-    expect(link.getAttribute('href')).toContain('universalis.app');
+    expect(link.getAttribute('href')).toContain('garlandtools.org');
   });
 });

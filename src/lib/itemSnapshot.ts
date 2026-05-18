@@ -5,6 +5,8 @@ export interface SnapshotItem {
   ui: number;
   ilvl: number;
   canHq: boolean;
+  /** FFXIV rarity tier (1 white, 2 green, 3 blue, 4 purple, 7 pink). 0/undefined for legacy snapshots. */
+  rarity?: number;
 }
 
 interface RawSheetField<T> { value: T }
@@ -16,6 +18,7 @@ interface RawSheetRow {
     ItemUICategory?: RawSheetField<number>;
     LevelItem?: RawSheetField<number>;
     CanBeHq?: boolean;
+    Rarity?: number;
   };
 }
 interface RawSheetPage { rows?: RawSheetRow[] }
@@ -34,6 +37,7 @@ export function parseItemSheetPage(raw: RawSheetPage): SnapshotItem[] {
       ui: r.fields.ItemUICategory?.value ?? 0,
       ilvl: r.fields.LevelItem?.value ?? 0,
       canHq: r.fields.CanBeHq === true,
+      rarity: typeof r.fields.Rarity === 'number' ? r.fields.Rarity : undefined,
     });
   }
   return out;
@@ -44,7 +48,7 @@ export interface FetchItemSnapshotOpts {
   onProgress?: (totalCollectedSoFar: number) => void;
 }
 
-const SHEET_FIELDS = 'Name,ItemSearchCategory.Name,ItemUICategory.Name,LevelItem,CanBeHq';
+const SHEET_FIELDS = 'Name,ItemSearchCategory.Name,ItemUICategory.Name,LevelItem,CanBeHq,Rarity';
 
 function buildPageUrl(after: number, pageSize: number): string {
   const params = new URLSearchParams({

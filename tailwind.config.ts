@@ -19,6 +19,17 @@ export default {
         'gold-hi': '#f0c878',
         crimson: '#c2604a',
         jade: '#6ab06f',
+        // Crafter identity colors (FFXIV Disciples of the Hand).
+        // Tuned to read on the dark card background without competing with
+        // the gold/aether accents used for primary affordances.
+        'crp': '#c1956a',  // Carpenter — warm wood
+        'bsm': '#c66a64',  // Blacksmith — forged red
+        'arm': '#94a0b6',  // Armorer — steel
+        'gsm': '#e6c060',  // Goldsmith — bright gold
+        'ltw': '#a07452',  // Leatherworker — saddle brown
+        'wvr': '#d8b8c4',  // Weaver — dusty rose
+        'alc': '#a07ed0',  // Alchemist — violet
+        'cul': '#e6924a',  // Culinarian — orange
       },
       fontFamily: {
         display: ['Cinzel', 'serif'],

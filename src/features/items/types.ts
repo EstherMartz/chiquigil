@@ -1,5 +1,5 @@
 export type CrafterCode = 'CRP' | 'BSM' | 'ARM' | 'GSM' | 'LTW' | 'WVR' | 'ALC' | 'CUL' | 'ANY';
-export type ItemCategory = 'Raid' | 'Tincture' | 'Food' | 'Dye' | 'Glamour' | 'Housing' | 'Materia' | 'Minion';
+export type ItemCategory = 'Raid' | 'Tincture' | 'Food' | 'Fish' | 'Dye' | 'Glamour' | 'Housing' | 'Materia' | 'Minion';
 
 export interface TrackedItem {
   id: number;
