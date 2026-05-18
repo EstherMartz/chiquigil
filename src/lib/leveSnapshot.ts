@@ -24,6 +24,8 @@
  * comment + the matching access in parseLeveSheetPage.
  */
 
+import { fetchXivapiPage, nextCursor } from './xivapiRetry';
+
 export interface SnapshotLeve {
   id: number;
   name: string;
@@ -118,8 +120,6 @@ function buildLevePageUrl(after: number, pageSize: number): string {
   if (after > 0) params.set('after', String(after));
   return `${BASE.replace(/\/$/, '')}/api/sheet/Leve?${params.toString()}`;
 }
-
-import { fetchXivapiPage, nextCursor } from './xivapiRetry';
 
 export async function fetchLeveSnapshot(opts: FetchLeveSnapshotOpts = {}): Promise<SnapshotLeve[]> {
   const pageSize = opts.pageSize ?? 500;

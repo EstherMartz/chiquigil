@@ -1,3 +1,5 @@
+import { fetchXivapiPage, nextCursor } from './xivapiRetry';
+
 export interface SnapshotItem {
   id: number;
   name: string;
@@ -58,8 +60,6 @@ function buildPageUrl(after: number, pageSize: number): string {
   if (after > 0) params.set('after', String(after));
   return `https://v2.xivapi.com/api/sheet/Item?${params.toString()}`;
 }
-
-import { fetchXivapiPage, nextCursor } from './xivapiRetry';
 
 export async function fetchItemSnapshot(opts: FetchItemSnapshotOpts = {}): Promise<SnapshotItem[]> {
   const pageSize = opts.pageSize ?? 500;
