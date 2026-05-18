@@ -178,7 +178,7 @@ export function MaterialFlipView() {
         } />
       )}
 
-      {run.data && rows.length > 0 && (
+      {run.data && (ingFetch.data || rows.length > 0) && (
         <MaterialFlipResults
           rows={rows}
           totalCandidates={run.data.narrowedIds.length}
