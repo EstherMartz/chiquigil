@@ -39,3 +39,13 @@ export async function fetchXivapiPage(url: string, opts: FetchRetryOpts = {}): P
   }
   throw lastErr instanceof Error ? lastErr : new Error('XIVAPI fetch failed');
 }
+
+/**
+ * Advance a paginated XIVAPI cursor by row_id, guarding against infinite loops
+ * when XIVAPI returns only subrows of the current cursor's row_id (e.g.
+ * GilShopItem at high cursor ranges). If the page's last row_id equals our
+ * current cursor, force-advance past it.
+ */
+export function nextCursor(currentCursor: number, lastRowId: number): number {
+  return lastRowId === currentCursor ? lastRowId + 1 : lastRowId;
+}

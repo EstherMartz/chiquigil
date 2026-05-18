@@ -6,7 +6,7 @@
  */
 import type { CrafterCode } from '../features/items/types';
 import { parseRecipeResponse, type Recipe } from './recipes';
-import { fetchXivapiPage } from './xivapiRetry';
+import { fetchXivapiPage, nextCursor } from './xivapiRetry';
 
 const BASE = (import.meta.env?.VITE_XIVAPI_BASE as string | undefined) ?? 'https://v2.xivapi.com';
 const PAGE_SIZE = 500;
@@ -66,7 +66,7 @@ export async function fetchRecipeSnapshot(opts: BuildOpts = {}): Promise<RecipeM
       if (!out.has(itemId)) out.set(itemId, recipe);
     }
     opts.onProgress?.(out.size);
-    after = rows[rows.length - 1].row_id;
+    after = nextCursor(after, rows[rows.length - 1].row_id);
   }
   return out;
 }

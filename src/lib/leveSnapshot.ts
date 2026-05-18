@@ -119,7 +119,7 @@ function buildLevePageUrl(after: number, pageSize: number): string {
   return `${BASE.replace(/\/$/, '')}/api/sheet/Leve?${params.toString()}`;
 }
 
-import { fetchXivapiPage } from './xivapiRetry';
+import { fetchXivapiPage, nextCursor } from './xivapiRetry';
 
 export async function fetchLeveSnapshot(opts: FetchLeveSnapshotOpts = {}): Promise<SnapshotLeve[]> {
   const pageSize = opts.pageSize ?? 500;
@@ -133,7 +133,7 @@ export async function fetchLeveSnapshot(opts: FetchLeveSnapshotOpts = {}): Promi
     if (rows.length === 0) break;
     out.push(...parseLeveSheetPage(raw));
     opts.onProgress?.(out.length);
-    cursor = rows[rows.length - 1].row_id;
+    cursor = nextCursor(cursor, rows[rows.length - 1].row_id);
   }
   // Inline enrichment approach. Use craftLeveId temporarily to resolve targets,
   // then delete before returning to consumers.
@@ -161,7 +161,7 @@ async function enrichDohTargets(leves: LeveWithCraftLeveRef[], pageSize: number)
       const qty = row.fields.ItemCount0 ?? 0;
       if (itemId > 0 && qty > 0) craftLeves.set(row.row_id, { itemId, qty });
     }
-    cursor = rows[rows.length - 1].row_id;
+    cursor = nextCursor(cursor, rows[rows.length - 1].row_id);
   }
   // Walk the parsed leves and attach target via _craftLeveId.
   for (const leve of leves) {

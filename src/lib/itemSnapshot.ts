@@ -59,7 +59,7 @@ function buildPageUrl(after: number, pageSize: number): string {
   return `https://v2.xivapi.com/api/sheet/Item?${params.toString()}`;
 }
 
-import { fetchXivapiPage } from './xivapiRetry';
+import { fetchXivapiPage, nextCursor } from './xivapiRetry';
 
 export async function fetchItemSnapshot(opts: FetchItemSnapshotOpts = {}): Promise<SnapshotItem[]> {
   const pageSize = opts.pageSize ?? 500;
@@ -73,7 +73,7 @@ export async function fetchItemSnapshot(opts: FetchItemSnapshotOpts = {}): Promi
     if (rows.length === 0) break;
     out.push(...parseItemSheetPage(raw));
     opts.onProgress?.(out.length);
-    cursor = rows[rows.length - 1].row_id;
+    cursor = nextCursor(cursor, rows[rows.length - 1].row_id);
   }
   return out;
 }

@@ -1,4 +1,4 @@
-import { fetchXivapiPage } from './xivapiRetry';
+import { fetchXivapiPage, nextCursor } from './xivapiRetry';
 
 const BASE = (import.meta.env?.VITE_XIVAPI_BASE as string | undefined) ?? 'https://v2.xivapi.com';
 const FIELDS = 'Item.PriceMid';
@@ -56,7 +56,7 @@ export async function fetchVendorSnapshot(opts: FetchVendorSnapshotOpts = {}): P
       out.set(entry.itemId, entry.price); // dedupe — all writes for same id are equal
     }
     opts.onProgress?.(out.size);
-    cursor = rows[rows.length - 1].row_id;
+    cursor = nextCursor(cursor, rows[rows.length - 1].row_id);
   }
   return out;
 }

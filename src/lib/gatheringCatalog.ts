@@ -15,7 +15,7 @@
  * One-time fetch, cached in IDB.
  */
 
-import { fetchXivapiPage } from './xivapiRetry';
+import { fetchXivapiPage, nextCursor } from './xivapiRetry';
 
 const BASE = (import.meta.env?.VITE_XIVAPI_BASE as string | undefined) ?? 'https://v2.xivapi.com';
 const PAGE_SIZE = 500;
@@ -85,7 +85,7 @@ async function fetchSheet<F>(sheet: string, fields: string | null): Promise<RawR
     const rows = page.rows ?? [];
     if (rows.length === 0) break;
     out.push(...rows);
-    after = rows[rows.length - 1].row_id;
+    after = nextCursor(after, rows[rows.length - 1].row_id);
   }
   return out;
 }

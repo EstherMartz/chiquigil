@@ -1,5 +1,5 @@
 import type { CurrencyId } from './currencies';
-import { fetchXivapiPage } from './xivapiRetry';
+import { fetchXivapiPage, nextCursor } from './xivapiRetry';
 
 const BASE = (import.meta.env?.VITE_XIVAPI_BASE as string | undefined) ?? 'https://v2.xivapi.com';
 const FIELDS = 'Item[].Item@as(raw),Item[].ItemCost@as(raw),Item[].ReceiveCount,Item[].CurrencyCost,Item[].ReceiveHq';
@@ -104,7 +104,7 @@ export async function fetchSpecialShopSnapshot(
       totalEntries++;
     }
     opts.onProgress?.(totalEntries);
-    cursor = rows[rows.length - 1].row_id;
+    cursor = nextCursor(cursor, rows[rows.length - 1].row_id);
   }
   return { byCurrency };
 }
