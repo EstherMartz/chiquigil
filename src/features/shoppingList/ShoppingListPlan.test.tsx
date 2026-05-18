@@ -130,6 +130,20 @@ describe('ShoppingListPlan', () => {
         autoSource: 'mb' },
     ];
     renderWithRouter(survey, [], [], {});
-    expect(screen.getByText(/10\s*Poetics\s*avail\./i)).toBeInTheDocument();
+    expect(screen.getByText(/^└─/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /^Poetics$/ })).toBeInTheDocument();
+  });
+
+  it('renders the currency name as a link to /currency-flip?currency=<id>', () => {
+    const survey: IngredientSurvey[] = [
+      { id: 5, qty: 1,
+        mb: { world: 'Phantom', price: 100, count: 1, isLightDc: false },
+        npc: null,
+        currency: { id: 'poetics', label: 'Allagan Tomestone of Poetics', shortLabel: 'Poetics', costPerUnit: 10 },
+        autoSource: 'mb' },
+    ];
+    renderWithRouter(survey, [], [], {});
+    const link = screen.getByRole('link', { name: /^Poetics$/ });
+    expect(link.getAttribute('href')).toBe('/currency-flip?currency=poetics');
   });
 });

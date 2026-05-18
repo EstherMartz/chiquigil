@@ -210,7 +210,14 @@ function SourceCell({
       </div>
       {survey.currency && (
         <div className="font-mono text-[10px] text-text-low">
-          └─ {survey.currency.costPerUnit < 10 ? survey.currency.costPerUnit.toFixed(2) : Math.round(survey.currency.costPerUnit)} {survey.currency.shortLabel} avail.
+          └─ {survey.currency.costPerUnit < 10 ? survey.currency.costPerUnit.toFixed(2) : Math.round(survey.currency.costPerUnit)}{' '}
+          <Link
+            to={`/currency-flip?currency=${survey.currency.id}`}
+            className="text-aether hover:underline decoration-1 underline-offset-4"
+          >
+            {survey.currency.shortLabel}
+          </Link>
+          {' '}avail.
         </div>
       )}
     </div>
