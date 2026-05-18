@@ -106,7 +106,12 @@ export function runMaterialFlip(
       const ingMarket = ingMap[ing.itemId];
       const homeUnit = homeIngredientPrice(ingMarket, homeWorld);
       const bestUnit = bestRegionIngredientPrice(ingMarket, worldFilter);
-      homeMatCost += homeUnit * ing.amount;
+      // When the home world has no listing for this ingredient (homeUnit = 0),
+      // the user would buy it from the region anyway. Treat the home baseline
+      // as the best region price for this ingredient so the savings calc only
+      // counts ingredients where switching home -> region actually helps.
+      const homeBaseline = homeUnit > 0 ? homeUnit : (bestUnit ?? 0);
+      homeMatCost += homeBaseline * ing.amount;
       bestPerIngredientCost += (bestUnit ?? homeUnit) * ing.amount;
     }
 

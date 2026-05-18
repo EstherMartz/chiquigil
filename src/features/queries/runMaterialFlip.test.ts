@@ -104,6 +104,35 @@ describe('runMaterialFlip — per-ingredient cheapest', () => {
       'Phantom', { ...baseFilter, minSavings: 1 });
     expect(out).toEqual([]);  // savings = 0
   });
+
+  it('treats missing home listing as region baseline (does not silently drop the row)', () => {
+    // Home (Phantom) has no listing for ingredient 99; another world does.
+    // Without the baseline fix, homeMatCost = 0 for that ingredient and
+    // savings end up negative, dropping the item even when switching
+    // home->region for OTHER ingredients would save real gil.
+    const saleMap: MarketData = {
+      1: mkSale({
+        minHQ: 10_000, medianHQ: 10_000, recentSalesHQ: 8,
+        velocity: 1, listingCount: 1,
+      }),
+    };
+    const ingMap: MarketData = {
+      // 99 not listed on Phantom; Lich has it.
+      99: mkSale({ worldListings: [listing('Lich', 60)] }),
+      // 100 listed on both; Omega is cheaper.
+      100: mkSale({ worldListings: [
+        listing('Phantom', 500), listing('Omega', 400),
+      ] }),
+    };
+    const out = runMaterialFlip(snapshot, saleMap, ingMap, recipes,
+      'Phantom', { ...baseFilter, minSavings: 1 });
+    expect(out).toHaveLength(1);
+    // Ingredient 99: baseline = best region (60) * 2 = 120; best = 120.
+    // Ingredient 100: baseline = home (500); best = Omega (400).
+    expect(out[0].homeMatCost).toBe(620);
+    expect(out[0].bestPerIngredientCost).toBe(520);
+    expect(out[0].perIngredientSavings).toBe(100);
+  });
 });
 
 describe('runMaterialFlip — single-stop world', () => {
