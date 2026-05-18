@@ -66,6 +66,7 @@ export function VendorFlipView() {
         onRun={() => { run.reset(); run.mutate(); }}
         onRefreshVendors={async () => { await refreshVendors(); }}
         busy={run.isPending}
+        notReady={!snapshot.data || !vendors.data}
       />
 
       <div className="font-mono text-[10px] text-text-low">
@@ -97,12 +98,13 @@ export function VendorFlipView() {
   );
 }
 
-function FilterBar({ value, onChange, onRun, onRefreshVendors, busy }: {
+function FilterBar({ value, onChange, onRun, onRefreshVendors, busy, notReady }: {
   value: VendorFlipFilter;
   onChange: (f: VendorFlipFilter) => void;
   onRun: () => void;
   onRefreshVendors: () => Promise<void>;
   busy: boolean;
+  notReady: boolean;
 }) {
   return (
     <div className="flex flex-wrap items-end gap-3 p-3 border border-border-base bg-bg-card">
@@ -174,8 +176,9 @@ function FilterBar({ value, onChange, onRun, onRefreshVendors, busy }: {
       </label>
       <button
         type="button"
-        onClick={onRun} disabled={busy}
-        className="font-mono text-[10px] tracking-widest uppercase border border-gold text-gold px-4 py-2 hover:bg-gold hover:text-bg-deep disabled:opacity-50"
+        onClick={onRun} disabled={busy || notReady}
+        title={notReady ? 'Loading vendor catalog…' : undefined}
+        className="font-mono text-[10px] tracking-widest uppercase border border-gold text-gold px-4 py-2 hover:bg-gold hover:text-bg-deep disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {busy ? 'Running…' : 'Run scan'}
       </button>

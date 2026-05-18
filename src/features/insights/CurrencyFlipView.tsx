@@ -77,6 +77,7 @@ export function CurrencyFlipView() {
         onRun={() => { run.reset(); run.mutate(); }}
         onRefreshCatalog={async () => { await refreshShop(); }}
         busy={run.isPending}
+        notReady={!snapshot.data || !shop.data}
       />
 
       {run.data && (
@@ -113,12 +114,13 @@ export function CurrencyFlipView() {
   );
 }
 
-function TopStrip({ currencyId, onChangeCurrency, onRun, onRefreshCatalog, busy }: {
+function TopStrip({ currencyId, onChangeCurrency, onRun, onRefreshCatalog, busy, notReady }: {
   currencyId: CurrencyId;
   onChangeCurrency: (id: CurrencyId) => void;
   onRun: () => void;
   onRefreshCatalog: () => Promise<void>;
   busy: boolean;
+  notReady: boolean;
 }) {
   return (
     <div className="flex flex-wrap items-end gap-3 p-3 border border-border-base bg-bg-card">
@@ -137,8 +139,9 @@ function TopStrip({ currencyId, onChangeCurrency, onRun, onRefreshCatalog, busy 
       </label>
       <button
         type="button"
-        onClick={onRun} disabled={busy}
-        className="font-mono text-[10px] tracking-widest uppercase border border-gold text-gold px-4 py-2 hover:bg-gold hover:text-bg-deep disabled:opacity-50"
+        onClick={onRun} disabled={busy || notReady}
+        title={notReady ? 'Loading currency catalog…' : undefined}
+        className="font-mono text-[10px] tracking-widest uppercase border border-gold text-gold px-4 py-2 hover:bg-gold hover:text-bg-deep disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {busy ? 'Running…' : 'Run scan'}
       </button>

@@ -98,7 +98,7 @@ export function MaterialFlipView() {
 
   return (
     <div className="space-y-4">
-      <FilterBar value={filter} onChange={setFilter} onRun={() => { run.reset(); ingFetch.reset(); run.mutate(); }} busy={run.isPending} />
+      <FilterBar value={filter} onChange={setFilter} onRun={() => { run.reset(); ingFetch.reset(); run.mutate(); }} busy={run.isPending} notReady={!snapshot.data} />
 
       <div className="font-mono text-[10px] text-text-low">
         {candidateIds.length.toLocaleString()} candidate items
@@ -123,9 +123,9 @@ export function MaterialFlipView() {
   );
 }
 
-function FilterBar({ value, onChange, onRun, busy }: {
+function FilterBar({ value, onChange, onRun, busy, notReady }: {
   value: MaterialFlipFilter; onChange: (f: MaterialFlipFilter) => void;
-  onRun: () => void; busy: boolean;
+  onRun: () => void; busy: boolean; notReady: boolean;
 }) {
   return (
     <div className="flex flex-wrap items-end gap-3 p-3 border border-border-base bg-bg-card">
@@ -161,8 +161,9 @@ function FilterBar({ value, onChange, onRun, busy }: {
         <span className="font-mono text-[10px] tracking-widest text-text-low uppercase">Include Light DC</span>
       </label>
       <button
-        onClick={onRun} disabled={busy}
-        className="font-mono text-[10px] tracking-widest uppercase border border-gold text-gold px-4 py-2 hover:bg-gold hover:text-bg-deep disabled:opacity-50"
+        onClick={onRun} disabled={busy || notReady}
+        title={notReady ? 'Loading item catalog…' : undefined}
+        className="font-mono text-[10px] tracking-widest uppercase border border-gold text-gold px-4 py-2 hover:bg-gold hover:text-bg-deep disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {busy ? 'Running…' : 'Run scan'}
       </button>
