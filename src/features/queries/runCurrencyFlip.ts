@@ -2,16 +2,15 @@ import type { SnapshotItem } from '../../lib/itemSnapshot';
 import type { MarketData } from '../../lib/universalis';
 import type { SpecialShopSnapshot, ShopEntry } from '../../lib/specialShopSnapshot';
 import { pickHighestTrustedTier } from '../../lib/priceTrust';
+import { descBy } from '../../lib/sort';
 import type { HqMode, CurrencyFlipFilter, CurrencyFlipRow, CurrencyFlipSort } from './types';
 
-function compareRows(a: CurrencyFlipRow, b: CurrencyFlipRow, sort: CurrencyFlipSort): number {
-  switch (sort) {
-    case 'gilPerUnit':  return b.gilPerUnit - a.gilPerUnit;
-    case 'salePrice':   return b.salePrice - a.salePrice;
-    case 'velocity':    return b.velocity - a.velocity;
-    case 'costPerUnit': return b.costPerUnit - a.costPerUnit;
-  }
-}
+const COMPARATORS: Record<CurrencyFlipSort, (a: CurrencyFlipRow, b: CurrencyFlipRow) => number> = {
+  gilPerUnit:  descBy((r) => r.gilPerUnit),
+  salePrice:   descBy((r) => r.salePrice),
+  velocity:    descBy((r) => r.velocity),
+  costPerUnit: descBy((r) => r.costPerUnit),
+};
 
 export function runCurrencyFlip(
   snapshot: SnapshotItem[],
@@ -55,7 +54,7 @@ export function runCurrencyFlip(
   }
 
   out.sort((a, b) => {
-    const cmp = compareRows(a, b, filter.sort);
+    const cmp = COMPARATORS[filter.sort](a, b);
     return cmp !== 0 ? cmp : a.id - b.id;
   });
   return out.slice(0, filter.limit);

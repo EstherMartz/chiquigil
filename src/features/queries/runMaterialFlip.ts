@@ -2,8 +2,17 @@ import type { SnapshotItem } from '../../lib/itemSnapshot';
 import type { MarketData, MarketItem } from '../../lib/universalis';
 import type { Recipe } from '../../lib/recipes';
 import { pickFirstTrustedTier } from '../../lib/priceTrust';
-import type { MaterialFlipFilter, MaterialFlipRow } from './types';
+import { descBy } from '../../lib/sort';
+import type { MaterialFlipFilter, MaterialFlipRow, MaterialFlipSort } from './types';
 import { dcOf, CHAOS_WORLDS, EU_WORLDS } from '../../lib/europeWorlds';
+
+export const MATERIAL_FLIP_COMPARATORS: Record<MaterialFlipSort, (a: MaterialFlipRow, b: MaterialFlipRow) => number> = {
+  gilSavedPerDay: descBy((r) => r.gilSavedPerDay),
+  savePerCraft:   descBy((r) => r.perIngredientSavings),
+  pctDiscount:    descBy((r) => r.pctDiscount),
+  salePrice:      descBy((r) => r.salePrice),
+  velocity:       descBy((r) => r.velocity),
+};
 
 export function narrowForMaterialFlip(
   snapshot: SnapshotItem[],
@@ -39,15 +48,6 @@ function bestRegionIngredientPrice(m: MarketItem | undefined, worldFilter: (w: s
   return Math.min(...nq.map((l) => l.price));
 }
 
-function compareRows(a: MaterialFlipRow, b: MaterialFlipRow, sort: MaterialFlipFilter['sort']): number {
-  switch (sort) {
-    case 'gilSavedPerDay': return b.gilSavedPerDay - a.gilSavedPerDay;
-    case 'savePerCraft':   return b.perIngredientSavings - a.perIngredientSavings;
-    case 'pctDiscount':    return b.pctDiscount - a.pctDiscount;
-    case 'salePrice':      return b.salePrice - a.salePrice;
-    case 'velocity':       return b.velocity - a.velocity;
-  }
-}
 
 function findBestSingleStop(
   ingredients: { itemId: number; amount: number }[],
@@ -131,7 +131,7 @@ export function runMaterialFlip(
     });
   }
   out.sort((a, b) => {
-    const cmp = compareRows(a, b, filter.sort);
+    const cmp = MATERIAL_FLIP_COMPARATORS[filter.sort](a, b);
     return cmp !== 0 ? cmp : a.id - b.id;  // stable tie-break by id asc
   });
   return out.slice(0, filter.limit);

@@ -6,7 +6,7 @@ import { useRecipes } from '../profit/useRecipes';
 import { fetchInBatches } from '../../lib/universalisBulk';
 import { fetchMarketData, type MarketData } from '../../lib/universalis';
 import {
-  runMaterialFlip, narrowForMaterialFlip,
+  runMaterialFlip, narrowForMaterialFlip, MATERIAL_FLIP_COMPARATORS,
 } from '../queries/runMaterialFlip';
 import { MaterialFlipResults } from '../queries/MaterialFlipResults';
 import { defaultMaterialFlipFilter, type MaterialFlipFilter, type MaterialFlipRow, type MaterialFlipSort } from '../queries/types';
@@ -144,7 +144,7 @@ export function MaterialFlipView() {
     }
     // Streaming view: sort what we have so far by current filter.sort.
     const sorted = [...streamedRows];
-    sorted.sort((a, b) => compareStreamedRows(a, b, run.data!.filterAtRun.sort));
+    sorted.sort((a, b) => MATERIAL_FLIP_COMPARATORS[run.data!.filterAtRun.sort](a, b));
     return sorted;
   }, [snapshot.data, run.data, recipes.data, ingFetch.data, world, streamedRows]);
 
@@ -228,16 +228,6 @@ function runMaterialFlipForReady(
   // chunk.
   for (const item of ready) computedIds.add(item.id);
   return rows;
-}
-
-function compareStreamedRows(a: MaterialFlipRow, b: MaterialFlipRow, sort: MaterialFlipFilter['sort']): number {
-  switch (sort) {
-    case 'gilSavedPerDay': return b.gilSavedPerDay - a.gilSavedPerDay;
-    case 'savePerCraft':   return b.perIngredientSavings - a.perIngredientSavings;
-    case 'pctDiscount':    return b.pctDiscount - a.pctDiscount;
-    case 'salePrice':      return b.salePrice - a.salePrice;
-    case 'velocity':       return b.velocity - a.velocity;
-  }
 }
 
 function FilterBar({ value, onChange, onRun, busy, notReady }: {

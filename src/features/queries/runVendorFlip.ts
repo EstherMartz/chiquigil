@@ -1,17 +1,16 @@
 import type { SnapshotItem } from '../../lib/itemSnapshot';
 import type { MarketData } from '../../lib/universalis';
 import { pickHighestTrustedTier } from '../../lib/priceTrust';
+import { descBy } from '../../lib/sort';
 import type { VendorFlipFilter, VendorFlipRow, VendorFlipSort } from './types';
 
-function compareRows(a: VendorFlipRow, b: VendorFlipRow, sort: VendorFlipSort): number {
-  switch (sort) {
-    case 'profitPerDay':  return b.profitPerDay - a.profitPerDay;
-    case 'markup':        return b.markup - a.markup;
-    case 'profitPerUnit': return b.profitPerUnit - a.profitPerUnit;
-    case 'salePrice':     return b.salePrice - a.salePrice;
-    case 'velocity':      return b.velocity - a.velocity;
-  }
-}
+const COMPARATORS: Record<VendorFlipSort, (a: VendorFlipRow, b: VendorFlipRow) => number> = {
+  profitPerDay:  descBy((r) => r.profitPerDay),
+  markup:        descBy((r) => r.markup),
+  profitPerUnit: descBy((r) => r.profitPerUnit),
+  salePrice:     descBy((r) => r.salePrice),
+  velocity:      descBy((r) => r.velocity),
+};
 
 export function runVendorFlip(
   snapshot: SnapshotItem[],
@@ -56,7 +55,7 @@ export function runVendorFlip(
   }
 
   out.sort((a, b) => {
-    const cmp = compareRows(a, b, filter.sort);
+    const cmp = COMPARATORS[filter.sort](a, b);
     return cmp !== 0 ? cmp : a.id - b.id;  // stable tie-break by id asc
   });
   return out.slice(0, filter.limit);
