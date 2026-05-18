@@ -9,7 +9,9 @@ import {
   runMaterialFlip, narrowForMaterialFlip,
 } from '../queries/runMaterialFlip';
 import { MaterialFlipResults } from '../queries/MaterialFlipResults';
-import { defaultMaterialFlipFilter, type MaterialFlipFilter, type MaterialFlipSort } from '../queries/types';
+import { defaultMaterialFlipFilter, type MaterialFlipFilter, type MaterialFlipRow, type MaterialFlipSort } from '../queries/types';
+import type { SnapshotItem } from '../../lib/itemSnapshot';
+import type { Recipe } from '../../lib/recipes';
 import { Spinner } from '../../components/Spinner';
 import { StatusBanner } from '../../components/StatusBanner';
 
@@ -66,40 +68,85 @@ export function MaterialFlipView() {
 
   const recipes = useRecipes(run.data?.narrowedIds ?? []);
 
-  // Second pass: fetch region prices for the union of ingredient IDs once recipes resolve.
+  // Streamed rows: populated as ingredient batches arrive during phase 2,
+  // so the user sees the table fill in instead of waiting for the whole
+  // ingredient scan to finish.
+  const [streamedRows, setStreamedRows] = useState<MaterialFlipRow[]>([]);
+
+  // Second pass: fetch region prices for the union of ingredient IDs once
+  // recipes resolve. Streams rows via onChunk — each completed batch recomputes
+  // any narrowed items whose ingredients are now fully present in the
+  // accumulating ingMap and appends them to streamedRows.
   const ingFetch = useMutation<{ ingMap: MarketData; ids: number[]; skipped: number }>({
     mutationFn: async () => {
+      if (!snapshot.data || !run.data || !recipes.data) {
+        return { ingMap: {}, ids: [], skipped: 0 };
+      }
       const ids = new Set<number>();
-      for (const id of run.data?.narrowedIds ?? []) {
-        const r = recipes.data?.get(id);
+      for (const id of run.data.narrowedIds) {
+        const r = recipes.data.get(id);
         if (!r) continue;
         for (const ing of r.ingredients) ids.add(ing.itemId);
       }
       const idArr = [...ids];
       if (idArr.length === 0) return { ingMap: {}, ids: idArr, skipped: 0 };
+
+      const ingMap: MarketData = {};
+      const computedIds = new Set<number>();
+      const filterAtRun = run.data.filterAtRun;
+      const saleMap = run.data.saleMap;
+      const items = snapshot.data.items;
+      const recipeMap = recipes.data;
+
       const res = await fetchInBatches<MarketData[string]>(
         idArr,
         (chunk) => fetchMarketData(REGION, chunk),
-        { chunkSize: CHUNK_SIZE, concurrency: CONCURRENCY },
+        {
+          chunkSize: CHUNK_SIZE,
+          concurrency: CONCURRENCY,
+          onChunk: (chunkData) => {
+            Object.assign(ingMap, chunkData);
+            // Pass the growing ingMap through the existing runMaterialFlip to
+            // pick up any narrowed item whose ingredients are now all present.
+            // Items still missing ingredients won't appear; they'll be picked
+            // up by a later chunk's recompute.
+            const newRows = runMaterialFlipForReady(
+              items, saleMap, ingMap, recipeMap, world, filterAtRun, computedIds,
+            );
+            if (newRows.length > 0) {
+              setStreamedRows((prev) => [...prev, ...newRows]);
+            }
+          },
+        },
       );
       return { ingMap: res.data, ids: idArr, skipped: res.errors.length };
     },
   });
 
-  // Auto-fire ingFetch when recipes resolve.
+  // Auto-fire ingFetch when recipes resolve. Reset streamedRows each time.
   useEffect(() => {
     if (recipes.data && run.data && !ingFetch.isPending && !ingFetch.data) {
+      setStreamedRows([]);
       ingFetch.mutate();
     }
   }, [recipes.data, run.data]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Render sorted streamedRows live. Once ingFetch completes, do a final
+  // recompute through the canonical runMaterialFlip path (re-sorts + applies
+  // limit so the final table matches the original semantics).
   const rows = useMemo(() => {
-    if (!snapshot.data || !run.data || !recipes.data || !ingFetch.data) return [];
-    return runMaterialFlip(
-      snapshot.data.items, run.data.saleMap, ingFetch.data.ingMap,
-      recipes.data, world, run.data.filterAtRun,
-    );
-  }, [snapshot.data, run.data, recipes.data, ingFetch.data, world]);
+    if (!snapshot.data || !run.data || !recipes.data) return [];
+    if (ingFetch.data) {
+      return runMaterialFlip(
+        snapshot.data.items, run.data.saleMap, ingFetch.data.ingMap,
+        recipes.data, world, run.data.filterAtRun,
+      );
+    }
+    // Streaming view: sort what we have so far by current filter.sort.
+    const sorted = [...streamedRows];
+    sorted.sort((a, b) => compareStreamedRows(a, b, run.data!.filterAtRun.sort));
+    return sorted;
+  }, [snapshot.data, run.data, recipes.data, ingFetch.data, world, streamedRows]);
 
   function onSortChange(next: MaterialFlipSort) {
     setFilter({ ...filter, sort: next });
@@ -123,9 +170,15 @@ export function MaterialFlipView() {
       )}
       {run.isError && <StatusBanner kind="error">Region fetch failed: {(run.error as Error).message}</StatusBanner>}
       {recipes.isLoading && run.data && <Spinner label={`Resolving ${run.data.narrowedIds.length} recipes…`} />}
-      {ingFetch.isPending && <Spinner label="Fetching region prices for ingredients…" />}
+      {ingFetch.isPending && (
+        <Spinner label={
+          streamedRows.length > 0
+            ? `Streaming results — ${streamedRows.length} rows so far`
+            : 'Fetching region prices for ingredients…'
+        } />
+      )}
 
-      {rows.length >= 0 && run.data && ingFetch.data && (
+      {run.data && rows.length > 0 && (
         <MaterialFlipResults
           rows={rows}
           totalCandidates={run.data.narrowedIds.length}
@@ -136,6 +189,55 @@ export function MaterialFlipView() {
       )}
     </div>
   );
+}
+
+/**
+ * Streaming helper: run the canonical material-flip compute, but only emit
+ * rows for items NOT yet computed and whose ingredients are all present in
+ * the (growing) ingMap. Mutates `computedIds` to record what we just emitted.
+ */
+function runMaterialFlipForReady(
+  snapshot: SnapshotItem[],
+  saleMap: MarketData,
+  ingMap: MarketData,
+  recipeMap: Map<number, Recipe | null>,
+  world: string,
+  filter: MaterialFlipFilter,
+  computedIds: Set<number>,
+): MaterialFlipRow[] {
+  const ready: SnapshotItem[] = [];
+  for (const item of snapshot) {
+    if (computedIds.has(item.id)) continue;
+    const recipe = recipeMap.get(item.id);
+    if (!recipe) continue;
+    let allPresent = true;
+    for (const ing of recipe.ingredients) {
+      if (!ingMap[ing.itemId]) { allPresent = false; break; }
+    }
+    if (!allPresent) continue;
+    ready.push(item);
+  }
+  if (ready.length === 0) return [];
+  // Compute via the canonical path so filter/sort logic stays in one place.
+  // runMaterialFlip applies its own sort + limit; we slice limit later at
+  // render time after merging the stream.
+  const rows = runMaterialFlip(ready, saleMap, ingMap, recipeMap, world, { ...filter, limit: Number.POSITIVE_INFINITY });
+  for (const r of rows) computedIds.add(r.id);
+  // Also mark items that passed `ready` but didn't make it through narrow
+  // (e.g. minSavings filter rejected them) — so we don't retry them on every
+  // chunk.
+  for (const item of ready) computedIds.add(item.id);
+  return rows;
+}
+
+function compareStreamedRows(a: MaterialFlipRow, b: MaterialFlipRow, sort: MaterialFlipFilter['sort']): number {
+  switch (sort) {
+    case 'gilSavedPerDay': return b.gilSavedPerDay - a.gilSavedPerDay;
+    case 'savePerCraft':   return b.perIngredientSavings - a.perIngredientSavings;
+    case 'pctDiscount':    return b.pctDiscount - a.pctDiscount;
+    case 'salePrice':      return b.salePrice - a.salePrice;
+    case 'velocity':       return b.velocity - a.velocity;
+  }
 }
 
 function FilterBar({ value, onChange, onRun, busy, notReady }: {

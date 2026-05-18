@@ -49,4 +49,31 @@ describe('fetchInBatches', () => {
     await fetchInBatches([1, 2, 3, 4], fetchOne, { chunkSize: 2, concurrency: 2, onProgress: (n) => seen.push(n) });
     expect(seen.sort()).toEqual([1, 2]);
   });
+
+  it('fires onChunk with per-chunk data only (not the accumulated map)', async () => {
+    const fetchOne = vi.fn().mockImplementation(async (chunk: number[]) =>
+      Object.fromEntries(chunk.map((id) => [id, { price: id * 10 }])),
+    );
+    const chunks: Record<string, { price: number }>[] = [];
+    await fetchInBatches<{ price: number }>(
+      [1, 2, 3, 4], fetchOne,
+      { chunkSize: 2, concurrency: 1, onChunk: (c) => chunks.push(c) },
+    );
+    expect(chunks).toHaveLength(2);
+    expect(chunks[0]).toEqual({ '1': { price: 10 }, '2': { price: 20 } });
+    expect(chunks[1]).toEqual({ '3': { price: 30 }, '4': { price: 40 } });
+  });
+
+  it('does not fire onChunk for errored chunks', async () => {
+    const fetchOne = vi.fn().mockImplementation(async (chunk: number[]) => {
+      if (chunk.includes(3)) throw new Error('boom');
+      return Object.fromEntries(chunk.map((id) => [id, { price: id }]));
+    });
+    let onChunkCalls = 0;
+    await fetchInBatches<{ price: number }>(
+      [1, 2, 3, 4], fetchOne,
+      { chunkSize: 2, concurrency: 1, onChunk: () => onChunkCalls++ },
+    );
+    expect(onChunkCalls).toBe(1); // only chunk [1, 2] succeeded
+  });
 });

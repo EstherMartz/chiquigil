@@ -7,10 +7,12 @@ export function chunkIds<T>(ids: T[], size: number): T[][] {
   return out;
 }
 
-export interface FetchInBatchesOpts {
+export interface FetchInBatchesOpts<V = unknown> {
   chunkSize: number;
   concurrency: number;
   onProgress?: (chunksDone: number) => void;
+  /** Fires after each successful chunk with that chunk's parsed data only. */
+  onChunk?: (chunkData: Record<string, V>) => void;
 }
 
 export interface FetchInBatchesResult<V> {
@@ -21,7 +23,7 @@ export interface FetchInBatchesResult<V> {
 export async function fetchInBatches<V>(
   ids: number[],
   fetchOne: (chunk: number[]) => Promise<Record<string, V>>,
-  opts: FetchInBatchesOpts,
+  opts: FetchInBatchesOpts<V>,
 ): Promise<FetchInBatchesResult<V>> {
   const chunks = chunkIds(ids, opts.chunkSize);
   const data: Record<string, V> = {};
@@ -37,6 +39,7 @@ export async function fetchInBatches<V>(
       try {
         const result = await fetchOne(chunk);
         Object.assign(data, result);
+        opts.onChunk?.(result);
       } catch {
         errors.push(chunk);
       }
