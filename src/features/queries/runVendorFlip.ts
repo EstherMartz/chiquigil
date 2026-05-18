@@ -2,6 +2,7 @@ import type { SnapshotItem } from '../../lib/itemSnapshot';
 import type { MarketData } from '../../lib/universalis';
 import { pickHighestTrustedTier } from '../../lib/priceTrust';
 import { descBy } from '../../lib/sort';
+import { passesMarketGate } from './commonFilters';
 import type { VendorFlipFilter, VendorFlipRow, VendorFlipSort } from './types';
 
 const COMPARATORS: Record<VendorFlipSort, (a: VendorFlipRow, b: VendorFlipRow) => number> = {
@@ -28,8 +29,7 @@ export function runVendorFlip(
 
     const market = saleMap[item.id];
     if (!market) continue;
-    if (market.velocity < filter.minVelocity) continue;
-    if (filter.maxListings != null && market.listingCount > filter.maxListings) continue;
+    if (!passesMarketGate(market, { minVelocity: filter.minVelocity, maxListings: filter.maxListings ?? null })) continue;
 
     const tier = pickHighestTrustedTier(market, filter.hq, item.canHq);
     if (!tier) continue;

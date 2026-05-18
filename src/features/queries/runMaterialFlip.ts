@@ -3,6 +3,7 @@ import type { MarketData, MarketItem } from '../../lib/universalis';
 import type { Recipe } from '../../lib/recipes';
 import { pickFirstTrustedTier } from '../../lib/priceTrust';
 import { descBy } from '../../lib/sort';
+import { passesMarketGate } from './commonFilters';
 import type { MaterialFlipFilter, MaterialFlipRow, MaterialFlipSort } from './types';
 import { dcOf, CHAOS_WORLDS, EU_WORLDS } from '../../lib/europeWorlds';
 
@@ -26,8 +27,7 @@ export function narrowForMaterialFlip(
     if (filter.hq === 'hq' && !item.canHq) continue;
     const m = saleMap[item.id];
     if (!m) continue;
-    if (m.velocity < filter.minVelocity) continue;
-    if (filter.maxListings != null && m.listingCount > filter.maxListings) continue;
+    if (!passesMarketGate(m, { minVelocity: filter.minVelocity, maxListings: filter.maxListings ?? null })) continue;
     if (pickFirstTrustedTier(m, filter.hq, item.canHq) == null) continue;
     out.push(item.id);
   }
@@ -89,8 +89,7 @@ export function runMaterialFlip(
 
     const sale = saleMap[item.id];
     if (!sale) continue;
-    if (sale.velocity < filter.minVelocity) continue;
-    if (filter.maxListings != null && sale.listingCount > filter.maxListings) continue;
+    if (!passesMarketGate(sale, { minVelocity: filter.minVelocity, maxListings: filter.maxListings ?? null })) continue;
 
     const tier = pickFirstTrustedTier(sale, filter.hq, item.canHq);
     if (!tier) continue;

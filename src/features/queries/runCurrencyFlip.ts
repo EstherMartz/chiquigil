@@ -3,6 +3,7 @@ import type { MarketData } from '../../lib/universalis';
 import type { SpecialShopSnapshot, ShopEntry } from '../../lib/specialShopSnapshot';
 import { pickHighestTrustedTier } from '../../lib/priceTrust';
 import { descBy } from '../../lib/sort';
+import { passesMarketGate } from './commonFilters';
 import type { HqMode, CurrencyFlipFilter, CurrencyFlipRow, CurrencyFlipSort } from './types';
 
 const COMPARATORS: Record<CurrencyFlipSort, (a: CurrencyFlipRow, b: CurrencyFlipRow) => number> = {
@@ -30,8 +31,7 @@ export function runCurrencyFlip(
     if (!item) continue;
     const market = saleMap[entry.itemId];
     if (!market) continue;
-    if (market.velocity < filter.minVelocity) continue;
-    if (filter.maxListings != null && market.listingCount > filter.maxListings) continue;
+    if (!passesMarketGate(market, { minVelocity: filter.minVelocity, maxListings: filter.maxListings ?? null })) continue;
 
     const effectiveHq: HqMode = entry.isHq ? 'hq' : filter.hq;
     const tier = pickHighestTrustedTier(market, effectiveHq, item.canHq);

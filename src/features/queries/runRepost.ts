@@ -1,5 +1,6 @@
 import type { SnapshotItem } from '../../lib/itemSnapshot';
 import type { MarketData, WorldListing } from '../../lib/universalis';
+import { passesMarketGate } from './commonFilters';
 import type { HqMode, QueryFilter, QuerySort, RepostRow } from './types';
 
 interface TierCandidate {
@@ -44,8 +45,7 @@ export function runRepost(
     if (catSet && !catSet.has(item.sc)) continue;
     const m = priceMap[item.id];
     if (!m) continue;
-    if (m.velocity < filter.minVelocity) continue;
-    if (filter.maxListings != null && m.listingCount > filter.maxListings) continue;
+    if (!passesMarketGate(m, { minVelocity: filter.minVelocity, maxListings: filter.maxListings ?? null })) continue;
 
     const tiers = tiersToCheck(filter.hq, item.canHq);
     const candidates: TierCandidate[] = [];

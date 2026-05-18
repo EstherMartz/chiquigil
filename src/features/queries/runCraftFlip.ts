@@ -4,6 +4,7 @@ import type { Recipe } from '../../lib/recipes';
 import type { CrafterLevels } from '../items/craftStatus';
 import { pickFirstTrustedTier } from '../../lib/priceTrust';
 import { computeMaterialCost } from '../profit/computeProfit';
+import { passesMarketGate } from './commonFilters';
 import type { CraftFlipRow, QueryFilter, QuerySort } from './types';
 
 export function narrowForCraftFlip(
@@ -18,8 +19,7 @@ export function narrowForCraftFlip(
     if (filter.hq === 'hq' && !item.canHq) continue;
     const m = priceMap[item.id];
     if (!m) continue;
-    if (m.velocity < filter.minVelocity) continue;
-    if (filter.maxListings != null && m.listingCount > filter.maxListings) continue;
+    if (!passesMarketGate(m, { minVelocity: filter.minVelocity, maxListings: filter.maxListings ?? null })) continue;
     if (pickFirstTrustedTier(m, filter.hq, item.canHq) == null) continue;
     out.push(item.id);
   }
