@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { useSettingsStore } from '../settings/store';
 import { useItemSnapshot } from '../queries/useItemSnapshot';
+import { useRecipeSnapshot } from '../queries/useRecipeSnapshot';
 import { useRecipes } from '../profit/useRecipes';
 import { fetchInBatches } from '../../lib/universalisBulk';
 import { fetchMarketData, type MarketData } from '../../lib/universalis';
@@ -14,6 +15,8 @@ import { Spinner } from '../../components/Spinner';
 import { StatusBanner } from '../../components/StatusBanner';
 
 const REGION = 'Europe';
+const CHUNK_SIZE = 25;
+const CONCURRENCY = 8;
 
 interface RunResult {
   saleMap: MarketData;
@@ -25,27 +28,37 @@ interface RunResult {
 export function MaterialFlipView() {
   const { world } = useSettingsStore();
   const snapshot = useItemSnapshot();
+  const recipeSnap = useRecipeSnapshot();
   const [filter, setFilter] = useState<MaterialFlipFilter>(defaultMaterialFlipFilter());
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
 
   const candidateIds = useMemo(() => {
-    if (!snapshot.data) return [];
+    if (!snapshot.data || !recipeSnap.data) return [];
     const catSet = filter.searchCategories.length ? new Set(filter.searchCategories) : null;
     const out: number[] = [];
     for (const item of snapshot.data.items) {
       if (catSet && !catSet.has(item.sc)) continue;
       if (filter.hq === 'hq' && !item.canHq) continue;
+      // Only items with a recipe can be "material flipped" — drops ~60% of catalog.
+      if (!recipeSnap.data.has(item.id)) continue;
       out.push(item.id);
     }
     return out;
-  }, [snapshot.data, filter.searchCategories, filter.hq]);
+  }, [snapshot.data, recipeSnap.data, filter.searchCategories, filter.hq]);
 
   const run = useMutation<RunResult>({
     mutationFn: async () => {
       if (!snapshot.data) throw new Error('Snapshot not ready');
+      const total = Math.ceil(candidateIds.length / CHUNK_SIZE);
+      setProgress({ done: 0, total });
       const sale = await fetchInBatches<MarketData[string]>(
         candidateIds,
         (chunk) => fetchMarketData(REGION, chunk),
-        { chunkSize: 25, concurrency: 4 },
+        {
+          chunkSize: CHUNK_SIZE,
+          concurrency: CONCURRENCY,
+          onProgress: (done) => setProgress({ done, total }),
+        },
       );
       const narrowedIds = narrowForMaterialFlip(snapshot.data.items, sale.data, filter);
       return {
@@ -71,7 +84,7 @@ export function MaterialFlipView() {
       const res = await fetchInBatches<MarketData[string]>(
         idArr,
         (chunk) => fetchMarketData(REGION, chunk),
-        { chunkSize: 25, concurrency: 4 },
+        { chunkSize: CHUNK_SIZE, concurrency: CONCURRENCY },
       );
       return { ingMap: res.data, ids: idArr, skipped: res.errors.length };
     },
@@ -98,14 +111,20 @@ export function MaterialFlipView() {
 
   return (
     <div className="space-y-4">
-      <FilterBar value={filter} onChange={setFilter} onRun={() => { run.reset(); ingFetch.reset(); run.mutate(); }} busy={run.isPending} notReady={!snapshot.data} />
+      <FilterBar value={filter} onChange={setFilter} onRun={() => { run.reset(); ingFetch.reset(); setProgress(null); run.mutate(); }} busy={run.isPending} notReady={!snapshot.data || !recipeSnap.data} />
 
       <div className="font-mono text-[10px] text-text-low">
         {candidateIds.length.toLocaleString()} candidate items
         {run.data && <> · {run.data.narrowedIds.length.toLocaleString()} narrowed</>}
       </div>
 
-      {run.isPending && <Spinner label={`Fetching region prices for ${candidateIds.length} items…`} />}
+      {run.isPending && (
+        <Spinner label={
+          progress
+            ? `Fetching region prices — batch ${progress.done}/${progress.total} (${candidateIds.length} items)`
+            : `Fetching region prices for ${candidateIds.length} items…`
+        } />
+      )}
       {run.isError && <StatusBanner kind="error">Region fetch failed: {(run.error as Error).message}</StatusBanner>}
       {recipes.isLoading && run.data && <Spinner label={`Resolving ${run.data.narrowedIds.length} recipes…`} />}
       {ingFetch.isPending && <Spinner label="Fetching region prices for ingredients…" />}
