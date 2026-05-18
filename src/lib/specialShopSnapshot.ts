@@ -1,4 +1,5 @@
 import type { CurrencyId } from './currencies';
+import { fetchXivapiPage } from './xivapiRetry';
 
 const BASE = (import.meta.env?.VITE_XIVAPI_BASE as string | undefined) ?? 'https://v2.xivapi.com';
 const FIELDS = 'Item[].Item@as(raw),Item[].ItemCost@as(raw),Item[].ReceiveCount,Item[].CurrencyCost,Item[].ReceiveHq';
@@ -91,7 +92,7 @@ export async function fetchSpecialShopSnapshot(
   let cursor = 0;
   let totalEntries = 0;
   while (true) {
-    const res = await fetch(buildPageUrl(cursor, pageSize));
+    const res = await fetchXivapiPage(buildPageUrl(cursor, pageSize));
     if (!res.ok) throw new Error(`XIVAPI SpecialShop ${res.status}`);
     const raw = (await res.json()) as RawSpecialShopPage;
     const rows = raw.rows ?? [];

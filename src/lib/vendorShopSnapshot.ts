@@ -1,3 +1,5 @@
+import { fetchXivapiPage } from './xivapiRetry';
+
 const BASE = (import.meta.env?.VITE_XIVAPI_BASE as string | undefined) ?? 'https://v2.xivapi.com';
 const FIELDS = 'Item.PriceMid';
 
@@ -45,7 +47,7 @@ export async function fetchVendorSnapshot(opts: FetchVendorSnapshotOpts = {}): P
   const out = new Map<number, number>();
   let cursor = 0;
   while (true) {
-    const res = await fetch(buildPageUrl(cursor, pageSize));
+    const res = await fetchXivapiPage(buildPageUrl(cursor, pageSize));
     if (!res.ok) throw new Error(`XIVAPI GilShopItem ${res.status}`);
     const raw = (await res.json()) as RawGilShopPage;
     const rows = raw.rows ?? [];
