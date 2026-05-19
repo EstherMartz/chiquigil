@@ -154,8 +154,7 @@ export async function fetchMarketData(scope: Scope, ids: number[]): Promise<Mark
 
   // Universalis caps each request at ~100 IDs; longer URLs return 414 or 5xx
   // (which the browser then reports as CORS because the error response carries
-  // no Access-Control-Allow-Origin header). Chunk to stay well under the limit
-  // and fire batches in parallel.
+  // no Access-Control-Allow-Origin header). Chunk to stay well under the limit.
   const BATCH_SIZE = 100;
   const batches: number[][] = [];
   for (let i = 0; i < stale.length; i += BATCH_SIZE) {
@@ -163,13 +162,12 @@ export async function fetchMarketData(scope: Scope, ids: number[]): Promise<Mark
   }
 
   const live: MarketData = {};
-  await Promise.all(batches.map(async (batch) => {
-    const res = await fetch(buildMarketUrl(scope, batch));
-    // Universalis returns 404 when *every* requested ID in a batch is
-    // unresolvable (untradeable, never-listed, or invalid). Treat as "no data"
-    // so one bad ID doesn't break the entire watchlist; cache empty
-    // placeholders so we don't hammer the API on every refetch within TTL.
-    if (res.status === 404) {
+  // Bounded concurrency: too many parallel requests trigger Universalis 5xx
+  // responses that lack CORS headers (browser reports them as CORS errors).
+  // Cap at MAX_CONCURRENT across all callers via a shared queue.
+  await runThrottled(batches, async (batch) => {
+    const raw = await fetchBatchWithRetry(scope, batch);
+    if (raw === 'not-found') {
       for (const id of batch) {
         const empty = emptyMarketItem();
         live[String(id)] = empty;
@@ -177,8 +175,6 @@ export async function fetchMarketData(scope: Scope, ids: number[]): Promise<Mark
       }
       return;
     }
-    if (!res.ok) throw new Error(`Universalis ${res.status}`);
-    const raw = (await res.json()) as RawResponse;
     const parsed = parseMarketResponse(raw);
     for (const [idStr, data] of Object.entries(parsed)) {
       live[idStr] = data;
@@ -192,10 +188,69 @@ export async function fetchMarketData(scope: Scope, ids: number[]): Promise<Mark
       live[String(id)] = empty;
       cache.set(id, { ts: now, data: empty });
     }
-  }));
+  });
 
   schedulePersist(scope);
   return { ...fresh, ...live };
+}
+
+const MAX_CONCURRENT = 4;
+
+// Module-level semaphore: caps total Universalis requests across ALL scopes
+// (phantom + dc + region run in parallel, each chunked into many batches).
+// Without this, ~18 simultaneous batches trigger their rate limiter.
+let inFlight = 0;
+const waiters: Array<() => void> = [];
+
+async function acquire(): Promise<void> {
+  if (inFlight < MAX_CONCURRENT) { inFlight++; return; }
+  await new Promise<void>((resolve) => waiters.push(resolve));
+  inFlight++;
+}
+
+function release(): void {
+  inFlight--;
+  const next = waiters.shift();
+  if (next) next();
+}
+
+async function runThrottled<T>(
+  items: T[],
+  worker: (item: T) => Promise<void>,
+): Promise<void> {
+  await Promise.all(items.map(async (item) => {
+    await acquire();
+    try { await worker(item); } finally { release(); }
+  }));
+}
+
+async function fetchBatchWithRetry(
+  scope: Scope,
+  batch: number[],
+): Promise<RawResponse | 'not-found'> {
+  // One retry with backoff handles transient Universalis 5xx + the resulting
+  // "no CORS header" browser error. Network failures (offline, DNS) also retry.
+  const attempts = 2;
+  let lastErr: unknown = null;
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    if (attempt > 0) await sleep(400 * attempt);
+    try {
+      const res = await fetch(buildMarketUrl(scope, batch));
+      if (res.status === 404) return 'not-found';
+      if (!res.ok) {
+        lastErr = new Error(`Universalis ${res.status}`);
+        continue;
+      }
+      return (await res.json()) as RawResponse;
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  throw lastErr ?? new Error('Universalis fetch failed');
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function emptyMarketItem(): MarketItem {
