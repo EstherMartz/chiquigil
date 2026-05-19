@@ -34,7 +34,11 @@ export function parseItemSheetPage(raw: RawSheetPage): SnapshotItem[] {
   for (const r of rows) {
     const sc = r.fields.ItemSearchCategory?.value ?? 0;
     const name = r.fields.Name ?? '';
-    if (sc === 0 || name === '') continue;
+    // Keep any item with a name. Previously dropped sc=0 (untradeable) but that
+    // hid tools, weapons, tomestones, soul crystals, collectables — all things
+    // a cleanup helper still needs to recognize so it can route them to vendor
+    // or discard.
+    if (name === '') continue;
     out.push({
       id: r.row_id,
       name,

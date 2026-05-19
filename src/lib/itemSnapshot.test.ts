@@ -23,14 +23,18 @@ describe('parseItemSheetPage', () => {
     ]);
   });
 
-  it('drops rows with ItemSearchCategory.value === 0', () => {
+  it('keeps untradeable rows (sc=0) as long as they have a name', () => {
+    // Cleanup helper needs to recognize tools / weapons / tomestones etc.
+    // even though they're not marketboard-listable.
     const raw = {
       rows: [
         { row_id: 0, fields: { Name: '', ItemSearchCategory: { value: 0 }, ItemUICategory: { value: 0 }, LevelItem: { value: 0 }, CanBeHq: false } },
         { row_id: 1, fields: { Name: 'Gil', ItemSearchCategory: { value: 0 }, ItemUICategory: { value: 0 }, LevelItem: { value: 0 }, CanBeHq: false } },
       ],
     };
-    expect(parseItemSheetPage(raw)).toEqual([]);
+    const out = parseItemSheetPage(raw);
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatchObject({ id: 1, name: 'Gil', sc: 0 });
   });
 
   it('drops rows with no Name', () => {
