@@ -152,39 +152,49 @@ export async function fetchMarketData(scope: Scope, ids: number[]): Promise<Mark
   }
   if (stale.length === 0) return fresh;
 
-  const res = await fetch(buildMarketUrl(scope, stale));
-  // Universalis returns 404 when *every* requested ID is unresolvable
-  // (untradeable, never-listed, or invalid). Treat as "no data" so one bad
-  // ID doesn't break the entire watchlist; cache empty placeholders so we
-  // don't hammer the API on every refetch within TTL.
-  if (res.status === 404) {
-    const live: MarketData = {};
-    for (const id of stale) {
+  // Universalis caps each request at ~100 IDs; longer URLs return 414 or 5xx
+  // (which the browser then reports as CORS because the error response carries
+  // no Access-Control-Allow-Origin header). Chunk to stay well under the limit
+  // and fire batches in parallel.
+  const BATCH_SIZE = 100;
+  const batches: number[][] = [];
+  for (let i = 0; i < stale.length; i += BATCH_SIZE) {
+    batches.push(stale.slice(i, i + BATCH_SIZE));
+  }
+
+  const live: MarketData = {};
+  await Promise.all(batches.map(async (batch) => {
+    const res = await fetch(buildMarketUrl(scope, batch));
+    // Universalis returns 404 when *every* requested ID in a batch is
+    // unresolvable (untradeable, never-listed, or invalid). Treat as "no data"
+    // so one bad ID doesn't break the entire watchlist; cache empty
+    // placeholders so we don't hammer the API on every refetch within TTL.
+    if (res.status === 404) {
+      for (const id of batch) {
+        const empty = emptyMarketItem();
+        live[String(id)] = empty;
+        cache.set(id, { ts: now, data: empty });
+      }
+      return;
+    }
+    if (!res.ok) throw new Error(`Universalis ${res.status}`);
+    const raw = (await res.json()) as RawResponse;
+    const parsed = parseMarketResponse(raw);
+    for (const [idStr, data] of Object.entries(parsed)) {
+      live[idStr] = data;
+      cache.set(Number(idStr), { ts: now, data });
+    }
+    // Cache empty placeholders for IDs in this batch the server couldn't resolve.
+    const resolved = new Set(Object.keys(parsed));
+    for (const id of batch) {
+      if (resolved.has(String(id))) continue;
       const empty = emptyMarketItem();
       live[String(id)] = empty;
       cache.set(id, { ts: now, data: empty });
     }
-    schedulePersist(scope);
-    return { ...fresh, ...live };
-  }
-  if (!res.ok) throw new Error(`Universalis ${res.status}`);
-  const raw = (await res.json()) as RawResponse;
-  const live = parseMarketResponse(raw);
+  }));
 
-  for (const [idStr, data] of Object.entries(live)) {
-    cache.set(Number(idStr), { ts: now, data });
-  }
-  // Cache empty placeholders for IDs the server couldn't resolve (mixed batch
-  // with some unknown items) — same TTL benefit as the all-404 case above.
-  const resolved = new Set(Object.keys(live));
-  for (const id of stale) {
-    if (resolved.has(String(id))) continue;
-    const empty = emptyMarketItem();
-    live[String(id)] = empty;
-    cache.set(id, { ts: now, data: empty });
-  }
   schedulePersist(scope);
-
   return { ...fresh, ...live };
 }
 
