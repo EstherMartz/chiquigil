@@ -17,7 +17,7 @@ vi.mock('../queries/useItemSnapshot', () => ({
 
 vi.mock('../queries/useVendorShopSnapshot', () => ({
   useVendorShopSnapshot: () => ({
-    data: { vendors: new Map([[100, 100], [200, 100]]), updatedAt: 1700000000000 },
+    data: { snapshot: new Map([[100, 100], [200, 100]]), updatedAt: 1700000000000 },
     isLoading: false,
     isError: false,
     error: null,
