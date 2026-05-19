@@ -1,0 +1,49 @@
+import { useState } from 'react';
+import { btnPrimaryLarge, btnDanger } from '../../components/buttonStyles';
+
+interface AllaganPasteBoxProps {
+  onParse: (csvText: string) => void;
+  onClear: () => void;
+  parseError: string | null;
+  parsedSummary: string | null;
+}
+
+export function AllaganPasteBox({ onParse, onClear, parseError, parsedSummary }: AllaganPasteBoxProps) {
+  const [text, setText] = useState('');
+  return (
+    <div className="space-y-3">
+      <p className="font-mono text-[10px] text-text-low tracking-widest uppercase">
+        Paste your Allagan Tools / Inventory Tools CSV
+      </p>
+      <textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        rows={8}
+        className="w-full font-mono text-xs bg-bg-card-hi text-text-cream border border-border-base p-3"
+        placeholder={'Item ID,Item Name,Quantity,HQ,Location\n5,Fire Shard,42,false,bag\n...'}
+        aria-label="Allagan CSV paste"
+      />
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => onParse(text)}
+          disabled={!text.trim()}
+          className={btnPrimaryLarge}
+        >
+          Parse
+        </button>
+        <button
+          onClick={() => { setText(''); onClear(); }}
+          className={btnDanger}
+        >
+          Clear
+        </button>
+        {parsedSummary && (
+          <span className="font-mono text-[11px] text-text-low">{parsedSummary}</span>
+        )}
+        {parseError && (
+          <span className="font-mono text-[11px] text-crimson">{parseError}</span>
+        )}
+      </div>
+    </div>
+  );
+}
