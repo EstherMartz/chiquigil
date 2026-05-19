@@ -32,6 +32,7 @@ export function Header() {
             <NavLink to="/gathering" className={navClass}>Gathering</NavLink>
             <NavLink to="/leves" className={navClass}>Leves</NavLink>
             <NavLink to="/shopping-list" className={navClass}>Shopping</NavLink>
+            <NavLink to="/cleanup" className={navClass}>Cleanup</NavLink>
             <NavLink to="/vendor-flip" className={navClass}>Vendor flip</NavLink>
             <NavLink to="/currency-flip" className={navClass}>Currencies</NavLink>
             <NavLink to="/gc-seals" className={navClass}>GC Seals</NavLink>
