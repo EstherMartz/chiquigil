@@ -24,7 +24,7 @@ let dbPromise: Promise<IDBPDatabase> | null = null;
 function db(): Promise<IDBPDatabase> {
   if (!dbPromise) {
     dbPromise = openDB(DB_NAME, DB_VERSION, {
-      upgrade(database, oldVersion) {
+      upgrade(database, oldVersion, _newVersion, transaction) {
         if (!database.objectStoreNames.contains(RECIPE_STORE)) {
           database.createObjectStore(RECIPE_STORE);
         }
@@ -58,8 +58,10 @@ function db(): Promise<IDBPDatabase> {
         if (oldVersion > 0 && oldVersion < 10) {
           // v10 added priceLow to SnapshotItem; wipe the item store so the next load
           // re-hydrates from the new static bundle (which carries the field).
-          database.transaction(ITEM_STORE, 'readwrite').objectStore(ITEM_STORE).clear();
-          database.transaction(META_STORE, 'readwrite').objectStore(META_STORE).delete(ITEM_SNAPSHOT_TS_KEY);
+          // Must reuse the upgrade's versionchange transaction — opening a new one
+          // throws InvalidStateError ("A version change transaction is running").
+          transaction.objectStore(ITEM_STORE).clear();
+          transaction.objectStore(META_STORE).delete(ITEM_SNAPSHOT_TS_KEY);
         }
       },
     });
