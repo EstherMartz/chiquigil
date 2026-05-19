@@ -25,14 +25,16 @@ export function CleanupResults({ result, usesByItemId }: CleanupResultsProps) {
   if (!anything) return null;
 
   const usesFor = (itemId: number) => usesByItemId?.get(itemId);
+  const ingredientItemCount = usesByItemId?.size ?? 0;
 
   return (
     <div className="space-y-4">
-      {result.craft.length > 0 && (
-        <Section title={`Craft these (${result.craft.length})`}>
-          {result.craft.map((row) => <CraftRow key={`${row.entry.itemId}-${row.entry.isHq}`} row={row} />)}
-        </Section>
-      )}
+      <Section title={result.craft.length > 0 ? `Craft these (${result.craft.length})` : 'Craft these (0)'}>
+        {result.craft.length > 0
+          ? result.craft.map((row) => <CraftRow key={`${row.entry.itemId}-${row.entry.isHq}`} row={row} />)
+          : <CraftEmptyState ingredientItemCount={ingredientItemCount} />}
+      </Section>
+
       {result.sellMb.length > 0 && (
         <Section title={`Sell on Marketboard (${result.sellMb.length})`}>
           {result.sellMb.map((row) => <SellRow key={`${row.entry.itemId}-${row.entry.isHq}`} row={row} />)}
@@ -48,6 +50,23 @@ export function CleanupResults({ result, usesByItemId }: CleanupResultsProps) {
         <Section title={`Unrecognized rows (${result.unrecognized.length})`} defaultOpen={false}>
           {result.unrecognized.map((entry, i) => <UnrecognizedRow key={i} entry={entry} />)}
         </Section>
+      )}
+    </div>
+  );
+}
+
+function CraftEmptyState({ ingredientItemCount }: { ingredientItemCount: number }) {
+  return (
+    <div className="py-3 font-mono text-[11px] text-text-low space-y-1">
+      <div>No recipes met all three gates: positive net profit · ≤2 missing ingredients · all ingredients priced on MB.</div>
+      {ingredientItemCount > 0 ? (
+        <div>
+          {ingredientItemCount} of your items appear as ingredients in some recipe — open the{' '}
+          <span className="text-aether">▸ used in N recipes</span> toggle on a Vendor or Discard row to
+          explore what they could become, even if not profitable right now.
+        </div>
+      ) : (
+        <div>None of your recognized items appear as ingredients in any recipe. Most likely they're end products (gear, tools, tomestones).</div>
       )}
     </div>
   );
