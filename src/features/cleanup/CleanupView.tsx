@@ -8,9 +8,10 @@ import { AllaganPasteBox } from './AllaganPasteBox';
 import { CleanupResults } from './CleanupResults';
 import { parseAllaganInventory } from './parseAllaganInventory';
 import { findCraftOpportunities } from './findCraftOpportunities';
+import { findInventoryUses } from './findInventoryUses';
 import { runCleanup } from './runCleanup';
 import { useCleanupStore } from './cleanupStore';
-import type { CleanupResult } from './types';
+import type { CleanupResult, UsesEntry } from './types';
 
 export function CleanupView() {
   const itemSnap = useItemSnapshot();
@@ -72,6 +73,11 @@ export function CleanupView() {
     });
   }, [parsed, recipeSnap.data, market.data, itemsById]);
 
+  const usesByItemId = useMemo<Map<number, UsesEntry[]>>(() => {
+    if (!parsed || !recipeSnap.data || !market.data) return new Map();
+    return findInventoryUses(parsed.entries, recipeSnap.data, market.data, itemsById);
+  }, [parsed, recipeSnap.data, market.data, itemsById]);
+
   function handleParse(csv: string) {
     try {
       const out = parseAllaganInventory(csv, namesById);
@@ -100,7 +106,7 @@ export function CleanupView() {
       {parsed && market.isLoading && (
         <p className="font-mono text-[11px] text-text-low">Fetching market data for {marketIds.length} items…</p>
       )}
-      {result && <CleanupResults result={result} />}
+      {result && <CleanupResults result={result} usesByItemId={usesByItemId} />}
     </div>
   );
 }

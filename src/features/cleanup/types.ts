@@ -50,5 +50,19 @@ export interface CleanupResult {
   unrecognized: InventoryEntry[];
 }
 
+/**
+ * One recipe that uses an inventory item as an ingredient, regardless of
+ * profitability. Surfaced as exploratory "what could this become" for items
+ * the bucketer routed to vendor/discard.
+ */
+export interface UsesEntry {
+  outputItemId: number;
+  outputName: string;
+  /** Best trusted MB unit price across home/DC/region. 0 if no listings anywhere. */
+  outputUnitPrice: number;
+  /** How many of this ingredient one craft of the output consumes. */
+  amountNeeded: number;
+}
+
 /** Re-exported for craft-analyzer consumers so they don't need a second import. */
 export type { Ingredient };

@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { SectionHeader } from '../../components/SectionHeader';
-import type { CleanupResult, CleanupRow, CraftOpportunity, InventoryEntry } from './types';
+import type { CleanupResult, CleanupRow, CraftOpportunity, InventoryEntry, UsesEntry } from './types';
 
 interface CleanupResultsProps {
   result: CleanupResult;
+  /** Per-itemId list of recipes that consume this inventory item (ignores profitability). */
+  usesByItemId?: Map<number, UsesEntry[]>;
 }
 
 function fmtGil(n: number): string {
@@ -16,11 +18,13 @@ function fmtFull(n: number): string {
   return n.toLocaleString();
 }
 
-export function CleanupResults({ result }: CleanupResultsProps) {
+export function CleanupResults({ result, usesByItemId }: CleanupResultsProps) {
   const anything =
     result.craft.length || result.sellMb.length || result.vendor.length ||
     result.discard.length || result.unrecognized.length;
   if (!anything) return null;
+
+  const usesFor = (itemId: number) => usesByItemId?.get(itemId);
 
   return (
     <div className="space-y-4">
@@ -36,8 +40,8 @@ export function CleanupResults({ result }: CleanupResultsProps) {
       )}
       {(result.vendor.length + result.discard.length) > 0 && (
         <Section title={`Vendor or discard (${result.vendor.length + result.discard.length})`}>
-          {result.vendor.map((row) => <VendorRow key={`${row.entry.itemId}-${row.entry.isHq}`} row={row} />)}
-          {result.discard.map((row) => <DiscardRow key={`${row.entry.itemId}-${row.entry.isHq}`} row={row} />)}
+          {result.vendor.map((row) => <VendorRow key={`${row.entry.itemId}-${row.entry.isHq}`} row={row} uses={usesFor(row.entry.itemId)} />)}
+          {result.discard.map((row) => <DiscardRow key={`${row.entry.itemId}-${row.entry.isHq}`} row={row} uses={usesFor(row.entry.itemId)} />)}
         </Section>
       )}
       {result.unrecognized.length > 0 && (
@@ -137,22 +141,68 @@ function SellRow({ row }: { row: CleanupRow }) {
   );
 }
 
-function VendorRow({ row }: { row: CleanupRow }) {
+function VendorRow({ row, uses }: { row: CleanupRow; uses?: UsesEntry[] }) {
+  const [open, setOpen] = useState(false);
+  const hasUses = uses && uses.length > 0;
   return (
-    <div className="border-b border-border-base py-1.5 flex items-center justify-between text-xs">
-      <ItemName entry={row.entry} />
-      <div className="font-mono text-text-low">
-        vendor: {fmtFull(row.vendorRevenue / row.entry.qty)}g/ea · total {fmtFull(row.vendorRevenue)}g
+    <div className="border-b border-border-base py-1.5">
+      <div className="flex items-center justify-between text-xs">
+        <ItemName entry={row.entry} />
+        <div className="font-mono text-text-low flex items-center gap-3">
+          <span>vendor: {fmtFull(row.vendorRevenue / row.entry.qty)}g/ea · total {fmtFull(row.vendorRevenue)}g</span>
+          {hasUses && <UsesToggle open={open} setOpen={setOpen} count={uses!.length} />}
+        </div>
       </div>
+      {open && hasUses && <UsesDisclosure entries={uses!} />}
     </div>
   );
 }
 
-function DiscardRow({ row }: { row: CleanupRow }) {
+function DiscardRow({ row, uses }: { row: CleanupRow; uses?: UsesEntry[] }) {
+  const [open, setOpen] = useState(false);
+  const hasUses = uses && uses.length > 0;
   return (
-    <div className="border-b border-border-base py-1.5 flex items-center justify-between text-xs">
-      <ItemName entry={row.entry} />
-      <div className="font-mono text-text-low text-crimson">no vendor · discard</div>
+    <div className="border-b border-border-base py-1.5">
+      <div className="flex items-center justify-between text-xs">
+        <ItemName entry={row.entry} />
+        <div className="font-mono text-text-low flex items-center gap-3">
+          <span className="text-crimson">no vendor · discard</span>
+          {hasUses && <UsesToggle open={open} setOpen={setOpen} count={uses!.length} />}
+        </div>
+      </div>
+      {open && hasUses && <UsesDisclosure entries={uses!} />}
+    </div>
+  );
+}
+
+function UsesToggle({ open, setOpen, count }: { open: boolean; setOpen: (v: boolean) => void; count: number }) {
+  return (
+    <button
+      type="button"
+      onClick={() => setOpen(!open)}
+      aria-expanded={open}
+      className="text-aether hover:text-gold font-mono"
+    >
+      {open ? '▾' : '▸'} used in {count} {count === 1 ? 'recipe' : 'recipes'}
+    </button>
+  );
+}
+
+function UsesDisclosure({ entries }: { entries: UsesEntry[] }) {
+  return (
+    <div className="mt-2 pl-4 font-mono text-[11px] space-y-1">
+      {entries.map((e) => (
+        <div key={e.outputItemId} className="flex items-center justify-between">
+          <Link to={`/item/${e.outputItemId}`} className="text-text-cream hover:text-gold">
+            {e.outputName} <span className="text-text-low">(needs {e.amountNeeded}×)</span>
+          </Link>
+          <span className="text-text-low">
+            {e.outputUnitPrice > 0
+              ? <>output {fmtFull(e.outputUnitPrice)}g</>
+              : <span className="text-text-low italic">no MB price</span>}
+          </span>
+        </div>
+      ))}
     </div>
   );
 }
