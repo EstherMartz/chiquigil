@@ -15,7 +15,9 @@ const FIELDS = [
   'DurabilityFactor',
   'RequiredCraftsmanship',
   'RequiredControl',
-  ...Array.from({ length: 10 }, (_, i) => [`Ingredient${i}`, `AmountIngredient${i}`]).flat(),
+  // See recipeSnapshot.ts: bare `Ingredient` busts XIVAPI's row budget.
+  'Ingredient[].row_id',
+  'AmountIngredient',
 ].join(',');
 
 export interface Ingredient {
@@ -73,6 +75,8 @@ interface RawResultFields {
   DurabilityFactor?: number;
   RequiredCraftsmanship?: number;
   RequiredControl?: number;
+  Ingredient?: RawIngredient[];
+  AmountIngredient?: number[];
   [k: string]: unknown;
 }
 
@@ -83,11 +87,16 @@ export function parseRecipeResponse(itemId: number, raw: { results?: Array<{ fie
   const code = NAME_TO_CODE[name] ?? 'ANY';
   const rlt = first.RecipeLevelTable?.fields;
   const recipeLevel = rlt?.ClassJobLevel ?? 0;
+  // XIVAPI v2 returns Ingredient + AmountIngredient as parallel arrays.
+  // Earlier shape (Ingredient0..Ingredient9 numbered fields) is gone — recipes
+  // baked under the old parser come out with ingredients=[].
+  const ings = Array.isArray(first.Ingredient) ? first.Ingredient : [];
+  const amts = Array.isArray(first.AmountIngredient) ? first.AmountIngredient : [];
   const ingredients: Ingredient[] = [];
-  for (let i = 0; i < 10; i++) {
-    const ing = first[`Ingredient${i}`] as RawIngredient | undefined;
-    const amt = first[`AmountIngredient${i}`] as number | undefined;
-    if (ing?.value && amt && amt > 0) {
+  for (let i = 0; i < ings.length; i++) {
+    const ing = ings[i];
+    const amt = amts[i];
+    if (ing?.value && typeof amt === 'number' && amt > 0) {
       ingredients.push({ itemId: ing.value, amount: amt });
     }
   }

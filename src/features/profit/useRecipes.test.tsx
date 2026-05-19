@@ -65,7 +65,7 @@ describe('useRecipes (snapshot-backed)', () => {
                 ItemResult: { value: 49281 },
                 CraftType: { fields: { Name: 'Leatherworker' } },
                 RecipeLevelTable: { fields: { ClassJobLevel: 100 } },
-                Ingredient0: { value: 1 }, AmountIngredient0: 2,
+                Ingredient: [{ value: 1 }], AmountIngredient: [2],
               },
             }],
           }),

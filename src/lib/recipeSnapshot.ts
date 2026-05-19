@@ -23,7 +23,13 @@ const RECIPE_FIELDS = [
   'DurabilityFactor',
   'RequiredCraftsmanship',
   'RequiredControl',
-  ...Array.from({ length: 10 }, (_, i) => [`Ingredient${i}`, `AmountIngredient${i}`]).flat(),
+  // Ingredient is an 8-element array in v2. Asking for just the bare item
+  // reference via `Ingredient[].row_id` keeps the response small enough to
+  // fit XIVAPI's 20k-row processing budget at limit=500. Without the
+  // array filter, each Ingredient expands to a full Item struct and the
+  // bake fails with HTTP 400.
+  'Ingredient[].row_id',
+  'AmountIngredient',
 ].join(',');
 
 interface RawRow { row_id: number; fields: Record<string, unknown> }

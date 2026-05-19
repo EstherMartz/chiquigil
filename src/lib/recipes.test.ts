@@ -4,7 +4,7 @@ import { buildRecipeQueryUrl, parseRecipeResponse, fetchRecipeForItem } from './
 describe('buildRecipeQueryUrl', () => {
   it('builds an XIVAPI Recipe-sheet query filtering by ItemResult', () => {
     expect(buildRecipeQueryUrl(49281)).toBe(
-      'https://v2.xivapi.com/api/search?sheets=Recipe&query=ItemResult%3D49281&fields=ItemResult,CraftType.Name,RecipeLevelTable.ClassJobLevel,RecipeLevelTable.Stars,RecipeLevelTable.Difficulty,RecipeLevelTable.Quality,RecipeLevelTable.Durability,DifficultyFactor,QualityFactor,DurabilityFactor,RequiredCraftsmanship,RequiredControl,Ingredient0,AmountIngredient0,Ingredient1,AmountIngredient1,Ingredient2,AmountIngredient2,Ingredient3,AmountIngredient3,Ingredient4,AmountIngredient4,Ingredient5,AmountIngredient5,Ingredient6,AmountIngredient6,Ingredient7,AmountIngredient7,Ingredient8,AmountIngredient8,Ingredient9,AmountIngredient9&limit=1'
+      'https://v2.xivapi.com/api/search?sheets=Recipe&query=ItemResult%3D49281&fields=ItemResult,CraftType.Name,RecipeLevelTable.ClassJobLevel,RecipeLevelTable.Stars,RecipeLevelTable.Difficulty,RecipeLevelTable.Quality,RecipeLevelTable.Durability,DifficultyFactor,QualityFactor,DurabilityFactor,RequiredCraftsmanship,RequiredControl,Ingredient[].row_id,AmountIngredient&limit=1'
     );
   });
 });
@@ -25,12 +25,12 @@ describe('parseRecipeResponse', () => {
           ItemResult: { value: 49281 },
           CraftType: { fields: { Name: 'Leatherworker' } },
           RecipeLevelTable: { fields: { ClassJobLevel: 100 } },
-          Ingredient0: { value: 100 },
-          AmountIngredient0: 2,
-          Ingredient1: { value: 200 },
-          AmountIngredient1: 3,
-          Ingredient2: { value: 0 },
-          AmountIngredient2: 0,
+          Ingredient: [
+            { value: 100 },
+            { value: 200 },
+            { value: 0 },
+          ],
+          AmountIngredient: [2, 3, 0],
         },
       }],
     };

@@ -56,7 +56,7 @@ describe('Watchlist route', () => {
                 ItemResult: { value: 49281 },
                 CraftType: { fields: { Name: 'Leatherworker' } },
                 RecipeLevelTable: { fields: { ClassJobLevel: 100 } },
-                Ingredient0: { value: 7 }, AmountIngredient0: 5,
+                Ingredient: [{ value: 7 }], AmountIngredient: [5],
               },
             }],
           },
@@ -74,7 +74,7 @@ describe('Watchlist route', () => {
                     ItemResult: { value: 49281 },
                     CraftType: { fields: { Name: 'Leatherworker' } },
                     RecipeLevelTable: { fields: { ClassJobLevel: 100 } },
-                    Ingredient0: { value: 7 }, AmountIngredient0: 5,
+                    Ingredient: [{ value: 7 }], AmountIngredient: [5],
                   },
                 }],
               }
