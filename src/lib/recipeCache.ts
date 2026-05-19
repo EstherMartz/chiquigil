@@ -92,10 +92,10 @@ export async function getAllCachedItems(): Promise<SnapshotItem[] | undefined> {
   return (await db()).get(ITEM_STORE, ITEM_SNAPSHOT_KEY);
 }
 
-export async function putCachedItems(items: SnapshotItem[]): Promise<void> {
+export async function putCachedItems(items: SnapshotItem[], ts?: number): Promise<void> {
   const handle = await db();
   await handle.put(ITEM_STORE, items, ITEM_SNAPSHOT_KEY);
-  await handle.put(META_STORE, Date.now(), ITEM_SNAPSHOT_TS_KEY);
+  await handle.put(META_STORE, ts ?? Date.now(), ITEM_SNAPSHOT_TS_KEY);
 }
 
 export async function clearItemCache(): Promise<void> {
@@ -115,10 +115,10 @@ export async function getCachedGatheringCatalog(): Promise<Array<[number, Gather
   return (await db()).get(GATHER_STORE, GATHER_CATALOG_KEY);
 }
 
-export async function putCachedGatheringCatalog(entries: Array<[number, GatheringInfo]>): Promise<void> {
+export async function putCachedGatheringCatalog(entries: Array<[number, GatheringInfo]>, ts?: number): Promise<void> {
   const handle = await db();
   await handle.put(GATHER_STORE, entries, GATHER_CATALOG_KEY);
-  await handle.put(META_STORE, Date.now(), GATHER_CATALOG_TS_KEY);
+  await handle.put(META_STORE, ts ?? Date.now(), GATHER_CATALOG_TS_KEY);
 }
 
 export async function clearGatheringCatalog(): Promise<void> {
@@ -138,10 +138,10 @@ export async function getCachedRecipeSnapshot(): Promise<Array<[number, Recipe]>
   return (await db()).get(RECIPE_SNAPSHOT_STORE, RECIPE_SNAPSHOT_KEY);
 }
 
-export async function putCachedRecipeSnapshot(entries: Array<[number, Recipe]>): Promise<void> {
+export async function putCachedRecipeSnapshot(entries: Array<[number, Recipe]>, ts?: number): Promise<void> {
   const handle = await db();
   await handle.put(RECIPE_SNAPSHOT_STORE, entries, RECIPE_SNAPSHOT_KEY);
-  await handle.put(META_STORE, Date.now(), RECIPE_SNAPSHOT_TS_KEY);
+  await handle.put(META_STORE, ts ?? Date.now(), RECIPE_SNAPSHOT_TS_KEY);
 }
 
 export async function clearRecipeSnapshot(): Promise<void> {
@@ -194,10 +194,10 @@ export async function getCachedLeves(): Promise<SnapshotLeve[] | undefined> {
   return (await db()).get(LEVE_STORE, LEVE_SNAPSHOT_KEY);
 }
 
-export async function putCachedLeves(leves: SnapshotLeve[]): Promise<void> {
+export async function putCachedLeves(leves: SnapshotLeve[], ts?: number): Promise<void> {
   const handle = await db();
   await handle.put(LEVE_STORE, leves, LEVE_SNAPSHOT_KEY);
-  await handle.put(META_STORE, Date.now(), LEVE_SNAPSHOT_TS_KEY);
+  await handle.put(META_STORE, ts ?? Date.now(), LEVE_SNAPSHOT_TS_KEY);
 }
 
 export async function clearLeveCache(): Promise<void> {
@@ -219,10 +219,10 @@ export async function getCachedVendorSnapshot(): Promise<Map<number, number> | u
   return new Map(raw);
 }
 
-export async function putCachedVendorSnapshot(snapshot: Map<number, number>): Promise<void> {
+export async function putCachedVendorSnapshot(snapshot: Map<number, number>, ts?: number): Promise<void> {
   const handle = await db();
   await handle.put(GILSHOP_STORE, [...snapshot.entries()], GILSHOP_SNAPSHOT_KEY);
-  await handle.put(META_STORE, Date.now(), GILSHOP_SNAPSHOT_TS_KEY);
+  await handle.put(META_STORE, ts ?? Date.now(), GILSHOP_SNAPSHOT_TS_KEY);
 }
 
 export async function clearVendorSnapshotCache(): Promise<void> {
@@ -244,10 +244,10 @@ export async function getCachedSpecialShop(): Promise<SpecialShopSnapshot | unde
   return { byCurrency: new Map(raw.byCurrency) };
 }
 
-export async function putCachedSpecialShop(snapshot: SpecialShopSnapshot): Promise<void> {
+export async function putCachedSpecialShop(snapshot: SpecialShopSnapshot, ts?: number): Promise<void> {
   const handle = await db();
   await handle.put(SPECIALSHOP_STORE, { byCurrency: [...snapshot.byCurrency.entries()] }, SPECIALSHOP_SNAPSHOT_KEY);
-  await handle.put(META_STORE, Date.now(), SPECIALSHOP_SNAPSHOT_TS_KEY);
+  await handle.put(META_STORE, ts ?? Date.now(), SPECIALSHOP_SNAPSHOT_TS_KEY);
 }
 
 export async function clearSpecialShopCache(): Promise<void> {
