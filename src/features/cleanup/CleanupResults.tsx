@@ -101,9 +101,10 @@ function ItemName({ entry }: { entry: InventoryEntry }) {
 function CraftRow({ row }: { row: CleanupRow }) {
   const [open, setOpen] = useState(false);
   if (!row.bestCraft) return null;
+  const altLabel = craftAltLabel(row);
   return (
     <div className="border-b border-border-base py-1.5">
-      <div className="flex items-center justify-between text-xs">
+      <div className="flex items-center justify-between text-xs gap-3">
         <ItemName entry={row.entry} />
         <button
           onClick={() => setOpen((o) => !o)}
@@ -118,11 +119,20 @@ function CraftRow({ row }: { row: CleanupRow }) {
           {row.otherCrafts.length > 0 && (
             <span className="text-text-low"> · +{row.otherCrafts.length} more</span>
           )}
+          {altLabel && <span className="text-text-low"> · {altLabel}</span>}
         </button>
       </div>
       {open && <CraftDetail crafts={[row.bestCraft, ...row.otherCrafts]} />}
     </div>
   );
+}
+
+function craftAltLabel(row: CleanupRow): string | null {
+  if (!row.runnerUp) return null;
+  const perUnit = Math.round(row.runnerUp.value / Math.max(1, row.entry.qty));
+  if (row.runnerUp.action === 'sellMb') return `or MB: ${fmtGil(perUnit)}g/ea`;
+  if (row.runnerUp.action === 'vendor') return `or vendor: ${fmtGil(perUnit)}g/ea`;
+  return null;
 }
 
 function CraftDetail({ crafts }: { crafts: CraftOpportunity[] }) {

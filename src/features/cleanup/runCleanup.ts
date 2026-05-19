@@ -40,13 +40,12 @@ function buildRow(
   const vendorScore = vendorRevenue;
 
   let bucket: Bucket;
-  // Craft wins when profitable and best. Falls through to MB/vendor when
-  // those net more gil. Final fallback: a feasible-but-unprofitable craft
-  // beats discard so the user still sees the suggestion.
-  if (bestCraft && craftScore > 0 && craftScore >= mbScore && craftScore >= vendorScore) bucket = 'craft';
+  // Any feasible craft wins — even at a loss. The alternative (MB or vendor)
+  // is surfaced inline as runner-up so the user can compare without losing
+  // the crafting suggestion to a bucket they'd never scroll back to.
+  if (bestCraft) bucket = 'craft';
   else if (mbScore > 0 && mbScore >= vendorScore) bucket = 'sellMb';
   else if (vendorScore > 0) bucket = 'vendor';
-  else if (bestCraft) bucket = 'craft';
   else bucket = 'discard';
 
   // runnerUp: the non-winning action with the highest non-zero value.

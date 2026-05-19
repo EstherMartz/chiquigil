@@ -153,7 +153,9 @@ describe('runCleanup', () => {
     expect(result.discard).toHaveLength(0);
   });
 
-  it('prefers vendor over an unprofitable craft when vendor pays something', () => {
+  it('routes any feasible craft to the craft bucket, surfacing vendor/MB as runner-up', () => {
+    // Even at a loss, a feasible craft wins — vendor pays 50, craft nets -100,
+    // but the user still sees the suggestion. Vendor appears as runner-up.
     const opp: CraftOpportunity = {
       outputItemId: 99, outputName: 'Crafted', outputUnitPrice: 10,
       netProfit: -100, usedFromInventory: [{ itemId: 1, name: 'Vendor Junk', amount: 1 }], missingIngredients: [],
@@ -165,8 +167,27 @@ describe('runCleanup', () => {
       craftOpportunities: new Map([[1, [opp]]]),
       unrecognized: [],
     });
-    expect(result.vendor).toHaveLength(1);
-    expect(result.craft).toHaveLength(0);
+    expect(result.craft).toHaveLength(1);
+    expect(result.craft[0].bestCraft?.netProfit).toBe(-100);
+    expect(result.craft[0].runnerUp?.action).toBe('vendor');
+    expect(result.vendor).toHaveLength(0);
+  });
+
+  it('routes feasible craft to craft even when MB pays more (MB becomes runner-up)', () => {
+    const opp: CraftOpportunity = {
+      outputItemId: 99, outputName: 'Crafted', outputUnitPrice: 50,
+      netProfit: 10, usedFromInventory: [{ itemId: 3, name: 'MB Goods', amount: 1 }], missingIngredients: [],
+    };
+    const result = runCleanup({
+      inventory: inv([{ itemId: 3, qty: 2, isHq: false }]),
+      market: market({ 3: { nq: 1000, recent: 10, listings: 5 } }),  // MB 2000 total
+      items,
+      craftOpportunities: new Map([[3, [opp]]]),
+      unrecognized: [],
+    });
+    expect(result.craft).toHaveLength(1);
+    expect(result.craft[0].runnerUp?.action).toBe('sellMb');
+    expect(result.sellMb).toHaveLength(0);
   });
 
   it('passes unrecognized entries through to result.unrecognized', () => {
