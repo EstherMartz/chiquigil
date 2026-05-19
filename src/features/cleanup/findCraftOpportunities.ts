@@ -82,7 +82,9 @@ function evaluateRecipe(
   }
 
   const netProfit = outputPrice.unit - opportunityCost - missingCost;
-  if (netProfit <= 0) return null;
+  // No profitability gate: surface every feasible craft so the user can see
+  // what an item could turn into even at a loss. Sort below puts profitable
+  // crafts first; negatives appear at the bottom of each item's bucket.
 
   const usedDetailed: CraftOpportunity['usedFromInventory'] = coverage.used.map((u) => ({
     itemId: u.itemId,

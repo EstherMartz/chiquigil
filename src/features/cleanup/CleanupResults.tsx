@@ -58,7 +58,7 @@ export function CleanupResults({ result, usesByItemId }: CleanupResultsProps) {
 function CraftEmptyState({ ingredientItemCount }: { ingredientItemCount: number }) {
   return (
     <div className="py-3 font-mono text-[11px] text-text-low space-y-1">
-      <div>No recipes met all three gates: positive net profit · ≤2 missing ingredients · all ingredients priced on MB.</div>
+      <div>No recipes met both gates: ≤2 missing ingredients · all ingredients priced on MB.</div>
       {ingredientItemCount > 0 ? (
         <div>
           {ingredientItemCount} of your items appear as ingredients in some recipe — open the{' '}
@@ -112,7 +112,9 @@ function CraftRow({ row }: { row: CleanupRow }) {
           aria-label={row.bestCraft.outputName}
         >
           → Craft: {row.bestCraft.outputName}{' '}
-          <span className="text-jade">+{fmtGil(row.bestCraft.netProfit)}</span>
+          <span className={row.bestCraft.netProfit >= 0 ? 'text-jade' : 'text-crimson'}>
+            {row.bestCraft.netProfit >= 0 ? '+' : '−'}{fmtGil(Math.abs(row.bestCraft.netProfit))}
+          </span>
           {row.otherCrafts.length > 0 && (
             <span className="text-text-low"> · +{row.otherCrafts.length} more</span>
           )}

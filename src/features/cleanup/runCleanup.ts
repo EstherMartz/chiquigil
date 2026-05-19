@@ -35,20 +35,23 @@ function buildRow(
   const bestCraft = crafts && crafts.length > 0 ? crafts[0] : null;
   const otherCrafts = crafts ? crafts.slice(1, 1 + MAX_OTHER_CRAFTS) : [];
 
-  const craftScore = bestCraft?.netProfit ?? 0;
+  const craftScore = bestCraft?.netProfit ?? Number.NEGATIVE_INFINITY;
   const mbScore = mbEligible ? mbRevenue : 0;
   const vendorScore = vendorRevenue;
 
   let bucket: Bucket;
-  // Tie-break order: craft > mb > vendor > discard.
-  if (craftScore > 0 && craftScore >= mbScore && craftScore >= vendorScore) bucket = 'craft';
+  // Craft wins when profitable and best. Falls through to MB/vendor when
+  // those net more gil. Final fallback: a feasible-but-unprofitable craft
+  // beats discard so the user still sees the suggestion.
+  if (bestCraft && craftScore > 0 && craftScore >= mbScore && craftScore >= vendorScore) bucket = 'craft';
   else if (mbScore > 0 && mbScore >= vendorScore) bucket = 'sellMb';
   else if (vendorScore > 0) bucket = 'vendor';
+  else if (bestCraft) bucket = 'craft';
   else bucket = 'discard';
 
   // runnerUp: the non-winning action with the highest non-zero value.
   const candidates: Array<{ action: Exclude<Bucket, 'discard'>; value: number }> = [];
-  if (bucket !== 'craft' && craftScore > 0) candidates.push({ action: 'craft', value: craftScore });
+  if (bucket !== 'craft' && bestCraft && craftScore > 0) candidates.push({ action: 'craft', value: craftScore });
   if (bucket !== 'sellMb' && mbScore > 0) candidates.push({ action: 'sellMb', value: mbScore });
   if (bucket !== 'vendor' && vendorScore > 0) candidates.push({ action: 'vendor', value: vendorScore });
   candidates.sort((a, b) => b.value - a.value);

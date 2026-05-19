@@ -103,12 +103,14 @@ describe('findCraftOpportunities', () => {
     expect(out.get(2) ?? []).toHaveLength(0);
   });
 
-  it('skips recipes whose net profit is not positive', () => {
+  it('keeps recipes whose net profit is zero or negative (surfaced for exploration)', () => {
     const recipes = new Map<number, Recipe>([[1, recipe(1, [[2, 1]])]]);
-    const m = market({ 1: { nq: 1, recent: 10, minNQ: 1 } });  // output worth 1g, opp cost 1g -> 0 net
+    const m = market({ 1: { nq: 1, recent: 10, minNQ: 1 } });  // output 1g, opp cost 1g -> 0 net
     const inventory = inv([{ itemId: 2, qty: 1, isHq: false }]);
     const out = findCraftOpportunities(inventory, recipes, m, items);
-    expect(out.get(2) ?? []).toHaveLength(0);
+    const opts = out.get(2) ?? [];
+    expect(opts).toHaveLength(1);
+    expect(opts[0].netProfit).toBe(0);
   });
 
   it('pools HQ and NQ inventory of the same item when checking ingredient coverage', () => {

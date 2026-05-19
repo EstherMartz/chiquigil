@@ -134,6 +134,41 @@ describe('runCleanup', () => {
     expect(result.craft).toHaveLength(1);
   });
 
+  it('still surfaces an unprofitable craft when MB and vendor are both zero', () => {
+    // priceLow=0 + no MB normally → discard. A feasible-but-negative craft
+    // should beat discard so the user sees the suggestion anyway.
+    const opp: CraftOpportunity = {
+      outputItemId: 99, outputName: 'Crafted', outputUnitPrice: 10,
+      netProfit: -50, usedFromInventory: [{ itemId: 2, name: 'Discardable', amount: 1 }], missingIngredients: [],
+    };
+    const result = runCleanup({
+      inventory: inv([{ itemId: 2, qty: 1, isHq: false }]),
+      market: market({}),
+      items,
+      craftOpportunities: new Map([[2, [opp]]]),
+      unrecognized: [],
+    });
+    expect(result.craft).toHaveLength(1);
+    expect(result.craft[0].bestCraft?.netProfit).toBe(-50);
+    expect(result.discard).toHaveLength(0);
+  });
+
+  it('prefers vendor over an unprofitable craft when vendor pays something', () => {
+    const opp: CraftOpportunity = {
+      outputItemId: 99, outputName: 'Crafted', outputUnitPrice: 10,
+      netProfit: -100, usedFromInventory: [{ itemId: 1, name: 'Vendor Junk', amount: 1 }], missingIngredients: [],
+    };
+    const result = runCleanup({
+      inventory: inv([{ itemId: 1, qty: 1, isHq: false }]),  // vendor 50
+      market: market({}),
+      items,
+      craftOpportunities: new Map([[1, [opp]]]),
+      unrecognized: [],
+    });
+    expect(result.vendor).toHaveLength(1);
+    expect(result.craft).toHaveLength(0);
+  });
+
   it('passes unrecognized entries through to result.unrecognized', () => {
     const ghost: InventoryEntry = { itemId: 0, name: 'Ghost', qty: 1, isHq: false, locations: ['bag'] };
     const result = runCleanup({
