@@ -50,6 +50,38 @@ describe('parseItemSheetPage', () => {
     };
     expect(parseItemSheetPage(raw)[0].canHq).toBe(false);
   });
+
+  it('extracts priceLow when XIVAPI returns it', () => {
+    const page = {
+      rows: [
+        {
+          row_id: 7,
+          fields: {
+            Name: 'Cobalt Ingot',
+            ItemSearchCategory: { value: 60 },
+            ItemUICategory: { value: 47 },
+            LevelItem: { value: 50 },
+            CanBeHq: true,
+            PriceLow: 17,
+          },
+        },
+        {
+          row_id: 8,
+          fields: {
+            Name: 'Bag-only Item',
+            ItemSearchCategory: { value: 60 },
+            ItemUICategory: { value: 47 },
+            LevelItem: { value: 1 },
+            CanBeHq: false,
+            PriceLow: 0,
+          },
+        },
+      ],
+    };
+    const out = parseItemSheetPage(page);
+    expect(out[0].priceLow).toBe(17);
+    expect(out[1].priceLow).toBeUndefined();
+  });
 });
 
 describe('fetchItemSnapshot', () => {

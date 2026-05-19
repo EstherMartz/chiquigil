@@ -7,7 +7,7 @@ import type { SpecialShopSnapshot } from './specialShopSnapshot';
 import type { CurrencyId } from './currencies';
 
 const DB_NAME = 'ffxiv-helper';
-const DB_VERSION = 9;
+const DB_VERSION = 10;
 const RECIPE_STORE = 'recipes';
 const NAME_STORE = 'names';
 const ITEM_STORE = 'items';
@@ -24,7 +24,7 @@ let dbPromise: Promise<IDBPDatabase> | null = null;
 function db(): Promise<IDBPDatabase> {
   if (!dbPromise) {
     dbPromise = openDB(DB_NAME, DB_VERSION, {
-      upgrade(database) {
+      upgrade(database, oldVersion) {
         if (!database.objectStoreNames.contains(RECIPE_STORE)) {
           database.createObjectStore(RECIPE_STORE);
         }
@@ -54,6 +54,12 @@ function db(): Promise<IDBPDatabase> {
         }
         if (!database.objectStoreNames.contains(SPECIALSHOP_STORE)) {
           database.createObjectStore(SPECIALSHOP_STORE);
+        }
+        if (oldVersion > 0 && oldVersion < 10) {
+          // v10 added priceLow to SnapshotItem; wipe the item store so the next load
+          // re-hydrates from the new static bundle (which carries the field).
+          database.transaction(ITEM_STORE, 'readwrite').objectStore(ITEM_STORE).clear();
+          database.transaction(META_STORE, 'readwrite').objectStore(META_STORE).delete(ITEM_SNAPSHOT_TS_KEY);
         }
       },
     });
