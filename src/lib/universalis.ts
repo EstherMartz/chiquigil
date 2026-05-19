@@ -128,12 +128,19 @@ function schedulePersist(scope: string): void {
   }, 1500));
 }
 
+export interface FetchMarketOpts {
+  /** Fires after each batch completes. `total` is the number of batches that
+   * will need a live fetch (cached entries don't count). Use to drive
+   * progress UI in callers that fetch large id sets. */
+  onProgress?: (completed: number, total: number) => void;
+}
+
 /**
  * Fetch market data for `ids` on `scope`. Returns cached entries when
  * fresh (within 30 minutes) and fetches the rest from Universalis. The
  * cache mirrors to IDB asynchronously (debounced 1.5s).
  */
-export async function fetchMarketData(scope: Scope, ids: number[]): Promise<MarketData> {
+export async function fetchMarketData(scope: Scope, ids: number[], opts: FetchMarketOpts = {}): Promise<MarketData> {
   if (ids.length === 0) return {};
   await ensureHydrated(scope);
   const now = Date.now();
@@ -150,7 +157,10 @@ export async function fetchMarketData(scope: Scope, ids: number[]): Promise<Mark
       stale.push(id);
     }
   }
-  if (stale.length === 0) return fresh;
+  if (stale.length === 0) {
+    opts.onProgress?.(0, 0);
+    return fresh;
+  }
 
   // Universalis caps each request at ~100 IDs; longer URLs return 414 or 5xx
   // (which the browser then reports as CORS because the error response carries
@@ -160,6 +170,9 @@ export async function fetchMarketData(scope: Scope, ids: number[]): Promise<Mark
   for (let i = 0; i < stale.length; i += BATCH_SIZE) {
     batches.push(stale.slice(i, i + BATCH_SIZE));
   }
+  const total = batches.length;
+  let completed = 0;
+  opts.onProgress?.(0, total);
 
   const live: MarketData = {};
   // Bounded concurrency: too many parallel requests trigger Universalis 5xx
@@ -173,21 +186,23 @@ export async function fetchMarketData(scope: Scope, ids: number[]): Promise<Mark
         live[String(id)] = empty;
         cache.set(id, { ts: now, data: empty });
       }
-      return;
+    } else {
+      const parsed = parseMarketResponse(raw);
+      for (const [idStr, data] of Object.entries(parsed)) {
+        live[idStr] = data;
+        cache.set(Number(idStr), { ts: now, data });
+      }
+      // Cache empty placeholders for IDs in this batch the server couldn't resolve.
+      const resolved = new Set(Object.keys(parsed));
+      for (const id of batch) {
+        if (resolved.has(String(id))) continue;
+        const empty = emptyMarketItem();
+        live[String(id)] = empty;
+        cache.set(id, { ts: now, data: empty });
+      }
     }
-    const parsed = parseMarketResponse(raw);
-    for (const [idStr, data] of Object.entries(parsed)) {
-      live[idStr] = data;
-      cache.set(Number(idStr), { ts: now, data });
-    }
-    // Cache empty placeholders for IDs in this batch the server couldn't resolve.
-    const resolved = new Set(Object.keys(parsed));
-    for (const id of batch) {
-      if (resolved.has(String(id))) continue;
-      const empty = emptyMarketItem();
-      live[String(id)] = empty;
-      cache.set(id, { ts: now, data: empty });
-    }
+    completed++;
+    opts.onProgress?.(completed, total);
   });
 
   schedulePersist(scope);

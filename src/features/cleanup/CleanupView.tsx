@@ -1,17 +1,28 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useItemSnapshot } from '../queries/useItemSnapshot';
 import { useRecipeSnapshot } from '../queries/useRecipeSnapshot';
-import { useMarketData } from '../watchlist/useMarketData';
+import { useMarketData, type MarketBundle } from '../watchlist/useMarketData';
 import { useUserStore } from '../user/userStore';
 import type { SnapshotItem } from '../../lib/itemSnapshot';
 import { AllaganPasteBox } from './AllaganPasteBox';
 import { CleanupResults } from './CleanupResults';
+import { CleanupProgressBar } from './CleanupProgressBar';
 import { parseAllaganInventory } from './parseAllaganInventory';
 import { findCraftOpportunities } from './findCraftOpportunities';
 import { findInventoryUses } from './findInventoryUses';
 import { runCleanup } from './runCleanup';
 import { useCleanupStore } from './cleanupStore';
 import type { CleanupResult, UsesEntry } from './types';
+
+const EMPTY_MARKET: MarketBundle = { phantom: {}, dc: {}, region: {} };
+
+function mergeMarkets(a: MarketBundle, b: MarketBundle): MarketBundle {
+  return {
+    phantom: { ...a.phantom, ...b.phantom },
+    dc: { ...a.dc, ...b.dc },
+    region: { ...a.region, ...b.region },
+  };
+}
 
 export function CleanupView() {
   const itemSnap = useItemSnapshot();
@@ -37,52 +48,92 @@ export function CleanupView() {
   const setParseError = useCleanupStore((s) => s.setParseError);
   const clearStore = useCleanupStore((s) => s.clear);
 
-  // Collect every itemId we need market data for: every inventory item + every
-  // recipe-output the inventory could craft + every potentially-missing
-  // ingredient. In-inventory ingredients are deliberately excluded — they
-  // already appear via the inventory set, and even if their MB tier is not
-  // prefetched, findCraftOpportunities falls back to priceLow as the
-  // opportunity-cost floor. Including them blew the set up to ~5000 ids,
-  // saturating Universalis's rate limiter (which surfaces as CORS errors).
-  const marketIds = useMemo<number[]>(() => {
+  // Pass 1: just the user's inventory items. Drives the Sell/Vendor/Discard
+  // sections immediately so they don't have to wait on the bigger craft fetch.
+  const inventoryIds = useMemo<number[]>(() => {
     if (!parsed) return [];
     const ids = new Set<number>();
     for (const e of parsed.entries) if (e.itemId > 0) ids.add(e.itemId);
-    if (recipeSnap.data) {
-      const invItemIds = new Set(parsed.entries.map((e) => e.itemId));
-      for (const recipe of recipeSnap.data.values()) {
-        const usesInv = recipe.ingredients.some((ing) => invItemIds.has(ing.itemId));
-        if (!usesInv) continue;
-        ids.add(recipe.itemResultId);
-        for (const ing of recipe.ingredients) {
-          if (!invItemIds.has(ing.itemId)) ids.add(ing.itemId);
-        }
+    return [...ids];
+  }, [parsed]);
+
+  // Pass 2: outputs of every overlap-recipe + the ingredients of those recipes
+  // the user *doesn't* own (the potentially-missing set). In-inventory
+  // ingredients are skipped — they fall back to priceLow as the
+  // opportunity-cost floor.
+  const craftIds = useMemo<number[]>(() => {
+    if (!parsed || !recipeSnap.data) return [];
+    const invItemIds = new Set(parsed.entries.map((e) => e.itemId));
+    const ids = new Set<number>();
+    for (const recipe of recipeSnap.data.values()) {
+      const usesInv = recipe.ingredients.some((ing) => invItemIds.has(ing.itemId));
+      if (!usesInv) continue;
+      ids.add(recipe.itemResultId);
+      for (const ing of recipe.ingredients) {
+        if (!invItemIds.has(ing.itemId)) ids.add(ing.itemId);
       }
     }
     return [...ids];
   }, [parsed, recipeSnap.data]);
 
-  // Region scope ('Europe' = Chaos + Light) catches items with zero listings on
-  // the player's world but active cross-DC sellers, so the bucketer can still
-  // route them to MB instead of vendor.
-  const market = useMarketData(marketIds, world, dc, 'Europe');
+  const [invProgress, setInvProgress] = useState({ done: 0, total: 0 });
+  const [craftProgress, setCraftProgress] = useState({ done: 0, total: 0 });
+  const onInvProgress = useCallback(
+    (done: number, total: number) => setInvProgress({ done, total }),
+    [],
+  );
+  const onCraftProgress = useCallback(
+    (done: number, total: number) => setCraftProgress({ done, total }),
+    [],
+  );
 
-  const result = useMemo<CleanupResult | null>(() => {
-    if (!parsed || !recipeSnap.data || !market.data) return null;
-    const craftMap = findCraftOpportunities(parsed.entries, recipeSnap.data, market.data, itemsById);
+  const inventoryMarket = useMarketData(inventoryIds, world, dc, 'Europe', { onProgress: onInvProgress });
+  // Gate the craft fetch on inventory market having landed so we don't double
+  // up the throttle queue right out the gate.
+  const craftMarket = useMarketData(craftIds, world, dc, 'Europe', {
+    enabled: !!inventoryMarket.data && craftIds.length > 0,
+    onProgress: onCraftProgress,
+  });
+
+  const inventoryReady = !!inventoryMarket.data;
+  const craftReady = !!craftMarket.data || craftIds.length === 0;
+
+  // Stage 1 result: just sell/vendor/discard, with empty craft opportunities.
+  const partialResult = useMemo<CleanupResult | null>(() => {
+    if (!parsed || !inventoryMarket.data) return null;
     return runCleanup({
       inventory: parsed.entries,
-      market: market.data,
+      market: inventoryMarket.data,
+      items: itemsById,
+      craftOpportunities: new Map(),
+      unrecognized: parsed.unrecognized,
+    });
+  }, [parsed, inventoryMarket.data, itemsById]);
+
+  // Stage 2 result: full cleanup with craft scoring + merged market data.
+  const fullResult = useMemo<CleanupResult | null>(() => {
+    if (!parsed || !recipeSnap.data || !inventoryMarket.data) return null;
+    if (craftIds.length > 0 && !craftMarket.data) return null;
+    const merged = craftMarket.data
+      ? mergeMarkets(inventoryMarket.data, craftMarket.data)
+      : inventoryMarket.data;
+    const craftMap = findCraftOpportunities(parsed.entries, recipeSnap.data, merged, itemsById);
+    return runCleanup({
+      inventory: parsed.entries,
+      market: merged,
       items: itemsById,
       craftOpportunities: craftMap,
       unrecognized: parsed.unrecognized,
     });
-  }, [parsed, recipeSnap.data, market.data, itemsById]);
+  }, [parsed, recipeSnap.data, inventoryMarket.data, craftMarket.data, itemsById, craftIds.length]);
 
   const usesByItemId = useMemo<Map<number, UsesEntry[]>>(() => {
-    if (!parsed || !recipeSnap.data || !market.data) return new Map();
-    return findInventoryUses(parsed.entries, recipeSnap.data, market.data, itemsById);
-  }, [parsed, recipeSnap.data, market.data, itemsById]);
+    if (!parsed || !recipeSnap.data) return new Map();
+    const merged = craftMarket.data
+      ? mergeMarkets(inventoryMarket.data ?? EMPTY_MARKET, craftMarket.data)
+      : (inventoryMarket.data ?? EMPTY_MARKET);
+    return findInventoryUses(parsed.entries, recipeSnap.data, merged, itemsById);
+  }, [parsed, recipeSnap.data, inventoryMarket.data, craftMarket.data, itemsById]);
 
   function handleParse(csv: string) {
     try {
@@ -101,6 +152,9 @@ export function CleanupView() {
     ? `Parsed ${parsed.entries.length + parsed.unrecognized.length} rows · ${parsed.entries.length} recognized`
     : null;
 
+  const showProgress = parsed && (!inventoryReady || !craftReady);
+  const result = fullResult ?? partialResult;
+
   return (
     <div className="max-w-7xl mx-auto px-4 space-y-8 pt-4">
       <AllaganPasteBox
@@ -109,8 +163,26 @@ export function CleanupView() {
         parseError={parseError}
         parsedSummary={summary}
       />
-      {parsed && market.isLoading && (
-        <p className="font-mono text-[11px] text-text-low">Fetching market data for {marketIds.length} items…</p>
+      {showProgress && (
+        <CleanupProgressBar
+          stages={[
+            {
+              label: 'Pricing your inventory…',
+              done: invProgress.done,
+              total: invProgress.total,
+              status: inventoryReady ? 'done' : 'active',
+            },
+            {
+              label: 'Scoring craft opportunities…',
+              done: craftProgress.done,
+              total: craftProgress.total,
+              status:
+                !inventoryReady ? 'pending'
+                : craftReady ? 'done'
+                : 'active',
+            },
+          ]}
+        />
       )}
       {result && <CleanupResults result={result} usesByItemId={usesByItemId} />}
     </div>
