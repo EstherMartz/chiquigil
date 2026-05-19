@@ -51,7 +51,10 @@ export function CleanupView() {
     return [...ids];
   }, [parsed, recipeSnap.data]);
 
-  const market = useMarketData(marketIds, world, dc);
+  // Region scope ('Europe' = Chaos + Light) catches items with zero listings on
+  // the player's world but active cross-DC sellers, so the bucketer can still
+  // route them to MB instead of vendor.
+  const market = useMarketData(marketIds, world, dc, 'Europe');
 
   const result = useMemo<CleanupResult | null>(() => {
     if (!parsed || !recipeSnap.data || !market.data) return null;

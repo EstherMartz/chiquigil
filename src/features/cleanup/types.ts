@@ -23,6 +23,9 @@ export interface CraftOpportunity {
   missingIngredients: Array<{ itemId: number; name: string; amount: number; mbUnitPrice: number }>;
 }
 
+/** Which Universalis scope produced the mbRevenue/listingCount. null = no trusted tier anywhere. */
+export type MbScope = 'home' | 'dc' | 'region' | null;
+
 export interface CleanupRow {
   entry: InventoryEntry;
   vendorRevenue: number;
@@ -30,6 +33,8 @@ export interface CleanupRow {
   mbRevenue: number;
   /** Listings count behind mbRevenue. Used to surface a "thin market" pill. */
   mbListingCount: number;
+  /** Where mbRevenue came from. 'home' = own world, 'dc' = own DC, 'region' = cross-DC. */
+  mbScope: MbScope;
   bestCraft: CraftOpportunity | null;
   /** Up to 4 alternative craft opportunities ranked below bestCraft. */
   otherCrafts: CraftOpportunity[];

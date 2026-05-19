@@ -11,17 +11,28 @@ const items = new Map<number, SnapshotItem>([
   [4, { id: 4, name: 'Craft Mat', sc: 1, ui: 1, ilvl: 1, canHq: false, priceLow: 2 }],
 ]);
 
+function fakeMarketItem(p: { nq: number; recent: number; listings: number }): unknown {
+  return {
+    medianNQ: p.nq, medianHQ: null, minNQ: p.nq, minHQ: null,
+    recentSalesNQ: p.recent, recentSalesHQ: 0,
+    listingCount: p.listings, listingCountNQ: p.listings, listingCountHQ: 0,
+    worldListings: [],
+  };
+}
+
 function market(prices: Record<number, { nq: number; recent: number; listings: number }>): MarketBundle {
   const phantom: Record<number, unknown> = {};
-  for (const [id, p] of Object.entries(prices)) {
-    phantom[Number(id)] = {
-      medianNQ: p.nq, medianHQ: null, minNQ: p.nq, minHQ: null,
-      recentSalesNQ: p.recent, recentSalesHQ: 0,
-      listingCount: p.listings, listingCountNQ: p.listings, listingCountHQ: 0,
-      worldListings: [],
-    };
-  }
+  for (const [id, p] of Object.entries(prices)) phantom[Number(id)] = fakeMarketItem(p);
   return { phantom: phantom as never, dc: {}, region: {} } as MarketBundle;
+}
+
+function marketScoped(scopes: { home?: Record<number, { nq: number; recent: number; listings: number }>; dc?: Record<number, { nq: number; recent: number; listings: number }>; region?: Record<number, { nq: number; recent: number; listings: number }> }): MarketBundle {
+  const build = (src?: Record<number, { nq: number; recent: number; listings: number }>) => {
+    const out: Record<number, unknown> = {};
+    if (src) for (const [id, p] of Object.entries(src)) out[Number(id)] = fakeMarketItem(p);
+    return out;
+  };
+  return { phantom: build(scopes.home) as never, dc: build(scopes.dc) as never, region: build(scopes.region) as never } as MarketBundle;
 }
 
 const inv = (rows: Array<Omit<InventoryEntry, 'name' | 'locations'>>): InventoryEntry[] =>
@@ -147,5 +158,47 @@ describe('runCleanup', () => {
       unrecognized: [],
     });
     expect(result.vendor.map((r) => r.vendorRevenue)).toEqual([250, 50]);
+  });
+
+  it('falls back to DC then region when home world has no trusted tier', () => {
+    // Item priced 200g cross-DC region only; home + dc empty.
+    const result = runCleanup({
+      inventory: inv([{ itemId: 3, qty: 5, isHq: false }]),
+      market: marketScoped({ region: { 3: { nq: 200, recent: 10, listings: 8 } } }),
+      items,
+      craftOpportunities: new Map(),
+      unrecognized: [],
+    });
+    expect(result.sellMb).toHaveLength(1);
+    expect(result.sellMb[0].mbScope).toBe('region');
+    expect(result.sellMb[0].mbRevenue).toBe(1000);
+  });
+
+  it('prefers home scope over DC over region when multiple have tiers', () => {
+    const result = runCleanup({
+      inventory: inv([{ itemId: 3, qty: 1, isHq: false }]),
+      market: marketScoped({
+        home:   { 3: { nq: 100, recent: 10, listings: 5 } },
+        dc:     { 3: { nq: 80,  recent: 10, listings: 5 } },
+        region: { 3: { nq: 60,  recent: 10, listings: 5 } },
+      }),
+      items,
+      craftOpportunities: new Map(),
+      unrecognized: [],
+    });
+    expect(result.sellMb[0].mbScope).toBe('home');
+    expect(result.sellMb[0].mbRevenue).toBe(100);
+  });
+
+  it('falls back to DC scope when home empty but DC has tier', () => {
+    const result = runCleanup({
+      inventory: inv([{ itemId: 3, qty: 2, isHq: false }]),
+      market: marketScoped({ dc: { 3: { nq: 150, recent: 10, listings: 5 } } }),
+      items,
+      craftOpportunities: new Map(),
+      unrecognized: [],
+    });
+    expect(result.sellMb[0].mbScope).toBe('dc');
+    expect(result.sellMb[0].mbRevenue).toBe(300);
   });
 });

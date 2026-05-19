@@ -123,12 +123,14 @@ function CraftDetail({ crafts }: { crafts: CraftOpportunity[] }) {
 }
 
 function SellRow({ row }: { row: CleanupRow }) {
+  const scopeLabel = row.mbScope === 'dc' ? 'DC' : row.mbScope === 'region' ? 'cross-DC' : null;
   return (
     <div className="border-b border-border-base py-1.5 flex items-center justify-between text-xs">
       <ItemName entry={row.entry} />
       <div className="font-mono text-text-low">
         {fmtFull(row.mbRevenue / row.entry.qty)}g/ea ·{' '}
         {row.mbListingCount < 2 ? <span className="text-crimson">thin market</span> : <span className="text-jade">{row.mbListingCount} listings</span>}{' '}
+        {scopeLabel && <span className="text-aether">· {scopeLabel}</span>}{' '}
         · <span className="text-text-cream">{fmtFull(row.mbRevenue)}g</span>
       </div>
     </div>

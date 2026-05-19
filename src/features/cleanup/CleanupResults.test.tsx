@@ -25,7 +25,7 @@ describe('CleanupResults', () => {
       ...empty,
       craft: [{
         entry: { itemId: 4, name: 'Earth Cluster', qty: 42, isHq: false, locations: ['bag'] },
-        vendorRevenue: 84, mbRevenue: 0, mbListingCount: 0,
+        vendorRevenue: 84, mbRevenue: 0, mbListingCount: 0, mbScope: null,
         bestCraft: {
           outputItemId: 99, outputName: 'Earthbreak Aethersand', outputUnitPrice: 18000,
           netProfit: 14000,
@@ -54,7 +54,7 @@ describe('CleanupResults', () => {
       ...empty,
       sellMb: [{
         entry: { itemId: 3, name: 'Carbonweave Cloth', qty: 3, isHq: false, locations: ['retainer'] },
-        vendorRevenue: 100, mbRevenue: 37200, mbListingCount: 8,
+        vendorRevenue: 100, mbRevenue: 37200, mbListingCount: 8, mbScope: 'home',
         bestCraft: null, otherCrafts: [], bucket: 'sellMb',
         runnerUp: { action: 'vendor', value: 100 },
       }],
@@ -69,12 +69,12 @@ describe('CleanupResults', () => {
       ...empty,
       vendor: [{
         entry: { itemId: 1, name: 'Beech Branch', qty: 17, isHq: false, locations: ['bag'] },
-        vendorRevenue: 68, mbRevenue: 0, mbListingCount: 0,
+        vendorRevenue: 68, mbRevenue: 0, mbListingCount: 0, mbScope: null,
         bestCraft: null, otherCrafts: [], bucket: 'vendor', runnerUp: null,
       }],
       discard: [{
         entry: { itemId: 2, name: 'Unmelded Junk', qty: 1, isHq: false, locations: ['bag'] },
-        vendorRevenue: 0, mbRevenue: 0, mbListingCount: 0,
+        vendorRevenue: 0, mbRevenue: 0, mbListingCount: 0, mbScope: null,
         bestCraft: null, otherCrafts: [], bucket: 'discard', runnerUp: null,
       }],
     };

@@ -2,7 +2,7 @@ import type { SnapshotItem } from '../../lib/itemSnapshot';
 import type { MarketBundle } from '../watchlist/useMarketData';
 import type { MarketItem } from '../../lib/universalis';
 import { pickHighestTrustedTier } from '../../lib/priceTrust';
-import type { Bucket, CleanupRow, CleanupResult, CraftOpportunity, InventoryEntry } from './types';
+import type { Bucket, CleanupRow, CleanupResult, CraftOpportunity, InventoryEntry, MbScope } from './types';
 
 const MB_OVER_VENDOR_RATIO = 1.1;
 const MAX_OTHER_CRAFTS = 4;
@@ -15,6 +15,31 @@ export interface RunCleanupInput {
   unrecognized: InventoryEntry[];
 }
 
+interface MbLookup { unit: number; listingCount: number; scope: MbScope }
+
+/**
+ * Cascade trusted-tier lookup: home -> own DC -> cross-DC region. Returns the
+ * first scope that has a trusted tier for this item + HQ flag, so an item with
+ * zero listings on the player's world can still be MB-recommended when buyers
+ * elsewhere in the region are active.
+ */
+function lookupMb(market: MarketBundle, itemId: number, isHq: boolean, canHq: boolean): MbLookup {
+  const scopes: Array<{ key: 'phantom' | 'dc' | 'region'; scope: MbScope }> = [
+    { key: 'phantom', scope: 'home' },
+    { key: 'dc',      scope: 'dc' },
+    { key: 'region',  scope: 'region' },
+  ];
+  for (const { key, scope } of scopes) {
+    const m = (market[key] as Record<number, MarketItem | undefined>)[itemId];
+    if (!m) continue;
+    const tier = pickHighestTrustedTier(m, isHq ? 'hq' : 'nq', canHq);
+    if (!tier) continue;
+    const listingCount = (m as { listingCount?: number }).listingCount ?? 0;
+    return { unit: tier.unit, listingCount, scope };
+  }
+  return { unit: 0, listingCount: 0, scope: null };
+}
+
 function buildRow(
   entry: InventoryEntry,
   market: MarketBundle,
@@ -25,14 +50,13 @@ function buildRow(
   const priceLow = item?.priceLow ?? 0;
   const vendorRevenue = priceLow * entry.qty;
 
-  const m = (market.phantom as Record<number, MarketItem | undefined>)[entry.itemId];
-  const tier = m ? pickHighestTrustedTier(m, entry.isHq ? 'hq' : 'nq', item?.canHq ?? false) : null;
-  const mbUnit = tier?.unit ?? 0;
-  const mbRevenue = mbUnit * entry.qty;
-  const mbListingCount = (m as { listingCount?: number } | undefined)?.listingCount ?? 0;
+  const mb = lookupMb(market, entry.itemId, entry.isHq, item?.canHq ?? false);
+  const mbRevenue = mb.unit * entry.qty;
+  const mbListingCount = mb.listingCount;
+  const mbScope = mb.scope;
 
   // MB suppression: needs revenue meaningfully above vendor, or vendor=0.
-  const mbEligible = mbUnit > 0 && (vendorRevenue === 0 || mbRevenue > vendorRevenue * MB_OVER_VENDOR_RATIO);
+  const mbEligible = mb.unit > 0 && (vendorRevenue === 0 || mbRevenue > vendorRevenue * MB_OVER_VENDOR_RATIO);
 
   const bestCraft = crafts && crafts.length > 0 ? crafts[0] : null;
   const otherCrafts = crafts ? crafts.slice(1, 1 + MAX_OTHER_CRAFTS) : [];
@@ -57,7 +81,7 @@ function buildRow(
   const runnerUp = candidates[0] ?? null;
 
   return {
-    entry, vendorRevenue, mbRevenue, mbListingCount,
+    entry, vendorRevenue, mbRevenue, mbListingCount, mbScope,
     bestCraft, otherCrafts, bucket, runnerUp,
   };
 }
