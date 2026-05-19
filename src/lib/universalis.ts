@@ -210,17 +210,28 @@ export async function fetchMarketData(scope: Scope, ids: number[], opts: FetchMa
 }
 
 const MAX_CONCURRENT = 2;
+const COOLDOWN_MS = 4000;
 
 // Module-level semaphore: caps total Universalis requests across ALL scopes
 // (phantom + dc + region run in parallel, each chunked into many batches).
-// Cap is 2 because the cleanup view's marketIds set easily reaches ~5000 ids
-// once recipes contribute outputs + all ingredients — that's ~150 batches
-// across 3 scopes, and Universalis starts returning 5xx (without CORS
-// headers, so the browser reports as CORS) above ~2-3 concurrent.
+// Cap is 2 because the cleanup view's marketIds set easily reaches ~3000 ids
+// across 3 scopes — that's ~90 batches, and Universalis starts returning 5xx
+// (without CORS headers, so the browser reports as CORS) above ~2-3 concurrent.
 let inFlight = 0;
 const waiters: Array<() => void> = [];
 
+// Global cooldown timestamp. When a batch fails (5xx → CORS error), every
+// new acquire waits until this time before proceeding. Gives the per-IP rate
+// limiter time to reset instead of slamming it with retries.
+let pauseUntilTs = 0;
+
+function reportFailure(): void {
+  pauseUntilTs = Math.max(pauseUntilTs, Date.now() + COOLDOWN_MS);
+}
+
 async function acquire(): Promise<void> {
+  const wait = pauseUntilTs - Date.now();
+  if (wait > 0) await sleep(wait);
   if (inFlight < MAX_CONCURRENT) { inFlight++; return; }
   await new Promise<void>((resolve) => waiters.push(resolve));
   inFlight++;
@@ -246,24 +257,33 @@ async function fetchBatchWithRetry(
   scope: Scope,
   batch: number[],
 ): Promise<RawResponse | 'not-found'> {
-  // Up to 3 attempts with exponential backoff. Universalis 5xx responses
-  // lack CORS headers, so the browser surfaces them as net::ERR_FAILED /
-  // "CORS error" — retries reliably succeed once the spike passes. Kept
-  // small enough that a fully-failing call returns in ~1.5s for tests.
-  const backoffsMs = [400, 1000];
+  // Up to 4 attempts with exponential backoff + jitter. Universalis 5xx
+  // responses lack CORS headers, so the browser surfaces them as
+  // net::ERR_FAILED / "CORS error" — usually their per-IP rate limiter
+  // kicking in. On any failure we also trip the module-level cooldown
+  // (see reportFailure) so other queued batches wait too instead of all
+  // hammering at once.
+  const baseBackoffsMs = [600, 1800, 4500];
   let lastErr: unknown = null;
-  for (let attempt = 0; attempt <= backoffsMs.length; attempt++) {
-    if (attempt > 0) await sleep(backoffsMs[attempt - 1]);
+  for (let attempt = 0; attempt <= baseBackoffsMs.length; attempt++) {
+    if (attempt > 0) {
+      const base = baseBackoffsMs[attempt - 1];
+      // ±25% jitter so concurrent retries don't fire at exactly the same instant.
+      const jittered = base * (0.75 + Math.random() * 0.5);
+      await sleep(jittered);
+    }
     try {
       const res = await fetch(buildMarketUrl(scope, batch));
       if (res.status === 404) return 'not-found';
       if (!res.ok) {
         lastErr = new Error(`Universalis ${res.status}`);
+        reportFailure();
         continue;
       }
       return (await res.json()) as RawResponse;
     } catch (e) {
       lastErr = e;
+      reportFailure();
     }
   }
   throw lastErr ?? new Error('Universalis fetch failed');
@@ -291,4 +311,7 @@ export function _resetMarketCacheForTests(): void {
   hydrated.clear();
   for (const t of pendingPersist.values()) clearTimeout(t);
   pendingPersist.clear();
+  // Also clear the rate-limit cooldown so a prior failing test doesn't make
+  // the next acquire() sleep for COOLDOWN_MS.
+  pauseUntilTs = 0;
 }

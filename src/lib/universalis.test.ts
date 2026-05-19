@@ -140,7 +140,7 @@ describe('fetchMarketData', () => {
     await clearMarketCache();
   });
 
-  it('throws when response not OK', async () => {
+  it('throws when response not OK', { timeout: 15000 }, async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 500 }));
     await expect(fetchMarketData('Phantom', [1])).rejects.toThrow('Universalis 500');
   });

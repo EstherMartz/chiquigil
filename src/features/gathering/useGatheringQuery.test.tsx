@@ -83,7 +83,7 @@ describe('useGatheringQuery', () => {
     expect(result.current.skipped).toBe(0);
   });
 
-  it('exposes skipped when a chunk fetch fails', async () => {
+  it('exposes skipped when a chunk fetch fails', { timeout: 15000 }, async () => {
     await putCachedItems(snapshotItems);
     await putCachedGatheringCatalog([
       [5544, { level: 50, timed: false, hidden: false }],
@@ -98,10 +98,10 @@ describe('useGatheringQuery', () => {
       result.current.run();
     });
 
-    // Universalis fetcher does up to 3 attempts with exponential backoff;
-    // bump the timeout past the full retry window so skipped has time to
-    // increment.
-    await waitFor(() => expect(result.current.skipped).toBeGreaterThan(0), { timeout: 3000 });
+    // Universalis fetcher does up to 4 attempts with exponential backoff +
+    // jitter (max ~7s total). Bump the timeout past the full retry window so
+    // skipped has time to increment.
+    await waitFor(() => expect(result.current.skipped).toBeGreaterThan(0), { timeout: 10000 });
     expect(result.current.rows).toEqual([]);
   });
 });
