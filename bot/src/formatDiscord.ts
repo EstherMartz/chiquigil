@@ -1,13 +1,15 @@
 import { EmbedBuilder, AttachmentBuilder } from 'discord.js';
-import type { InventoryEntry, UsesEntry } from '../../src/features/cleanup/types';
+import type { CleanupResult, CleanupRow, InventoryEntry, UsesEntry } from '../../src/features/cleanup/types';
 
-const EMBED_MAX_FIELDS = 25;
 const EMBED_FIELD_MAX = 1024;
+const EMBED_FIELDS_PER = 25;
+const TOP_CRAFTS_INLINE = 12;
+const TOP_SELLS_INLINE = 12;
 
 export interface FormatInput {
-  entries: InventoryEntry[];
+  result: CleanupResult;
   usesByItemId: Map<number, UsesEntry[]>;
-  unrecognized: InventoryEntry[];
+  totalRows: number;
 }
 
 export interface FormatOutput {
@@ -17,65 +19,224 @@ export interface FormatOutput {
 }
 
 function fmtGil(n: number): string {
-  if (n <= 0) return '—';
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(n >= 10_000 ? 0 : 1)}k`;
+  const abs = Math.abs(n);
+  if (abs <= 0) return '—';
+  if (abs >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (abs >= 1_000) return `${(n / 1_000).toFixed(abs >= 10_000 ? 0 : 1)}k`;
   return n.toLocaleString();
 }
 
-export function formatUsesReply(input: FormatInput): FormatOutput {
-  const { entries, usesByItemId, unrecognized } = input;
-  const totalRecognized = entries.length;
-  const itemsWithUses = entries.filter((e) => (usesByItemId.get(e.itemId)?.length ?? 0) > 0);
-  itemsWithUses.sort(
-    (a, b) => (usesByItemId.get(b.itemId)?.length ?? 0) - (usesByItemId.get(a.itemId)?.length ?? 0),
-  );
+function fmtFull(n: number): string {
+  return n.toLocaleString();
+}
 
-  const summary = `Parsed ${totalRecognized + unrecognized.length} rows · ${totalRecognized} recognized · ${itemsWithUses.length} have crafting uses.`;
+function rowLabel(entry: InventoryEntry): string {
+  return `${entry.name}${entry.isHq ? ' ✦' : ''} ×${entry.qty}`;
+}
 
-  const embed = new EmbedBuilder()
-    .setTitle('Inventory uses')
-    .setDescription(summary)
-    .setColor(0xc8a14a);
+function craftAlt(row: CleanupRow): string {
+  if (!row.runnerUp) return '';
+  const perUnit = Math.round(row.runnerUp.value / Math.max(1, row.entry.qty));
+  if (row.runnerUp.action === 'sellMb') return ` · or MB ${fmtGil(perUnit)}g/ea`;
+  if (row.runnerUp.action === 'vendor') return ` · or vendor ${fmtGil(perUnit)}g/ea`;
+  return '';
+}
 
-  const top = itemsWithUses.slice(0, EMBED_MAX_FIELDS - 1);
-  for (const e of top) {
-    const uses = usesByItemId.get(e.itemId) ?? [];
-    const lines = uses.slice(0, 5).map(
-      (u) => `• ${u.outputName} (needs ${u.amountNeeded}×) · ${fmtGil(u.outputUnitPrice)}g`,
-    );
-    if (uses.length > 5) lines.push(`…+${uses.length - 5} more`);
-    const value = lines.join('\n').slice(0, EMBED_FIELD_MAX);
-    embed.addFields({
-      name: `${e.name}${e.isHq ? ' ✦' : ''} ×${e.qty}`,
-      value: value || '—',
-      inline: false,
-    });
+export function formatCleanupReply(input: FormatInput): FormatOutput {
+  const { result, usesByItemId, totalRows } = input;
+  const totalRecognized = result.craft.length + result.sellMb.length + result.vendor.length + result.discard.length;
+
+  const mbTotal = result.sellMb.reduce((a, r) => a + r.mbRevenue, 0);
+  const vendorTotal = result.vendor.reduce((a, r) => a + r.vendorRevenue, 0);
+  const craftProfit = result.craft.reduce((a, r) => a + (r.bestCraft?.netProfit ?? 0), 0);
+
+  const summary = [
+    `Parsed ${totalRows} rows · ${totalRecognized} recognized · ${result.unrecognized.length} unknown`,
+    `Crafts ${result.craft.length} (~${fmtGil(craftProfit)}g) · MB ${result.sellMb.length} (~${fmtGil(mbTotal)}g) · Vendor ${result.vendor.length} (~${fmtGil(vendorTotal)}g) · Discard ${result.discard.length}`,
+  ].join('\n');
+
+  const embeds: EmbedBuilder[] = [];
+
+  const overview = new EmbedBuilder()
+    .setTitle('Inventory cleanup')
+    .setColor(0xc8a14a)
+    .setDescription(summary);
+  embeds.push(overview);
+
+  if (result.craft.length > 0) {
+    const craft = new EmbedBuilder()
+      .setTitle(`▸ Craft these (${result.craft.length})`)
+      .setColor(0x82c8a0);
+    for (const row of result.craft.slice(0, TOP_CRAFTS_INLINE)) {
+      if (!row.bestCraft) continue;
+      const sign = row.bestCraft.netProfit >= 0 ? '+' : '−';
+      const lines: string[] = [
+        `→ ${row.bestCraft.outputName} ${sign}${fmtGil(Math.abs(row.bestCraft.netProfit))}g${craftAlt(row)}`,
+      ];
+      if (row.otherCrafts.length > 0) lines.push(`  +${row.otherCrafts.length} other recipes`);
+      const missing = row.bestCraft.missingIngredients;
+      if (missing.length > 0) {
+        lines.push(`  buy on MB: ${missing.map((m) => `${m.amount}× ${m.name}`).join(', ').slice(0, 200)}`);
+      }
+      craft.addFields({
+        name: rowLabel(row.entry),
+        value: lines.join('\n').slice(0, EMBED_FIELD_MAX),
+      });
+    }
+    if (result.craft.length > TOP_CRAFTS_INLINE) {
+      craft.setFooter({ text: `…+${result.craft.length - TOP_CRAFTS_INLINE} more in cleanup.md` });
+    }
+    embeds.push(craft);
   }
 
-  const md = buildMarkdown(itemsWithUses, usesByItemId, unrecognized);
-  const file = new AttachmentBuilder(Buffer.from(md, 'utf8'), { name: 'uses.md' });
+  if (result.sellMb.length > 0) {
+    const sell = new EmbedBuilder()
+      .setTitle(`▸ Sell on Marketboard (${result.sellMb.length})`)
+      .setColor(0xa098dc);
+    for (const row of result.sellMb.slice(0, TOP_SELLS_INLINE)) {
+      const perEa = Math.round(row.mbRevenue / row.entry.qty);
+      const scopeLabel = row.mbScope === 'dc' ? ' · DC' : row.mbScope === 'region' ? ' · cross-DC' : '';
+      const thin = row.mbListingCount < 2 ? ' · thin market' : ` · ${row.mbListingCount} listings`;
+      sell.addFields({
+        name: rowLabel(row.entry),
+        value: `${fmtFull(perEa)}g/ea · total ${fmtGil(row.mbRevenue)}g${thin}${scopeLabel}`.slice(0, EMBED_FIELD_MAX),
+      });
+    }
+    if (result.sellMb.length > TOP_SELLS_INLINE) {
+      sell.setFooter({ text: `…+${result.sellMb.length - TOP_SELLS_INLINE} more in cleanup.md` });
+    }
+    embeds.push(sell);
+  }
 
-  return { embeds: [embed], files: [file], summary };
+  if (result.vendor.length + result.discard.length > 0) {
+    const vd = new EmbedBuilder()
+      .setTitle(`▸ Vendor or discard (${result.vendor.length + result.discard.length})`)
+      .setColor(0x6b6b6b)
+      .setDescription(
+        `${result.vendor.length} items vendor for ~${fmtGil(vendorTotal)}g total.\n` +
+        `${result.discard.length} items have no buyer — discard.\n` +
+        `Full list in cleanup.md.`,
+      );
+    embeds.push(vd);
+  }
+
+  if (result.unrecognized.length > 0 && embeds.length < 10) {
+    const un = new EmbedBuilder()
+      .setTitle(`▸ Unrecognized (${result.unrecognized.length})`)
+      .setColor(0xb04a4a)
+      .setDescription(
+        result.unrecognized.slice(0, 20).map((u) => `• "${u.name}" ×${u.qty}`).join('\n').slice(0, 4000)
+        + (result.unrecognized.length > 20 ? `\n…+${result.unrecognized.length - 20} more in cleanup.md` : ''),
+      );
+    embeds.push(un);
+  }
+
+  const md = buildMarkdown(result, usesByItemId, totalRows);
+  const file = new AttachmentBuilder(Buffer.from(md, 'utf8'), { name: 'cleanup.md' });
+
+  return { embeds, files: [file], summary };
 }
 
 function buildMarkdown(
-  itemsWithUses: InventoryEntry[],
+  result: CleanupResult,
   usesByItemId: Map<number, UsesEntry[]>,
-  unrecognized: InventoryEntry[],
+  totalRows: number,
 ): string {
-  const lines: string[] = ['# Inventory uses', ''];
-  for (const e of itemsWithUses) {
-    const uses = usesByItemId.get(e.itemId) ?? [];
-    lines.push(`## ${e.name}${e.isHq ? ' ✦' : ''} ×${e.qty} — used in ${uses.length} recipes`);
-    for (const u of uses) {
-      lines.push(`- ${u.outputName} (needs ${u.amountNeeded}×) · ${fmtGil(u.outputUnitPrice)}g`);
+  const totalRecognized = result.craft.length + result.sellMb.length + result.vendor.length + result.discard.length;
+  const mbTotal = result.sellMb.reduce((a, r) => a + r.mbRevenue, 0);
+  const vendorTotal = result.vendor.reduce((a, r) => a + r.vendorRevenue, 0);
+  const craftProfit = result.craft.reduce((a, r) => a + (r.bestCraft?.netProfit ?? 0), 0);
+
+  const lines: string[] = [
+    '# Inventory cleanup',
+    '',
+    `- Parsed: ${totalRows} rows (${totalRecognized} recognized, ${result.unrecognized.length} unknown)`,
+    `- Crafts: ${result.craft.length} (~${fmtFull(craftProfit)}g net profit)`,
+    `- Sell on MB: ${result.sellMb.length} (~${fmtFull(mbTotal)}g revenue)`,
+    `- Vendor: ${result.vendor.length} (~${fmtFull(vendorTotal)}g revenue)`,
+    `- Discard: ${result.discard.length}`,
+    '',
+  ];
+
+  if (result.craft.length > 0) {
+    lines.push(`## Craft these (${result.craft.length})`, '');
+    for (const row of result.craft) {
+      if (!row.bestCraft) continue;
+      const sign = row.bestCraft.netProfit >= 0 ? '+' : '−';
+      lines.push(`### ${rowLabel(row.entry)}`);
+      lines.push(`- → ${row.bestCraft.outputName} ${sign}${fmtFull(Math.abs(row.bestCraft.netProfit))}g${craftAlt(row)}`);
+      if (row.bestCraft.usedFromInventory.length > 0) {
+        lines.push(`  - uses: ${row.bestCraft.usedFromInventory.map((u) => `${u.amount}× ${u.name}`).join(', ')}`);
+      }
+      if (row.bestCraft.missingIngredients.length > 0) {
+        lines.push(`  - buy on MB: ${row.bestCraft.missingIngredients.map((m) => `${m.amount}× ${m.name} @ ${fmtFull(m.mbUnitPrice)}g`).join(', ')}`);
+      }
+      for (const other of row.otherCrafts) {
+        const s = other.netProfit >= 0 ? '+' : '−';
+        lines.push(`- → ${other.outputName} ${s}${fmtFull(Math.abs(other.netProfit))}g`);
+      }
+      lines.push('');
+    }
+  }
+
+  if (result.sellMb.length > 0) {
+    lines.push(`## Sell on Marketboard (${result.sellMb.length})`, '');
+    for (const row of result.sellMb) {
+      const perEa = Math.round(row.mbRevenue / row.entry.qty);
+      const scope = row.mbScope === 'dc' ? ' DC' : row.mbScope === 'region' ? ' cross-DC' : '';
+      lines.push(`- ${rowLabel(row.entry)} — ${fmtFull(perEa)}g/ea × ${row.entry.qty} = ${fmtFull(row.mbRevenue)}g (${row.mbListingCount} listings${scope})`);
     }
     lines.push('');
   }
-  if (unrecognized.length > 0) {
-    lines.push(`## Unrecognized (${unrecognized.length})`);
-    for (const u of unrecognized) lines.push(`- "${u.name}" ×${u.qty}`);
+
+  if (result.vendor.length > 0) {
+    lines.push(`## Vendor (${result.vendor.length})`, '');
+    for (const row of result.vendor) {
+      const perEa = Math.round(row.vendorRevenue / row.entry.qty);
+      lines.push(`- ${rowLabel(row.entry)} — ${fmtFull(perEa)}g/ea × ${row.entry.qty} = ${fmtFull(row.vendorRevenue)}g`);
+    }
+    lines.push('');
   }
+
+  if (result.discard.length > 0) {
+    lines.push(`## Discard (${result.discard.length})`, '');
+    for (const row of result.discard) {
+      lines.push(`- ${rowLabel(row.entry)}`);
+    }
+    lines.push('');
+  }
+
+  // Uses appendix — every inventory item that participates in any recipe,
+  // even if its best action was sell/vendor. Helps spot crafting potential
+  // the bucketer didn't surface.
+  const itemsWithUses: Array<{ entry: InventoryEntry; uses: UsesEntry[] }> = [];
+  const collect = (rows: CleanupRow[]) => {
+    for (const r of rows) {
+      const u = usesByItemId.get(r.entry.itemId);
+      if (u && u.length > 0) itemsWithUses.push({ entry: r.entry, uses: u });
+    }
+  };
+  collect(result.craft);
+  collect(result.sellMb);
+  collect(result.vendor);
+  collect(result.discard);
+  if (itemsWithUses.length > 0) {
+    lines.push(`## Used in recipes (${itemsWithUses.length})`, '');
+    itemsWithUses.sort((a, b) => b.uses.length - a.uses.length);
+    for (const { entry, uses } of itemsWithUses) {
+      lines.push(`### ${rowLabel(entry)} — ${uses.length} recipes`);
+      for (const u of uses) {
+        const price = u.outputUnitPrice > 0 ? `${fmtFull(u.outputUnitPrice)}g` : 'no MB price';
+        lines.push(`- ${u.outputName} (needs ${u.amountNeeded}×) · ${price}`);
+      }
+      lines.push('');
+    }
+  }
+
+  if (result.unrecognized.length > 0) {
+    lines.push(`## Unrecognized (${result.unrecognized.length})`, '');
+    for (const u of result.unrecognized) lines.push(`- "${u.name}" ×${u.qty}`);
+  }
+
   return lines.join('\n');
 }
