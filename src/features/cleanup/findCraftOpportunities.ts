@@ -1,19 +1,18 @@
 import type { Recipe } from '../../lib/recipes';
 import type { SnapshotItem } from '../../lib/itemSnapshot';
 import type { MarketBundle } from '../watchlist/useMarketData';
-import type { MarketItem } from '../../lib/universalis';
-import { pickHighestTrustedTier } from '../../lib/priceTrust';
+import { lookupMbTier } from './marketLookup';
 import type { InventoryEntry, CraftOpportunity } from './types';
 
 const MAX_MISSING = 2;
 const MAX_OPPORTUNITIES_PER_ITEM = 5;
 
 function nqUnitPrice(market: MarketBundle, itemId: number, canHq: boolean): { unit: number; listingCount: number } | null {
-  const m = (market.phantom as Record<number, MarketItem>)[itemId];
-  if (!m) return null;
-  const tier = pickHighestTrustedTier(m, 'nq', canHq);
-  if (!tier) return null;
-  return { unit: tier.unit, listingCount: (m as unknown as { listingCount?: number }).listingCount ?? 0 };
+  // Cascade home -> DC -> region so recipes whose output (or whose missing
+  // ingredient) lives only on other DCs still surface and price correctly.
+  const mb = lookupMbTier(market, itemId, false, canHq);
+  if (mb.unit === 0) return null;
+  return { unit: mb.unit, listingCount: mb.listingCount };
 }
 
 interface CoverageResult {

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useItemSnapshot } from '../queries/useItemSnapshot';
 import { useRecipeSnapshot } from '../queries/useRecipeSnapshot';
 import { useMarketData } from '../watchlist/useMarketData';
@@ -9,7 +9,8 @@ import { CleanupResults } from './CleanupResults';
 import { parseAllaganInventory } from './parseAllaganInventory';
 import { findCraftOpportunities } from './findCraftOpportunities';
 import { runCleanup } from './runCleanup';
-import type { InventoryEntry, CleanupResult } from './types';
+import { useCleanupStore } from './cleanupStore';
+import type { CleanupResult } from './types';
 
 export function CleanupView() {
   const itemSnap = useItemSnapshot();
@@ -29,8 +30,11 @@ export function CleanupView() {
     return m;
   }, [itemsById]);
 
-  const [parsed, setParsed] = useState<{ entries: InventoryEntry[]; unrecognized: InventoryEntry[] } | null>(null);
-  const [parseError, setParseError] = useState<string | null>(null);
+  const parsed = useCleanupStore((s) => s.parsed);
+  const parseError = useCleanupStore((s) => s.parseError);
+  const setParsed = useCleanupStore((s) => s.setParsed);
+  const setParseError = useCleanupStore((s) => s.setParseError);
+  const clearStore = useCleanupStore((s) => s.clear);
 
   // Collect every itemId we need market data for: every inventory item + every recipe-output the inventory could craft.
   const marketIds = useMemo<number[]>(() => {
@@ -69,19 +73,16 @@ export function CleanupView() {
   }, [parsed, recipeSnap.data, market.data, itemsById]);
 
   function handleParse(csv: string) {
-    setParseError(null);
     try {
       const out = parseAllaganInventory(csv, namesById);
       setParsed(out);
     } catch (e) {
-      setParsed(null);
       setParseError(e instanceof Error ? e.message : String(e));
     }
   }
 
   function handleClear() {
-    setParsed(null);
-    setParseError(null);
+    clearStore();
   }
 
   const summary = parsed
