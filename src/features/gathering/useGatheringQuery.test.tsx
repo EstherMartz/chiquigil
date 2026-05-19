@@ -98,7 +98,10 @@ describe('useGatheringQuery', () => {
       result.current.run();
     });
 
-    await waitFor(() => expect(result.current.skipped).toBeGreaterThan(0));
+    // Universalis fetcher does up to 3 attempts with exponential backoff;
+    // bump the timeout past the full retry window so skipped has time to
+    // increment.
+    await waitFor(() => expect(result.current.skipped).toBeGreaterThan(0), { timeout: 3000 });
     expect(result.current.rows).toEqual([]);
   });
 });

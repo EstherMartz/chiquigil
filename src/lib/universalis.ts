@@ -194,11 +194,14 @@ export async function fetchMarketData(scope: Scope, ids: number[]): Promise<Mark
   return { ...fresh, ...live };
 }
 
-const MAX_CONCURRENT = 4;
+const MAX_CONCURRENT = 2;
 
 // Module-level semaphore: caps total Universalis requests across ALL scopes
 // (phantom + dc + region run in parallel, each chunked into many batches).
-// Without this, ~18 simultaneous batches trigger their rate limiter.
+// Cap is 2 because the cleanup view's marketIds set easily reaches ~5000 ids
+// once recipes contribute outputs + all ingredients — that's ~150 batches
+// across 3 scopes, and Universalis starts returning 5xx (without CORS
+// headers, so the browser reports as CORS) above ~2-3 concurrent.
 let inFlight = 0;
 const waiters: Array<() => void> = [];
 
@@ -228,12 +231,14 @@ async function fetchBatchWithRetry(
   scope: Scope,
   batch: number[],
 ): Promise<RawResponse | 'not-found'> {
-  // One retry with backoff handles transient Universalis 5xx + the resulting
-  // "no CORS header" browser error. Network failures (offline, DNS) also retry.
-  const attempts = 2;
+  // Up to 3 attempts with exponential backoff. Universalis 5xx responses
+  // lack CORS headers, so the browser surfaces them as net::ERR_FAILED /
+  // "CORS error" — retries reliably succeed once the spike passes. Kept
+  // small enough that a fully-failing call returns in ~1.5s for tests.
+  const backoffsMs = [400, 1000];
   let lastErr: unknown = null;
-  for (let attempt = 0; attempt < attempts; attempt++) {
-    if (attempt > 0) await sleep(400 * attempt);
+  for (let attempt = 0; attempt <= backoffsMs.length; attempt++) {
+    if (attempt > 0) await sleep(backoffsMs[attempt - 1]);
     try {
       const res = await fetch(buildMarketUrl(scope, batch));
       if (res.status === 404) return 'not-found';

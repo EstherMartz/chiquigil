@@ -37,19 +37,25 @@ export function CleanupView() {
   const setParseError = useCleanupStore((s) => s.setParseError);
   const clearStore = useCleanupStore((s) => s.clear);
 
-  // Collect every itemId we need market data for: every inventory item + every recipe-output the inventory could craft.
+  // Collect every itemId we need market data for: every inventory item + every
+  // recipe-output the inventory could craft + every potentially-missing
+  // ingredient. In-inventory ingredients are deliberately excluded — they
+  // already appear via the inventory set, and even if their MB tier is not
+  // prefetched, findCraftOpportunities falls back to priceLow as the
+  // opportunity-cost floor. Including them blew the set up to ~5000 ids,
+  // saturating Universalis's rate limiter (which surfaces as CORS errors).
   const marketIds = useMemo<number[]>(() => {
     if (!parsed) return [];
     const ids = new Set<number>();
     for (const e of parsed.entries) if (e.itemId > 0) ids.add(e.itemId);
-    // Also include recipe outputs whose ingredients overlap with inventory; one pass via recipeSnap.
     if (recipeSnap.data) {
       const invItemIds = new Set(parsed.entries.map((e) => e.itemId));
       for (const recipe of recipeSnap.data.values()) {
         const usesInv = recipe.ingredients.some((ing) => invItemIds.has(ing.itemId));
-        if (usesInv) {
-          ids.add(recipe.itemResultId);
-          for (const ing of recipe.ingredients) ids.add(ing.itemId);
+        if (!usesInv) continue;
+        ids.add(recipe.itemResultId);
+        for (const ing of recipe.ingredients) {
+          if (!invItemIds.has(ing.itemId)) ids.add(ing.itemId);
         }
       }
     }
