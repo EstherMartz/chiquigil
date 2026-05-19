@@ -7,6 +7,7 @@ import {
   getItemSnapshotUpdatedAt,
 } from '../../lib/recipeCache';
 import { fetchItemSnapshot, type SnapshotItem } from '../../lib/itemSnapshot';
+import { loadStaticItemsSnapshot } from '../../lib/staticSnapshots';
 
 const QUERY_KEY = ['itemSnapshot'] as const;
 
@@ -22,6 +23,13 @@ export function useItemSnapshot() {
       const cached = await getAllCachedItems();
       const ts = await getItemSnapshotUpdatedAt();
       if (cached) return { items: cached, updatedAt: ts ?? null };
+
+      const bundled = await loadStaticItemsSnapshot();
+      if (bundled) {
+        await putCachedItems(bundled.data, bundled.bakedAt);
+        return { items: bundled.data, updatedAt: bundled.bakedAt };
+      }
+
       const fresh = await fetchItemSnapshot({ onProgress: (n) => progressRef.current(n) });
       await putCachedItems(fresh);
       return { items: fresh, updatedAt: Date.now() };
