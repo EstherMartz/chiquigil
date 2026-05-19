@@ -92,4 +92,16 @@ Fire Shard,3,bag`;
     const out = parseAllaganInventory(csv, namesById);
     expect(out.entries[0].itemId).toBe(5);
   });
+
+  it('parses real Allagan Tools export format', () => {
+    // Allagan's actual export columns: Icon (empty), Name, Type (NQ/HQ),
+    // Quantity/Total Quantity Available, Source (character name), Inventory Location (bag slot).
+    const csv = `Icon,Name,Type,Quantity/Total Quantity Available,Source,Inventory Location
+,Fire Shard,NQ,42,Esther Martz,Bag 1 - 1
+,Cobalt Ingot,HQ,3,Esther Martz,Bag 1 - 4`;
+    const out = parseAllaganInventory(csv, namesById);
+    expect(out.entries).toHaveLength(2);
+    expect(out.entries[0]).toMatchObject({ itemId: 5, qty: 42, isHq: false, locations: ['bag'] });
+    expect(out.entries[1]).toMatchObject({ itemId: 100, qty: 3, isHq: true, locations: ['bag'] });
+  });
 });

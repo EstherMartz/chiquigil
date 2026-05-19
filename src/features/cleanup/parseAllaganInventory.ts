@@ -8,25 +8,53 @@ interface ColumnMap {
   location: number | null;
 }
 
-const ID_HEADERS = new Set(['item id', 'id', 'itemid']);
-const NAME_HEADERS = new Set(['item name', 'name', 'item']);
-const QTY_HEADERS = new Set(['quantity', 'qty', 'amount', 'count']);
-const HQ_HEADERS = new Set(['hq', 'high quality', 'ishq']);
-const LOC_HEADERS = new Set(['location', 'source', 'type', 'inventory']);
+// Per column, aliases are listed from MOST specific to LEAST specific so that
+// when a CSV has multiple matching headers, the more precise label wins. This
+// matters for Allagan Tools exports, which include both `Source` (the
+// character/retainer name) and `Inventory Location` (the actual bag slot) — we
+// want the latter.
+const ID_ALIASES = ['item id', 'itemid', 'id'];
+const NAME_ALIASES = ['item name', 'name', 'item'];
+const QTY_ALIASES = [
+  'quantity/total quantity available', // Allagan Tools combined header
+  'quantity',
+  'qty',
+  'amount',
+  'count',
+];
+const HQ_ALIASES = [
+  'hq',
+  'high quality',
+  'ishq',
+  'type', // Allagan Tools "Type" column carries NQ/HQ values
+];
+const LOC_ALIASES = [
+  'inventory location', // Allagan Tools — the actual bag slot
+  'location',
+  'inventory',
+  'source',
+];
 
 const KEEP_LOCATIONS = new Set(['bag', 'saddlebag', 'retainer']);
 const DROP_LOCATIONS = new Set(['armoury', 'glamour', 'equipped', 'other']);
 
+function findColumn(headerCells: string[], aliases: string[]): number | null {
+  const normalized = headerCells.map((c) => c.trim().toLowerCase());
+  for (const alias of aliases) {
+    const i = normalized.indexOf(alias);
+    if (i >= 0) return i;
+  }
+  return null;
+}
+
 function detectColumns(headerCells: string[]): ColumnMap | null {
-  const map: ColumnMap = { itemId: null, name: null, qty: null, hq: null, location: null };
-  headerCells.forEach((cell, i) => {
-    const h = cell.trim().toLowerCase();
-    if (ID_HEADERS.has(h)) map.itemId = i;
-    else if (NAME_HEADERS.has(h)) map.name = i;
-    else if (QTY_HEADERS.has(h)) map.qty = i;
-    else if (HQ_HEADERS.has(h)) map.hq = i;
-    else if (LOC_HEADERS.has(h)) map.location = i;
-  });
+  const map: ColumnMap = {
+    itemId: findColumn(headerCells, ID_ALIASES),
+    name: findColumn(headerCells, NAME_ALIASES),
+    qty: findColumn(headerCells, QTY_ALIASES),
+    hq: findColumn(headerCells, HQ_ALIASES),
+    location: findColumn(headerCells, LOC_ALIASES),
+  };
   // need at least one resolution path (id or name) plus something we recognize as a real header
   if (map.itemId == null && map.name == null) return null;
   return map;

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { btnPrimaryLarge, btnDanger } from '../../components/buttonStyles';
 
 interface AllaganPasteBoxProps {
@@ -10,6 +10,18 @@ interface AllaganPasteBoxProps {
 
 export function AllaganPasteBox({ onParse, onClear, parseError, parsedSummary }: AllaganPasteBoxProps) {
   const [text, setText] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const csv = await file.text();
+    setText(csv);
+    onParse(csv);
+    // Reset so picking the same file again still fires onChange.
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }
+
   return (
     <div className="space-y-3">
       <p className="font-mono text-[10px] text-text-low tracking-widest uppercase">
@@ -31,6 +43,17 @@ export function AllaganPasteBox({ onParse, onClear, parseError, parsedSummary }:
         >
           Parse
         </button>
+        <label className={btnPrimaryLarge + ' cursor-pointer'}>
+          Upload CSV
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv,text/csv,text/plain"
+            onChange={handleFile}
+            className="hidden"
+            aria-label="Upload Allagan CSV file"
+          />
+        </label>
         <button
           onClick={() => { setText(''); onClear(); }}
           className={btnDanger}
