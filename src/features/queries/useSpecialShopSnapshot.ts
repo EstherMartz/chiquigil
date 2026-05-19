@@ -7,6 +7,7 @@ import {
   getSpecialShopUpdatedAt,
 } from '../../lib/recipeCache';
 import { fetchSpecialShopSnapshot, type SpecialShopSnapshot } from '../../lib/specialShopSnapshot';
+import { loadStaticSpecialShopSnapshot } from '../../lib/staticSnapshots';
 import { currencyByItemId } from '../../lib/currencies';
 
 const QUERY_KEY = ['specialShopSnapshot'] as const;
@@ -23,6 +24,13 @@ export function useSpecialShopSnapshot() {
       const cached = await getCachedSpecialShop();
       const ts = await getSpecialShopUpdatedAt();
       if (cached) return { snapshot: cached, updatedAt: ts ?? null };
+
+      const bundled = await loadStaticSpecialShopSnapshot();
+      if (bundled) {
+        await putCachedSpecialShop(bundled.data, bundled.bakedAt);
+        return { snapshot: bundled.data, updatedAt: bundled.bakedAt };
+      }
+
       const fresh = await fetchSpecialShopSnapshot(currencyByItemId, { onProgress: (n) => progressRef.current(n) });
       await putCachedSpecialShop(fresh);
       return { snapshot: fresh, updatedAt: Date.now() };
