@@ -7,6 +7,7 @@ import {
   getLeveSnapshotUpdatedAt,
 } from '../../lib/recipeCache';
 import { fetchLeveSnapshot, type SnapshotLeve } from '../../lib/leveSnapshot';
+import { loadStaticLevesSnapshot } from '../../lib/staticSnapshots';
 
 const QUERY_KEY = ['leveSnapshot'] as const;
 
@@ -22,6 +23,13 @@ export function useLeveSnapshot() {
       const cached = await getCachedLeves();
       const ts = await getLeveSnapshotUpdatedAt();
       if (cached) return { leves: cached, updatedAt: ts ?? null };
+
+      const bundled = await loadStaticLevesSnapshot();
+      if (bundled) {
+        await putCachedLeves(bundled.data, bundled.bakedAt);
+        return { leves: bundled.data, updatedAt: bundled.bakedAt };
+      }
+
       const fresh = await fetchLeveSnapshot({ onProgress: (n) => progressRef.current(n) });
       await putCachedLeves(fresh);
       return { leves: fresh, updatedAt: Date.now() };
