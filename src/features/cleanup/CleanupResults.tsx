@@ -23,7 +23,7 @@ export function CleanupResults({ result }: CleanupResultsProps) {
   if (!anything) return null;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4">
       {result.craft.length > 0 && (
         <Section title={`Craft these (${result.craft.length})`}>
           {result.craft.map((row) => <CraftRow key={`${row.entry.itemId}-${row.entry.isHq}`} row={row} />)}
@@ -41,7 +41,7 @@ export function CleanupResults({ result }: CleanupResultsProps) {
         </Section>
       )}
       {result.unrecognized.length > 0 && (
-        <Section title={`Unrecognized rows (${result.unrecognized.length})`}>
+        <Section title={`Unrecognized rows (${result.unrecognized.length})`} defaultOpen={false}>
           {result.unrecognized.map((entry, i) => <UnrecognizedRow key={i} entry={entry} />)}
         </Section>
       )}
@@ -49,11 +49,20 @@ export function CleanupResults({ result }: CleanupResultsProps) {
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, children, defaultOpen = true }: { title: string; children: React.ReactNode; defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen);
   return (
     <section>
-      <SectionHeader label={title} />
-      <div className="space-y-1">{children}</div>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="w-full text-left group flex items-center gap-2 hover:opacity-90"
+      >
+        <span className="font-mono text-[10px] text-text-low group-hover:text-aether w-3">{open ? '▾' : '▸'}</span>
+        <span className="flex-1"><SectionHeader label={title} /></span>
+      </button>
+      {open && <div className="space-y-0">{children}</div>}
     </section>
   );
 }
@@ -70,7 +79,7 @@ function CraftRow({ row }: { row: CleanupRow }) {
   const [open, setOpen] = useState(false);
   if (!row.bestCraft) return null;
   return (
-    <div className="border-b border-border-base py-2">
+    <div className="border-b border-border-base py-1.5">
       <div className="flex items-center justify-between text-xs">
         <ItemName entry={row.entry} />
         <button
@@ -115,7 +124,7 @@ function CraftDetail({ crafts }: { crafts: CraftOpportunity[] }) {
 
 function SellRow({ row }: { row: CleanupRow }) {
   return (
-    <div className="border-b border-border-base py-2 flex items-center justify-between text-xs">
+    <div className="border-b border-border-base py-1.5 flex items-center justify-between text-xs">
       <ItemName entry={row.entry} />
       <div className="font-mono text-text-low">
         {fmtFull(row.mbRevenue / row.entry.qty)}g/ea ·{' '}
@@ -128,7 +137,7 @@ function SellRow({ row }: { row: CleanupRow }) {
 
 function VendorRow({ row }: { row: CleanupRow }) {
   return (
-    <div className="border-b border-border-base py-2 flex items-center justify-between text-xs">
+    <div className="border-b border-border-base py-1.5 flex items-center justify-between text-xs">
       <ItemName entry={row.entry} />
       <div className="font-mono text-text-low">
         vendor: {fmtFull(row.vendorRevenue / row.entry.qty)}g/ea · total {fmtFull(row.vendorRevenue)}g
@@ -139,7 +148,7 @@ function VendorRow({ row }: { row: CleanupRow }) {
 
 function DiscardRow({ row }: { row: CleanupRow }) {
   return (
-    <div className="border-b border-border-base py-2 flex items-center justify-between text-xs">
+    <div className="border-b border-border-base py-1.5 flex items-center justify-between text-xs">
       <ItemName entry={row.entry} />
       <div className="font-mono text-text-low text-crimson">no vendor · discard</div>
     </div>
@@ -148,7 +157,7 @@ function DiscardRow({ row }: { row: CleanupRow }) {
 
 function UnrecognizedRow({ entry }: { entry: InventoryEntry }) {
   return (
-    <div className="border-b border-border-base py-2 flex items-center justify-between text-xs">
+    <div className="border-b border-border-base py-1.5 flex items-center justify-between text-xs">
       <span className="text-text-cream">"{entry.name}" <span className="text-text-low">qty {entry.qty}</span></span>
       <span className="font-mono text-text-low">not in current snapshot</span>
     </div>

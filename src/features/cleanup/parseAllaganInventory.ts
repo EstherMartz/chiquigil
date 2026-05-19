@@ -119,7 +119,9 @@ export function parseAllaganInventory(csv: string, namesById: Map<number, string
 
   // key: `${itemId}|${isHq}` → entry being assembled
   const byKey = new Map<string, InventoryEntry>();
-  const unrecognized: InventoryEntry[] = [];
+  // Unrecognized rows dedupe by lowercased name + isHq, since they share itemId=0
+  // (or just aren't in the snapshot) and Allagan exports list one row per stack.
+  const unrecognizedByKey = new Map<string, InventoryEntry>();
 
   for (const line of lines.slice(1)) {
     const cells = splitCsvLine(line);
@@ -146,7 +148,14 @@ export function parseAllaganInventory(csv: string, namesById: Map<number, string
     const displayName = (itemId > 0 ? namesById.get(itemId) : undefined) ?? nameRaw?.trim() ?? '';
 
     if (itemId === 0 || !namesById.has(itemId)) {
-      unrecognized.push({ itemId, name: displayName || '(unknown)', qty, isHq, locations: [location] });
+      const ukey = `${displayName.toLowerCase()}|${isHq}`;
+      const uexisting = unrecognizedByKey.get(ukey);
+      if (uexisting) {
+        uexisting.qty += qty;
+        if (!uexisting.locations.includes(location)) uexisting.locations.push(location);
+      } else {
+        unrecognizedByKey.set(ukey, { itemId, name: displayName || '(unknown)', qty, isHq, locations: [location] });
+      }
       continue;
     }
 
@@ -160,5 +169,5 @@ export function parseAllaganInventory(csv: string, namesById: Map<number, string
     }
   }
 
-  return { entries: [...byKey.values()], unrecognized };
+  return { entries: [...byKey.values()], unrecognized: [...unrecognizedByKey.values()] };
 }

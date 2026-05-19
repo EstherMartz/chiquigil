@@ -85,13 +85,15 @@ describe('CleanupResults', () => {
     expect(screen.getByText(/no vendor/i)).toBeInTheDocument();
   });
 
-  it('renders Unrecognized rows when present', () => {
+  it('renders Unrecognized rows when present', async () => {
     const result: CleanupResult = {
       ...empty,
       unrecognized: [{ itemId: 0, name: 'Mystery Item X', qty: 4, isHq: false, locations: ['bag'] }],
     };
     withRouter(<CleanupResults result={result} />);
     expect(screen.getByText(/Unrecognized rows \(1\)/)).toBeInTheDocument();
+    // Unrecognized section defaults collapsed — expand it to verify the row is rendered.
+    await userEvent.click(screen.getByRole('button', { name: /Unrecognized rows/ }));
     expect(screen.getByText(/Mystery Item X/)).toBeInTheDocument();
   });
 });

@@ -93,6 +93,19 @@ Fire Shard,3,bag`;
     expect(out.entries[0].itemId).toBe(5);
   });
 
+  it('dedupes unrecognized rows by name + HQ flag', () => {
+    // Allagan exports list one row per stack; an item not in our snapshot
+    // would appear multiple times if held in several slots.
+    const csv = `Item Name,Quantity,Location
+Mystery Ore,1,bag
+Mystery Ore,1,bag
+Mystery Ore,1,bag`;
+    const out = parseAllaganInventory(csv, namesById);
+    expect(out.entries).toHaveLength(0);
+    expect(out.unrecognized).toHaveLength(1);
+    expect(out.unrecognized[0].qty).toBe(3);
+  });
+
   it('parses real Allagan Tools export format', () => {
     // Allagan's actual export columns: Icon (empty), Name, Type (NQ/HQ),
     // Quantity/Total Quantity Available, Source (character name), Inventory Location (bag slot).
