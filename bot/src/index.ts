@@ -3,6 +3,19 @@ import { config } from './config';
 import { loadSnapshots } from './loadSnapshots';
 import { handleCsv } from './handleCsv';
 
+// Saludos al estilo Marie Kondo — agradezco al inventario, prometo
+// ordenarlo con cariño, y aviso que tarda un ratito.
+const GREETINGS = [
+  'Gracias por confiarme tu inventario ✨ Voy a saludar a cada objeto y descubrir cuáles te traen alegría. Dame un par de minutos para ordenarlo todo con cariño.',
+  '¡Qué tesoros tan bonitos! 🌸 Permíteme un momento para sentarme con cada uno y agradecerle su servicio antes de decidir su lugar.',
+  'Hola, qué colección tan adorable ✨ Voy a tomar mi tiempo para saludar a cada objeto y preguntarle si aún chispea alegría en tu corazón.',
+  'Gracias por compartir tus pertenencias conmigo 🌷 Voy a ordenar con cariño — dame un ratito mientras saludo a cada una y descubro cuáles te siguen dando alegría.',
+];
+
+function pickGreeting(): string {
+  return GREETINGS[Math.floor(Math.random() * GREETINGS.length)];
+}
+
 async function main() {
   console.log('Loading snapshots…');
   const snapshots = await loadSnapshots(config.snapshotsDir);
@@ -30,6 +43,7 @@ async function main() {
     if (msg.channel.isTextBased() && 'sendTyping' in msg.channel) {
       await msg.channel.sendTyping();
     }
+    await msg.reply(pickGreeting());
     try {
       const res = await fetch(attachment.url);
       if (!res.ok) throw new Error(`Attachment fetch failed: ${res.status}`);
