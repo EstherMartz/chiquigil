@@ -31,13 +31,13 @@ export function CleanupResults({ result, usesByItemId }: CleanupResultsProps) {
     <div className="space-y-4">
       <Section title={result.craft.length > 0 ? `Craft these (${result.craft.length})` : 'Craft these (0)'}>
         {result.craft.length > 0
-          ? result.craft.map((row) => <CraftRow key={`${row.entry.itemId}-${row.entry.isHq}`} row={row} />)
+          ? result.craft.map((row) => <CraftRow key={`${row.entry.itemId}-${row.entry.isHq}`} row={row} uses={usesFor(row.entry.itemId)} />)
           : <CraftEmptyState ingredientItemCount={ingredientItemCount} />}
       </Section>
 
       {result.sellMb.length > 0 && (
         <Section title={`Sell on Marketboard (${result.sellMb.length})`}>
-          {result.sellMb.map((row) => <SellRow key={`${row.entry.itemId}-${row.entry.isHq}`} row={row} />)}
+          {result.sellMb.map((row) => <SellRow key={`${row.entry.itemId}-${row.entry.isHq}`} row={row} uses={usesFor(row.entry.itemId)} />)}
         </Section>
       )}
       {(result.vendor.length + result.discard.length) > 0 && (
@@ -62,7 +62,7 @@ function CraftEmptyState({ ingredientItemCount }: { ingredientItemCount: number 
       {ingredientItemCount > 0 ? (
         <div>
           {ingredientItemCount} of your items appear as ingredients in some recipe — open the{' '}
-          <span className="text-aether">▸ used in N recipes</span> toggle on a Vendor or Discard row to
+          <span className="text-aether">▸ used in N recipes</span> toggle on any row to
           explore what they could become, even if not profitable right now.
         </div>
       ) : (
@@ -98,31 +98,37 @@ function ItemName({ entry }: { entry: InventoryEntry }) {
   );
 }
 
-function CraftRow({ row }: { row: CleanupRow }) {
-  const [open, setOpen] = useState(false);
+function CraftRow({ row, uses }: { row: CleanupRow; uses?: UsesEntry[] }) {
+  const [openDetail, setOpenDetail] = useState(false);
+  const [openUses, setOpenUses] = useState(false);
   if (!row.bestCraft) return null;
   const altLabel = craftAltLabel(row);
+  const hasUses = uses && uses.length > 0;
   return (
     <div className="border-b border-border-base py-1.5">
       <div className="flex items-center justify-between text-xs gap-3">
         <ItemName entry={row.entry} />
-        <button
-          onClick={() => setOpen((o) => !o)}
-          aria-expanded={open}
-          className="text-text-cream hover:text-gold font-mono text-left"
-          aria-label={row.bestCraft.outputName}
-        >
-          → Craft: {row.bestCraft.outputName}{' '}
-          <span className={row.bestCraft.netProfit >= 0 ? 'text-jade' : 'text-crimson'}>
-            {row.bestCraft.netProfit >= 0 ? '+' : '−'}{fmtGil(Math.abs(row.bestCraft.netProfit))}
-          </span>
-          {row.otherCrafts.length > 0 && (
-            <span className="text-text-low"> · +{row.otherCrafts.length} more</span>
-          )}
-          {altLabel && <span className="text-text-low"> · {altLabel}</span>}
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setOpenDetail((o) => !o)}
+            aria-expanded={openDetail}
+            className="text-text-cream hover:text-gold font-mono text-left"
+            aria-label={row.bestCraft.outputName}
+          >
+            → Craft: {row.bestCraft.outputName}{' '}
+            <span className={row.bestCraft.netProfit >= 0 ? 'text-jade' : 'text-crimson'}>
+              {row.bestCraft.netProfit >= 0 ? '+' : '−'}{fmtGil(Math.abs(row.bestCraft.netProfit))}
+            </span>
+            {row.otherCrafts.length > 0 && (
+              <span className="text-text-low"> · +{row.otherCrafts.length} more</span>
+            )}
+            {altLabel && <span className="text-text-low"> · {altLabel}</span>}
+          </button>
+          {hasUses && <UsesToggle open={openUses} setOpen={setOpenUses} count={uses!.length} />}
+        </div>
       </div>
-      {open && <CraftDetail crafts={[row.bestCraft, ...row.otherCrafts]} />}
+      {openDetail && <CraftDetail crafts={[row.bestCraft, ...row.otherCrafts]} />}
+      {openUses && hasUses && <UsesDisclosure entries={uses!} />}
     </div>
   );
 }
@@ -157,17 +163,25 @@ function CraftDetail({ crafts }: { crafts: CraftOpportunity[] }) {
   );
 }
 
-function SellRow({ row }: { row: CleanupRow }) {
+function SellRow({ row, uses }: { row: CleanupRow; uses?: UsesEntry[] }) {
+  const [open, setOpen] = useState(false);
   const scopeLabel = row.mbScope === 'dc' ? 'DC' : row.mbScope === 'region' ? 'cross-DC' : null;
+  const hasUses = uses && uses.length > 0;
   return (
-    <div className="border-b border-border-base py-1.5 flex items-center justify-between text-xs">
-      <ItemName entry={row.entry} />
-      <div className="font-mono text-text-low">
-        {fmtFull(row.mbRevenue / row.entry.qty)}g/ea ·{' '}
-        {row.mbListingCount < 2 ? <span className="text-crimson">thin market</span> : <span className="text-jade">{row.mbListingCount} listings</span>}{' '}
-        {scopeLabel && <span className="text-aether">· {scopeLabel}</span>}{' '}
-        · <span className="text-text-cream">{fmtFull(row.mbRevenue)}g</span>
+    <div className="border-b border-border-base py-1.5">
+      <div className="flex items-center justify-between text-xs">
+        <ItemName entry={row.entry} />
+        <div className="font-mono text-text-low flex items-center gap-3">
+          <span>
+            {fmtFull(row.mbRevenue / row.entry.qty)}g/ea ·{' '}
+            {row.mbListingCount < 2 ? <span className="text-crimson">thin market</span> : <span className="text-jade">{row.mbListingCount} listings</span>}{' '}
+            {scopeLabel && <span className="text-aether">· {scopeLabel}</span>}{' '}
+            · <span className="text-text-cream">{fmtFull(row.mbRevenue)}g</span>
+          </span>
+          {hasUses && <UsesToggle open={open} setOpen={setOpen} count={uses!.length} />}
+        </div>
       </div>
+      {open && hasUses && <UsesDisclosure entries={uses!} />}
     </div>
   );
 }
