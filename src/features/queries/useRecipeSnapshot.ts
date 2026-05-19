@@ -2,10 +2,18 @@ import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchRecipeSnapshot, type RecipeMap } from '../../lib/recipeSnapshot';
 import { getCachedRecipeSnapshot, putCachedRecipeSnapshot } from '../../lib/recipeCache';
+import { loadStaticRecipesSnapshot } from '../../lib/staticSnapshots';
 
 async function resolve(setProgress: (n: number) => void): Promise<RecipeMap> {
   const cached = await getCachedRecipeSnapshot();
   if (cached) return new Map(cached);
+
+  const bundled = await loadStaticRecipesSnapshot();
+  if (bundled) {
+    await putCachedRecipeSnapshot([...bundled.data.entries()], bundled.bakedAt);
+    return bundled.data;
+  }
+
   const fresh = await fetchRecipeSnapshot({ onProgress: setProgress });
   await putCachedRecipeSnapshot([...fresh.entries()]);
   return fresh;
