@@ -16,5 +16,12 @@
     "types": ["node"]
   },
   "include": ["src/**/*.ts", "../src/features/cleanup/**/*.ts", "../src/lib/**/*.ts"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.test.tsx"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "../src/**/*.test.ts",
+    "../src/**/*.test.tsx"
+  ]
 }

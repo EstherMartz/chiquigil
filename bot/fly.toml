@@ -1,0 +1,20 @@
+app = "ffxiv-uses-bot"
+primary_region = "ams"
+
+[build]
+  dockerfile = "Dockerfile"
+  dockerfile_context = ".."
+
+[env]
+  HOME_WORLD = "Phantom"
+  HOME_DC = "Chaos"
+  REGION = "Europe"
+
+# Discord bot is a long-running worker, not an HTTP server. No [http_service]
+# block so Fly skips the public listener + healthchecks. Use `fly logs` and
+# `fly status` to monitor.
+
+[[vm]]
+  memory = "256mb"
+  cpu_kind = "shared"
+  cpus = 1
