@@ -6,6 +6,7 @@ import {
   clearRecipeSnapshot,
   putCachedRecipeSnapshot,
 } from '../../lib/recipeCache';
+import * as staticLoader from '../../lib/staticSnapshots';
 
 function wrap() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -17,6 +18,8 @@ function wrap() {
 beforeEach(async () => {
   vi.restoreAllMocks();
   await clearRecipeSnapshot();
+  // Mock static snapshot loader to return null so tests use mocked fetch instead.
+  vi.spyOn(staticLoader, 'loadStaticRecipesSnapshot').mockResolvedValue(null);
 });
 
 describe('useRecipes (snapshot-backed)', () => {

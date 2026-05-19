@@ -8,6 +8,7 @@ import { useSettingsStore, defaultSettings } from '../settings/store';
 import { useWatchlistStore, defaultWatchlist } from '../items/watchlistStore';
 import { useUiStore, defaultUi } from '../ui/uiStore';
 import { clearRecipeCache, clearItemCache, putCachedItems, clearRecipeSnapshot } from '../../lib/recipeCache';
+import * as staticLoader from '../../lib/staticSnapshots';
 
 beforeEach(async () => {
   localStorage.clear();
@@ -18,6 +19,8 @@ beforeEach(async () => {
   await clearRecipeSnapshot();
   await clearItemCache();
   vi.restoreAllMocks();
+  vi.spyOn(staticLoader, 'loadStaticRecipesSnapshot').mockResolvedValue(null);
+  vi.spyOn(staticLoader, 'loadStaticItemsSnapshot').mockResolvedValue(null);
 });
 
 function withProviders(node: React.ReactNode) {
