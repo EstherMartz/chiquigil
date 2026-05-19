@@ -7,6 +7,7 @@ import {
   getVendorSnapshotUpdatedAt,
 } from '../../lib/recipeCache';
 import { fetchVendorSnapshot } from '../../lib/vendorShopSnapshot';
+import { loadStaticVendorSnapshot } from '../../lib/staticSnapshots';
 
 const QUERY_KEY = ['vendorSnapshot'] as const;
 
@@ -15,16 +16,23 @@ export function useVendorShopSnapshot() {
   const progressRef = useRef(setProgress);
   progressRef.current = setProgress;
 
-  const query = useQuery<{ vendors: Map<number, number>; updatedAt: number | null }>({
+  const query = useQuery<{ snapshot: Map<number, number>; updatedAt: number | null }>({
     queryKey: QUERY_KEY,
     staleTime: Infinity,
     queryFn: async () => {
       const cached = await getCachedVendorSnapshot();
       const ts = await getVendorSnapshotUpdatedAt();
-      if (cached) return { vendors: cached, updatedAt: ts ?? null };
+      if (cached) return { snapshot: cached, updatedAt: ts ?? null };
+
+      const bundled = await loadStaticVendorSnapshot();
+      if (bundled) {
+        await putCachedVendorSnapshot(bundled.data, bundled.bakedAt);
+        return { snapshot: bundled.data, updatedAt: bundled.bakedAt };
+      }
+
       const fresh = await fetchVendorSnapshot({ onProgress: (n) => progressRef.current(n) });
       await putCachedVendorSnapshot(fresh);
-      return { vendors: fresh, updatedAt: Date.now() };
+      return { snapshot: fresh, updatedAt: Date.now() };
     },
   });
 

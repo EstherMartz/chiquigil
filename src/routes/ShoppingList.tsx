@@ -42,7 +42,7 @@ export default function ShoppingList() {
 
   const survey = useMemo(() => {
     if (!planRequested || !aggregate || !market.data || !snapshot.data) return null;
-    const vendorMap = vendor.data?.vendors ?? new Map<number, number>();
+    const vendorMap = vendor.data?.snapshot ?? new Map<number, number>();
     const shopSnapshot = shop.data?.snapshot ?? { byCurrency: new Map() };
     return surveyIngredients(aggregate.demand, market.data.region, vendorMap, shopSnapshot);
   }, [planRequested, aggregate, market.data, snapshot.data, vendor.data, shop.data]);

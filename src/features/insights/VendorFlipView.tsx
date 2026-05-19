@@ -29,7 +29,7 @@ export function VendorFlipView() {
     const catSet = filter.searchCategories.length ? new Set(filter.searchCategories) : null;
     const out: number[] = [];
     for (const item of snapshot.data.items) {
-      if (!vendors.data.vendors.has(item.id)) continue;
+      if (!vendors.data.snapshot.has(item.id)) continue;
       if (catSet && !catSet.has(item.sc)) continue;
       if (filter.hq === 'hq' && !item.canHq) continue;
       out.push(item.id);
@@ -51,7 +51,7 @@ export function VendorFlipView() {
 
   const rows = useMemo(() => {
     if (!snapshot.data || !vendors.data || !run.data) return [];
-    return runVendorFlip(snapshot.data.items, vendors.data.vendors, run.data.saleMap, run.data.filterAtRun);
+    return runVendorFlip(snapshot.data.items, vendors.data.snapshot, run.data.saleMap, run.data.filterAtRun);
   }, [snapshot.data, vendors.data, run.data]);
 
   function onSortChange(next: VendorFlipSort) {

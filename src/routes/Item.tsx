@@ -69,7 +69,7 @@ export default function Item() {
 
   const market = useMarketData(priceIds, world, dc, 'Europe');
   const vendors = useVendorShopSnapshot();
-  const vendorPrice = valid && vendors.data?.vendors.get(itemId);
+  const vendorPrice = valid && vendors.data?.snapshot.get(itemId);
   const shop = useSpecialShopSnapshot();
   const currencyOffers = useMemo(
     () => valid ? findItemCurrencyOffers(itemId, shop.data?.snapshot ?? { byCurrency: new Map() }) : [],
