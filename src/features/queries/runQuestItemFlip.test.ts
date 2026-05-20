@@ -156,6 +156,101 @@ describe('runQuestItemFlip', () => {
     expect(out.map((r) => r.itemId)).toEqual([200, 300, 100]);
   });
 
+  it('sortBy=level + sortDir=asc orders by level ASC', () => {
+    const snapshot = [
+      mkQuest({ questId: 1, level: 30, requiredItems: [{ itemId: 100, itemName: 'A', qty: 1 }] }),
+      mkQuest({ questId: 2, level: 10, requiredItems: [{ itemId: 200, itemName: 'B', qty: 1 }] }),
+      mkQuest({ questId: 3, level: 50, requiredItems: [{ itemId: 300, itemName: 'C', qty: 1 }] }),
+    ];
+    const items = new Map([[100, mkItem(100, 'A')], [200, mkItem(200, 'B')], [300, mkItem(300, 'C')]]);
+    const market: MarketData = {
+      100: mkMarket({ minHQ: 1000, medianHQ: 1000 }),
+      200: mkMarket({ minHQ: 1000, medianHQ: 1000 }),
+      300: mkMarket({ minHQ: 1000, medianHQ: 1000 }),
+    };
+    const out = runQuestItemFlip(snapshot, items, market, { ...defaultQuestItemFilter(), sortBy: 'level', sortDir: 'asc' });
+    expect(out.map((r) => r.level)).toEqual([10, 30, 50]);
+  });
+
+  it('sortBy=velocity + sortDir=desc orders by velocity DESC', () => {
+    const snapshot = [
+      mkQuest({ questId: 1, requiredItems: [{ itemId: 100, itemName: 'A', qty: 1 }] }),
+      mkQuest({ questId: 2, requiredItems: [{ itemId: 200, itemName: 'B', qty: 1 }] }),
+      mkQuest({ questId: 3, requiredItems: [{ itemId: 300, itemName: 'C', qty: 1 }] }),
+    ];
+    const items = new Map([[100, mkItem(100, 'A')], [200, mkItem(200, 'B')], [300, mkItem(300, 'C')]]);
+    const market: MarketData = {
+      100: mkMarket({ minHQ: 1000, medianHQ: 1000, velocity: 3 }),
+      200: mkMarket({ minHQ: 1000, medianHQ: 1000, velocity: 9 }),
+      300: mkMarket({ minHQ: 1000, medianHQ: 1000, velocity: 1 }),
+    };
+    const out = runQuestItemFlip(snapshot, items, market, { ...defaultQuestItemFilter(), sortBy: 'velocity', sortDir: 'desc' });
+    expect(out.map((r) => r.velocity)).toEqual([9, 3, 1]);
+  });
+
+  it('sortBy=listings + sortDir=asc orders by listingCount ASC', () => {
+    const snapshot = [
+      mkQuest({ questId: 1, requiredItems: [{ itemId: 100, itemName: 'A', qty: 1 }] }),
+      mkQuest({ questId: 2, requiredItems: [{ itemId: 200, itemName: 'B', qty: 1 }] }),
+    ];
+    const items = new Map([[100, mkItem(100, 'A')], [200, mkItem(200, 'B')]]);
+    const market: MarketData = {
+      100: mkMarket({ minHQ: 1000, medianHQ: 1000, listingCount: 8 }),
+      200: mkMarket({ minHQ: 1000, medianHQ: 1000, listingCount: 2 }),
+    };
+    const out = runQuestItemFlip(snapshot, items, market, { ...defaultQuestItemFilter(), sortBy: 'listings', sortDir: 'asc' });
+    expect(out.map((r) => r.listingCount)).toEqual([2, 8]);
+  });
+
+  it('sortBy=item + sortDir=asc orders by itemName alphabetically', () => {
+    const snapshot = [
+      mkQuest({ questId: 1, requiredItems: [{ itemId: 100, itemName: 'Maple Lumber', qty: 1 }] }),
+      mkQuest({ questId: 2, requiredItems: [{ itemId: 200, itemName: 'Ash Lumber', qty: 1 }] }),
+      mkQuest({ questId: 3, requiredItems: [{ itemId: 300, itemName: 'Yew Lumber', qty: 1 }] }),
+    ];
+    const items = new Map([
+      [100, mkItem(100, 'Maple Lumber')],
+      [200, mkItem(200, 'Ash Lumber')],
+      [300, mkItem(300, 'Yew Lumber')],
+    ]);
+    const market: MarketData = {
+      100: mkMarket({ minHQ: 1000, medianHQ: 1000 }),
+      200: mkMarket({ minHQ: 1000, medianHQ: 1000 }),
+      300: mkMarket({ minHQ: 1000, medianHQ: 1000 }),
+    };
+    const out = runQuestItemFlip(snapshot, items, market, { ...defaultQuestItemFilter(), sortBy: 'item', sortDir: 'asc' });
+    expect(out.map((r) => r.itemName)).toEqual(['Ash Lumber', 'Maple Lumber', 'Yew Lumber']);
+  });
+
+  it('null HQ prices sort as lowest under sortBy=hq (asc puts nulls first)', () => {
+    const snapshot = [
+      mkQuest({ questId: 1, requiredItems: [{ itemId: 100, itemName: 'A', qty: 1 }] }),
+      mkQuest({ questId: 2, requiredItems: [{ itemId: 200, itemName: 'B', qty: 1 }] }),
+    ];
+    const items = new Map([[100, mkItem(100, 'A')], [200, mkItem(200, 'B')]]);
+    const market: MarketData = {
+      100: mkMarket({ minHQ: 5000, medianHQ: 5000 }),
+      200: mkMarket({ minNQ: 100, medianNQ: 100 }),
+    };
+    const out = runQuestItemFlip(snapshot, items, market, { ...defaultQuestItemFilter(), sortBy: 'hq', sortDir: 'asc' });
+    expect(out[0].hqPrice).toBeNull();
+    expect(out[1].hqPrice).toBe(5000);
+  });
+
+  it('tiebreaker still kicks in when primary sort ties', () => {
+    const snapshot = [
+      mkQuest({ questId: 1, level: 10, requiredItems: [{ itemId: 100, itemName: 'A', qty: 1 }] }),
+      mkQuest({ questId: 2, level: 10, requiredItems: [{ itemId: 200, itemName: 'B', qty: 1 }] }),
+    ];
+    const items = new Map([[100, mkItem(100, 'A')], [200, mkItem(200, 'B')]]);
+    const market: MarketData = {
+      100: mkMarket({ minHQ: 100, medianHQ: 100, velocity: 1 }),
+      200: mkMarket({ minHQ: 2000, medianHQ: 2000, velocity: 5 }),
+    };
+    const out = runQuestItemFlip(snapshot, items, market, { ...defaultQuestItemFilter(), sortBy: 'level', sortDir: 'asc' });
+    expect(out.map((r) => r.itemId)).toEqual([200, 100]);
+  });
+
   it('uses item.canHq when picking trusted tier (canHq=false skips HQ)', () => {
     const snapshot = [mkQuest({ requiredItems: [{ itemId: 100, itemName: 'NoHQItem', qty: 1 }] })];
     const items = new Map([[100, mkItem(100, 'NoHQItem', false)]]); // canHq=false
