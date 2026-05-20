@@ -36,6 +36,7 @@ export function Header() {
             <NavLink to="/vendor-flip" className={navClass}>Vendor flip</NavLink>
             <NavLink to="/currency-flip" className={navClass}>Currencies</NavLink>
             <NavLink to="/gc-seals" className={navClass}>GC Seals</NavLink>
+            <NavLink to="/quest-items" className={navClass}>Quest items</NavLink>
             <NavLink to="/settings" className={navClass}>Settings</NavLink>
           </nav>
         </div>

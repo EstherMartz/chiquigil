@@ -1,0 +1,106 @@
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QuestItemFlipView } from './QuestItemFlipView';
+import type { SnapshotQuest } from '../../lib/questSnapshot';
+import type { SnapshotItem } from '../../lib/itemSnapshot';
+import type { MarketBundle } from '../watchlist/useMarketData';
+
+vi.mock('../queries/useQuestSnapshot', () => ({
+  useQuestSnapshot: () => ({
+    data: {
+      snapshot: [
+        {
+          questId: 1,
+          questName: 'Way of the Carpenter',
+          categoryName: 'All Classes',
+          level: 1,
+          requiredItems: [{ itemId: 100, itemName: 'Wind Shard', qty: 100 }],
+        } as SnapshotQuest,
+        {
+          questId: 2,
+          questName: 'Way of the Blacksmith',
+          categoryName: 'Disciple of the Hand',
+          level: 1,
+          requiredItems: [{ itemId: 200, itemName: 'Bronze Ingot', qty: 5 }],
+        } as SnapshotQuest,
+      ],
+      updatedAt: 0,
+    },
+    isLoading: false,
+  }),
+}));
+
+vi.mock('../queries/useItemSnapshot', () => ({
+  useItemSnapshot: () => ({
+    data: {
+      items: [
+        { id: 100, name: 'Wind Shard', sc: 1, ui: 1, ilvl: 1, canHq: true },
+        { id: 200, name: 'Bronze Ingot', sc: 1, ui: 1, ilvl: 1, canHq: true },
+      ] as SnapshotItem[],
+      updatedAt: 0,
+    },
+    isLoading: false,
+  }),
+}));
+
+vi.mock('../watchlist/useMarketData', () => ({
+  useMarketData: () => ({
+    data: {
+      phantom: {
+        100: { minHQ: 2400, medianHQ: 2400, minNQ: null, medianNQ: null, velocity: 6.2, listingCount: 4, recentSalesHQ: 10, recentSalesNQ: 0, avgNQ: null, avgHQ: null, lastUploadTime: 0, worldListings: [], averagePriceNQ: null, averagePriceHQ: null },
+        200: { minHQ: 4100, medianHQ: 4100, minNQ: null, medianNQ: null, velocity: 3.1, listingCount: 6, recentSalesHQ: 10, recentSalesNQ: 0, avgNQ: null, avgHQ: null, lastUploadTime: 0, worldListings: [], averagePriceNQ: null, averagePriceHQ: null },
+      },
+      dc: {},
+      region: {},
+    } as MarketBundle,
+    isLoading: false,
+  }),
+}));
+
+function renderView(initialEntries: string[] = ['/quest-items']) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <QueryClientProvider client={client}>
+      <MemoryRouter initialEntries={initialEntries}>
+        <QuestItemFlipView />
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
+}
+
+describe('QuestItemFlipView', () => {
+  it('renders rows from all categories by default', async () => {
+    renderView();
+    await waitFor(() => {
+      expect(screen.getByText('Wind Shard')).toBeInTheDocument();
+      expect(screen.getByText('Bronze Ingot')).toBeInTheDocument();
+    });
+  });
+
+  it('search input filters by item name', async () => {
+    const user = userEvent.setup();
+    renderView();
+    await waitFor(() => expect(screen.getByText('Wind Shard')).toBeInTheDocument());
+    const searchBox = screen.getByPlaceholderText(/search item/i);
+    await user.type(searchBox, 'bronze');
+    await waitFor(() => {
+      expect(screen.queryByText('Wind Shard')).not.toBeInTheDocument();
+      expect(screen.getByText('Bronze Ingot')).toBeInTheDocument();
+    });
+  });
+
+  it('category search filters by categoryName', async () => {
+    const user = userEvent.setup();
+    renderView();
+    await waitFor(() => expect(screen.getByText('Wind Shard')).toBeInTheDocument());
+    const catBox = screen.getByPlaceholderText(/category/i);
+    await user.type(catBox, 'disciple');
+    await waitFor(() => {
+      expect(screen.queryByText('Wind Shard')).not.toBeInTheDocument();
+      expect(screen.getByText('Bronze Ingot')).toBeInTheDocument();
+    });
+  });
+});
