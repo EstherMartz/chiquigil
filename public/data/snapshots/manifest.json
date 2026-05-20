@@ -1,12 +1,13 @@
 {
-  "bakedAt": 1779209917987,
-  "bakedAtIso": "2026-05-19T16:58:37.987Z",
+  "bakedAt": 1779287984435,
+  "bakedAtIso": "2026-05-20T14:39:44.435Z",
   "counts": {
     "items": 49848,
     "recipes": 11198,
     "leves": 1757,
     "vendorShop": 6692,
     "specialShop": 2677,
-    "gathering": 1806
+    "gathering": 1806,
+    "quests": 212
   }
 }
