@@ -289,7 +289,7 @@ function craftFieldsFor(rows: CleanupRow[]): Array<{ name: string; value: string
 function sellFieldsFor(rows: CleanupRow[]): Array<{ name: string; value: string }> {
   const fields: Array<{ name: string; value: string }> = [];
   for (const row of rows) {
-    const perEa = Math.round(row.mbRevenue / row.entry.qty);
+    const perEa = Math.round(row.mbRevenue / Math.max(1, row.entry.qty));
     const scopeLabel = row.mbScope === 'dc' ? ' · DC' : row.mbScope === 'region' ? ' · entre DCs' : '';
     const thin = row.mbListingCount < 2 ? ' · mercado tímido' : ` · ${row.mbListingCount} anuncios`;
     fields.push({
@@ -302,7 +302,7 @@ function sellFieldsFor(rows: CleanupRow[]): Array<{ name: string; value: string 
 
 // Field builder for vendor rows
 function vendorFieldFor(row: CleanupRow): { name: string; value: string } {
-  const perEa = Math.round(row.vendorRevenue / row.entry.qty);
+  const perEa = Math.round(row.vendorRevenue / Math.max(1, row.entry.qty));
   return {
     name: rowLabel(row.entry),
     value: `${fmtFull(perEa)}g/ud · total ${fmtGil(row.vendorRevenue)}g`,
@@ -348,7 +348,7 @@ function buildPagedEmbeds(
  * Expanded view of all craft rows, split across embeds (max 25 fields each).
  * Hard capped at 75 rows total; footer links the rest to cleanup.md.
  */
-export function formatExpandedCraftReply(result: CleanupResult, usesByItemId: Map<number, UsesEntry[]>): EmbedBuilder[] {
+export function formatExpandedCraftReply(result: CleanupResult, _usesByItemId: Map<number, UsesEntry[]>): EmbedBuilder[] {
   return buildPagedEmbeds(
     (p, t) => `▸ Crea con ellos algo nuevo · ${result.craft.length} (página ${p}/${t})`,
     0x82c8a0,
