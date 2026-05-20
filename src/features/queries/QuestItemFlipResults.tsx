@@ -1,8 +1,11 @@
 import { Link } from 'react-router-dom';
-import type { QuestItemRow } from './runQuestItemFlip';
+import type { QuestItemRow, QuestItemSort, SortDir } from './runQuestItemFlip';
 
 interface Props {
   rows: QuestItemRow[];
+  sortBy: QuestItemSort;
+  sortDir: SortDir;
+  onSort: (key: QuestItemSort) => void;
 }
 
 function fmtGil(n: number | null): string {
@@ -17,7 +20,26 @@ function fmtRevenue(n: number): string {
   return n.toLocaleString();
 }
 
-export function QuestItemFlipResults({ rows }: Props) {
+interface ColumnDef {
+  key: QuestItemSort;
+  label: string;
+  align: 'left' | 'right';
+}
+
+const COLUMNS: ColumnDef[] = [
+  { key: 'level', label: 'Lv', align: 'left' },
+  { key: 'category', label: 'Category', align: 'left' },
+  { key: 'quest', label: 'Quest', align: 'left' },
+  { key: 'item', label: 'Item', align: 'left' },
+  { key: 'qty', label: 'Qty', align: 'right' },
+  { key: 'nq', label: 'NQ MB', align: 'right' },
+  { key: 'hq', label: 'HQ MB', align: 'right' },
+  { key: 'listings', label: 'Listings', align: 'right' },
+  { key: 'velocity', label: 'Vel/day', align: 'right' },
+  { key: 'revenue', label: 'Revenue', align: 'right' },
+];
+
+export function QuestItemFlipResults({ rows, sortBy, sortDir, onSort }: Props) {
   if (rows.length === 0) {
     return (
       <div className="font-mono text-xs text-text-low py-8 text-center">
@@ -31,16 +53,22 @@ export function QuestItemFlipResults({ rows }: Props) {
       <table className="font-mono text-[11px] w-full">
         <thead className="text-text-low">
           <tr>
-            <th className="text-left px-2 py-1">Lv</th>
-            <th className="text-left px-2 py-1">Category</th>
-            <th className="text-left px-2 py-1">Quest</th>
-            <th className="text-left px-2 py-1">Item</th>
-            <th className="text-right px-2 py-1">Qty</th>
-            <th className="text-right px-2 py-1">NQ MB</th>
-            <th className="text-right px-2 py-1">HQ MB</th>
-            <th className="text-right px-2 py-1">Listings</th>
-            <th className="text-right px-2 py-1">Vel/day</th>
-            <th className="text-right px-2 py-1">Revenue</th>
+            {COLUMNS.map((c) => {
+              const active = sortBy === c.key;
+              const arrow = active ? (sortDir === 'asc' ? ' ▲' : ' ▼') : '';
+              const tone = active ? 'text-gold' : '';
+              const alignClass = c.align === 'right' ? 'text-right' : 'text-left';
+              return (
+                <th
+                  key={c.key}
+                  scope="col"
+                  onClick={() => onSort(c.key)}
+                  className={`${alignClass} px-2 py-1 cursor-pointer select-none hover:text-text-high ${tone}`}
+                >
+                  {c.label}{arrow}
+                </th>
+              );
+            })}
           </tr>
         </thead>
         <tbody>

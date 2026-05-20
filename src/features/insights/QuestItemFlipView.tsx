@@ -4,8 +4,30 @@ import { useSettingsStore } from '../settings/store';
 import { useQuestSnapshot } from '../queries/useQuestSnapshot';
 import { useItemSnapshot } from '../queries/useItemSnapshot';
 import { useMarketData } from '../watchlist/useMarketData';
-import { runQuestItemFlip, type HqMode } from '../queries/runQuestItemFlip';
+import {
+  runQuestItemFlip,
+  DEFAULT_SORT_DIR,
+  type HqMode,
+  type QuestItemSort,
+  type SortDir,
+} from '../queries/runQuestItemFlip';
 import { QuestItemFlipResults } from '../queries/QuestItemFlipResults';
+
+const SORT_KEYS: ReadonlySet<QuestItemSort> = new Set([
+  'level', 'category', 'quest', 'item', 'qty', 'nq', 'hq', 'listings', 'velocity', 'revenue',
+]);
+
+function parseSortParam(raw: string | null): { sortBy: QuestItemSort; sortDir: SortDir } {
+  if (!raw) return { sortBy: 'revenue', sortDir: 'desc' };
+  const [keyPart, dirPart] = raw.split(':');
+  const sortBy: QuestItemSort = SORT_KEYS.has(keyPart as QuestItemSort)
+    ? (keyPart as QuestItemSort)
+    : 'revenue';
+  const sortDir: SortDir = dirPart === 'asc' || dirPart === 'desc'
+    ? dirPart
+    : DEFAULT_SORT_DIR[sortBy];
+  return { sortBy, sortDir };
+}
 
 export function QuestItemFlipView() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -22,6 +44,9 @@ export function QuestItemFlipView() {
     const param = searchParams.get('min');
     return param ? parseInt(param, 10) : 0;
   });
+  const initialSort = parseSortParam(searchParams.get('sort'));
+  const [sortBy, setSortBy] = useState<QuestItemSort>(initialSort.sortBy);
+  const [sortDir, setSortDir] = useState<SortDir>(initialSort.sortDir);
 
   // Sync filter state to URL params
   useEffect(() => {
@@ -30,14 +55,27 @@ export function QuestItemFlipView() {
     if (categorySearch) params.set('cat', categorySearch);
     if (hq !== 'hq') params.set('hq', hq);
     if (minListings > 0) params.set('min', minListings.toString());
+    if (sortBy !== 'revenue' || sortDir !== 'desc') params.set('sort', `${sortBy}:${sortDir}`);
     setSearchParams(params, { replace: true });
-  }, [search, categorySearch, hq, minListings, setSearchParams]);
+  }, [search, categorySearch, hq, minListings, sortBy, sortDir, setSearchParams]);
 
   // Fetch data
   const questsQuery = useQuestSnapshot();
   const itemsQuery = useItemSnapshot();
   const quests = questsQuery.data?.snapshot ?? [];
   const items = itemsQuery.data?.items ?? [];
+
+  // Build distinct category options sorted by quest count DESC then name ASC
+  const categoryOptions = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const quest of quests) {
+      if (!quest.categoryName) continue;
+      counts.set(quest.categoryName, (counts.get(quest.categoryName) ?? 0) + 1);
+    }
+    return Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .map(([name, count]) => ({ name, count }));
+  }, [quests]);
 
   // Extract all item IDs from quests
   const allItemIds = useMemo(() => {
@@ -70,8 +108,19 @@ export function QuestItemFlipView() {
       minListings,
       search,
       categorySearch,
+      sortBy,
+      sortDir,
     });
-  }, [quests, itemsById, market, hq, minListings, search, categorySearch]);
+  }, [quests, itemsById, market, hq, minListings, search, categorySearch, sortBy, sortDir]);
+
+  function handleSort(key: QuestItemSort) {
+    if (sortBy === key) {
+      setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(key);
+      setSortDir(DEFAULT_SORT_DIR[key]);
+    }
+  }
 
   // Loading states
   const isLoading = questsQuery.isLoading || itemsQuery.isLoading || marketQuery.isLoading;
@@ -87,7 +136,7 @@ export function QuestItemFlipView() {
   return (
     <div className="space-y-3">
       <div className="flex flex-col gap-2">
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <input
             type="text"
             placeholder="Search item name..."
@@ -95,13 +144,18 @@ export function QuestItemFlipView() {
             onChange={(e) => setSearch(e.target.value)}
             className="px-2 py-1 bg-bg-input border border-border-low text-text-high placeholder-text-low text-xs rounded focus:outline-none focus:border-text-high"
           />
-          <input
-            type="text"
-            placeholder="Category..."
+          <select
             value={categorySearch}
             onChange={(e) => setCategorySearch(e.target.value)}
-            className="px-2 py-1 bg-bg-input border border-border-low text-text-high placeholder-text-low text-xs rounded focus:outline-none focus:border-text-high"
-          />
+            className="px-2 py-1 bg-bg-input border border-border-low text-text-high text-xs rounded focus:outline-none focus:border-text-high"
+          >
+            <option value="">All categories</option>
+            {categoryOptions.map((opt) => (
+              <option key={opt.name} value={opt.name}>
+                {opt.name} ({opt.count})
+              </option>
+            ))}
+          </select>
           <input
             type="number"
             placeholder="Min listings"
@@ -143,7 +197,12 @@ export function QuestItemFlipView() {
           </button>
         </div>
       </div>
-      <QuestItemFlipResults rows={rows} />
+      <QuestItemFlipResults
+        rows={rows}
+        sortBy={sortBy}
+        sortDir={sortDir}
+        onSort={handleSort}
+      />
     </div>
   );
 }

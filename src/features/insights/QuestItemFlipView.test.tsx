@@ -92,15 +92,47 @@ describe('QuestItemFlipView', () => {
     });
   });
 
-  it('category search filters by categoryName', async () => {
+  it('category dropdown filters by categoryName', async () => {
     const user = userEvent.setup();
     renderView();
     await waitFor(() => expect(screen.getByText('Wind Shard')).toBeInTheDocument());
-    const catBox = screen.getByPlaceholderText(/category/i);
-    await user.type(catBox, 'disciple');
+    const select = screen.getByRole('combobox');
+    await user.selectOptions(select, 'Disciple of the Hand');
     await waitFor(() => {
       expect(screen.queryByText('Wind Shard')).not.toBeInTheDocument();
       expect(screen.getByText('Bronze Ingot')).toBeInTheDocument();
     });
+  });
+
+  it('category dropdown lists categories with their quest counts', async () => {
+    renderView();
+    await waitFor(() => expect(screen.getByText('Wind Shard')).toBeInTheDocument());
+    expect(screen.getByRole('option', { name: 'All categories' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'All Classes (1)' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Disciple of the Hand (1)' })).toBeInTheDocument();
+  });
+
+  it('clicking a sortable column header resorts the table', async () => {
+    const user = userEvent.setup();
+    renderView();
+    await waitFor(() => expect(screen.getByText('Wind Shard')).toBeInTheDocument());
+    // Default sort: revenue DESC → Wind Shard (100 × 2400 = 240000) before Bronze Ingot (5 × 4100 = 20500)
+    let rows = screen.getAllByRole('row');
+    expect(rows[1].textContent).toContain('Wind Shard');
+
+    // Click Qty header → sort by qty DESC → Wind Shard (qty 100) still first
+    // Click again → qty ASC → Bronze Ingot (qty 5) first
+    const qtyHeader = screen.getByRole('columnheader', { name: /Qty/ });
+    await user.click(qtyHeader);
+    await user.click(qtyHeader);
+    rows = screen.getAllByRole('row');
+    expect(rows[1].textContent).toContain('Bronze Ingot');
+  });
+
+  it('parses ?sort=level:asc from URL params', async () => {
+    renderView(['/quest-items?sort=level:asc']);
+    await waitFor(() => expect(screen.getByText('Wind Shard')).toBeInTheDocument());
+    const levelHeader = screen.getByRole('columnheader', { name: /Lv/ });
+    expect(levelHeader.textContent).toContain('▲');
   });
 });

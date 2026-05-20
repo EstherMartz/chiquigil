@@ -1,8 +1,8 @@
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { QuestItemFlipResults } from './QuestItemFlipResults';
-import type { QuestItemRow } from './runQuestItemFlip';
+import type { QuestItemRow, QuestItemSort, SortDir } from './runQuestItemFlip';
 
 function mkRow(overrides: Partial<QuestItemRow> = {}): QuestItemRow {
   return {
@@ -22,10 +22,18 @@ function mkRow(overrides: Partial<QuestItemRow> = {}): QuestItemRow {
   };
 }
 
-function renderRows(rows: QuestItemRow[]) {
+function renderRows(
+  rows: QuestItemRow[],
+  opts: { sortBy?: QuestItemSort; sortDir?: SortDir; onSort?: (k: QuestItemSort) => void } = {},
+) {
   return render(
     <MemoryRouter>
-      <QuestItemFlipResults rows={rows} />
+      <QuestItemFlipResults
+        rows={rows}
+        sortBy={opts.sortBy ?? 'revenue'}
+        sortDir={opts.sortDir ?? 'desc'}
+        onSort={opts.onSort ?? (() => {})}
+      />
     </MemoryRouter>,
   );
 }
@@ -65,5 +73,31 @@ describe('QuestItemFlipResults', () => {
   it('shows quest name in its own column', () => {
     renderRows([mkRow({ questName: 'Way of the Blacksmith' })]);
     expect(screen.getByText('Way of the Blacksmith')).toBeInTheDocument();
+  });
+
+  it('renders a sort arrow ▼ on active DESC column', () => {
+    renderRows([mkRow()], { sortBy: 'revenue', sortDir: 'desc' });
+    const header = screen.getByRole('columnheader', { name: /Revenue/ });
+    expect(header.textContent).toContain('▼');
+  });
+
+  it('renders a sort arrow ▲ on active ASC column', () => {
+    renderRows([mkRow()], { sortBy: 'level', sortDir: 'asc' });
+    const header = screen.getByRole('columnheader', { name: /Lv/ });
+    expect(header.textContent).toContain('▲');
+  });
+
+  it('clicking a header calls onSort with the column key', () => {
+    const onSort = vi.fn();
+    renderRows([mkRow()], { onSort });
+    fireEvent.click(screen.getByRole('columnheader', { name: /Vel\/day/ }));
+    expect(onSort).toHaveBeenCalledWith('velocity');
+  });
+
+  it('clicking a different header calls onSort with the new key', () => {
+    const onSort = vi.fn();
+    renderRows([mkRow()], { sortBy: 'revenue', sortDir: 'desc', onSort });
+    fireEvent.click(screen.getByRole('columnheader', { name: /Listings/ }));
+    expect(onSort).toHaveBeenCalledWith('listings');
   });
 });
