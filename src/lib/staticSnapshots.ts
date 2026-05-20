@@ -1,5 +1,6 @@
 import type { SnapshotItem } from './itemSnapshot';
 import type { SnapshotLeve } from './leveSnapshot';
+import type { SnapshotQuest } from './questSnapshot';
 import type { Recipe } from './recipes';
 import type { GatheringInfo } from './gatheringCatalog';
 import type { ShopEntry, SpecialShopSnapshot } from './specialShopSnapshot';
@@ -50,4 +51,9 @@ export async function loadStaticSpecialShopSnapshot(): Promise<StaticBundle<Spec
 export async function loadStaticGatheringCatalog(): Promise<StaticBundle<Map<number, GatheringInfo>> | null> {
   const raw = await load<{ bakedAt: number; entries: Array<[number, GatheringInfo]> }>(`${BASE}/gathering.json`);
   return raw ? { bakedAt: raw.bakedAt, data: new Map(raw.entries) } : null;
+}
+
+export async function loadStaticQuestSnapshot(): Promise<StaticBundle<SnapshotQuest[]> | null> {
+  const raw = await load<{ bakedAt: number; quests: SnapshotQuest[] }>(`${BASE}/quests.json`);
+  return raw ? { bakedAt: raw.bakedAt, data: raw.quests } : null;
 }

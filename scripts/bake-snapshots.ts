@@ -14,6 +14,7 @@ import { join } from 'node:path';
 import { fetchItemSnapshot } from '../src/lib/itemSnapshot';
 import { fetchRecipeSnapshot } from '../src/lib/recipeSnapshot';
 import { fetchLeveSnapshot } from '../src/lib/leveSnapshot';
+import { fetchQuestSnapshot } from '../src/lib/questSnapshot';
 import { fetchVendorSnapshot } from '../src/lib/vendorShopSnapshot';
 import { fetchSpecialShopSnapshot } from '../src/lib/specialShopSnapshot';
 import { buildGatheringCatalog } from '../src/lib/gatheringCatalog';
@@ -92,24 +93,36 @@ async function bakeGathering(bakedAt: number) {
   return map.size;
 }
 
+async function bakeQuests(bakedAt: number) {
+  log('quests', 'fetching XIVAPI Quest sheet…');
+  const quests = await fetchQuestSnapshot({
+    onProgress: (n) => process.stdout.write(`\r[quests] ${n} quests with item turn-ins…`),
+  });
+  process.stdout.write('\n');
+  await writeFile(join(OUT_DIR, 'quests.json'), JSON.stringify({ bakedAt, quests }));
+  log('quests', `wrote ${quests.length} quests with item turn-ins`);
+  return quests.length;
+}
+
 async function main() {
   await mkdir(OUT_DIR, { recursive: true });
   const bakedAt = Date.now();
   const bakedAtIso = new Date(bakedAt).toISOString();
 
-  const [items, recipes, leves, vendor, special, gathering] = [
+  const [items, recipes, leves, vendor, special, gathering, quests] = [
     await bakeItems(bakedAt),
     await bakeRecipes(bakedAt),
     await bakeLeves(bakedAt),
     await bakeVendor(bakedAt),
     await bakeSpecialShop(bakedAt),
     await bakeGathering(bakedAt),
+    await bakeQuests(bakedAt),
   ];
 
   const manifest = {
     bakedAt,
     bakedAtIso,
-    counts: { items, recipes, leves, vendorShop: vendor, specialShop: special, gathering },
+    counts: { items, recipes, leves, vendorShop: vendor, specialShop: special, gathering, quests },
   };
   await writeFile(join(OUT_DIR, 'manifest.json'), JSON.stringify(manifest, null, 2));
   log('manifest', `bake complete at ${bakedAtIso}`);
