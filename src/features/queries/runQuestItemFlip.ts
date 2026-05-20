@@ -54,6 +54,8 @@ export function defaultQuestItemFilter(): QuestItemFilter {
 }
 
 export interface QuestItemRow {
+  /** Composite numeric key for ResultTableScaffold; `questId * 100_000 + itemId`. */
+  id: number;
   questId: number;
   questName: string;
   categoryName: string;
@@ -66,6 +68,25 @@ export interface QuestItemRow {
   listingCount: number;
   velocity: number;
   totalRevenue: number;
+}
+
+/** Item-search-category 58 = "Crystals" (shards / crystals / clusters).
+ * Excluded from quest-item rows: spammy catalyst turn-ins with no MB value. */
+const CRYSTALS_SEARCH_CATEGORY = 58;
+
+export function countQuestItemCandidates(
+  snapshot: SnapshotQuest[],
+  itemsById: Map<number, SnapshotItem>,
+): number {
+  let n = 0;
+  for (const quest of snapshot) {
+    for (const required of quest.requiredItems) {
+      const item = itemsById.get(required.itemId);
+      if (item?.sc === CRYSTALS_SEARCH_CATEGORY) continue;
+      n++;
+    }
+  }
+  return n;
 }
 
 function priceForRanking(row: { nqPrice: number | null; hqPrice: number | null }, hq: HqMode): number {
@@ -104,6 +125,7 @@ export function runQuestItemFlip(
 
     for (const required of quest.requiredItems) {
       const item = itemsById.get(required.itemId);
+      if (item?.sc === CRYSTALS_SEARCH_CATEGORY) continue;
       const itemName = required.itemName || item?.name || `Item #${required.itemId}`;
 
       if (searchLower && !itemName.toLowerCase().includes(searchLower)) continue;
@@ -120,6 +142,7 @@ export function runQuestItemFlip(
       const hqPrice = hqTier?.unit ?? null;
 
       const row: QuestItemRow = {
+        id: quest.questId * 100_000 + required.itemId,
         questId: quest.questId,
         questName: quest.questName,
         categoryName: quest.categoryName,

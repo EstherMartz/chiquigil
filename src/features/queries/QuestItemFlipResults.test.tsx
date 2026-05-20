@@ -1,11 +1,14 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type React from 'react';
 import { QuestItemFlipResults } from './QuestItemFlipResults';
 import type { QuestItemRow, QuestItemSort, SortDir } from './runQuestItemFlip';
 
 function mkRow(overrides: Partial<QuestItemRow> = {}): QuestItemRow {
-  return {
+  const base = {
+    id: 100100,
     questId: 1,
     questName: 'Way of the Carpenter',
     categoryName: 'All Classes',
@@ -13,28 +16,38 @@ function mkRow(overrides: Partial<QuestItemRow> = {}): QuestItemRow {
     itemId: 100,
     itemName: 'Maple Lumber',
     qty: 3,
-    nqPrice: 120,
-    hqPrice: 2400,
+    nqPrice: 120 as number | null,
+    hqPrice: 2400 as number | null,
     listingCount: 4,
     velocity: 6.2,
     totalRevenue: 7200,
-    ...overrides,
   };
+  return { ...base, ...overrides };
+}
+
+function withProviders(node: React.ReactNode) {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return (
+    <QueryClientProvider client={qc}>
+      <MemoryRouter>{node}</MemoryRouter>
+    </QueryClientProvider>
+  );
 }
 
 function renderRows(
   rows: QuestItemRow[],
-  opts: { sortBy?: QuestItemSort; sortDir?: SortDir; onSort?: (k: QuestItemSort) => void } = {},
+  opts: { sortBy?: QuestItemSort; sortDir?: SortDir; onSort?: (k: QuestItemSort) => void; totalCandidates?: number } = {},
 ) {
   return render(
-    <MemoryRouter>
+    withProviders(
       <QuestItemFlipResults
         rows={rows}
+        totalCandidates={opts.totalCandidates ?? rows.length}
         sortBy={opts.sortBy ?? 'revenue'}
         sortDir={opts.sortDir ?? 'desc'}
         onSort={opts.onSort ?? (() => {})}
-      />
-    </MemoryRouter>,
+      />,
+    ),
   );
 }
 
@@ -53,15 +66,20 @@ describe('QuestItemFlipResults', () => {
     expect(screen.getByText(/no quest items match/i)).toBeInTheDocument();
   });
 
-  it('item name links to /item/:id', () => {
+  it('item name links to Garland Tools', () => {
     renderRows([mkRow({ itemId: 100, itemName: 'Maple Lumber' })]);
     const link = screen.getByRole('link', { name: 'Maple Lumber' });
-    expect(link).toHaveAttribute('href', '/item/100');
+    expect(link.getAttribute('href')).toMatch(/garlandtools\.org.*100/);
   });
 
   it('shows category name in its own column', () => {
     renderRows([mkRow({ categoryName: 'Disciple of the Hand' })]);
     expect(screen.getByText('Disciple of the Hand')).toBeInTheDocument();
+  });
+
+  it('shows quest name in its own column', () => {
+    renderRows([mkRow({ questName: 'Way of the Blacksmith' })]);
+    expect(screen.getByText('Way of the Blacksmith')).toBeInTheDocument();
   });
 
   it('shows em-dash for null prices', () => {
@@ -70,9 +88,9 @@ describe('QuestItemFlipResults', () => {
     expect(dashes.length).toBeGreaterThanOrEqual(2);
   });
 
-  it('shows quest name in its own column', () => {
-    renderRows([mkRow({ questName: 'Way of the Blacksmith' })]);
-    expect(screen.getByText('Way of the Blacksmith')).toBeInTheDocument();
+  it('renders matches/candidates summary line', () => {
+    renderRows([mkRow()], { totalCandidates: 211 });
+    expect(screen.getByText(/1 matches from 211 candidates/i)).toBeInTheDocument();
   });
 
   it('renders a sort arrow ▼ on active DESC column', () => {
@@ -90,7 +108,7 @@ describe('QuestItemFlipResults', () => {
   it('clicking a header calls onSort with the column key', () => {
     const onSort = vi.fn();
     renderRows([mkRow()], { onSort });
-    fireEvent.click(screen.getByRole('columnheader', { name: /Vel\/day/ }));
+    fireEvent.click(screen.getByRole('columnheader', { name: /Sales\/day/ }));
     expect(onSort).toHaveBeenCalledWith('velocity');
   });
 
