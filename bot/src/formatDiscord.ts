@@ -319,7 +319,7 @@ function discardFieldFor(row: CleanupRow): { name: string; value: string } {
 
 // Generic paged embed builder: takes a list of rows and a field-builder function
 function buildPagedEmbeds(
-  title: string,
+  title: (page: number, total: number) => string,
   color: number,
   rows: CleanupRow[],
   fieldBuilder: (rows: CleanupRow[]) => Array<{ name: string; value: string }>,
@@ -329,7 +329,7 @@ function buildPagedEmbeds(
   const chunks = chunk(capped, FIELDS_PER_EMBED);
 
   for (let i = 0; i < chunks.length; i++) {
-    const embed = new EmbedBuilder().setTitle(title).setColor(color);
+    const embed = new EmbedBuilder().setTitle(title(i + 1, chunks.length)).setColor(color);
     const fields = fieldBuilder(chunks[i]);
     embed.addFields(...fields);
 
@@ -350,7 +350,7 @@ function buildPagedEmbeds(
  */
 export function formatExpandedCraftReply(result: CleanupResult, usesByItemId: Map<number, UsesEntry[]>): EmbedBuilder[] {
   return buildPagedEmbeds(
-    `▸ Crea con ellos algo nuevo (${result.craft.length})`,
+    (p, t) => `▸ Crea con ellos algo nuevo · ${result.craft.length} (página ${p}/${t})`,
     0x82c8a0,
     result.craft,
     craftFieldsFor,
@@ -363,7 +363,7 @@ export function formatExpandedCraftReply(result: CleanupResult, usesByItemId: Ma
  */
 export function formatExpandedSellReply(result: CleanupResult): EmbedBuilder[] {
   return buildPagedEmbeds(
-    `▸ Que encuentren nuevo dueño en el Mercado (${result.sellMb.length})`,
+    (p, t) => `▸ Que encuentren nuevo dueño · ${result.sellMb.length} (página ${p}/${t})`,
     0xa098dc,
     result.sellMb,
     sellFieldsFor,
@@ -376,28 +376,10 @@ export function formatExpandedSellReply(result: CleanupResult): EmbedBuilder[] {
  */
 export function formatExpandedVendorDiscardReply(result: CleanupResult): EmbedBuilder[] {
   const combined: CleanupRow[] = [...result.vendor, ...result.discard];
-  const capped = combined.slice(0, ROW_CAP);
-  const chunks = chunk(capped, FIELDS_PER_EMBED);
-
-  const embeds: EmbedBuilder[] = [];
-  for (let i = 0; i < chunks.length; i++) {
-    const embed = new EmbedBuilder()
-      .setTitle(`▸ Agradéceles y despídete (${combined.length})`)
-      .setColor(0x6b6b6b);
-
-    const fields: Array<{ name: string; value: string }> = [];
-    for (const row of chunks[i]) {
-      fields.push(row.bucket === 'vendor' ? vendorFieldFor(row) : discardFieldFor(row));
-    }
-    embed.addFields(...fields);
-
-    // Add footer to last embed if we hit row cap
-    if (i === chunks.length - 1 && combined.length > ROW_CAP) {
-      embed.setFooter({ text: `…+${combined.length - ROW_CAP} más en cleanup.md` });
-    }
-
-    embeds.push(embed);
-  }
-
-  return embeds;
+  return buildPagedEmbeds(
+    (p, t) => `▸ Vendedor & Descartar · ${combined.length} (página ${p}/${t})`,
+    0x6b6b6b,
+    combined,
+    (rows) => rows.map((row) => row.bucket === 'vendor' ? vendorFieldFor(row) : discardFieldFor(row)),
+  );
 }
