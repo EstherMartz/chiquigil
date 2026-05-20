@@ -1,6 +1,17 @@
-# Quest Items — Crafter Class Quest MB-Camping Table — Design
+# Quest Items — Quest Turn-in MB-Camping Table — Design
 
-**Status:** Spec (pre-plan). Phase 1 of a 4-phase quest-items roadmap (crafter class quests now; custom deliveries / beast tribes / general quest items later).
+**Status:** Spec, post-probe-pivot (2026-05-20). Originally scoped to crafter class quests only; expanded after XIVAPI probe revealed the Quest sheet has no clean "crafter quest" filter (introductory crafter quests are tagged `ClassJobCategory0 = All Classes`). Scope broadened to **all quests with item turn-ins**.
+
+## Post-probe pivot (2026-05-20)
+
+XIVAPI v2 Quest sheet uses different field names than the original spec assumed:
+
+- Required items: `ItemCatalyst[3]` (Item-linked array, 3 slots) + `ItemCountCatalyst[3]` (number array, 0 = unused slot). The original spec assumed `ItemRequired` / `QtyRequired` / `ItemRequiredHQ`.
+- HQ-requirement flag: **not exposed**. Drop `isHqRequired` from the snapshot. The UI shows both NQ + HQ market columns regardless.
+- Class scoping: `ClassJobCategory0.value` doesn't cleanly identify crafter-only quests. Drop the 8-crafter filter. Snapshot **every** Quest row with non-empty `ItemCatalyst`.
+- Category context: surface `ClassJobCategory0.fields.Name` (e.g., "All Classes", "Disciple of the Hand", "Carpenter") as a string `categoryName` field for UI display.
+
+All sections below reflect the post-pivot design.
 
 ## Goal
 

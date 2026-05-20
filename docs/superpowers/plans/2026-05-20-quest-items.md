@@ -1,4 +1,9 @@
-# Quest Items — Crafter Class Quest MB-Camping Table — Implementation Plan
+# Quest Items — Quest Turn-in MB-Camping Table — Implementation Plan
+
+> **POST-PROBE PIVOT (2026-05-20):** After hitting XIVAPI v2, the Quest sheet uses `ItemCatalyst[3]` / `ItemCountCatalyst[3]` (not `ItemRequired` / `QtyRequired`), has no `ItemRequiredHQ` field, and has no clean crafter-only filter. Scope broadened to ALL quests with item turn-ins. Snapshot shape simplified: drop `classJobId` + `isHqRequired`, add `categoryName: string`. UI drops the 8-crafter chips in favor of a category filter. Task 1's code below is **superseded** by the implementer's revised prompt; the rest of the plan (Tasks 2–6) is mostly unchanged but with `classJobId` references replaced by `categoryName` and `isHqRequired` dropped. See the matching spec file for the post-pivot design.
+
+---
+
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
