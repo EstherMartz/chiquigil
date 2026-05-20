@@ -80,11 +80,19 @@ export function parseQuestSheetPage(raw: RawQuestSheetPage): SnapshotQuest[] {
 
     if (requiredItems.length === 0) continue;
 
+    // Drop placeholder rows. The Quest sheet contains unfinished/internal rows
+    // with empty Name + sentinel ClassJobLevel (65535 = 0xFFFF). Those have no
+    // value for the user.
+    const questName = row.fields.Name ?? '';
+    const rawLevel = row.fields.ClassJobLevel?.[0] ?? 0;
+    if (!questName) continue;
+    const level = rawLevel > 200 ? 0 : rawLevel;  // sentinel → 0 (unknown)
+
     out.push({
       questId: row.row_id,
-      questName: row.fields.Name ?? '',
+      questName,
       categoryName: row.fields.ClassJobCategory0?.fields?.Name ?? '',
-      level: row.fields.ClassJobLevel?.[0] ?? 0,
+      level,
       requiredItems,
     });
   }
@@ -97,11 +105,13 @@ export interface FetchQuestSnapshotOpts {
 }
 
 const BASE = (import.meta.env?.VITE_XIVAPI_BASE as string | undefined) ?? 'https://v2.xivapi.com';
-// XIVAPI v2 array field syntax: `Foo[]` iterates elements; `.Name` resolves to the
-// linked row's Name field (which materializes as `.fields.Name` in the response).
-// The plain dotted form `ItemCatalyst.value` 400s with an "expected array filter"
-// error, so the brackets are required for array-typed columns.
-const QUEST_FIELDS = 'Name,ClassJobLevel,ItemCatalyst[].Name,ItemCountCatalyst,ClassJobCategory0.fields.Name';
+// XIVAPI v2 field-path syntax for linked references uses `.Name` (without an
+// intermediate `.fields.`) to resolve into the linked row's Name; the response
+// shape still wraps it as `.fields.Name`, which the parser reads. Arrays use
+// `Foo[]` to iterate elements. The plain dotted form `ItemCatalyst.value` 400s
+// with "expected array filter", and `ClassJobCategory0.fields.Name` silently
+// returns an empty struct — both quirks live in the v2 query language.
+const QUEST_FIELDS = 'Name,ClassJobLevel,ItemCatalyst[].Name,ItemCountCatalyst,ClassJobCategory0.Name';
 
 function buildQuestPageUrl(after: number, pageSize: number): string {
   const params = new URLSearchParams({ fields: QUEST_FIELDS, limit: String(pageSize) });
