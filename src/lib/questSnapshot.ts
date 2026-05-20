@@ -97,7 +97,11 @@ export interface FetchQuestSnapshotOpts {
 }
 
 const BASE = (import.meta.env?.VITE_XIVAPI_BASE as string | undefined) ?? 'https://v2.xivapi.com';
-const QUEST_FIELDS = 'Name,ClassJobLevel,ItemCatalyst.value,ItemCatalyst.fields.Name,ItemCountCatalyst,ClassJobCategory0.fields.Name';
+// XIVAPI v2 array field syntax: `Foo[]` iterates elements; `.Name` resolves to the
+// linked row's Name field (which materializes as `.fields.Name` in the response).
+// The plain dotted form `ItemCatalyst.value` 400s with an "expected array filter"
+// error, so the brackets are required for array-typed columns.
+const QUEST_FIELDS = 'Name,ClassJobLevel,ItemCatalyst[].Name,ItemCountCatalyst,ClassJobCategory0.fields.Name';
 
 function buildQuestPageUrl(after: number, pageSize: number): string {
   const params = new URLSearchParams({ fields: QUEST_FIELDS, limit: String(pageSize) });
