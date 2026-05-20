@@ -1,4 +1,5 @@
 import type { ButtonInteraction, Interaction } from 'discord.js';
+import { EmbedBuilder } from 'discord.js';
 import { randomBytes } from 'node:crypto';
 import { decodeCustomId, type ButtonAction } from './buttons';
 import type { CleanupCache, CachedCleanup } from './cleanupCache';
@@ -34,6 +35,27 @@ export function newCacheId(): string {
   return randomBytes(6).toString('hex');
 }
 
+async function replyEphemeral(
+  btn: ButtonInteraction,
+  embeds: EmbedBuilder[],
+): Promise<void> {
+  try {
+    await btn.reply({ embeds, ephemeral: true });
+  } catch (err) {
+    const m = err instanceof Error ? err.message : String(err);
+    console.error('Failed to send ephemeral reply:', m);
+    // Best-effort follow-up; if THIS also fails, swallow — already logged.
+    try {
+      await btn.followUp({
+        content: `No pude mostrarte la lista completa ahora mismo 🌫️ (${m})`,
+        ephemeral: true,
+      });
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
 export async function handleInteraction(
   interaction: Interaction,
   deps: InteractionDeps,
@@ -57,17 +79,17 @@ export async function handleInteraction(
   switch (decoded.action) {
     case 'craft': {
       const embeds = formatExpandedCraftReply(cached.result, cached.usesByItemId);
-      await btn.reply({ embeds, ephemeral: true });
+      await replyEphemeral(btn, embeds);
       return;
     }
     case 'sell': {
       const embeds = formatExpandedSellReply(cached.result);
-      await btn.reply({ embeds, ephemeral: true });
+      await replyEphemeral(btn, embeds);
       return;
     }
     case 'vendor': {
       const embeds = formatExpandedVendorDiscardReply(cached.result);
-      await btn.reply({ embeds, ephemeral: true });
+      await replyEphemeral(btn, embeds);
       return;
     }
     case 'refresh': {

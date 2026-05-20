@@ -132,6 +132,32 @@ describe('handleInteraction', () => {
     );
   });
 
+  it('sell action replies ephemerally with expanded sell embeds', async () => {
+    const deps = fakeDeps();
+    deps.cache.set('user1', fakeEntry('user1', 'abcdef012345'));
+    const i = fakeInteraction(
+      encodeCustomId({ ownerId: 'user1', cacheId: 'abcdef012345', action: 'sell' }),
+      'user1',
+    );
+    await handleInteraction(i as any, deps);
+    expect(i.reply).toHaveBeenCalledWith(
+      expect.objectContaining({ ephemeral: true, embeds: expect.any(Array) }),
+    );
+  });
+
+  it('vendor action replies ephemerally with expanded vendor+discard embeds', async () => {
+    const deps = fakeDeps();
+    deps.cache.set('user1', fakeEntry('user1', 'abcdef012345'));
+    const i = fakeInteraction(
+      encodeCustomId({ ownerId: 'user1', cacheId: 'abcdef012345', action: 'vendor' }),
+      'user1',
+    );
+    await handleInteraction(i as any, deps);
+    expect(i.reply).toHaveBeenCalledWith(
+      expect.objectContaining({ ephemeral: true, embeds: expect.any(Array) }),
+    );
+  });
+
   it('refresh action re-fetches market, inserts a new cache entry with new cacheId, and edits the deferred reply', async () => {
     const fetchMarket = vi.fn().mockResolvedValue(emptyMarket());
     const deps = fakeDeps({ fetchMarket });
