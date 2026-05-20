@@ -98,7 +98,7 @@ function splitCsvLine(line: string): string[] {
   return out;
 }
 
-interface ParseResult {
+export interface ParseResult {
   entries: InventoryEntry[];
   unrecognized: InventoryEntry[];
 }
