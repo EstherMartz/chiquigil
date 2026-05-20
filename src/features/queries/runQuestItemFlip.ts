@@ -2,8 +2,9 @@ import type { MarketData } from '../../lib/universalis';
 import type { SnapshotQuest } from '../../lib/questSnapshot';
 import type { SnapshotItem } from '../../lib/itemSnapshot';
 import { pickHighestTrustedTier } from '../../lib/priceTrust';
+import type { HqMode } from './types';
 
-export type HqMode = 'hq' | 'nq' | 'either';
+export type { HqMode };
 
 export interface QuestItemFilter {
   hq: HqMode;
