@@ -148,4 +148,24 @@ describe('handleInteraction', () => {
     expect(fresh).not.toBeNull();
     expect(fresh!.cacheId).not.toBe('oldcacheid12');
   });
+
+  it('refresh handles fetchMarket failure by editing the deferred reply with an error message', async () => {
+    const fetchMarket = vi.fn().mockRejectedValue(new Error('Universalis 503'));
+    const deps = fakeDeps({ fetchMarket });
+    deps.cache.set('user1', fakeEntry('user1', 'oldcacheid12'));
+    const i = fakeInteraction(
+      encodeCustomId({ ownerId: 'user1', cacheId: 'oldcacheid12', action: 'refresh' }),
+      'user1',
+    );
+    await handleInteraction(i as any, deps);
+    expect(i.deferReply).toHaveBeenCalledWith({ ephemeral: true });
+    expect(i.editReply).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: expect.stringContaining('Universalis 503'),
+        embeds: [],
+        files: [],
+        components: [],
+      }),
+    );
+  });
 });

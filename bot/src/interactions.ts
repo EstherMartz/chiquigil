@@ -72,46 +72,56 @@ export async function handleInteraction(
     }
     case 'refresh': {
       await btn.deferReply({ ephemeral: true });
-      const market = await deps.fetchMarket(cached.marketIds, deps.cfg);
-      const craftMap = findCraftOpportunities(
-        cached.parsed.entries,
-        deps.snapshots.recipes,
-        market,
-        deps.snapshots.itemsById,
-      );
-      const result = runCleanup({
-        inventory: cached.parsed.entries,
-        market,
-        items: deps.snapshots.itemsById,
-        craftOpportunities: craftMap,
-        unrecognized: cached.parsed.unrecognized,
-      });
-      const usesByItemId = findInventoryUses(
-        cached.parsed.entries,
-        deps.snapshots.recipes,
-        market,
-        deps.snapshots.itemsById,
-      );
-      const cacheId = newCacheId();
-      const next: CachedCleanup = {
-        ...cached,
-        cacheId,
-        result,
-        usesByItemId,
-        lastTouchedAt: Date.now(),
-      };
-      deps.cache.set(btn.user.id, next);
-      const totalRows = cached.parsed.entries.length + cached.parsed.unrecognized.length;
-      const reply = formatCleanupReply(
-        { result, usesByItemId, totalRows },
-        { ownerId: btn.user.id, cacheId },
-      );
-      await btn.editReply({
-        content: reply.summary,
-        embeds: reply.embeds,
-        files: reply.files,
-        components: reply.components,
-      });
+      try {
+        const market = await deps.fetchMarket(cached.marketIds, deps.cfg);
+        const craftMap = findCraftOpportunities(
+          cached.parsed.entries,
+          deps.snapshots.recipes,
+          market,
+          deps.snapshots.itemsById,
+        );
+        const result = runCleanup({
+          inventory: cached.parsed.entries,
+          market,
+          items: deps.snapshots.itemsById,
+          craftOpportunities: craftMap,
+          unrecognized: cached.parsed.unrecognized,
+        });
+        const usesByItemId = findInventoryUses(
+          cached.parsed.entries,
+          deps.snapshots.recipes,
+          market,
+          deps.snapshots.itemsById,
+        );
+        const cacheId = newCacheId();
+        const next: CachedCleanup = {
+          ...cached,
+          cacheId,
+          result,
+          usesByItemId,
+          lastTouchedAt: Date.now(),
+        };
+        deps.cache.set(btn.user.id, next);
+        const totalRows = cached.parsed.entries.length + cached.parsed.unrecognized.length;
+        const reply = formatCleanupReply(
+          { result, usesByItemId, totalRows },
+          { ownerId: btn.user.id, cacheId },
+        );
+        await btn.editReply({
+          content: reply.summary,
+          embeds: reply.embeds,
+          files: reply.files,
+          components: reply.components,
+        });
+      } catch (err) {
+        const m = err instanceof Error ? err.message : String(err);
+        await btn.editReply({
+          content: `No pude refrescar los precios ahora mismo 🌫️ El Mercado está esquivo. Inténtalo en un ratito. (${m})`,
+          embeds: [],
+          files: [],
+          components: [],
+        });
+      }
       return;
     }
   }
