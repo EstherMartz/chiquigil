@@ -1,5 +1,6 @@
-import { EmbedBuilder, AttachmentBuilder } from 'discord.js';
+import { EmbedBuilder, AttachmentBuilder, ActionRowBuilder, type ButtonBuilder } from 'discord.js';
 import type { CleanupResult, CleanupRow, InventoryEntry, UsesEntry } from '../../src/features/cleanup/types';
+import { buildOverviewButtons } from './buttons';
 
 const EMBED_FIELD_MAX = 1024;
 const TOP_CRAFTS_INLINE = 12;
@@ -15,6 +16,12 @@ export interface FormatOutput {
   embeds: EmbedBuilder[];
   files: AttachmentBuilder[];
   summary: string;
+  components?: ActionRowBuilder<ButtonBuilder>[];
+}
+
+export interface ButtonContext {
+  ownerId: string;
+  cacheId: string;
 }
 
 function fmtGil(n: number): string {
@@ -41,7 +48,7 @@ function craftAlt(row: CleanupRow): string {
   return '';
 }
 
-export function formatCleanupReply(input: FormatInput): FormatOutput {
+export function formatCleanupReply(input: FormatInput, buttons?: ButtonContext): FormatOutput {
   const { result, usesByItemId, totalRows } = input;
   const totalRecognized = result.craft.length + result.sellMb.length + result.vendor.length + result.discard.length;
 
@@ -133,7 +140,9 @@ export function formatCleanupReply(input: FormatInput): FormatOutput {
   const md = buildMarkdown(result, usesByItemId, totalRows);
   const file = new AttachmentBuilder(Buffer.from(md, 'utf8'), { name: 'cleanup.md' });
 
-  return { embeds, files: [file], summary };
+  const components = buttons ? [buildOverviewButtons(buttons.ownerId, buttons.cacheId, result)] : undefined;
+
+  return { embeds, files: [file], summary, components };
 }
 
 function buildMarkdown(
@@ -238,4 +247,157 @@ function buildMarkdown(
   }
 
   return lines.join('\n');
+}
+
+// Helper constants for paged embeds
+const FIELDS_PER_EMBED = 25;
+const MAX_EMBEDS_PER_REPLY = 3;
+const ROW_CAP = 75;
+
+// Utility: split array into chunks of size n
+function chunk<T>(arr: T[], n: number): T[][] {
+  const result: T[][] = [];
+  for (let i = 0; i < arr.length; i += n) {
+    result.push(arr.slice(i, i + n));
+  }
+  return result;
+}
+
+// Field builder for craft rows
+function craftFieldsFor(rows: CleanupRow[]): Array<{ name: string; value: string }> {
+  const fields: Array<{ name: string; value: string }> = [];
+  for (const row of rows) {
+    if (!row.bestCraft) continue;
+    const sign = row.bestCraft.netProfit >= 0 ? '+' : '−';
+    const lines: string[] = [
+      `→ se transforma en ${row.bestCraft.outputName} ${sign}${fmtGil(Math.abs(row.bestCraft.netProfit))}g${craftAlt(row)}`,
+    ];
+    if (row.otherCrafts.length > 0) lines.push(`  +${row.otherCrafts.length} recetas más`);
+    const missing = row.bestCraft.missingIngredients;
+    if (missing.length > 0) {
+      lines.push(`  comprar en Mercado: ${missing.map((m) => `${m.amount}× ${m.name}`).join(', ').slice(0, 200)}`);
+    }
+    fields.push({
+      name: rowLabel(row.entry),
+      value: lines.join('\n').slice(0, EMBED_FIELD_MAX),
+    });
+  }
+  return fields;
+}
+
+// Field builder for sellMb rows
+function sellFieldsFor(rows: CleanupRow[]): Array<{ name: string; value: string }> {
+  const fields: Array<{ name: string; value: string }> = [];
+  for (const row of rows) {
+    const perEa = Math.round(row.mbRevenue / row.entry.qty);
+    const scopeLabel = row.mbScope === 'dc' ? ' · DC' : row.mbScope === 'region' ? ' · entre DCs' : '';
+    const thin = row.mbListingCount < 2 ? ' · mercado tímido' : ` · ${row.mbListingCount} anuncios`;
+    fields.push({
+      name: rowLabel(row.entry),
+      value: `${fmtFull(perEa)}g/ud · total ${fmtGil(row.mbRevenue)}g${thin}${scopeLabel}`.slice(0, EMBED_FIELD_MAX),
+    });
+  }
+  return fields;
+}
+
+// Field builder for vendor rows
+function vendorFieldFor(row: CleanupRow): { name: string; value: string } {
+  const perEa = Math.round(row.vendorRevenue / row.entry.qty);
+  return {
+    name: rowLabel(row.entry),
+    value: `${fmtFull(perEa)}g/ud · total ${fmtGil(row.vendorRevenue)}g`,
+  };
+}
+
+// Field builder for discard rows
+function discardFieldFor(row: CleanupRow): { name: string; value: string } {
+  return {
+    name: rowLabel(row.entry),
+    value: 'gracias por tu servicio',
+  };
+}
+
+// Generic paged embed builder: takes a list of rows and a field-builder function
+function buildPagedEmbeds(
+  title: string,
+  color: number,
+  rows: CleanupRow[],
+  fieldBuilder: (rows: CleanupRow[]) => Array<{ name: string; value: string }>,
+): EmbedBuilder[] {
+  const embeds: EmbedBuilder[] = [];
+  const capped = rows.slice(0, ROW_CAP);
+  const chunks = chunk(capped, FIELDS_PER_EMBED);
+
+  for (let i = 0; i < chunks.length; i++) {
+    const embed = new EmbedBuilder().setTitle(title).setColor(color);
+    const fields = fieldBuilder(chunks[i]);
+    embed.addFields(...fields);
+
+    // Add footer to last embed if we hit row cap
+    if (i === chunks.length - 1 && rows.length > ROW_CAP) {
+      embed.setFooter({ text: `…+${rows.length - ROW_CAP} más en cleanup.md` });
+    }
+
+    embeds.push(embed);
+  }
+
+  return embeds;
+}
+
+/**
+ * Expanded view of all craft rows, split across embeds (max 25 fields each).
+ * Hard capped at 75 rows total; footer links the rest to cleanup.md.
+ */
+export function formatExpandedCraftReply(result: CleanupResult, usesByItemId: Map<number, UsesEntry[]>): EmbedBuilder[] {
+  return buildPagedEmbeds(
+    `▸ Crea con ellos algo nuevo (${result.craft.length})`,
+    0x82c8a0,
+    result.craft,
+    craftFieldsFor,
+  );
+}
+
+/**
+ * Expanded view of all sellMb rows, split across embeds (max 25 fields each).
+ * Hard capped at 75 rows total.
+ */
+export function formatExpandedSellReply(result: CleanupResult): EmbedBuilder[] {
+  return buildPagedEmbeds(
+    `▸ Que encuentren nuevo dueño en el Mercado (${result.sellMb.length})`,
+    0xa098dc,
+    result.sellMb,
+    sellFieldsFor,
+  );
+}
+
+/**
+ * Expanded view of vendor and discard rows combined (vendor first).
+ * Hard capped at 75 rows total across both buckets.
+ */
+export function formatExpandedVendorDiscardReply(result: CleanupResult): EmbedBuilder[] {
+  const combined: CleanupRow[] = [...result.vendor, ...result.discard];
+  const capped = combined.slice(0, ROW_CAP);
+  const chunks = chunk(capped, FIELDS_PER_EMBED);
+
+  const embeds: EmbedBuilder[] = [];
+  for (let i = 0; i < chunks.length; i++) {
+    const embed = new EmbedBuilder()
+      .setTitle(`▸ Agradéceles y despídete (${combined.length})`)
+      .setColor(0x6b6b6b);
+
+    const fields: Array<{ name: string; value: string }> = [];
+    for (const row of chunks[i]) {
+      fields.push(row.bucket === 'vendor' ? vendorFieldFor(row) : discardFieldFor(row));
+    }
+    embed.addFields(...fields);
+
+    // Add footer to last embed if we hit row cap
+    if (i === chunks.length - 1 && combined.length > ROW_CAP) {
+      embed.setFooter({ text: `…+${combined.length - ROW_CAP} más en cleanup.md` });
+    }
+
+    embeds.push(embed);
+  }
+
+  return embeds;
 }
