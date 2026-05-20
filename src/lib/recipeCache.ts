@@ -5,9 +5,10 @@ import type { GatheringInfo } from './gatheringCatalog';
 import type { SnapshotLeve } from './leveSnapshot';
 import type { SpecialShopSnapshot } from './specialShopSnapshot';
 import type { CurrencyId } from './currencies';
+import type { SnapshotQuest } from './questSnapshot';
 
 const DB_NAME = 'ffxiv-helper';
-const DB_VERSION = 10;
+const DB_VERSION = 11;
 const RECIPE_STORE = 'recipes';
 const NAME_STORE = 'names';
 const ITEM_STORE = 'items';
@@ -18,6 +19,7 @@ const MARKET_STORE = 'market';
 const LEVE_STORE = 'leves';
 const GILSHOP_STORE = 'gilShop';
 const SPECIALSHOP_STORE = 'specialShop';
+const QUEST_STORE = 'quest';
 
 let dbPromise: Promise<IDBPDatabase> | null = null;
 
@@ -54,6 +56,9 @@ function db(): Promise<IDBPDatabase> {
         }
         if (!database.objectStoreNames.contains(SPECIALSHOP_STORE)) {
           database.createObjectStore(SPECIALSHOP_STORE);
+        }
+        if (!database.objectStoreNames.contains(QUEST_STORE)) {
+          database.createObjectStore(QUEST_STORE);
         }
         if (oldVersion > 0 && oldVersion < 10) {
           // v10 added priceLow to SnapshotItem; wipe the item store so the next load
@@ -266,4 +271,27 @@ export async function clearSpecialShopCache(): Promise<void> {
 
 export async function getSpecialShopUpdatedAt(): Promise<number | undefined> {
   return (await db()).get(META_STORE, SPECIALSHOP_SNAPSHOT_TS_KEY);
+}
+
+const QUEST_SNAPSHOT_KEY = 'snapshot';
+const QUEST_SNAPSHOT_TS_KEY = 'questSnapshotUpdatedAt';
+
+export async function getCachedQuests(): Promise<SnapshotQuest[] | undefined> {
+  return (await db()).get(QUEST_STORE, QUEST_SNAPSHOT_KEY);
+}
+
+export async function putCachedQuests(quests: SnapshotQuest[], ts?: number): Promise<void> {
+  const handle = await db();
+  await handle.put(QUEST_STORE, quests, QUEST_SNAPSHOT_KEY);
+  await handle.put(META_STORE, ts ?? Date.now(), QUEST_SNAPSHOT_TS_KEY);
+}
+
+export async function clearQuestCache(): Promise<void> {
+  const handle = await db();
+  await handle.clear(QUEST_STORE);
+  await handle.delete(META_STORE, QUEST_SNAPSHOT_TS_KEY);
+}
+
+export async function getQuestSnapshotUpdatedAt(): Promise<number | undefined> {
+  return (await db()).get(META_STORE, QUEST_SNAPSHOT_TS_KEY);
 }
