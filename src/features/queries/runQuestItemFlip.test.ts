@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { runQuestItemFlip, defaultQuestItemFilter } from './runQuestItemFlip';
+import { runQuestItemFlip, defaultQuestItemFilter, countQuestItemCandidates } from './runQuestItemFlip';
 import type { MarketData, MarketItem } from '../../lib/universalis';
 import type { SnapshotQuest } from '../../lib/questSnapshot';
 import type { SnapshotItem } from '../../lib/itemSnapshot';
@@ -249,6 +249,56 @@ describe('runQuestItemFlip', () => {
     };
     const out = runQuestItemFlip(snapshot, items, market, { ...defaultQuestItemFilter(), sortBy: 'level', sortDir: 'asc' });
     expect(out.map((r) => r.itemId)).toEqual([200, 100]);
+  });
+
+  it('excludes items in the Crystals search category (sc=58)', () => {
+    const snapshot = [
+      mkQuest({
+        questId: 1,
+        requiredItems: [
+          { itemId: 2, itemName: 'Wind Shard', qty: 100 },
+          { itemId: 5057, itemName: 'Maple Lumber', qty: 3 },
+        ],
+      }),
+    ];
+    const crystal: SnapshotItem = { id: 2, name: 'Wind Shard', sc: 58, ui: 1, ilvl: 1, canHq: false };
+    const lumber: SnapshotItem = { id: 5057, name: 'Maple Lumber', sc: 19, ui: 1, ilvl: 1, canHq: true };
+    const items = new Map([[2, crystal], [5057, lumber]]);
+    const market: MarketData = {
+      2: mkMarket({ minNQ: 5, medianNQ: 5 }),
+      5057: mkMarket({ minHQ: 2400, medianHQ: 2400 }),
+    };
+    const out = runQuestItemFlip(snapshot, items, market, defaultQuestItemFilter());
+    expect(out).toHaveLength(1);
+    expect(out[0].itemId).toBe(5057);
+  });
+
+  it('countQuestItemCandidates counts non-crystal (quest x item) pairs', () => {
+    const snapshot = [
+      mkQuest({
+        questId: 1,
+        requiredItems: [
+          { itemId: 2, itemName: 'Wind Shard', qty: 100 },     // crystal — excluded
+          { itemId: 5057, itemName: 'Maple Lumber', qty: 3 },
+          { itemId: 5058, itemName: 'Maple Sap', qty: 2 },
+        ],
+      }),
+      mkQuest({
+        questId: 2,
+        requiredItems: [
+          { itemId: 6, itemName: 'Water Crystal', qty: 50 },   // crystal — excluded
+          { itemId: 5106, itemName: 'Bronze Ingot', qty: 5 },
+        ],
+      }),
+    ];
+    const items = new Map<number, SnapshotItem>([
+      [2, { id: 2, name: 'Wind Shard', sc: 58, ui: 1, ilvl: 1, canHq: false }],
+      [6, { id: 6, name: 'Water Crystal', sc: 58, ui: 1, ilvl: 1, canHq: false }],
+      [5057, { id: 5057, name: 'Maple Lumber', sc: 19, ui: 1, ilvl: 1, canHq: true }],
+      [5058, { id: 5058, name: 'Maple Sap', sc: 7, ui: 1, ilvl: 1, canHq: true }],
+      [5106, { id: 5106, name: 'Bronze Ingot', sc: 7, ui: 1, ilvl: 1, canHq: true }],
+    ]);
+    expect(countQuestItemCandidates(snapshot, items)).toBe(3);
   });
 
   it('uses item.canHq when picking trusted tier (canHq=false skips HQ)', () => {

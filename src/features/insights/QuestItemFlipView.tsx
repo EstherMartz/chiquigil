@@ -6,12 +6,14 @@ import { useItemSnapshot } from '../queries/useItemSnapshot';
 import { useMarketData } from '../watchlist/useMarketData';
 import {
   runQuestItemFlip,
+  countQuestItemCandidates,
   DEFAULT_SORT_DIR,
-  type HqMode,
   type QuestItemSort,
   type SortDir,
 } from '../queries/runQuestItemFlip';
+import type { HqMode } from '../queries/types';
 import { QuestItemFlipResults } from '../queries/QuestItemFlipResults';
+import { Spinner } from '../../components/Spinner';
 
 const SORT_KEYS: ReadonlySet<QuestItemSort> = new Set([
   'level', 'category', 'quest', 'item', 'qty', 'nq', 'hq', 'listings', 'velocity', 'revenue',
@@ -33,7 +35,6 @@ export function QuestItemFlipView() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { world, dc } = useSettingsStore();
 
-  // Parse URL params into filter state
   const [search, setSearch] = useState(() => searchParams.get('q') ?? '');
   const [categorySearch, setCategorySearch] = useState(() => searchParams.get('cat') ?? '');
   const [hq, setHq] = useState<HqMode>(() => {
@@ -48,7 +49,6 @@ export function QuestItemFlipView() {
   const [sortBy, setSortBy] = useState<QuestItemSort>(initialSort.sortBy);
   const [sortDir, setSortDir] = useState<SortDir>(initialSort.sortDir);
 
-  // Sync filter state to URL params
   useEffect(() => {
     const params = new URLSearchParams();
     if (search) params.set('q', search);
@@ -59,13 +59,19 @@ export function QuestItemFlipView() {
     setSearchParams(params, { replace: true });
   }, [search, categorySearch, hq, minListings, sortBy, sortDir, setSearchParams]);
 
-  // Fetch data
   const questsQuery = useQuestSnapshot();
   const itemsQuery = useItemSnapshot();
   const quests = questsQuery.data?.snapshot ?? [];
   const items = itemsQuery.data?.items ?? [];
 
-  // Build distinct category options sorted by quest count DESC then name ASC
+  const itemsById = useMemo(() => {
+    const map = new Map();
+    for (const item of items) {
+      map.set(item.id, item);
+    }
+    return map;
+  }, [items]);
+
   const categoryOptions = useMemo(() => {
     const counts = new Map<string, number>();
     for (const quest of quests) {
@@ -77,7 +83,6 @@ export function QuestItemFlipView() {
       .map(([name, count]) => ({ name, count }));
   }, [quests]);
 
-  // Extract all item IDs from quests
   const allItemIds = useMemo(() => {
     const ids = new Set<number>();
     for (const quest of quests) {
@@ -88,20 +93,14 @@ export function QuestItemFlipView() {
     return Array.from(ids);
   }, [quests]);
 
-  // Fetch market data
   const marketQuery = useMarketData(allItemIds, world, dc);
   const market = marketQuery.data?.phantom ?? {};
 
-  // Build items map
-  const itemsById = useMemo(() => {
-    const map = new Map();
-    for (const item of items) {
-      map.set(item.id, item);
-    }
-    return map;
-  }, [items]);
+  const totalCandidates = useMemo(
+    () => countQuestItemCandidates(quests, itemsById),
+    [quests, itemsById],
+  );
 
-  // Run the flip analysis
   const rows = useMemo(() => {
     return runQuestItemFlip(quests, itemsById, market, {
       hq,
@@ -122,87 +121,133 @@ export function QuestItemFlipView() {
     }
   }
 
-  // Loading states
   const isLoading = questsQuery.isLoading || itemsQuery.isLoading || marketQuery.isLoading;
 
-  if (isLoading) {
-    return (
-      <div className="font-mono text-xs text-text-low py-8 text-center">
-        Loading quest data...
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-3">
-      <div className="flex flex-col gap-2">
-        <div className="flex gap-2 flex-wrap">
-          <input
-            type="text"
-            placeholder="Search item name..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="px-2 py-1 bg-bg-input border border-border-low text-text-high placeholder-text-low text-xs rounded focus:outline-none focus:border-text-high"
-          />
-          <select
-            value={categorySearch}
-            onChange={(e) => setCategorySearch(e.target.value)}
-            className="px-2 py-1 bg-bg-input border border-border-low text-text-high text-xs rounded focus:outline-none focus:border-text-high"
-          >
-            <option value="">All categories</option>
-            {categoryOptions.map((opt) => (
-              <option key={opt.name} value={opt.name}>
-                {opt.name} ({opt.count})
-              </option>
-            ))}
-          </select>
-          <input
-            type="number"
-            placeholder="Min listings"
-            value={minListings}
-            onChange={(e) => setMinListings(Math.max(0, parseInt(e.target.value, 10) || 0))}
-            className="px-2 py-1 bg-bg-input border border-border-low text-text-high placeholder-text-low text-xs rounded focus:outline-none focus:border-text-high w-24"
-          />
-        </div>
+    <div className="space-y-4">
+      <FilterBar
+        search={search}
+        onSearchChange={setSearch}
+        categorySearch={categorySearch}
+        onCategoryChange={setCategorySearch}
+        categoryOptions={categoryOptions}
+        minListings={minListings}
+        onMinListingsChange={setMinListings}
+        hq={hq}
+        onHqChange={setHq}
+        sortBy={sortBy}
+        onSortByChange={(key) => {
+          setSortBy(key);
+          setSortDir(DEFAULT_SORT_DIR[key]);
+        }}
+      />
+
+      {isLoading && <Spinner label="Loading quest data…" />}
+
+      {!isLoading && (
+        <QuestItemFlipResults
+          rows={rows}
+          totalCandidates={totalCandidates}
+          sortBy={sortBy}
+          sortDir={sortDir}
+          onSort={handleSort}
+        />
+      )}
+    </div>
+  );
+}
+
+interface FilterBarProps {
+  search: string;
+  onSearchChange: (v: string) => void;
+  categorySearch: string;
+  onCategoryChange: (v: string) => void;
+  categoryOptions: { name: string; count: number }[];
+  minListings: number;
+  onMinListingsChange: (n: number) => void;
+  hq: HqMode;
+  onHqChange: (m: HqMode) => void;
+  sortBy: QuestItemSort;
+  onSortByChange: (k: QuestItemSort) => void;
+}
+
+function FilterBar({
+  search, onSearchChange,
+  categorySearch, onCategoryChange, categoryOptions,
+  minListings, onMinListingsChange,
+  hq, onHqChange,
+  sortBy, onSortByChange,
+}: FilterBarProps) {
+  return (
+    <div className="flex flex-wrap items-end gap-3 p-3 border border-border-base bg-bg-card">
+      <label className="block">
+        <span className="font-mono text-[10px] tracking-widest text-text-low uppercase">Item search</span>
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => onSearchChange(e.target.value)}
+          placeholder="Maple, Linseed…"
+          className="mt-1 block w-48 bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+        />
+      </label>
+      <label className="block">
+        <span className="font-mono text-[10px] tracking-widest text-text-low uppercase">Category</span>
+        <select
+          value={categorySearch}
+          onChange={(e) => onCategoryChange(e.target.value)}
+          className="mt-1 block w-56 bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+        >
+          <option value="">All categories</option>
+          {categoryOptions.map((opt) => (
+            <option key={opt.name} value={opt.name}>
+              {opt.name} ({opt.count})
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="block">
+        <span className="font-mono text-[10px] tracking-widest text-text-low uppercase">Min listings</span>
+        <input
+          type="number" min={0} step={1} value={minListings}
+          onChange={(e) => onMinListingsChange(Math.max(0, Number(e.target.value) || 0))}
+          className="mt-1 block w-24 bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+        />
+      </label>
+      <div className="flex flex-col gap-1">
+        <span className="font-mono text-[10px] tracking-widest text-text-low uppercase">HQ mode</span>
         <div className="flex gap-2">
-          <button
-            onClick={() => setHq('hq')}
-            className={`px-3 py-1 text-xs rounded font-mono transition-colors ${
-              hq === 'hq'
-                ? 'bg-gold text-bg-base'
-                : 'bg-bg-input border border-border-low text-text-high hover:border-text-high'
-            }`}
-          >
-            HQ
-          </button>
-          <button
-            onClick={() => setHq('nq')}
-            className={`px-3 py-1 text-xs rounded font-mono transition-colors ${
-              hq === 'nq'
-                ? 'bg-gold text-bg-base'
-                : 'bg-bg-input border border-border-low text-text-high hover:border-text-high'
-            }`}
-          >
-            NQ
-          </button>
-          <button
-            onClick={() => setHq('either')}
-            className={`px-3 py-1 text-xs rounded font-mono transition-colors ${
-              hq === 'either'
-                ? 'bg-gold text-bg-base'
-                : 'bg-bg-input border border-border-low text-text-high hover:border-text-high'
-            }`}
-          >
-            Either
-          </button>
+          {(['nq', 'hq', 'either'] as HqMode[]).map((mode) => (
+            <button
+              key={mode} type="button"
+              onClick={() => onHqChange(mode)}
+              className={`font-mono text-[10px] tracking-widest uppercase px-3 py-2 border ${
+                hq === mode ? 'border-gold text-gold' : 'border-border-base text-text-dim hover:text-aether'
+              }`}
+            >
+              {mode === 'either' ? 'Either' : mode.toUpperCase()}
+            </button>
+          ))}
         </div>
       </div>
-      <QuestItemFlipResults
-        rows={rows}
-        sortBy={sortBy}
-        sortDir={sortDir}
-        onSort={handleSort}
-      />
+      <label className="block">
+        <span className="font-mono text-[10px] tracking-widest text-text-low uppercase">Sort by</span>
+        <select
+          value={sortBy}
+          onChange={(e) => onSortByChange(e.target.value as QuestItemSort)}
+          className="mt-1 block bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+        >
+          <option value="revenue">Revenue</option>
+          <option value="velocity">Sales/day</option>
+          <option value="listings">Listings</option>
+          <option value="hq">HQ price</option>
+          <option value="nq">NQ price</option>
+          <option value="qty">Quantity</option>
+          <option value="level">Level</option>
+          <option value="category">Category</option>
+          <option value="quest">Quest</option>
+          <option value="item">Item</option>
+        </select>
+      </label>
     </div>
   );
 }
