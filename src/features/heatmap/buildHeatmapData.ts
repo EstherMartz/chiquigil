@@ -4,6 +4,8 @@ import type { Recipe } from '../../lib/recipes';
 
 const MIN_VELOCITY = 0.1;
 
+export type CellTag = 'craftable' | 'gatherable' | 'vendor' | 'currency' | 'material' | 'consumable' | 'equipment';
+
 export interface HeatmapCell {
   id: number;
   name: string;
@@ -12,6 +14,13 @@ export interface HeatmapCell {
   velocity: number;
   margin: number | null;
   craftable: boolean;
+  tags: Set<CellTag>;
+}
+
+export interface HeatmapSourceSets {
+  gatherableIds?: Set<number>;
+  vendorIds?: Set<number>;
+  currencyIds?: Set<number>;
 }
 
 function salePrice(m: MarketItem): number {
@@ -30,10 +39,16 @@ function ingredientCost(recipe: Recipe, market: MarketData): number | null {
   return total;
 }
 
+// Item search category groups for tagging
+const MATERIAL_SCS = new Set([7, 58]); // Materials + Crystals
+const CONSUMABLE_SCS = new Set([6]);   // Medicines & Meals
+const EQUIPMENT_SCS = new Set([1, 2, 3, 4, 5]); // Weapons, Tools, Armor, Accessories
+
 export function buildHeatmapCells(
   items: SnapshotItem[],
   market: MarketData,
   recipes: Map<number, Recipe>,
+  sources: HeatmapSourceSets = {},
 ): HeatmapCell[] {
   const out: HeatmapCell[] = [];
   for (const item of items) {
@@ -53,6 +68,15 @@ export function buildHeatmapCells(
       }
     }
 
+    const tags = new Set<CellTag>();
+    if (craftable) tags.add('craftable');
+    if (sources.gatherableIds?.has(item.id)) tags.add('gatherable');
+    if (sources.vendorIds?.has(item.id)) tags.add('vendor');
+    if (sources.currencyIds?.has(item.id)) tags.add('currency');
+    if (MATERIAL_SCS.has(item.sc)) tags.add('material');
+    if (CONSUMABLE_SCS.has(item.sc)) tags.add('consumable');
+    if (EQUIPMENT_SCS.has(item.sc)) tags.add('equipment');
+
     out.push({
       id: item.id,
       name: item.name,
@@ -61,6 +85,7 @@ export function buildHeatmapCells(
       velocity: m.velocity,
       margin,
       craftable,
+      tags,
     });
   }
   return out;

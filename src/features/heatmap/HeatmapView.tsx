@@ -3,9 +3,12 @@ import { useMutation } from '@tanstack/react-query';
 import { useSettingsStore } from '../settings/store';
 import { useItemSnapshot } from '../queries/useItemSnapshot';
 import { useRecipeSnapshot } from '../queries/useRecipeSnapshot';
+import { useVendorShopSnapshot } from '../queries/useVendorShopSnapshot';
+import { useSpecialShopSnapshot } from '../queries/useSpecialShopSnapshot';
+import { useGatheringCatalog } from '../queries/useGatheringCatalog';
 import { fetchInBatches } from '../../lib/universalisBulk';
 import { fetchMarketData, type MarketItem } from '../../lib/universalis';
-import { buildHeatmapCells, type HeatmapCell } from './buildHeatmapData';
+import { buildHeatmapCells, type HeatmapCell, type CellTag, type HeatmapSourceSets } from './buildHeatmapData';
 import { HeatmapChart } from './HeatmapChart';
 import { ITEM_SEARCH_CATEGORIES, type ItemSearchCategoryEntry } from '../../lib/itemSearchCategories';
 import { CRYSTALS_SEARCH_CATEGORY } from '../queries/commonFilters';
@@ -25,23 +28,48 @@ interface RunResult {
   skipped: number;
 }
 
+const TAG_LABELS: { tag: CellTag; label: string }[] = [
+  { tag: 'craftable', label: 'Craftable' },
+  { tag: 'gatherable', label: 'Gatherable' },
+  { tag: 'vendor', label: 'Vendor' },
+  { tag: 'currency', label: 'Currency' },
+  { tag: 'material', label: 'Materials' },
+  { tag: 'consumable', label: 'Consumables' },
+  { tag: 'equipment', label: 'Equipment' },
+];
+
 interface PostFilter {
-  search: string;
-  craftableOnly: boolean;
+  activeTags: Set<CellTag>;
   minVelocity: number;
   minMargin: number;
 }
 
-const DEFAULT_POST_FILTER: PostFilter = { search: '', craftableOnly: false, minVelocity: 0, minMargin: -100 };
+const DEFAULT_POST_FILTER: PostFilter = { activeTags: new Set(), minVelocity: 0, minMargin: -100 };
 
 export function HeatmapView() {
   const { world, hideCrystals } = useSettingsStore();
   const snapshot = useItemSnapshot();
   const recipes = useRecipeSnapshot();
+  const vendorSnap = useVendorShopSnapshot();
+  const shopSnap = useSpecialShopSnapshot();
+  const gatherSnap = useGatheringCatalog();
 
   const [mode, setMode] = useState<HeatmapMode>('topMovers');
   const [group, setGroup] = useState<ItemSearchCategoryEntry['group']>('Medicines & Meals');
   const [postFilter, setPostFilter] = useState<PostFilter>(DEFAULT_POST_FILTER);
+
+  const sourceSets = useMemo<HeatmapSourceSets>(() => {
+    const gatherableIds = gatherSnap.data ? new Set(gatherSnap.data.keys()) : undefined;
+    const vendorIds = vendorSnap.data ? new Set(vendorSnap.data.snapshot.keys()) : undefined;
+    const currencyIds = shopSnap.data ? (() => {
+      const ids = new Set<number>();
+      for (const entries of shopSnap.data.snapshot.byCurrency.values()) {
+        for (const e of entries) ids.add(e.itemId);
+      }
+      return ids;
+    })() : undefined;
+    return { gatherableIds, vendorIds, currencyIds };
+  }, [gatherSnap.data, vendorSnap.data, shopSnap.data]);
 
   const groupCategoryIds = useMemo(() => {
     return new Set(ITEM_SEARCH_CATEGORIES.filter((c) => c.group === group).map((c) => c.id));
@@ -87,7 +115,7 @@ export function HeatmapView() {
         skipped += ingResult.errors.length;
       }
 
-      let cells = buildHeatmapCells(candidateItems, sale.data, recipes.data);
+      let cells = buildHeatmapCells(candidateItems, sale.data, recipes.data, sourceSets);
       if (mode === 'topMovers') {
         cells.sort((a, b) => b.velocity - a.velocity);
         cells = cells.slice(0, TOP_MOVERS_LIMIT);
@@ -100,10 +128,9 @@ export function HeatmapView() {
 
   const filteredCells = useMemo(() => {
     if (!run.data) return [];
-    const searchLower = postFilter.search.trim().toLowerCase();
+    const active = postFilter.activeTags;
     return run.data.cells.filter((c) => {
-      if (searchLower && !c.name.toLowerCase().includes(searchLower)) return false;
-      if (postFilter.craftableOnly && !c.craftable) return false;
+      if (active.size > 0 && !Array.from(active).some((t) => c.tags.has(t))) return false;
       if (c.velocity < postFilter.minVelocity) return false;
       if (c.craftable && c.margin != null && c.margin * 100 < postFilter.minMargin) return false;
       return true;
@@ -158,16 +185,30 @@ export function HeatmapView() {
       {/* Post-scan filters — appear after results */}
       {run.data && run.data.cells.length > 0 && (
         <div className="flex flex-wrap items-end gap-3 p-3 border border-border-base bg-bg-card">
-          <label className="block">
-            <span className="font-mono text-[10px] tracking-widest text-text-low uppercase">Search</span>
-            <input
-              type="text"
-              value={postFilter.search}
-              onChange={(e) => setPostFilter({ ...postFilter, search: e.target.value })}
-              placeholder="Item name…"
-              className="mt-1 block w-44 bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
-            />
-          </label>
+          <div className="flex flex-col gap-1">
+            <span className="font-mono text-[10px] tracking-widest text-text-low uppercase">Show</span>
+            <div className="flex flex-wrap gap-1.5">
+              {TAG_LABELS.map(({ tag, label }) => {
+                const active = postFilter.activeTags.has(tag);
+                return (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => {
+                      const next = new Set(postFilter.activeTags);
+                      if (active) next.delete(tag); else next.add(tag);
+                      setPostFilter({ ...postFilter, activeTags: next });
+                    }}
+                    className={`font-mono text-[10px] tracking-widest uppercase px-2.5 py-1.5 border ${
+                      active ? 'border-gold text-gold' : 'border-border-base text-text-dim hover:text-aether'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
           <label className="block">
             <span className="font-mono text-[10px] tracking-widest text-text-low uppercase">Min vel/day</span>
             <input
@@ -184,15 +225,6 @@ export function HeatmapView() {
               className="mt-1 block w-24 bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
             />
           </label>
-          <button
-            type="button"
-            onClick={() => setPostFilter({ ...postFilter, craftableOnly: !postFilter.craftableOnly })}
-            className={`font-mono text-[10px] tracking-widest uppercase px-3 py-2 border ${
-              postFilter.craftableOnly ? 'border-gold text-gold' : 'border-border-base text-text-dim hover:text-aether'
-            }`}
-          >
-            Craftable only
-          </button>
         </div>
       )}
 
