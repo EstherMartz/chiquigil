@@ -1,33 +1,13 @@
 /**
- * XIVAPI v2 Quest sheet parser (probed 2026-05-20):
+ * GC Supply turn-in data sourced from Teamcraft's gc-supply.json.
  *
- * Sample row (Quest #65674 "Way of the Carpenter"):
- *   {
- *     row_id: 65674,
- *     fields: {
- *       Name: "Way of the Carpenter",
- *       ClassJobLevel: [1, 0],                      // [primaryLevel, secondaryLevel]
- *       ItemCatalyst: [                              // 3 fixed slots
- *         { value: 4, fields: { Name: "Wind Shard" } },
- *         { value: 3, fields: { Name: "Ice Shard" } },
- *         { value: 0, fields: { Name: "" } },        // unused slot
- *       ],
- *       ItemCountCatalyst: [100, 50, 0],             // parallel counts; 0 = unused slot
- *       ClassJobCategory0: { fields: { Name: "All Classes" } },
- *     }
- *   }
- *
- * Notes:
- * - XIVAPI v2 exposes NO ItemRequiredHQ field. HQ-turn-in requirement is not
- *   queryable via the API; downstream UI must show both NQ + HQ market data
- *   and let the user decide.
- * - ClassJobCategory0 doesn't cleanly identify "crafter-only" quests — intro
- *   crafter quests are tagged "All Classes". For filtering, surface
- *   categoryName as a string and let the UI filter by free-text match.
- * - Pagination: GET /api/sheet/Quest?fields=...&limit=500&after=<lastRowId>
+ * Structure: Record<level, Record<categoryId, Array<{ itemId, count, reward }>>>
+ * Categories are ClassJob IDs: 8=CRP, 9=BSM, 10=ARM, 11=GSM, 12=LTW,
+ * 13=WVR, 14=ALC, 15=CUL, 16=MIN, 17=BTN, 18=FSH.
  */
 
-import { fetchXivapiPage, nextCursor } from './xivapiRetry';
+const GC_SUPPLY_URL =
+  'https://raw.githubusercontent.com/ffxiv-teamcraft/ffxiv-teamcraft/master/libs/data/src/lib/json/gc-supply.json';
 
 export interface QuestRequiredItem {
   itemId: number;
@@ -38,100 +18,61 @@ export interface QuestRequiredItem {
 export interface SnapshotQuest {
   questId: number;
   questName: string;
-  categoryName: string;     // ClassJobCategory0.fields.Name; '' if missing
-  level: number;            // ClassJobLevel[0]; 0 if missing
-  requiredItems: QuestRequiredItem[];   // 1-3 entries, non-empty
+  categoryName: string;
+  level: number;
+  requiredItems: QuestRequiredItem[];
 }
 
-interface RawItemSlot {
-  value?: number;
-  fields?: { Name?: string };
+const CATEGORY_NAMES: Record<number, string> = {
+  8: 'CRP', 9: 'BSM', 10: 'ARM', 11: 'GSM',
+  12: 'LTW', 13: 'WVR', 14: 'ALC', 15: 'CUL',
+  16: 'MIN', 17: 'BTN', 18: 'FSH',
+};
+
+interface RawGcSupplyItem {
+  itemId: number;
+  count: number;
+  reward: { xp: number; seals: number };
 }
 
-interface RawQuestFields {
-  Name?: string;
-  ClassJobLevel?: number[];
-  ItemCatalyst?: RawItemSlot[];
-  ItemCountCatalyst?: number[];
-  ClassJobCategory0?: { fields?: { Name?: string } };
-}
+type RawGcSupply = Record<string, Record<string, RawGcSupplyItem[]>>;
 
-interface RawQuestRow { row_id: number; fields: RawQuestFields }
-export interface RawQuestSheetPage { rows?: RawQuestRow[] }
-
-export function parseQuestSheetPage(raw: RawQuestSheetPage): SnapshotQuest[] {
-  const rows = raw.rows ?? [];
+export function parseGcSupply(raw: RawGcSupply): SnapshotQuest[] {
   const out: SnapshotQuest[] = [];
-  for (const row of rows) {
-    const items = row.fields.ItemCatalyst ?? [];
-    const qtys = row.fields.ItemCountCatalyst ?? [];
-
-    const requiredItems: QuestRequiredItem[] = [];
-    for (let i = 0; i < items.length; i++) {
-      const itemId = items[i]?.value ?? 0;
-      const qty = qtys[i] ?? 0;
-      if (itemId <= 0 || qty <= 0) continue;
-      requiredItems.push({
-        itemId,
-        itemName: items[i]?.fields?.Name ?? '',
-        qty,
+  for (const [levelStr, categories] of Object.entries(raw)) {
+    const level = Number(levelStr);
+    if (!Number.isFinite(level) || level <= 0) continue;
+    for (const [catStr, items] of Object.entries(categories)) {
+      const cat = Number(catStr);
+      const categoryName = CATEGORY_NAMES[cat];
+      if (!categoryName) continue;
+      const requiredItems: QuestRequiredItem[] = [];
+      for (const item of items) {
+        if (item.itemId <= 0 || item.count <= 0) continue;
+        requiredItems.push({ itemId: item.itemId, itemName: '', qty: item.count });
+      }
+      if (requiredItems.length === 0) continue;
+      out.push({
+        questId: level * 100 + cat,
+        questName: `GC Supply Lv.${level}`,
+        categoryName,
+        level,
+        requiredItems,
       });
     }
-
-    if (requiredItems.length === 0) continue;
-
-    // Drop placeholder rows. The Quest sheet contains unfinished/internal rows
-    // with empty Name + sentinel ClassJobLevel (65535 = 0xFFFF). Those have no
-    // value for the user.
-    const questName = row.fields.Name ?? '';
-    const rawLevel = row.fields.ClassJobLevel?.[0] ?? 0;
-    if (!questName) continue;
-    const level = rawLevel > 200 ? 0 : rawLevel;  // sentinel → 0 (unknown)
-
-    out.push({
-      questId: row.row_id,
-      questName,
-      categoryName: row.fields.ClassJobCategory0?.fields?.Name ?? '',
-      level,
-      requiredItems,
-    });
   }
   return out;
 }
 
 export interface FetchQuestSnapshotOpts {
-  pageSize?: number;
   onProgress?: (n: number) => void;
 }
 
-const BASE = (import.meta.env?.VITE_XIVAPI_BASE as string | undefined) ?? 'https://v2.xivapi.com';
-// XIVAPI v2 field-path syntax for linked references uses `.Name` (without an
-// intermediate `.fields.`) to resolve into the linked row's Name; the response
-// shape still wraps it as `.fields.Name`, which the parser reads. Arrays use
-// `Foo[]` to iterate elements. The plain dotted form `ItemCatalyst.value` 400s
-// with "expected array filter", and `ClassJobCategory0.fields.Name` silently
-// returns an empty struct — both quirks live in the v2 query language.
-const QUEST_FIELDS = 'Name,ClassJobLevel,ItemCatalyst[].Name,ItemCountCatalyst,ClassJobCategory0.Name';
-
-function buildQuestPageUrl(after: number, pageSize: number): string {
-  const params = new URLSearchParams({ fields: QUEST_FIELDS, limit: String(pageSize) });
-  if (after > 0) params.set('after', String(after));
-  return `${BASE.replace(/\/$/, '')}/api/sheet/Quest?${params.toString()}`;
-}
-
 export async function fetchQuestSnapshot(opts: FetchQuestSnapshotOpts = {}): Promise<SnapshotQuest[]> {
-  const pageSize = opts.pageSize ?? 500;
-  const out: SnapshotQuest[] = [];
-  let cursor = 0;
-  while (true) {
-    const res = await fetchXivapiPage(buildQuestPageUrl(cursor, pageSize));
-    if (!res.ok) throw new Error(`XIVAPI Quest ${res.status}`);
-    const raw = (await res.json()) as RawQuestSheetPage;
-    const rows = raw.rows ?? [];
-    if (rows.length === 0) break;
-    out.push(...parseQuestSheetPage(raw));
-    opts.onProgress?.(out.length);
-    cursor = nextCursor(cursor, rows[rows.length - 1].row_id);
-  }
+  const res = await fetch(GC_SUPPLY_URL);
+  if (!res.ok) throw new Error(`Teamcraft gc-supply fetch failed: ${res.status}`);
+  const raw = (await res.json()) as RawGcSupply;
+  const out = parseGcSupply(raw);
+  opts.onProgress?.(out.length);
   return out;
 }

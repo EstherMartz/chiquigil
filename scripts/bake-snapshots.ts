@@ -94,13 +94,12 @@ async function bakeGathering(bakedAt: number) {
 }
 
 async function bakeQuests(bakedAt: number) {
-  log('quests', 'fetching XIVAPI Quest sheet…');
+  log('quests', 'fetching Teamcraft gc-supply data…');
   const quests = await fetchQuestSnapshot({
-    onProgress: (n) => process.stdout.write(`\r[quests] ${n} quests with item turn-ins…`),
+    onProgress: (n) => log('quests', `${n} GC supply entries`),
   });
-  process.stdout.write('\n');
   await writeFile(join(OUT_DIR, 'quests.json'), JSON.stringify({ bakedAt, quests }));
-  log('quests', `wrote ${quests.length} quests with item turn-ins`);
+  log('quests', `wrote ${quests.length} GC supply entries`);
   return quests.length;
 }
 
