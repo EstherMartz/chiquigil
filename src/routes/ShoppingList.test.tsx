@@ -11,21 +11,25 @@ vi.mock('../features/queries/useItemSnapshot', () => ({
         { id: 100, name: 'Widget', sc: 1, ui: 1, ilvl: 1, canHq: true },
         { id: 5, name: 'Iron Ingot', sc: 1, ui: 1, ilvl: 1, canHq: false },
         { id: 2, name: 'Fire Shard', sc: 58, ui: 1, ilvl: 1, canHq: false },
+        { id: 10, name: 'Iron Ore', sc: 1, ui: 1, ilvl: 1, canHq: false },
       ],
     },
     isLoading: false,
   }),
 }));
 
-vi.mock('../features/profit/useRecipes', () => ({
-  useRecipes: (ids: number[]) => ({
-    data: new Map(ids.map((id) => [
-      id,
-      id === 100 ? { itemResultId: 100, classJob: 'CRP', recipeLevel: 1, ingredients: [{ itemId: 5, amount: 2 }, { itemId: 2, amount: 4 }] } : null,
-    ])),
+vi.mock('../features/queries/useRecipeSnapshot', () => ({
+  useRecipeSnapshot: () => ({
+    data: new Map([
+      [100, { itemResultId: 100, classJob: 'CRP', recipeLevel: 1, ingredients: [{ itemId: 5, amount: 2 }, { itemId: 2, amount: 4 }] }],
+      [5, { itemResultId: 5, classJob: 'BSM', recipeLevel: 1, ingredients: [{ itemId: 10, amount: 3 }] }],
+    ]),
     isLoading: false,
+    isFetching: false,
     isError: false,
+    isSuccess: true,
     error: null,
+    progress: 0,
   }),
 }));
 
@@ -54,6 +58,14 @@ vi.mock('../features/watchlist/useMarketData', () => ({
         2: {
           minNQ: 10, minHQ: null,
           worldListings: [{ world: 'Phantom', price: 10, hq: false }],
+          velocity: 0, lastUploadTime: 0, listingCount: 1,
+          averagePriceNQ: null, averagePriceHQ: null,
+          avgNQ: null, avgHQ: null, medianNQ: null, medianHQ: null,
+          recentSalesNQ: 0, recentSalesHQ: 0,
+        },
+        10: {
+          minNQ: 20, minHQ: null,
+          worldListings: [{ world: 'Phantom', price: 20, hq: false }],
           velocity: 0, lastUploadTime: 0, listingCount: 1,
           averagePriceNQ: null, averagePriceHQ: null,
           avgNQ: null, avgHQ: null, medianNQ: null, medianHQ: null,
@@ -126,5 +138,21 @@ describe('ShoppingList route', () => {
     expect(screen.getByText('Iron Ingot')).toBeInTheDocument();
     // Spend should be 200 (2×100 for ingots), not 240 (200 + 4×10 for shards)
     expect(screen.getByText(/total material cost/i).parentElement?.textContent).toContain('200');
+  });
+
+  it('expands sub-ingredients when craftIntermediates is enabled', () => {
+    useShoppingListStore.getState().addItem(100, 1);
+    useShoppingListStore.getState().setCraftIntermediates(100, true);
+    renderRoute();
+    fireEvent.click(screen.getByRole('button', { name: /plan shopping/i }));
+    // With craftIntermediates on item 100:
+    // Recipe: 100 needs 2x item 5 + 4x item 2
+    // Item 5 has sub-recipe: 3x item 10
+    // So item 5 expands: 2 * 3 = 6x item 10
+    // Item 2 (crystal, sc=58) is filtered by hideCrystals
+    // Result: 6x item 10 (Iron Ore) at 20 each = 120
+    expect(screen.getByText('Iron Ore')).toBeInTheDocument();
+    expect(screen.queryByText('Iron Ingot')).not.toBeInTheDocument();
+    expect(screen.getByText(/total material cost/i).parentElement?.textContent).toContain('120');
   });
 });

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useShoppingListStore } from '../features/shoppingList/shoppingListStore';
 import { useItemSnapshot } from '../features/queries/useItemSnapshot';
-import { useRecipes } from '../features/profit/useRecipes';
+import { useRecipeSnapshot } from '../features/queries/useRecipeSnapshot';
 import { useMarketData } from '../features/watchlist/useMarketData';
 import { useSettingsStore } from '../features/settings/store';
 import { useVendorShopSnapshot } from '../features/queries/useVendorShopSnapshot';
@@ -22,7 +22,7 @@ export default function ShoppingList() {
   const shop = useSpecialShopSnapshot();
 
   const itemIds = useMemo(() => items.map((i) => i.id), [items]);
-  const recipes = useRecipes(itemIds);
+  const recipes = useRecipeSnapshot(itemIds.length > 0);
 
   const aggregate = useMemo(() => {
     if (!recipes.data) return null;
