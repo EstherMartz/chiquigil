@@ -1,5 +1,5 @@
 export type CurrencyId =
-  | 'poetics' | 'heliometry' | 'mnemonics'
+  | 'poetics' | 'mathematics' | 'heliometry' | 'mnemonics'
   | 'whiteCrafter' | 'purpleCrafter'
   | 'whiteGatherer' | 'purpleGatherer'
   | 'mgp' | 'wolfMarks' | 'bicolor';
@@ -15,6 +15,7 @@ export interface CurrencyDef {
 // Step 4 of this task probes XIVAPI to confirm.
 export const CURRENCIES: readonly CurrencyDef[] = [
   { id: 'poetics',         label: 'Allagan Tomestone of Poetics',      shortLabel: 'Poetics',     itemId: 28 },
+  { id: 'mathematics',     label: 'Allagan Tomestone of Mathematics',  shortLabel: 'Mathematics', itemId: 48 },
   { id: 'heliometry',      label: 'Allagan Tomestone of Heliometry',   shortLabel: 'Heliometry',  itemId: 47 },
   { id: 'mnemonics',       label: 'Allagan Tomestone of Mnemonics',    shortLabel: 'Mnemonics',   itemId: 49 },
   { id: 'whiteCrafter',    label: "White Crafters' Scrip",             shortLabel: 'W-Craft',     itemId: 25199 },
@@ -42,7 +43,21 @@ export const currencyByItemId: Map<number, CurrencyId> = new Map(
  */
 export const TOMESTONE_TYPE_TO_ITEM_ID: ReadonlyMap<number, number> = new Map([
   [1, 28],  // Poetics
-  [2, 48],  // Mathematics (retired but may still appear in shop data)
+  [2, 48],  // Mathematics
   [3, 49],  // Mnemonics
   [4, 47],  // Heliometry
+]);
+
+/**
+ * XIVAPI SpecialShop.UseCurrencyType = 16 encodes scrip costs as a type
+ * index rather than the scrip Item row ID.  Only applies when the raw
+ * ItemCost value is small (≤ 10); larger values in UCT-16 shops are
+ * direct item references (e.g. raid tokens) handled by the normal path.
+ * Confirmed: type 4 → Purple Gatherers' (Chiaroglow Aethersand).
+ */
+export const SCRIP_TYPE_TO_ITEM_ID: ReadonlyMap<number, number> = new Map([
+  [1, 25199],  // White Crafters' Scrip
+  [2, 25200],  // White Gatherers' Scrip
+  [3, 33913],  // Purple Crafters' Scrip
+  [4, 33914],  // Purple Gatherers' Scrip
 ]);

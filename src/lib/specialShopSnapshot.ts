@@ -1,5 +1,5 @@
 import type { CurrencyId } from './currencies';
-import { TOMESTONE_TYPE_TO_ITEM_ID } from './currencies';
+import { TOMESTONE_TYPE_TO_ITEM_ID, SCRIP_TYPE_TO_ITEM_ID } from './currencies';
 import { fetchXivapiPage, nextCursor } from './xivapiRetry';
 
 const BASE = (import.meta.env?.VITE_XIVAPI_BASE as string | undefined) ?? 'https://v2.xivapi.com';
@@ -7,6 +7,10 @@ const FIELDS = 'UseCurrencyType,Item[].Item@as(raw),Item[].ItemCost@as(raw),Item
 
 /** UseCurrencyType value that signals tomestone-index cost encoding. */
 const UCT_TOMESTONE = 4;
+/** UseCurrencyType value that signals scrip-index cost encoding. */
+const UCT_SCRIP = 16;
+/** ItemCost values above this in UCT_SCRIP shops are direct item refs (raid tokens etc.), not scrip type indices. */
+const SCRIP_INDEX_MAX = 10;
 
 export interface ShopEntry {
   itemId: number;
@@ -60,6 +64,12 @@ export function parseSpecialShopPage(
       // UseCurrencyType 4 = tomestones: costId is a type index, not an Item ID.
       if (uct === UCT_TOMESTONE) {
         costId = TOMESTONE_TYPE_TO_ITEM_ID.get(costId) ?? 0;
+        if (costId === 0) continue;
+      }
+      // UseCurrencyType 16 = scrips: small costId values are type indices.
+      // Larger values are direct item refs (raid tokens) — fall through to normal lookup.
+      if (uct === UCT_SCRIP && costId <= SCRIP_INDEX_MAX) {
+        costId = SCRIP_TYPE_TO_ITEM_ID.get(costId) ?? 0;
         if (costId === 0) continue;
       }
 

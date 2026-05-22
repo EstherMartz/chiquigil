@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { CURRENCIES, getCurrencyById, currencyByItemId, type CurrencyId } from './currencies';
 
 describe('currencies catalog', () => {
-  it('exports 10 currencies', () => {
-    expect(CURRENCIES).toHaveLength(10);
+  it('exports 11 currencies', () => {
+    expect(CURRENCIES).toHaveLength(11);
   });
 
   it('all entries have unique ids', () => {
@@ -34,7 +34,7 @@ describe('currencies catalog', () => {
 
   it('currencyByItemId exposes a Map<number, CurrencyId> for the parser', () => {
     expect(currencyByItemId).toBeInstanceOf(Map);
-    expect(currencyByItemId.size).toBe(10);
+    expect(currencyByItemId.size).toBe(11);
     for (const c of CURRENCIES) {
       expect(currencyByItemId.get(c.itemId)).toBe(c.id);
     }

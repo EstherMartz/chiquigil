@@ -117,6 +117,25 @@ describe('parseSpecialShopPage', () => {
     ]);
   });
 
+  it('resolves UseCurrencyType 16 (scrips) via type-index mapping for small costIds', () => {
+    // costId = 1 is scrip type index → maps to item 25199 (White Crafters' Scrip)
+    const raw = page([{ row_id: 1, uct: 16, deals: [
+      deal({ recvIds: [27811, 0], recvCounts: [1, 1], costIds: [1, 0, 0], currencyCost: [500, 0, 0] }),
+    ]}]);
+    expect(parseSpecialShopPage(raw, CURRENCIES_BY_ID)).toEqual([
+      { currency: 'whiteCrafter', itemId: 27811, receiveQty: 1, costPerUnit: 500, isHq: false },
+    ]);
+  });
+
+  it('falls through to direct lookup for large costIds in scrip shops', () => {
+    // costId = 29028 is a direct item ref (raid token), not a scrip index — should be skipped
+    const raw = page([{ row_id: 1, uct: 16, deals: [
+      deal({ recvIds: [12345, 0], recvCounts: [1, 1], costIds: [29028, 0, 0], currencyCost: [8, 0, 0] }),
+    ]}]);
+    // 29028 is not in CURRENCIES_BY_ID → dropped
+    expect(parseSpecialShopPage(raw, CURRENCIES_BY_ID)).toEqual([]);
+  });
+
   it('drops tomestone deals with unknown type index', () => {
     const raw = page([{ row_id: 1, uct: 4, deals: [
       deal({ recvIds: [29276, 0], recvCounts: [1, 1], costIds: [99, 0, 0], currencyCost: [170, 0, 0] }),
