@@ -25,6 +25,15 @@ interface RunResult {
   skipped: number;
 }
 
+interface PostFilter {
+  search: string;
+  craftableOnly: boolean;
+  minVelocity: number;
+  minMargin: number;
+}
+
+const DEFAULT_POST_FILTER: PostFilter = { search: '', craftableOnly: false, minVelocity: 0, minMargin: -100 };
+
 export function HeatmapView() {
   const { world, hideCrystals } = useSettingsStore();
   const snapshot = useItemSnapshot();
@@ -32,6 +41,7 @@ export function HeatmapView() {
 
   const [mode, setMode] = useState<HeatmapMode>('topMovers');
   const [group, setGroup] = useState<ItemSearchCategoryEntry['group']>('Medicines & Meals');
+  const [postFilter, setPostFilter] = useState<PostFilter>(DEFAULT_POST_FILTER);
 
   const groupCategoryIds = useMemo(() => {
     return new Set(ITEM_SEARCH_CATEGORIES.filter((c) => c.group === group).map((c) => c.id));
@@ -88,8 +98,21 @@ export function HeatmapView() {
 
   const notReady = !snapshot.data || !recipes.data;
 
+  const filteredCells = useMemo(() => {
+    if (!run.data) return [];
+    const searchLower = postFilter.search.trim().toLowerCase();
+    return run.data.cells.filter((c) => {
+      if (searchLower && !c.name.toLowerCase().includes(searchLower)) return false;
+      if (postFilter.craftableOnly && !c.craftable) return false;
+      if (c.velocity < postFilter.minVelocity) return false;
+      if (c.craftable && c.margin != null && c.margin * 100 < postFilter.minMargin) return false;
+      return true;
+    });
+  }, [run.data, postFilter]);
+
   return (
     <div className="space-y-4">
+      {/* Scan controls */}
       <div className="flex flex-wrap items-end gap-3 p-3 border border-border-base bg-bg-card">
         <div className="flex gap-2">
           {(['topMovers', 'category'] as const).map((m) => (
@@ -123,7 +146,7 @@ export function HeatmapView() {
 
         <button
           type="button"
-          onClick={() => { run.reset(); run.mutate(); }}
+          onClick={() => { run.reset(); run.mutate(); setPostFilter(DEFAULT_POST_FILTER); }}
           disabled={run.isPending || notReady}
           title={notReady ? 'Loading catalogs…' : undefined}
           className="font-mono text-[10px] tracking-widest uppercase border border-gold text-gold px-4 py-2 hover:bg-gold hover:text-bg-deep disabled:opacity-50 disabled:cursor-not-allowed"
@@ -132,11 +155,53 @@ export function HeatmapView() {
         </button>
       </div>
 
+      {/* Post-scan filters — appear after results */}
+      {run.data && run.data.cells.length > 0 && (
+        <div className="flex flex-wrap items-end gap-3 p-3 border border-border-base bg-bg-card">
+          <label className="block">
+            <span className="font-mono text-[10px] tracking-widest text-text-low uppercase">Search</span>
+            <input
+              type="text"
+              value={postFilter.search}
+              onChange={(e) => setPostFilter({ ...postFilter, search: e.target.value })}
+              placeholder="Item name…"
+              className="mt-1 block w-44 bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+            />
+          </label>
+          <label className="block">
+            <span className="font-mono text-[10px] tracking-widest text-text-low uppercase">Min vel/day</span>
+            <input
+              type="number" min={0} step={0.5} value={postFilter.minVelocity}
+              onChange={(e) => setPostFilter({ ...postFilter, minVelocity: Math.max(0, Number(e.target.value) || 0) })}
+              className="mt-1 block w-24 bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+            />
+          </label>
+          <label className="block">
+            <span className="font-mono text-[10px] tracking-widest text-text-low uppercase">Min margin %</span>
+            <input
+              type="number" min={-100} max={100} step={5} value={postFilter.minMargin}
+              onChange={(e) => setPostFilter({ ...postFilter, minMargin: Number(e.target.value) || -100 })}
+              className="mt-1 block w-24 bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+            />
+          </label>
+          <button
+            type="button"
+            onClick={() => setPostFilter({ ...postFilter, craftableOnly: !postFilter.craftableOnly })}
+            className={`font-mono text-[10px] tracking-widest uppercase px-3 py-2 border ${
+              postFilter.craftableOnly ? 'border-gold text-gold' : 'border-border-base text-text-dim hover:text-aether'
+            }`}
+          >
+            Craftable only
+          </button>
+        </div>
+      )}
+
+      {/* Status */}
       <div className="font-mono text-[10px] text-text-low">
         {notReady
           ? 'Loading catalogs…'
           : `${candidateIds.length.toLocaleString()} candidate items`}
-        {run.data && <> · {run.data.cells.length.toLocaleString()} results</>}
+        {run.data && <> · {filteredCells.length.toLocaleString()} of {run.data.cells.length.toLocaleString()} shown</>}
       </div>
 
       {run.isPending && <Spinner label={`Fetching ${world} prices for ${candidateIds.length} items…`} />}
@@ -145,7 +210,7 @@ export function HeatmapView() {
         <StatusBanner kind="error">{run.data.skipped} batch(es) skipped (Universalis error)</StatusBanner>
       )}
 
-      {run.data && run.data.cells.length > 0 && (
+      {run.data && filteredCells.length > 0 && (
         <>
           <div className="flex items-center gap-4 font-mono text-[10px] text-text-low">
             <span>Size = velocity</span>
@@ -162,13 +227,13 @@ export function HeatmapView() {
               <span className="inline-block w-3 h-3" style={{ backgroundColor: 'rgb(70,120,220)' }} /> non-craftable
             </span>
           </div>
-          <HeatmapChart cells={run.data.cells} />
+          <HeatmapChart cells={filteredCells} />
         </>
       )}
 
-      {run.data && run.data.cells.length === 0 && (
+      {run.data && filteredCells.length === 0 && (
         <div className="border border-border-base bg-bg-card p-6 text-center text-text-low text-sm italic">
-          No items with market activity found.
+          {run.data.cells.length > 0 ? 'No items match your filters.' : 'No items with market activity found.'}
         </div>
       )}
     </div>
