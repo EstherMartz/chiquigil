@@ -13,6 +13,7 @@ import VendorFlip from './routes/VendorFlip';
 import CurrencyFlip from './routes/CurrencyFlip';
 import Cleanup from './routes/Cleanup';
 import QuestItems from './routes/QuestItems';
+import Heatmap from './routes/Heatmap';
 import CraftBatch from './routes/CraftBatch';
 import BatchHistory from './routes/BatchHistory';
 import Item from './routes/Item';
@@ -39,6 +40,7 @@ export default function App() {
         <Route path="/batch-history" element={<BatchHistory />} />
         <Route path="/cleanup" element={<Cleanup />} />
         <Route path="/quest-items" element={<QuestItems />} />
+        <Route path="/heatmap" element={<Heatmap />} />
         <Route path="/item/:id" element={<Item />} />
         <Route path="/queries" element={<Navigate to="/crafts" replace />} />
         <Route path="/insights" element={<Navigate to="/trading" replace />} />

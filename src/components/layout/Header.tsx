@@ -39,6 +39,7 @@ export function Header() {
             <NavLink to="/craft-batch" className={navClass}>Batch</NavLink>
             <NavLink to="/batch-history" className={navClass}>History</NavLink>
             <NavLink to="/quest-items" className={navClass}>Quest items</NavLink>
+            <NavLink to="/heatmap" className={navClass}>Heatmap</NavLink>
             <NavLink to="/settings" className={navClass}>Settings</NavLink>
           </nav>
         </div>

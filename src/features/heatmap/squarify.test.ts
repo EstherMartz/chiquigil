@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { squarify, type SquarifyInput, type SquarifyRect } from './squarify';
+import { squarify, type SquarifyInput } from './squarify';
 
 describe('squarify', () => {
   it('returns empty array for empty input', () => {

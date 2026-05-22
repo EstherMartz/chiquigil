@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildHeatmapCells, type HeatmapCell } from './buildHeatmapData';
+import { buildHeatmapCells } from './buildHeatmapData';
 import type { MarketItem } from '../../lib/universalis';
 import type { SnapshotItem } from '../../lib/itemSnapshot';
 import type { Recipe } from '../../lib/recipes';
