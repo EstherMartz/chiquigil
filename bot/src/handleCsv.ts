@@ -34,6 +34,7 @@ export async function handleCsv(
 
   const marketIdSet = new Set<number>(invItemIds);
   for (const recipe of snapshots.recipes.values()) {
+    if (!snapshots.gcSupplyIds.has(recipe.itemResultId)) continue;
     const usesInv = recipe.ingredients.some((ing) => invItemIds.has(ing.itemId));
     if (!usesInv) continue;
     marketIdSet.add(recipe.itemResultId);

@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useItemSnapshot } from '../queries/useItemSnapshot';
 import { useRecipeSnapshot } from '../queries/useRecipeSnapshot';
+import { useQuestSnapshot } from '../queries/useQuestSnapshot';
 import { useMarketData, type MarketBundle } from '../watchlist/useMarketData';
 import { useUserStore } from '../user/userStore';
 import type { SnapshotItem } from '../../lib/itemSnapshot';
@@ -27,6 +28,7 @@ function mergeMarkets(a: MarketBundle, b: MarketBundle): MarketBundle {
 export function CleanupView() {
   const itemSnap = useItemSnapshot();
   const recipeSnap = useRecipeSnapshot();
+  const questSnap = useQuestSnapshot();
   const world = useUserStore((s) => s.world);
   const dc = useUserStore((s) => s.dc);
 
@@ -57,15 +59,25 @@ export function CleanupView() {
     return [...ids];
   }, [parsed]);
 
-  // Pass 2: outputs of every overlap-recipe + the ingredients of those recipes
-  // the user *doesn't* own (the potentially-missing set). In-inventory
-  // ingredients are skipped — they fall back to priceLow as the
-  // opportunity-cost floor.
+  // GC supply item IDs — used to narrow the craft search to only recipes
+  // whose output is a GC supply turn-in item (daily demand from players).
+  const gcSupplyIds = useMemo<Set<number>>(() => {
+    const ids = new Set<number>();
+    for (const quest of questSnap.data?.snapshot ?? []) {
+      for (const req of quest.requiredItems) ids.add(req.itemId);
+    }
+    return ids;
+  }, [questSnap.data]);
+
+  // Pass 2: only recipes whose output is a GC supply item + missing ingredients.
+  // This is dramatically faster than the old "all recipes" approach because
+  // the fetch set shrinks from thousands to ~200.
   const craftIds = useMemo<number[]>(() => {
     if (!parsed || !recipeSnap.data) return [];
     const invItemIds = new Set(parsed.entries.map((e) => e.itemId));
     const ids = new Set<number>();
     for (const recipe of recipeSnap.data.values()) {
+      if (!gcSupplyIds.has(recipe.itemResultId)) continue;
       const usesInv = recipe.ingredients.some((ing) => invItemIds.has(ing.itemId));
       if (!usesInv) continue;
       ids.add(recipe.itemResultId);
@@ -74,7 +86,7 @@ export function CleanupView() {
       }
     }
     return [...ids];
-  }, [parsed, recipeSnap.data]);
+  }, [parsed, recipeSnap.data, gcSupplyIds]);
 
   const [invProgress, setInvProgress] = useState({ done: 0, total: 0 });
   const [craftProgress, setCraftProgress] = useState({ done: 0, total: 0 });
@@ -173,7 +185,7 @@ export function CleanupView() {
               status: inventoryReady ? 'done' : 'active',
             },
             {
-              label: 'Scoring craft opportunities…',
+              label: 'Scoring GC supply crafts…',
               done: craftProgress.done,
               total: craftProgress.total,
               status:
