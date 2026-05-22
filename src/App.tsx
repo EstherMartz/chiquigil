@@ -14,6 +14,7 @@ import CurrencyFlip from './routes/CurrencyFlip';
 import Cleanup from './routes/Cleanup';
 import QuestItems from './routes/QuestItems';
 import CraftBatch from './routes/CraftBatch';
+import BatchHistory from './routes/BatchHistory';
 import Item from './routes/Item';
 import Settings from './routes/Settings';
 
@@ -35,6 +36,7 @@ export default function App() {
         <Route path="/currency-flip" element={<CurrencyFlip />} />
         <Route path="/gc-seals" element={<GcSeals />} />
         <Route path="/craft-batch" element={<CraftBatch />} />
+        <Route path="/batch-history" element={<BatchHistory />} />
         <Route path="/cleanup" element={<Cleanup />} />
         <Route path="/quest-items" element={<QuestItems />} />
         <Route path="/item/:id" element={<Item />} />

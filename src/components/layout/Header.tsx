@@ -37,6 +37,7 @@ export function Header() {
             <NavLink to="/currency-flip" className={navClass}>Currencies</NavLink>
             <NavLink to="/gc-seals" className={navClass}>GC Seals</NavLink>
             <NavLink to="/craft-batch" className={navClass}>Batch</NavLink>
+            <NavLink to="/batch-history" className={navClass}>History</NavLink>
             <NavLink to="/quest-items" className={navClass}>Quest items</NavLink>
             <NavLink to="/settings" className={navClass}>Settings</NavLink>
           </nav>
