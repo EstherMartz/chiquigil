@@ -72,10 +72,13 @@ export function BatchDetail({ batch }: Props) {
                         value={item.actualPrice ?? ''}
                         onChange={(e) => {
                           const val = e.target.value;
-                          if (val === '' || val === '0') {
+                          if (val === '') {
                             clearActualPrice(batch.batchId, item.id);
                           } else {
-                            setActualPrice(batch.batchId, item.id, Number(val));
+                            const price = Number(val);
+                            if (!isNaN(price) && price >= 0) {
+                              setActualPrice(batch.batchId, item.id, price);
+                            }
                           }
                         }}
                         placeholder="—"
