@@ -1,5 +1,6 @@
 import { useMemo, useState, useCallback } from 'react';
 import { useMutation } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { useSettingsStore } from '../settings/store';
 import { useItemSnapshot } from '../queries/useItemSnapshot';
 import { useRecipeSnapshot } from '../queries/useRecipeSnapshot';
@@ -14,8 +15,10 @@ import { InfoTooltip } from '../../components/InfoTooltip';
 import { HqStar } from '../../components/HqStar';
 import { Spinner } from '../../components/Spinner';
 import { ExportCsvButton } from '../../components/ExportCsvButton';
+import { ExportTeamcraftButton } from '../../components/ExportTeamcraftButton';
 import { useUiStore, rowPadClass } from '../ui/uiStore';
 import type { BatchItem, BatchResult } from './types';
+import { CRYSTALS_SEARCH_CATEGORY } from '../queries/commonFilters';
 import type { CsvColumn } from '../../lib/csv';
 
 const CSV_COLUMNS: CsvColumn<BatchItem>[] = [
@@ -40,7 +43,8 @@ interface RunResult {
 }
 
 export function CraftBatchView() {
-  const { world } = useSettingsStore();
+  const navigate = useNavigate();
+  const { world, hideCrystals } = useSettingsStore();
   const snapshot = useItemSnapshot();
   const recipes = useRecipeSnapshot();
   const addItem = useShoppingListStore((s) => s.addItem);
@@ -56,10 +60,11 @@ export function CraftBatchView() {
     if (!snapshot.data || !recipes.data) return [];
     const ids: number[] = [];
     for (const item of snapshot.data.items) {
+      if (hideCrystals && item.sc === CRYSTALS_SEARCH_CATEGORY) continue;
       if (recipes.data.get(item.id)) ids.push(item.id);
     }
     return ids;
-  }, [snapshot.data, recipes.data]);
+  }, [snapshot.data, recipes.data, hideCrystals]);
 
   const run = useMutation<RunResult>({
     mutationFn: async () => {
@@ -129,7 +134,8 @@ export function CraftBatchView() {
     for (const item of batch.items) {
       addItem(item.id, 1);
     }
-  }, [batch, addItem]);
+    navigate('/shopping-list');
+  }, [batch, addItem, navigate]);
 
   const notReady = !snapshot.data || !recipes.data;
 
@@ -188,6 +194,10 @@ export function CraftBatchView() {
         <>
           {/* Summary Cards */}
           <SummaryCards batch={batch} budget={budget} />
+
+          <p className="text-text-dim font-mono text-[11px] text-right">
+            Estimates for ranking — see Shopping List for final costs
+          </p>
 
           {/* Batch Table */}
           <div className="border border-border-base rounded-lg overflow-hidden">
@@ -273,6 +283,7 @@ export function CraftBatchView() {
                 columns={CSV_COLUMNS}
                 filename={`craft-batch-${new Date().toISOString().slice(0, 10)}.csv`}
               />
+              <ExportTeamcraftButton items={batch.items} />
               <span className="ml-auto font-mono text-xs text-text-dim">
                 Budget remaining: <span className="text-aether">{fmtGil(batch.budgetRemaining)}</span>
               </span>
