@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useShoppingListStore } from './shoppingListStore';
 
 interface Searchable { id: number; name: string; hasRecipe: boolean }
@@ -14,6 +14,7 @@ export function ShoppingListPanel({ searchableItems, onPlan }: Props) {
   const removeItem = useShoppingListStore((s) => s.removeItem);
   const setQty = useShoppingListStore((s) => s.setQty);
   const setCraftIntermediates = useShoppingListStore((s) => s.setCraftIntermediates);
+  const setAllCraftIntermediates = useShoppingListStore((s) => s.setAllCraftIntermediates);
   const clear = useShoppingListStore((s) => s.clear);
 
   const [query, setQuery] = useState('');
@@ -21,6 +22,15 @@ export function ShoppingListPanel({ searchableItems, onPlan }: Props) {
   const [error, setError] = useState<string | null>(null);
 
   const nameById = new Map(searchableItems.map((s) => [s.id, s.name]));
+
+  const allCraft = items.length > 0 && items.every((i) => i.craftIntermediates);
+  const noneCraft = items.length === 0 || items.every((i) => !i.craftIntermediates);
+  const craftAllRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (craftAllRef.current) {
+      craftAllRef.current.indeterminate = !allCraft && !noneCraft;
+    }
+  }, [allCraft, noneCraft]);
 
   function handleAdd() {
     setError(null);
@@ -122,7 +132,20 @@ export function ShoppingListPanel({ searchableItems, onPlan }: Props) {
       )}
 
       <div className="flex items-center justify-between gap-2 p-3 border-t border-border-base">
-        <span className="font-mono text-[11px] text-text-low">{items.length} items</span>
+        <div className="flex items-center gap-3">
+          <span className="font-mono text-[11px] text-text-low">{items.length} items</span>
+          {items.length > 0 && (
+            <label className="flex items-center gap-1 font-mono text-[10px] uppercase text-text-low">
+              <input
+                ref={craftAllRef}
+                type="checkbox"
+                checked={allCraft}
+                onChange={() => setAllCraftIntermediates(!allCraft)}
+              />
+              <span>Craft all sub-ingredients</span>
+            </label>
+          )}
+        </div>
         <div className="flex gap-2">
           <button
             onClick={() => clear()}

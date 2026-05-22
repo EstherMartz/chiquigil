@@ -1,0 +1,71 @@
+<h2>Craft Batch Planner — Approaches</h2>
+<p class="subtitle">How should the planner help you pick a diversified, profitable crafting batch?</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Smart Batch Builder</h3>
+      <p>You set a <strong>budget</strong> and <strong>batch size</strong> (e.g. "5M gil, 8 items"). The planner runs your existing craft flip engine, then applies a diversification algorithm: it picks the top item, then penalizes same-category items before picking the next, repeating until the batch is full or budget is spent.</p>
+      <p>Output: a ready-to-go batch with total cost, expected revenue, and a one-click "Send all to Shopping List" button.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul>
+          <li>One click → optimized batch</li>
+          <li>Diversification is automatic</li>
+          <li>Budget-aware from the start</li>
+          <li>Builds on existing craft flip logic</li>
+        </ul></div>
+        <div class="cons"><h4>Cons</h4><ul>
+          <li>Less manual control over what's in the batch</li>
+          <li>Algorithm picks may not match your intuition</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Interactive Batch Cart</h3>
+      <p>The craft flip results table gets a <strong>"+ Add to Batch"</strong> button per row. A sticky bottom panel shows your running batch: total cost, expected profit, category breakdown, and budget remaining. Category badges go <span style="color:#e57373">red</span> when you're over-concentrating.</p>
+      <p>You browse and pick manually, but the UI gives you live feedback on diversification and budget.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul>
+          <li>Full control — you pick every item</li>
+          <li>Live budget + diversity feedback</li>
+          <li>Familiar craft flip table UX</li>
+        </ul></div>
+        <div class="cons"><h4>Cons</h4><ul>
+          <li>More manual work each session</li>
+          <li>Doesn't suggest — only warns</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Hybrid: Auto-suggest + Edit</h3>
+      <p>Combines A and B. The planner <strong>auto-generates a recommended batch</strong> (like A), then shows it in an <strong>editable table</strong> where you can swap items in/out (like B). Removing an item re-runs the algorithm to suggest a replacement. Budget slider + category balance bar update live.</p>
+      <p>Best of both: fast start with full override control.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul>
+          <li>Fast start — useful batch in seconds</li>
+          <li>Full override when your gut disagrees</li>
+          <li>Budget + diversity always visible</li>
+          <li>Swap suggestions keep the batch optimized</li>
+        </ul></div>
+        <div class="cons"><h4>Cons</h4><ul>
+          <li>Most complex to build</li>
+          <li>Algorithm needs to be good enough that suggestions feel helpful, not random</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:2rem; padding:1.2rem; border-left:3px solid #7c4dff; background:rgba(124,77,255,0.06); border-radius:6px;">
+  <h3 style="margin-top:0;">My recommendation: C (Hybrid)</h3>
+  <p style="margin-bottom:0;">You said you want help deciding <em>and</em> you like to diversify manually. The hybrid gives you a smart starting point without taking away control. We can build A first as the core engine, then layer on the edit UI — so it's incremental, not all-or-nothing.</p>
+</div>

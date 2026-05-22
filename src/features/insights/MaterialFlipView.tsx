@@ -12,6 +12,7 @@ import { MaterialFlipResults } from '../queries/MaterialFlipResults';
 import { defaultMaterialFlipFilter, type MaterialFlipFilter, type MaterialFlipRow, type MaterialFlipSort } from '../queries/types';
 import type { SnapshotItem } from '../../lib/itemSnapshot';
 import type { Recipe } from '../../lib/recipes';
+import { CRYSTALS_SEARCH_CATEGORY } from '../queries/commonFilters';
 import { Spinner } from '../../components/Spinner';
 import { StatusBanner } from '../../components/StatusBanner';
 
@@ -27,7 +28,7 @@ interface RunResult {
 }
 
 export function MaterialFlipView() {
-  const { world } = useSettingsStore();
+  const { world, hideCrystals } = useSettingsStore();
   const snapshot = useItemSnapshot();
   const [filter, setFilter] = useState<MaterialFlipFilter>(defaultMaterialFlipFilter());
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
@@ -37,12 +38,13 @@ export function MaterialFlipView() {
     const catSet = filter.searchCategories.length ? new Set(filter.searchCategories) : null;
     const out: number[] = [];
     for (const item of snapshot.data.items) {
+      if (hideCrystals && item.sc === CRYSTALS_SEARCH_CATEGORY) continue;
       if (catSet && !catSet.has(item.sc)) continue;
       if (filter.hq === 'hq' && !item.canHq) continue;
       out.push(item.id);
     }
     return out;
-  }, [snapshot.data, filter.searchCategories, filter.hq]);
+  }, [snapshot.data, filter.searchCategories, filter.hq, hideCrystals]);
 
   const run = useMutation<RunResult>({
     mutationFn: async () => {

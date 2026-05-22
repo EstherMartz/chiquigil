@@ -18,6 +18,9 @@ export interface MarketGate {
  *   if (market.velocity < filter.minVelocity) continue;
  *   if (filter.maxListings != null && market.listingCount > filter.maxListings) continue;
  */
+/** Item-search-category 58 = "Crystals" (shards / crystals / clusters). */
+export const CRYSTALS_SEARCH_CATEGORY = 58;
+
 export function passesMarketGate(market: MarketItem, gate: MarketGate): boolean {
   if (market.velocity < gate.minVelocity) return false;
   if (gate.maxListings != null && market.listingCount > gate.maxListings) return false;

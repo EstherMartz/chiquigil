@@ -8,6 +8,7 @@ import { fetchMarketData, type MarketData } from '../../lib/universalis';
 import { runVendorFlip } from '../queries/runVendorFlip';
 import { VendorFlipResults } from '../queries/VendorFlipResults';
 import { defaultVendorFlipFilter, type VendorFlipFilter, type VendorFlipSort, type HqMode } from '../queries/types';
+import { CRYSTALS_SEARCH_CATEGORY } from '../queries/commonFilters';
 import { Spinner } from '../../components/Spinner';
 import { StatusBanner } from '../../components/StatusBanner';
 
@@ -18,7 +19,7 @@ interface RunResult {
 }
 
 export function VendorFlipView() {
-  const { world } = useSettingsStore();
+  const { world, hideCrystals } = useSettingsStore();
   const snapshot = useItemSnapshot();
   const vendors = useVendorShopSnapshot();
   const refreshVendors = useRefreshVendorShopSnapshot();
@@ -29,13 +30,14 @@ export function VendorFlipView() {
     const catSet = filter.searchCategories.length ? new Set(filter.searchCategories) : null;
     const out: number[] = [];
     for (const item of snapshot.data.items) {
+      if (hideCrystals && item.sc === CRYSTALS_SEARCH_CATEGORY) continue;
       if (!vendors.data.snapshot.has(item.id)) continue;
       if (catSet && !catSet.has(item.sc)) continue;
       if (filter.hq === 'hq' && !item.canHq) continue;
       out.push(item.id);
     }
     return out;
-  }, [snapshot.data, vendors.data, filter.searchCategories, filter.hq]);
+  }, [snapshot.data, vendors.data, filter.searchCategories, filter.hq, hideCrystals]);
 
   const run = useMutation<RunResult>({
     mutationFn: async () => {

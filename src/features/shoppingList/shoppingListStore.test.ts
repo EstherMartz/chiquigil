@@ -56,6 +56,19 @@ describe('shoppingList store', () => {
     expect(useShoppingListStore.getState().items[0].craftIntermediates).toBe(true);
   });
 
+  it('setAllCraftIntermediates sets all items to given value', () => {
+    useShoppingListStore.getState().addItem(1);
+    useShoppingListStore.getState().addItem(2);
+    useShoppingListStore.getState().setCraftIntermediates(1, true);
+    useShoppingListStore.getState().setAllCraftIntermediates(true);
+    const items = useShoppingListStore.getState().items;
+    expect(items.every((i) => i.craftIntermediates)).toBe(true);
+
+    useShoppingListStore.getState().setAllCraftIntermediates(false);
+    const items2 = useShoppingListStore.getState().items;
+    expect(items2.every((i) => !i.craftIntermediates)).toBe(true);
+  });
+
   it('clear empties the list', () => {
     useShoppingListStore.getState().addItem(1);
     useShoppingListStore.getState().addItem(2);

@@ -2,6 +2,7 @@ import type { MarketData } from '../../lib/universalis';
 import type { SnapshotQuest } from '../../lib/questSnapshot';
 import type { SnapshotItem } from '../../lib/itemSnapshot';
 import { pickHighestTrustedTier } from '../../lib/priceTrust';
+import { CRYSTALS_SEARCH_CATEGORY } from './commonFilters';
 import type { HqMode } from './types';
 
 export type { HqMode };
@@ -70,9 +71,7 @@ export interface QuestItemRow {
   totalRevenue: number;
 }
 
-/** Item-search-category 58 = "Crystals" (shards / crystals / clusters).
- * Excluded from quest-item rows: spammy catalyst turn-ins with no MB value. */
-const CRYSTALS_SEARCH_CATEGORY = 58;
+// Crystals are always excluded from quest-item rows (spammy catalyst turn-ins with no MB value).
 
 export function countQuestItemCandidates(
   snapshot: SnapshotQuest[],

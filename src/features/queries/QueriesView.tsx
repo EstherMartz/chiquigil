@@ -20,6 +20,7 @@ import { Spinner } from '../../components/Spinner';
 import { StatusBanner } from '../../components/StatusBanner';
 import { InfoTooltip } from '../../components/InfoTooltip';
 import { filterToParams, paramsToFilter } from '../../lib/queryUrlParams';
+import { CRYSTALS_SEARCH_CATEGORY } from './commonFilters';
 
 interface PriceFetchResult {
   priceMap: MarketData;
@@ -38,7 +39,7 @@ interface Props {
 }
 
 export function QueriesView({ category, heading, onRowsChange, initialPresetId }: Props) {
-  const { world, dc, retainerLevels } = useSettingsStore();
+  const { world, dc, retainerLevels, hideCrystals } = useSettingsStore();
   const [params, setParams] = useSearchParams();
   const snapshot = useItemSnapshot();
   const isGathering = category === 'gathering';
@@ -56,13 +57,14 @@ export function QueriesView({ category, heading, onRowsChange, initialPresetId }
     const gatherSet = isGathering ? gatheringCatalog.data : null;
     const out: number[] = [];
     for (const item of snapshot.data.items) {
+      if (hideCrystals && item.sc === CRYSTALS_SEARCH_CATEGORY) continue;
       if (catSet && !catSet.has(item.sc)) continue;
       if (filter.hq === 'hq' && !item.canHq) continue;
       if (gatherSet && !gatherSet.has(item.id)) continue;
       out.push(item.id);
     }
     return out;
-  }, [snapshot.data, filter.searchCategories, filter.hq, isGathering, gatheringCatalog.data]);
+  }, [snapshot.data, filter.searchCategories, filter.hq, isGathering, gatheringCatalog.data, hideCrystals]);
 
   const run = useMutation<PriceFetchResult>({
     mutationFn: async () => {

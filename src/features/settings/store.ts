@@ -12,15 +12,17 @@ export interface SettingsState {
   overheadMinutes: number;
   batchCapDays: number;
   defaultCraftTimeSeconds: number;
+  hideCrystals: boolean;
   setWorld: (w: string) => void;
   setDc: (d: string) => void;
   setRetainerLevel: (c: keyof CrafterLevels, lvl: number) => void;
   setOverheadMinutes: (n: number) => void;
   setBatchCapDays: (n: number) => void;
   setDefaultCraftTimeSeconds: (n: number) => void;
+  setHideCrystals: (v: boolean) => void;
 }
 
-export function defaultSettings(): Pick<SettingsState, '_v' | 'world' | 'dc' | 'retainerLevels' | 'overheadMinutes' | 'batchCapDays' | 'defaultCraftTimeSeconds'> {
+export function defaultSettings(): Pick<SettingsState, '_v' | 'world' | 'dc' | 'retainerLevels' | 'overheadMinutes' | 'batchCapDays' | 'defaultCraftTimeSeconds' | 'hideCrystals'> {
   return {
     _v: 1,
     world: 'Phantom',
@@ -31,6 +33,7 @@ export function defaultSettings(): Pick<SettingsState, '_v' | 'world' | 'dc' | '
     overheadMinutes: 5,
     batchCapDays: 3,
     defaultCraftTimeSeconds: 60,
+    hideCrystals: true,
   };
 }
 
@@ -44,6 +47,7 @@ export const useSettingsStore = create<SettingsState>()(
       setOverheadMinutes: (overheadMinutes) => set({ overheadMinutes }),
       setBatchCapDays: (batchCapDays) => set({ batchCapDays }),
       setDefaultCraftTimeSeconds: (defaultCraftTimeSeconds) => set({ defaultCraftTimeSeconds }),
+      setHideCrystals: (hideCrystals) => set({ hideCrystals }),
     }),
     { name: 'ffxiv-helper:settings' },
   ),

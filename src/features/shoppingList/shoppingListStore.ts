@@ -14,6 +14,7 @@ export interface ShoppingListState {
   removeItem: (id: number) => void;
   setQty: (id: number, qty: number) => void;
   setCraftIntermediates: (id: number, value: boolean) => void;
+  setAllCraftIntermediates: (value: boolean) => void;
   clear: () => void;
 }
 
@@ -43,6 +44,9 @@ export const useShoppingListStore = create<ShoppingListState>()(
       }),
       setCraftIntermediates: (id, value) => set((s) => ({
         items: s.items.map((i) => (i.id === id ? { ...i, craftIntermediates: value } : i)),
+      })),
+      setAllCraftIntermediates: (value) => set((s) => ({
+        items: s.items.map((i) => ({ ...i, craftIntermediates: value })),
       })),
       clear: () => set({ items: [] }),
     }),

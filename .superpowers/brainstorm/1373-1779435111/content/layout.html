@@ -1,0 +1,137 @@
+<h2>Craft Batch Planner — Page Layout</h2>
+<p class="subtitle">New route: <code>/craft-batch</code></p>
+
+<div class="mockup">
+  <div class="mockup-header">Craft Batch Planner</div>
+  <div class="mockup-body" style="font-family: system-ui; font-size: 13px; color: #e0e0e0; background: #1a1a2e;">
+
+    <!-- Controls Bar -->
+    <div style="display: flex; gap: 16px; align-items: center; padding: 12px 16px; background: rgba(255,255,255,0.04); border-bottom: 1px solid rgba(255,255,255,0.08); flex-wrap: wrap;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="color: #888; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Budget</span>
+        <div style="width: 160px; height: 6px; background: #2a2a3e; border-radius: 3px; position: relative;">
+          <div style="width: 62%; height: 100%; background: linear-gradient(90deg, #7c4dff, #b388ff); border-radius: 3px;"></div>
+        </div>
+        <span style="color: #b388ff; font-weight: 600;">5M</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="color: #888; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">Batch size</span>
+        <span style="background: #2a2a3e; padding: 2px 12px; border-radius: 4px; color: #e0e0e0;">8</span>
+      </div>
+      <button style="margin-left: auto; background: #7c4dff; color: white; border: none; padding: 6px 16px; border-radius: 6px; cursor: pointer; font-size: 12px;">Generate Batch</button>
+    </div>
+
+    <!-- Summary Cards -->
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 12px 16px;">
+      <div style="background: rgba(255,255,255,0.04); border-radius: 8px; padding: 10px 12px;">
+        <div style="color: #888; font-size: 10px; text-transform: uppercase;">Material Cost</div>
+        <div style="color: #e57373; font-size: 18px; font-weight: 600;">3.2M</div>
+        <div style="color: #666; font-size: 11px;">64% of budget</div>
+      </div>
+      <div style="background: rgba(255,255,255,0.04); border-radius: 8px; padding: 10px 12px;">
+        <div style="color: #888; font-size: 10px; text-transform: uppercase;">Expected Revenue</div>
+        <div style="color: #81c784; font-size: 18px; font-weight: 600;">5.1M</div>
+        <div style="color: #666; font-size: 11px;">if all sell within 1 day</div>
+      </div>
+      <div style="background: rgba(255,255,255,0.04); border-radius: 8px; padding: 10px 12px;">
+        <div style="color: #888; font-size: 10px; text-transform: uppercase;">Expected Profit</div>
+        <div style="color: #69f0ae; font-size: 18px; font-weight: 600;">1.9M</div>
+        <div style="color: #666; font-size: 11px;">59% ROI</div>
+      </div>
+      <div style="background: rgba(255,255,255,0.04); border-radius: 8px; padding: 10px 12px;">
+        <div style="color: #888; font-size: 10px; text-transform: uppercase;">Category Spread</div>
+        <div style="display: flex; gap: 3px; margin-top: 6px;">
+          <div style="flex: 2; height: 14px; background: #7c4dff; border-radius: 3px 0 0 3px; font-size: 9px; display:flex; align-items:center; justify-content:center; color:white;">Gear</div>
+          <div style="flex: 2; height: 14px; background: #26a69a; font-size: 9px; display:flex; align-items:center; justify-content:center; color:white;">Furnish</div>
+          <div style="flex: 1; height: 14px; background: #ffa726; font-size: 9px; display:flex; align-items:center; justify-content:center; color:white;">Food</div>
+          <div style="flex: 1; height: 14px; background: #ef5350; font-size: 9px; display:flex; align-items:center; justify-content:center; color:white;">Pot</div>
+          <div style="flex: 1; height: 14px; background: #42a5f5; border-radius: 0 3px 3px 0; font-size: 9px; display:flex; align-items:center; justify-content:center; color:white;">Dye</div>
+        </div>
+        <div style="color: #666; font-size: 11px; margin-top: 4px;">5 categories across 8 items</div>
+      </div>
+    </div>
+
+    <!-- Batch Table -->
+    <div style="padding: 0 16px 8px;">
+      <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+        <thead>
+          <tr style="color: #888; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px;">
+            <th style="text-align: left; padding: 8px 6px; border-bottom: 1px solid rgba(255,255,255,0.08);">#</th>
+            <th style="text-align: left; padding: 8px 6px; border-bottom: 1px solid rgba(255,255,255,0.08);">Item</th>
+            <th style="text-align: left; padding: 8px 6px; border-bottom: 1px solid rgba(255,255,255,0.08);">Category</th>
+            <th style="text-align: right; padding: 8px 6px; border-bottom: 1px solid rgba(255,255,255,0.08);">Mat Cost</th>
+            <th style="text-align: right; padding: 8px 6px; border-bottom: 1px solid rgba(255,255,255,0.08);">Sale Price</th>
+            <th style="text-align: right; padding: 8px 6px; border-bottom: 1px solid rgba(255,255,255,0.08);">Profit</th>
+            <th style="text-align: right; padding: 8px 6px; border-bottom: 1px solid rgba(255,255,255,0.08);">Vel/day</th>
+            <th style="text-align: right; padding: 8px 6px; border-bottom: 1px solid rgba(255,255,255,0.08);">Gil/day</th>
+            <th style="text-align: center; padding: 8px 6px; border-bottom: 1px solid rgba(255,255,255,0.08);"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+            <td style="padding: 8px 6px; color: #666;">1</td>
+            <td style="padding: 8px 6px; color: #b388ff;">Rinascita Sword</td>
+            <td style="padding: 8px 6px;"><span style="background: #7c4dff33; color: #b388ff; padding: 1px 8px; border-radius: 10px; font-size: 10px;">Gear</span></td>
+            <td style="padding: 8px 6px; text-align: right; color: #e57373;">420k</td>
+            <td style="padding: 8px 6px; text-align: right;">780k</td>
+            <td style="padding: 8px 6px; text-align: right; color: #69f0ae;">360k</td>
+            <td style="padding: 8px 6px; text-align: right; color: #ffd54f;">2.3</td>
+            <td style="padding: 8px 6px; text-align: right; color: #ffd54f; font-weight: 600;">828k</td>
+            <td style="padding: 8px 6px; text-align: center;"><span style="color: #e57373; cursor: pointer; font-size: 14px;" title="Remove">✕</span></td>
+          </tr>
+          <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+            <td style="padding: 8px 6px; color: #666;">2</td>
+            <td style="padding: 8px 6px; color: #b388ff;">Aesthete's Spinning Wheel</td>
+            <td style="padding: 8px 6px;"><span style="background: #26a69a33; color: #80cbc4; padding: 1px 8px; border-radius: 10px; font-size: 10px;">Furnish</span></td>
+            <td style="padding: 8px 6px; text-align: right; color: #e57373;">310k</td>
+            <td style="padding: 8px 6px; text-align: right;">590k</td>
+            <td style="padding: 8px 6px; text-align: right; color: #69f0ae;">280k</td>
+            <td style="padding: 8px 6px; text-align: right; color: #ffd54f;">1.8</td>
+            <td style="padding: 8px 6px; text-align: right; color: #ffd54f; font-weight: 600;">504k</td>
+            <td style="padding: 8px 6px; text-align: center;"><span style="color: #e57373; cursor: pointer; font-size: 14px;" title="Remove">✕</span></td>
+          </tr>
+          <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+            <td style="padding: 8px 6px; color: #666;">3</td>
+            <td style="padding: 8px 6px; color: #b388ff;">Tsai tou Vounou HQ</td>
+            <td style="padding: 8px 6px;"><span style="background: #ffa72633; color: #ffb74d; padding: 1px 8px; border-radius: 10px; font-size: 10px;">Food</span></td>
+            <td style="padding: 8px 6px; text-align: right; color: #e57373;">85k</td>
+            <td style="padding: 8px 6px; text-align: right;">210k</td>
+            <td style="padding: 8px 6px; text-align: right; color: #69f0ae;">125k</td>
+            <td style="padding: 8px 6px; text-align: right; color: #ffd54f;">3.1</td>
+            <td style="padding: 8px 6px; text-align: right; color: #ffd54f; font-weight: 600;">387k</td>
+            <td style="padding: 8px 6px; text-align: center;"><span style="color: #e57373; cursor: pointer; font-size: 14px;" title="Remove">✕</span></td>
+          </tr>
+          <tr style="background: rgba(255,255,255,0.02);">
+            <td colspan="9" style="padding: 8px 6px; color: #666; font-style: italic; text-align: center;">
+              … 5 more items …
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Bottom Action Bar -->
+    <div style="display: flex; gap: 10px; padding: 12px 16px; border-top: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.02);">
+      <button style="background: #26a69a; color: white; border: none; padding: 8px 20px; border-radius: 6px; cursor: pointer; font-size: 12px;">Send to Shopping List</button>
+      <button style="background: transparent; color: #888; border: 1px solid rgba(255,255,255,0.12); padding: 8px 20px; border-radius: 6px; cursor: pointer; font-size: 12px;">Export CSV</button>
+      <div style="margin-left: auto; display: flex; align-items: center; gap: 6px; color: #666; font-size: 11px;">
+        <span>Budget remaining:</span>
+        <span style="color: #b388ff; font-weight: 600;">1.8M</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="section" style="margin-top: 1.5rem;">
+  <h3>Key interactions</h3>
+  <ul style="line-height: 1.8;">
+    <li><strong>Budget slider</strong> — drag to set total material budget (500k → your full gil balance)</li>
+    <li><strong>Batch size</strong> — number stepper (3–15 items)</li>
+    <li><strong>Generate</strong> — runs the diversified algorithm, fills the table</li>
+    <li><strong>✕ Remove</strong> — drops an item, algorithm suggests a replacement inline</li>
+    <li><strong>Category spread bar</strong> — live visual of how diversified your batch is</li>
+    <li><strong>Send to Shopping List</strong> — adds all batch items in one click</li>
+    <li><strong>Item names</strong> — clickable links to <code>/item/:id</code> for deeper inspection</li>
+  </ul>
+</div>

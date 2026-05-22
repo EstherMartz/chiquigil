@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ExportImportPanel } from '../features/settings/ExportImportPanel';
 import { SectionHeader } from '../components/SectionHeader';
 import { LevelsEditor } from '../features/settings/LevelsEditor';
+import { useSettingsStore } from '../features/settings/store';
 import { useUiStore, type Density } from '../features/ui/uiStore';
 import { btnPrimaryLarge, btnDanger } from '../components/buttonStyles';
 import {
@@ -47,6 +48,8 @@ export default function Settings() {
   const refreshItemDb = useRefreshItemSnapshot();
   const density = useUiStore((s) => s.density);
   const setDensity = useUiStore((s) => s.setDensity);
+  const hideCrystals = useSettingsStore((s) => s.hideCrystals);
+  const setHideCrystals = useSettingsStore((s) => s.setHideCrystals);
 
   const [status, setStatus] = useState<Record<DatasetKey, CacheStatus>>({
     item:   { ts: null, hasData: false },
@@ -160,6 +163,23 @@ export default function Settings() {
       <section>
         <SectionHeader label="Display" />
         <DensityToggle value={density} onChange={setDensity} />
+      </section>
+      <section>
+        <SectionHeader label="Filters" />
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={hideCrystals}
+            onChange={(e) => setHideCrystals(e.target.checked)}
+            className="accent-gold w-4 h-4"
+          />
+          <span className="font-mono text-[10px] tracking-widest uppercase text-text-dim">
+            Hide crystals, shards & clusters
+          </span>
+        </label>
+        <p className="font-mono text-[10px] text-text-low mt-1 ml-6">
+          Excludes elemental crystals (category 58) from all scan results. Quest items always exclude them.
+        </p>
       </section>
       <section>
         <SectionHeader label="Data caches" />

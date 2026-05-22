@@ -20,6 +20,7 @@ import { HomePanel } from '../home/HomePanel';
 import { SessionDefaults } from '../settings/SessionDefaults';
 import { LevelsEditor } from '../settings/LevelsEditor';
 import { WorldDcPicker } from '../settings/WorldDcPicker';
+import { CRYSTALS_SEARCH_CATEGORY } from '../queries/commonFilters';
 import type { QueryFilter } from '../queries/types';
 
 interface Committed {
@@ -82,8 +83,10 @@ export default function SessionPlanner() {
 
   const allIds = useMemo(() => {
     if (!snapshot.data) return [];
-    return snapshot.data.items.map((i) => i.id);
-  }, [snapshot.data]);
+    return snapshot.data.items
+      .filter((i) => !(settings.hideCrystals && i.sc === CRYSTALS_SEARCH_CATEGORY))
+      .map((i) => i.id);
+  }, [snapshot.data, settings.hideCrystals]);
 
   const ilvlById = useMemo(() => {
     const m = new Map<number, number>();

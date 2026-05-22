@@ -10,6 +10,7 @@ import { runCurrencyFlip } from '../queries/runCurrencyFlip';
 import { CurrencyFlipResults } from '../queries/CurrencyFlipResults';
 import { defaultCurrencyFlipFilter, type CurrencyFlipFilter, type CurrencyFlipSort } from '../queries/types';
 import { CURRENCIES, getCurrencyById, type CurrencyId } from '../../lib/currencies';
+import { CRYSTALS_SEARCH_CATEGORY } from '../queries/commonFilters';
 import { Spinner } from '../../components/Spinner';
 import { StatusBanner } from '../../components/StatusBanner';
 
@@ -24,7 +25,7 @@ function isCurrencyId(v: string | null): v is CurrencyId {
 }
 
 export function CurrencyFlipView() {
-  const { world } = useSettingsStore();
+  const { world, hideCrystals } = useSettingsStore();
   const snapshot = useItemSnapshot();
   const shop = useSpecialShopSnapshot();
   const refreshShop = useRefreshSpecialShopSnapshot();
@@ -45,8 +46,13 @@ export function CurrencyFlipView() {
     if (!snapshot.data || !shop.data) return [];
     const entries = shop.data.snapshot.byCurrency.get(filter.currency) ?? [];
     const itemIds = new Set(entries.map((e) => e.itemId));
-    return [...itemIds].filter((id) => snapshot.data!.items.some((it) => it.id === id));
-  }, [snapshot.data, shop.data, filter.currency]);
+    return [...itemIds].filter((id) => {
+      const it = snapshot.data!.items.find((i) => i.id === id);
+      if (!it) return false;
+      if (hideCrystals && it.sc === CRYSTALS_SEARCH_CATEGORY) return false;
+      return true;
+    });
+  }, [snapshot.data, shop.data, filter.currency, hideCrystals]);
 
   const run = useMutation<RunResult>({
     mutationFn: async () => {
