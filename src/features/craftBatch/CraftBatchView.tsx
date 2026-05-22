@@ -8,6 +8,8 @@ import { fetchInBatches } from '../../lib/universalisBulk';
 import { fetchMarketData, type MarketData } from '../../lib/universalis';
 import { scoreCraftPool, buildDiversifiedBatch } from './buildBatch';
 import { useShoppingListStore } from '../shoppingList/shoppingListStore';
+import { useBatchTrackerStore } from '../batchTracker/batchTrackerStore';
+import { batchItemToSaved } from '../batchTracker/types';
 import { fmtGil } from '../../lib/format';
 import { categoryLabel } from '../../lib/itemSearchCategories';
 import { ItemNameLinks } from '../../components/ItemNameLinks';
@@ -48,6 +50,7 @@ export function CraftBatchView() {
   const snapshot = useItemSnapshot();
   const recipes = useRecipeSnapshot();
   const addItem = useShoppingListStore((s) => s.addItem);
+  const saveBatch = useBatchTrackerStore((s) => s.saveBatch);
   const density = useUiStore((s) => s.density);
   const rowY = rowPadClass(density);
 
@@ -136,6 +139,12 @@ export function CraftBatchView() {
     }
     navigate('/shopping-list');
   }, [batch, addItem, navigate]);
+
+  const handleSaveAndTrack = useCallback(() => {
+    if (!batch) return;
+    saveBatch(budget, batch.items.map(batchItemToSaved));
+    navigate('/batch-history');
+  }, [batch, budget, saveBatch, navigate]);
 
   const notReady = !snapshot.data || !recipes.data;
 
@@ -284,6 +293,12 @@ export function CraftBatchView() {
                 filename={`craft-batch-${new Date().toISOString().slice(0, 10)}.csv`}
               />
               <ExportTeamcraftButton items={batch.items} />
+              <button
+                className="font-mono text-[10px] tracking-widest uppercase border border-border-base text-text-low px-3 py-2 hover:border-gold hover:text-gold transition-colors"
+                onClick={handleSaveAndTrack}
+              >
+                Save &amp; Track
+              </button>
               <span className="ml-auto font-mono text-xs text-text-dim">
                 Budget remaining: <span className="text-aether">{fmtGil(batch.budgetRemaining)}</span>
               </span>
