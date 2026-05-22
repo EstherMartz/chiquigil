@@ -8,6 +8,7 @@ import { useLoadMore } from '../../lib/useLoadMore';
 import { CATEGORY_TO_TRADING_PRESET } from './categoryPresetMap';
 import { MarketStateBadge } from '../../components/MarketStateBadge';
 import { ExportCsvButton } from '../../components/ExportCsvButton';
+import { CopyButton } from '../../components/CopyButton';
 import type { CsvColumn } from '../../lib/csv';
 
 const COLS: { key: SortKey; label: string; align?: 'right'; hideOnMobile?: boolean }[] = [
@@ -103,6 +104,7 @@ export function WatchlistTable({ rows, onSelect }: { rows: WatchlistRow[]; onSel
                   >
                     {r.name}
                   </Link>
+                  <CopyButton text={r.name} />
                   <button
                     onClick={() => onSelect(r.id)}
                     className="font-mono text-[10px] text-text-low hover:text-aether transition-colors shrink-0"

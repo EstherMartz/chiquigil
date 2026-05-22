@@ -26,6 +26,7 @@ import { StatusBanner } from '../components/StatusBanner';
 import { SectionHeader } from '../components/SectionHeader';
 import { HqStar } from '../components/HqStar';
 import { ItemNameLinks } from '../components/ItemNameLinks';
+import { CopyButton } from '../components/CopyButton';
 import { dcOf } from '../lib/europeWorlds';
 import type { SnapshotItem } from '../lib/itemSnapshot';
 import type { MarketItem } from '../lib/universalis';
@@ -344,6 +345,7 @@ function RecipeBlock({ recipe, itemNames, phantom, garlandIngredients }: {
                     <Link to={`/item/${ing.itemId}`} className="text-text-cream hover:text-aether hover:underline decoration-1 underline-offset-4">
                       {name}
                     </Link>
+                    <CopyButton text={name} />
                   </td>
                   <td className="py-2 text-right font-mono">{ing.amount}</td>
                   <td className="py-2 text-right font-mono">{fmtGil(unit)}</td>
@@ -433,6 +435,7 @@ function UsedInBlock({ entries, itemNames, phantom }: {
                     <Link to={`/item/${e.resultId}`} className="text-text-cream hover:text-aether hover:underline decoration-1 underline-offset-4">
                       {name}
                     </Link>
+                    <CopyButton text={name} />
                   </td>
                   <td className="px-3 py-2 text-right font-mono text-aether hidden sm:table-cell">{e.classJob}</td>
                   <td className="px-3 py-2 text-right font-mono text-text-low hidden sm:table-cell">{e.recipeLevel}</td>

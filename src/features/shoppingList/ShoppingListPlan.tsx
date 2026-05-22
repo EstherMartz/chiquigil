@@ -7,6 +7,7 @@ import type { SnapshotItem } from '../../lib/itemSnapshot';
 import type { ShoppingListItem } from './shoppingListStore';
 import { applyShoppingOverrides, NPC_VENDOR_WORLD, type ChosenSource } from './applyShoppingOverrides';
 import { fmtGil } from '../../lib/format';
+import { CopyButton } from '../../components/CopyButton';
 
 interface Props {
   survey: IngredientSurvey[];
@@ -137,6 +138,7 @@ function DetailTable({
                     <Link to={`/item/${row.id}`} className="text-text-cream hover:text-aether hover:underline decoration-1 underline-offset-4">
                       {nameById.get(row.id) ?? `Item #${row.id}`}
                     </Link>
+                    <CopyButton text={nameById.get(row.id) ?? `Item #${row.id}`} />
                   </td>
                   <td className="px-3 py-2 text-right font-mono">{row.qty}</td>
                   <td className="px-3 py-2">

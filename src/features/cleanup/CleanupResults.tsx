@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { SectionHeader } from '../../components/SectionHeader';
+import { CopyButton } from '../../components/CopyButton';
 import type { CleanupResult, CleanupRow, CraftOpportunity, InventoryEntry, UsesEntry } from './types';
 
 interface CleanupResultsProps {
@@ -92,9 +93,12 @@ function Section({ title, children, defaultOpen = true }: { title: string; child
 
 function ItemName({ entry }: { entry: InventoryEntry }) {
   return (
-    <Link to={`/item/${entry.itemId}`} className="text-text-cream hover:text-gold">
-      {entry.name}{entry.isHq ? ' ✦' : ''} <span className="text-text-low">×{entry.qty}</span>
-    </Link>
+    <>
+      <Link to={`/item/${entry.itemId}`} className="text-text-cream hover:text-gold">
+        {entry.name}{entry.isHq ? ' ✦' : ''} <span className="text-text-low">×{entry.qty}</span>
+      </Link>
+      <CopyButton text={entry.name} />
+    </>
   );
 }
 
@@ -241,6 +245,7 @@ function UsesDisclosure({ entries }: { entries: UsesEntry[] }) {
           <Link to={`/item/${e.outputItemId}`} className="text-text-cream hover:text-gold">
             {e.outputName} <span className="text-text-low">(needs {e.amountNeeded}×)</span>
           </Link>
+          <CopyButton text={e.outputName} />
           <span className="text-text-low">
             {e.outputUnitPrice > 0
               ? <>output {fmtFull(e.outputUnitPrice)}g</>
