@@ -1,0 +1,106 @@
+// src/features/heatmap/HeatmapChart.tsx
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { squarify } from './squarify';
+import type { HeatmapCell } from './buildHeatmapData';
+import { fmtGil } from '../../lib/format';
+
+const CHART_HEIGHT = 520;
+
+function marginColor(margin: number): string {
+  const clamped = Math.max(0, Math.min(1, (margin + 0.1) / 0.6));
+  if (clamped < 0.5) {
+    const t = clamped * 2;
+    const r = 200;
+    const g = Math.round(80 + t * 140);
+    const b = Math.round(40 + t * 10);
+    return `rgb(${r},${g},${b})`;
+  }
+  const t = (clamped - 0.5) * 2;
+  const r = Math.round(200 - t * 140);
+  const g = Math.round(220 - t * 30);
+  const b = Math.round(50 + t * 50);
+  return `rgb(${r},${g},${b})`;
+}
+
+function velocityColor(velocity: number, maxVelocity: number): string {
+  const t = maxVelocity > 0 ? Math.min(1, velocity / maxVelocity) : 0;
+  const r = Math.round(60 + t * 10);
+  const g = Math.round(80 + t * 40);
+  const b = Math.round(120 + t * 100);
+  return `rgb(${r},${g},${b})`;
+}
+
+export function HeatmapChart({ cells }: { cells: HeatmapCell[] }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(900);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect.width;
+      if (w && w > 0) setContainerWidth(w);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const maxVelocity = useMemo(() => Math.max(...cells.map((c) => c.velocity), 1), [cells]);
+
+  const rects = useMemo(
+    () => squarify(cells.map((c) => ({ id: c.id, area: c.area })), containerWidth, CHART_HEIGHT),
+    [cells, containerWidth],
+  );
+
+  const cellById = useMemo(() => {
+    const m = new Map<number, HeatmapCell>();
+    for (const c of cells) m.set(c.id, c);
+    return m;
+  }, [cells]);
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative border border-border-base bg-bg-deep overflow-hidden"
+      style={{ height: CHART_HEIGHT }}
+    >
+      {rects.map((r) => {
+        const cell = cellById.get(r.id);
+        if (!cell) return null;
+        const bg = cell.craftable && cell.margin != null
+          ? marginColor(cell.margin)
+          : velocityColor(cell.velocity, maxVelocity);
+        const showLabel = r.w > 50 && r.h > 28;
+        const showPrice = r.w > 70 && r.h > 44;
+        return (
+          <div
+            key={r.id}
+            className="absolute cursor-pointer border border-bg-deep/40 overflow-hidden flex flex-col justify-center px-1.5 hover:brightness-125 transition-[filter]"
+            style={{
+              left: r.x,
+              top: r.y,
+              width: r.w,
+              height: r.h,
+              backgroundColor: bg,
+            }}
+            onClick={() => navigate(`/item/${r.id}`)}
+            title={`${cell.name}\n${fmtGil(cell.salePrice)} · ${cell.velocity.toFixed(1)}/day${cell.margin != null ? ` · ${(cell.margin * 100).toFixed(0)}% margin` : ''}`}
+          >
+            {showLabel && (
+              <span className="text-[10px] font-mono leading-tight text-white/90 truncate drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)]">
+                {cell.name}
+              </span>
+            )}
+            {showPrice && (
+              <span className="text-[9px] font-mono text-white/60 truncate drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)]">
+                {fmtGil(cell.salePrice)}
+              </span>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
