@@ -21,8 +21,10 @@ function deal(opts: Partial<{
   };
 }
 
-function page(rows: Array<{ row_id: number; deals: ReturnType<typeof deal>[] }>): RawSpecialShopPage {
-  return { rows: rows.map((r) => ({ row_id: r.row_id, fields: { Item: r.deals } })) };
+function page(
+  rows: Array<{ row_id: number; deals: ReturnType<typeof deal>[]; uct?: number }>,
+): RawSpecialShopPage {
+  return { rows: rows.map((r) => ({ row_id: r.row_id, fields: { Item: r.deals, UseCurrencyType: r.uct } })) };
 }
 
 describe('parseSpecialShopPage', () => {
@@ -101,6 +103,23 @@ describe('parseSpecialShopPage', () => {
   it('drops deals with currencyCost = 0', () => {
     const raw = page([{ row_id: 1, deals: [
       deal({ recvIds: [4729, 0], recvCounts: [1, 1], costIds: [28, 0, 0], currencyCost: [0, 0, 0] }),
+    ]}]);
+    expect(parseSpecialShopPage(raw, CURRENCIES_BY_ID)).toEqual([]);
+  });
+
+  it('resolves UseCurrencyType 4 (tomestones) via type-index mapping', () => {
+    // costId = 1 is tomestone type index → maps to item 28 (Poetics)
+    const raw = page([{ row_id: 1, uct: 4, deals: [
+      deal({ recvIds: [29276, 0], recvCounts: [1, 1], costIds: [1, 0, 0], currencyCost: [170, 0, 0] }),
+    ]}]);
+    expect(parseSpecialShopPage(raw, CURRENCIES_BY_ID)).toEqual([
+      { currency: 'poetics', itemId: 29276, receiveQty: 1, costPerUnit: 170, isHq: false },
+    ]);
+  });
+
+  it('drops tomestone deals with unknown type index', () => {
+    const raw = page([{ row_id: 1, uct: 4, deals: [
+      deal({ recvIds: [29276, 0], recvCounts: [1, 1], costIds: [99, 0, 0], currencyCost: [170, 0, 0] }),
     ]}]);
     expect(parseSpecialShopPage(raw, CURRENCIES_BY_ID)).toEqual([]);
   });

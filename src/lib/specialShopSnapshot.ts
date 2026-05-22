@@ -1,8 +1,12 @@
 import type { CurrencyId } from './currencies';
+import { TOMESTONE_TYPE_TO_ITEM_ID } from './currencies';
 import { fetchXivapiPage, nextCursor } from './xivapiRetry';
 
 const BASE = (import.meta.env?.VITE_XIVAPI_BASE as string | undefined) ?? 'https://v2.xivapi.com';
-const FIELDS = 'Item[].Item@as(raw),Item[].ItemCost@as(raw),Item[].ReceiveCount,Item[].CurrencyCost,Item[].ReceiveHq';
+const FIELDS = 'UseCurrencyType,Item[].Item@as(raw),Item[].ItemCost@as(raw),Item[].ReceiveCount,Item[].CurrencyCost,Item[].ReceiveHq';
+
+/** UseCurrencyType value that signals tomestone-index cost encoding. */
+const UCT_TOMESTONE = 4;
 
 export interface ShopEntry {
   itemId: number;
@@ -24,7 +28,7 @@ interface RawDealSlot {
 }
 interface RawSpecialShopRow {
   row_id: number;
-  fields: { Item?: RawDealSlot[] };
+  fields: { Item?: RawDealSlot[]; UseCurrencyType?: number };
 }
 export interface RawSpecialShopPage { rows?: RawSpecialShopRow[] }
 
@@ -36,6 +40,7 @@ export function parseSpecialShopPage(
 ): ParsedShopEntry[] {
   const out: ParsedShopEntry[] = [];
   for (const row of raw.rows ?? []) {
+    const uct = row.fields.UseCurrencyType ?? 0;
     for (const slot of row.fields.Item ?? []) {
       const recvIds = slot['Item@as(raw)'] ?? [];
       const costIds = slot['ItemCost@as(raw)'] ?? [];
@@ -47,10 +52,16 @@ export function parseSpecialShopPage(
       if (recvId <= 0) continue;
       if ((recvIds[1] ?? 0) > 0) continue;
 
-      const costId = costIds[0] ?? 0;
+      let costId = costIds[0] ?? 0;
       if (costId <= 0) continue;
       if ((costIds[1] ?? 0) > 0) continue;
       if ((costIds[2] ?? 0) > 0) continue;
+
+      // UseCurrencyType 4 = tomestones: costId is a type index, not an Item ID.
+      if (uct === UCT_TOMESTONE) {
+        costId = TOMESTONE_TYPE_TO_ITEM_ID.get(costId) ?? 0;
+        if (costId === 0) continue;
+      }
 
       const currency = currencyByItemId.get(costId);
       if (!currency) continue;
