@@ -6,6 +6,7 @@ import { useMarketData } from '../features/watchlist/useMarketData';
 import { useSettingsStore } from '../features/settings/store';
 import { useVendorShopSnapshot } from '../features/queries/useVendorShopSnapshot';
 import { useSpecialShopSnapshot } from '../features/queries/useSpecialShopSnapshot';
+import { CRYSTALS_SEARCH_CATEGORY } from '../features/queries/commonFilters';
 import { aggregateIngredients } from '../features/shoppingList/aggregateIngredients';
 import { surveyIngredients } from '../features/shoppingList/shoppingListSurvey';
 import { ShoppingListPanel } from '../features/shoppingList/ShoppingListPanel';
@@ -15,7 +16,7 @@ import { StatusBanner } from '../components/StatusBanner';
 
 export default function ShoppingList() {
   const items = useShoppingListStore((s) => s.items);
-  const { world, dc } = useSettingsStore();
+  const { world, dc, hideCrystals } = useSettingsStore();
   const snapshot = useItemSnapshot();
   const vendor = useVendorShopSnapshot();
   const shop = useSpecialShopSnapshot();
@@ -44,8 +45,17 @@ export default function ShoppingList() {
     if (!planRequested || !aggregate || !market.data || !snapshot.data) return null;
     const vendorMap = vendor.data?.snapshot ?? new Map<number, number>();
     const shopSnapshot = shop.data?.snapshot ?? { byCurrency: new Map() };
-    return surveyIngredients(aggregate.demand, market.data.region, vendorMap, shopSnapshot);
-  }, [planRequested, aggregate, market.data, snapshot.data, vendor.data, shop.data]);
+
+    let demand = aggregate.demand;
+    if (hideCrystals) {
+      const crystalIds = new Set(
+        snapshot.data.items.filter((s) => s.sc === CRYSTALS_SEARCH_CATEGORY).map((s) => s.id),
+      );
+      demand = new Map([...demand].filter(([id]) => !crystalIds.has(id)));
+    }
+
+    return surveyIngredients(demand, market.data.region, vendorMap, shopSnapshot);
+  }, [planRequested, aggregate, market.data, snapshot.data, vendor.data, shop.data, hideCrystals]);
 
   const searchableItems = useMemo(() => {
     if (!snapshot.data || !recipes.data) {

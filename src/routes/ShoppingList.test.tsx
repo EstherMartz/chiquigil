@@ -10,6 +10,7 @@ vi.mock('../features/queries/useItemSnapshot', () => ({
       items: [
         { id: 100, name: 'Widget', sc: 1, ui: 1, ilvl: 1, canHq: true },
         { id: 5, name: 'Iron Ingot', sc: 1, ui: 1, ilvl: 1, canHq: false },
+        { id: 2, name: 'Fire Shard', sc: 58, ui: 1, ilvl: 1, canHq: false },
       ],
     },
     isLoading: false,
@@ -20,7 +21,7 @@ vi.mock('../features/profit/useRecipes', () => ({
   useRecipes: (ids: number[]) => ({
     data: new Map(ids.map((id) => [
       id,
-      id === 100 ? { itemResultId: 100, classJob: 'CRP', recipeLevel: 1, ingredients: [{ itemId: 5, amount: 2 }] } : null,
+      id === 100 ? { itemResultId: 100, classJob: 'CRP', recipeLevel: 1, ingredients: [{ itemId: 5, amount: 2 }, { itemId: 2, amount: 4 }] } : null,
     ])),
     isLoading: false,
     isError: false,
@@ -50,6 +51,14 @@ vi.mock('../features/watchlist/useMarketData', () => ({
           avgNQ: null, avgHQ: null, medianNQ: null, medianHQ: null,
           recentSalesNQ: 0, recentSalesHQ: 0,
         },
+        2: {
+          minNQ: 10, minHQ: null,
+          worldListings: [{ world: 'Phantom', price: 10, hq: false }],
+          velocity: 0, lastUploadTime: 0, listingCount: 1,
+          averagePriceNQ: null, averagePriceHQ: null,
+          avgNQ: null, avgHQ: null, medianNQ: null, medianHQ: null,
+          recentSalesNQ: 0, recentSalesHQ: 0,
+        },
       },
     },
     isLoading: false,
@@ -59,7 +68,7 @@ vi.mock('../features/watchlist/useMarketData', () => ({
 }));
 
 vi.mock('../features/settings/store', () => ({
-  useSettingsStore: () => ({ world: 'Phantom', dc: 'Chaos' }),
+  useSettingsStore: () => ({ world: 'Phantom', dc: 'Chaos', hideCrystals: true }),
 }));
 
 vi.mock('../features/queries/useVendorShopSnapshot', () => ({
@@ -103,9 +112,19 @@ describe('ShoppingList route', () => {
     fireEvent.click(screen.getByRole('button', { name: /plan shopping/i }));
     expect(screen.getByText(/total material cost/i)).toBeInTheDocument();
     expect(screen.getByText(/est. revenue/i)).toBeInTheDocument();
-    // Spend = 100 × 2 = 200; revenue = 500 × 1 = 500; profit = 300
+    // Spend = 100 × 2 = 200 (only ingots, crystals filtered); revenue = 500 × 1 = 500; profit = 300
     expect(screen.getByText(/total material cost/i).parentElement?.textContent).toContain('200');
     expect(screen.getByText(/est. revenue/i).parentElement?.textContent).toContain('500');
     expect(screen.getByText(/net profit/i).parentElement?.textContent).toContain('300');
+  });
+
+  it('excludes crystal ingredients when hideCrystals is enabled', () => {
+    useShoppingListStore.getState().addItem(100, 1);
+    renderRoute();
+    fireEvent.click(screen.getByRole('button', { name: /plan shopping/i }));
+    expect(screen.queryByText('Fire Shard')).not.toBeInTheDocument();
+    expect(screen.getByText('Iron Ingot')).toBeInTheDocument();
+    // Spend should be 200 (2×100 for ingots), not 240 (200 + 4×10 for shards)
+    expect(screen.getByText(/total material cost/i).parentElement?.textContent).toContain('200');
   });
 });
