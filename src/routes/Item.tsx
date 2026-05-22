@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useSettingsStore } from '../features/settings/store';
 import { useItemSnapshot } from '../features/queries/useItemSnapshot';
@@ -61,11 +61,14 @@ export default function Item() {
 
   const recipe = valid && recipes.data ? recipes.data.get(itemId) : undefined;
 
+  const usedIn = valid ? (usedInIdx.data.get(itemId) ?? []) : [];
+
   const ingredientIds = recipe?.ingredients.map((i) => i.itemId) ?? [];
+  const usedInIds = useMemo(() => usedIn.map((e) => e.resultId), [usedIn]);
   const priceIds = useMemo(() => {
     if (!valid) return [];
-    return [...new Set<number>([itemId, ...ingredientIds])];
-  }, [itemId, ingredientIds, valid]);
+    return [...new Set<number>([itemId, ...ingredientIds, ...usedInIds])];
+  }, [itemId, ingredientIds, usedInIds, valid]);
 
   const market = useMarketData(priceIds, world, dc, 'Europe');
   const vendors = useVendorShopSnapshot();
@@ -93,8 +96,6 @@ export default function Item() {
     }
     return map.size ? map : undefined;
   }, [garland.data, locations.data]);
-
-  const usedIn = valid ? (usedInIdx.data.get(itemId) ?? []) : [];
 
   if (!valid) {
     return (
@@ -195,7 +196,7 @@ export default function Item() {
         />
       )}
 
-      <UsedInBlock entries={usedIn} itemNames={snapshot.data?.items} />
+      <UsedInBlock entries={usedIn} itemNames={snapshot.data?.items} phantom={market.data?.phantom} />
 
       <SourcesBlock
         itemId={itemId}
@@ -366,17 +367,44 @@ function RecipeBlock({ recipe, itemNames, phantom, garlandIngredients }: {
   );
 }
 
-function UsedInBlock({ entries, itemNames }: {
+type UsedInSort = 'score' | 'salePrice' | 'velocity' | 'crafter' | 'level';
+
+function UsedInBlock({ entries, itemNames, phantom }: {
   entries: { resultId: number; amount: number; classJob: string; recipeLevel: number }[];
   itemNames: SnapshotItem[] | undefined;
+  phantom: Record<string, MarketItem> | undefined;
 }) {
+  const [sort, setSort] = useState<UsedInSort>('score');
+
   const nameById = useMemo(() => {
     const m = new Map<number, string>();
     if (itemNames) for (const i of itemNames) m.set(i.id, i.name);
     return m;
   }, [itemNames]);
+
+  const rows = useMemo(() => {
+    return entries.map((e) => {
+      const m = phantom?.[String(e.resultId)];
+      const salePrice = m?.medianNQ ?? m?.medianHQ ?? m?.minNQ ?? m?.minHQ ?? 0;
+      const velocity = m?.velocity ?? 0;
+      return { ...e, salePrice, velocity, score: salePrice * velocity };
+    });
+  }, [entries, phantom]);
+
+  const sorted = useMemo(() => {
+    const copy = [...rows];
+    switch (sort) {
+      case 'score':     copy.sort((a, b) => b.score - a.score); break;
+      case 'salePrice': copy.sort((a, b) => b.salePrice - a.salePrice); break;
+      case 'velocity':  copy.sort((a, b) => b.velocity - a.velocity); break;
+      case 'crafter':   copy.sort((a, b) => a.classJob.localeCompare(b.classJob)); break;
+      case 'level':     copy.sort((a, b) => b.recipeLevel - a.recipeLevel); break;
+    }
+    return copy;
+  }, [rows, sort]);
+
   if (entries.length === 0) return null;
-  const visible = entries.slice(0, USED_IN_LIMIT);
+  const visible = sorted.slice(0, USED_IN_LIMIT);
   const more = entries.length - visible.length;
   return (
     <section>
@@ -389,24 +417,28 @@ function UsedInBlock({ entries, itemNames }: {
           <thead>
             <tr className="text-text-low font-mono text-[10px] tracking-widest uppercase">
               <th className="text-left px-3 py-2">Result</th>
-              <th className="text-right px-3 py-2">Per craft</th>
-              <th className="text-right px-3 py-2">Crafter</th>
-              <th className="text-right px-3 py-2">Lvl</th>
+              <UsedInSortHeader col="crafter" current={sort} onClick={setSort} hideOnMobile>Crafter</UsedInSortHeader>
+              <UsedInSortHeader col="level" current={sort} onClick={setSort} hideOnMobile>Lvl</UsedInSortHeader>
+              <UsedInSortHeader col="salePrice" current={sort} onClick={setSort}>Price</UsedInSortHeader>
+              <UsedInSortHeader col="velocity" current={sort} onClick={setSort}>Vel</UsedInSortHeader>
+              <UsedInSortHeader col="score" current={sort} onClick={setSort}>Score</UsedInSortHeader>
             </tr>
           </thead>
           <tbody>
             {visible.map((e) => {
               const name = nameById.get(e.resultId) ?? `Item #${e.resultId}`;
               return (
-                <tr key={e.resultId} className="border-t border-border-base">
+                <tr key={e.resultId} className="border-t border-border-base hover:bg-bg-card-hi">
                   <td className="px-3 py-2">
                     <Link to={`/item/${e.resultId}`} className="text-text-cream hover:text-aether hover:underline decoration-1 underline-offset-4">
                       {name}
                     </Link>
                   </td>
-                  <td className="px-3 py-2 text-right font-mono">×{e.amount}</td>
-                  <td className="px-3 py-2 text-right font-mono text-aether">{e.classJob}</td>
-                  <td className="px-3 py-2 text-right font-mono text-text-low">{e.recipeLevel}</td>
+                  <td className="px-3 py-2 text-right font-mono text-aether hidden sm:table-cell">{e.classJob}</td>
+                  <td className="px-3 py-2 text-right font-mono text-text-low hidden sm:table-cell">{e.recipeLevel}</td>
+                  <td className="px-3 py-2 text-right font-mono">{e.salePrice > 0 ? fmtGil(e.salePrice) : '—'}</td>
+                  <td className="px-3 py-2 text-right font-mono">{e.velocity > 0 ? e.velocity.toFixed(1) : '—'}</td>
+                  <td className="px-3 py-2 text-right font-mono text-gold">{e.score > 0 ? fmtGil(Math.round(e.score)) : '—'}</td>
                 </tr>
               );
             })}
@@ -419,6 +451,21 @@ function UsedInBlock({ entries, itemNames }: {
         )}
       </div>
     </section>
+  );
+}
+
+function UsedInSortHeader({ col, current, onClick, hideOnMobile, children }: {
+  col: UsedInSort; current: UsedInSort; onClick: (c: UsedInSort) => void;
+  hideOnMobile?: boolean; children: React.ReactNode;
+}) {
+  const active = col === current;
+  return (
+    <th
+      className={`text-right px-3 py-2 cursor-pointer select-none ${active ? 'text-gold' : 'text-text-dim hover:text-text-cream'} ${hideOnMobile ? 'hidden sm:table-cell' : ''}`}
+      onClick={() => onClick(col)}
+    >
+      {children}{active ? ' ▼' : ''}
+    </th>
   );
 }
 
