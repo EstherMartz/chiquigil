@@ -64,6 +64,6 @@ export const SCRIP_TYPE_TO_ITEM_ID: ReadonlyMap<number, number> = new Map([
   [2, 25200],  // White Gatherers' Scrip
   [3, 33913],  // Purple Crafters' Scrip
   [4, 33914],  // Purple Gatherers' Scrip
-  [5, 41784],  // Orange Crafters' Scrip
-  [6, 41785],  // Orange Gatherers' Scrip
+  [5, 41785],  // Orange Gatherers' Scrip (no shops found yet)
+  [6, 41784],  // Orange Crafters' Scrip
 ]);
