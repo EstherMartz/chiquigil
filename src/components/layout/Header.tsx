@@ -25,7 +25,7 @@ export function Header() {
             <AetheryteChip />
           </div>
           <nav className="flex flex-wrap gap-1">
-            <NavLink to="/home" className={navClass}>Tonight</NavLink>
+            <NavLink to="/home" className={navClass}>What Now?</NavLink>
             <NavLink to="/watchlist" className={navClass}>Watchlist</NavLink>
             <NavLink to="/crafts" className={navClass}>Crafts</NavLink>
             <NavLink to="/trading" className={navClass}>Trading</NavLink>
