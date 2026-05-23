@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { fetchRecipeForItem, type Recipe } from '../lib/recipes';
 import { getCachedRecipe, putCachedRecipe } from '../lib/recipeCache';
 import { useGarlandItem } from '../features/queries/useGarlandItem';
@@ -179,14 +180,12 @@ function IngredientRow({ r }: { r: GarlandIngredient }) {
       {r.ilvl > 1 && (
         <span className="text-[9px] text-gold tabular-nums">i{r.ilvl}</span>
       )}
-      <a
-        href={garlandItemUrl(r.id)}
-        target="_blank"
-        rel="noopener noreferrer"
+      <Link
+        to={`/item/${r.id}`}
         className="text-text-cream hover:text-aether hover:underline decoration-1 underline-offset-2 transition-colors flex-1 truncate"
       >
         {r.name}
-      </a>
+      </Link>
       <a
         href={gamerEscapeItemUrl(r.name)}
         target="_blank"
@@ -222,14 +221,12 @@ function FallbackIngredients({ recipe }: { recipe: Recipe }) {
             {snap?.ilvl != null && snap.ilvl > 1 && (
               <span className="text-[9px] text-gold tabular-nums">i{snap.ilvl}</span>
             )}
-            <a
-              href={garlandItemUrl(ing.itemId)}
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              to={`/item/${ing.itemId}`}
               className="text-text-cream hover:text-aether transition-colors flex-1 truncate"
             >
               {itemName}
-            </a>
+            </Link>
             {snap?.name && (
               <>
                 <a

@@ -1,4 +1,5 @@
-import { fmtGil, garlandItemUrl, gamerEscapeItemUrl, universalisItemUrl } from '../../lib/format';
+import { Link } from 'react-router-dom';
+import { fmtGil, gamerEscapeItemUrl, universalisItemUrl } from '../../lib/format';
 import { useSnapshotById } from '../queries/useSnapshotById';
 import { CopyButton } from '../../components/CopyButton';
 import { RecipeHover } from '../../components/RecipeHover';
@@ -79,15 +80,12 @@ export function SessionHero({ result, hasGenerated, strategy, stale, diagnostics
       </div>
       <h1 className="font-body text-4xl sm:text-5xl md:text-6xl text-gold-hi leading-[1] tracking-tight text-balance">
         <RecipeHover itemId={top.id} itemName={top.name}>
-          <a
-            href={garlandItemUrl(top.id)}
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            to={`/item/${top.id}`}
             className="hover:text-gold hover:underline decoration-1 underline-offset-4 transition-colors"
-            title="Open on Garland Tools (recipe, NPC vendors, drop sources)"
           >
             {top.name}
-          </a>
+          </Link>
           <span className="text-gold-hi">.</span>
           <a
             href={gamerEscapeItemUrl(top.name)}

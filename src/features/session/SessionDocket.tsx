@@ -1,4 +1,5 @@
-import { fmtGil, garlandItemUrl, gamerEscapeItemUrl, universalisItemUrl } from '../../lib/format';
+import { Link } from 'react-router-dom';
+import { fmtGil, gamerEscapeItemUrl, universalisItemUrl } from '../../lib/format';
 import { useSnapshotById } from '../queries/useSnapshotById';
 import { CopyButton } from '../../components/CopyButton';
 import { RecipeHover } from '../../components/RecipeHover';
@@ -36,15 +37,12 @@ export function SessionDocket({ result, hasGenerated }: Props) {
                     i{byId.get(p.id)!.ilvl}
                   </span>
                 )}
-                <a
-                  href={garlandItemUrl(p.id)}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <Link
+                  to={`/item/${p.id}`}
                   className="font-body text-lg sm:text-xl text-text-cream leading-tight hover:text-aether hover:underline decoration-1 underline-offset-4 transition-colors"
-                  title="Open on Garland Tools (recipe, NPC vendors, drop sources)"
                 >
                   {p.name}
-                </a>
+                </Link>
                 <a
                   href={gamerEscapeItemUrl(p.name)}
                   target="_blank"
