@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { useSettingsStore } from '../settings/store';
 import { useItemSnapshot } from '../queries/useItemSnapshot';
@@ -14,6 +15,8 @@ import { ITEM_SEARCH_CATEGORIES, type ItemSearchCategoryEntry } from '../../lib/
 import { CRYSTALS_SEARCH_CATEGORY } from '../queries/commonFilters';
 import { Spinner } from '../../components/Spinner';
 import { StatusBanner } from '../../components/StatusBanner';
+import { CopyButton } from '../../components/CopyButton';
+import { fmtGil } from '../../lib/format';
 
 type HeatmapMode = 'topMovers' | 'category';
 
@@ -38,6 +41,8 @@ const TAG_LABELS: { tag: CellTag; label: string }[] = [
   { tag: 'equipment', label: 'Equipment' },
 ];
 
+type ListSort = 'revenue' | 'velocity' | 'salePrice' | 'margin' | 'name';
+
 interface PostFilter {
   activeTags: Set<CellTag>;
   minVelocity: number;
@@ -45,6 +50,8 @@ interface PostFilter {
 }
 
 const DEFAULT_POST_FILTER: PostFilter = { activeTags: new Set(), minVelocity: 0, minMargin: -100 };
+
+const LIST_PAGE_SIZE = 50;
 
 export function HeatmapView() {
   const { world, hideCrystals } = useSettingsStore();
@@ -125,6 +132,9 @@ export function HeatmapView() {
   });
 
   const notReady = !snapshot.data || !recipes.data;
+
+  const [listSort, setListSort] = useState<ListSort>('revenue');
+  const [listCount, setListCount] = useState(LIST_PAGE_SIZE);
 
   const filteredCells = useMemo(() => {
     if (!run.data) return [];
@@ -263,11 +273,124 @@ export function HeatmapView() {
         </>
       )}
 
+      {/* Sortable list */}
+      {run.data && filteredCells.length > 0 && (
+        <HeatmapList
+          cells={filteredCells}
+          sort={listSort}
+          onSort={setListSort}
+          visibleCount={listCount}
+          onShowMore={() => setListCount((n) => n + LIST_PAGE_SIZE)}
+        />
+      )}
+
       {run.data && filteredCells.length === 0 && (
         <div className="border border-border-base bg-bg-card p-6 text-center text-text-low text-sm italic">
           {run.data.cells.length > 0 ? 'No items match your filters.' : 'No items with market activity found.'}
         </div>
       )}
     </div>
+  );
+}
+
+function HeatmapList({ cells, sort, onSort, visibleCount, onShowMore }: {
+  cells: HeatmapCell[];
+  sort: ListSort;
+  onSort: (s: ListSort) => void;
+  visibleCount: number;
+  onShowMore: () => void;
+}) {
+  const sorted = useMemo(() => {
+    const copy = [...cells];
+    switch (sort) {
+      case 'revenue':   copy.sort((a, b) => (b.salePrice * b.velocity) - (a.salePrice * a.velocity)); break;
+      case 'velocity':  copy.sort((a, b) => b.velocity - a.velocity); break;
+      case 'salePrice': copy.sort((a, b) => b.salePrice - a.salePrice); break;
+      case 'margin':    copy.sort((a, b) => (b.margin ?? -999) - (a.margin ?? -999)); break;
+      case 'name':      copy.sort((a, b) => a.name.localeCompare(b.name)); break;
+    }
+    return copy;
+  }, [cells, sort]);
+
+  const visible = sorted.slice(0, visibleCount);
+  const hasMore = visibleCount < sorted.length;
+
+  return (
+    <div className="border border-border-base bg-bg-card overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="text-text-low font-mono text-[10px] tracking-widest uppercase">
+            <th className="text-left px-3 py-2">Item</th>
+            <SortTh col="salePrice" current={sort} onClick={onSort}>Price</SortTh>
+            <SortTh col="velocity" current={sort} onClick={onSort}>Vel/day</SortTh>
+            <SortTh col="revenue" current={sort} onClick={onSort}>Rev/day</SortTh>
+            <SortTh col="margin" current={sort} onClick={onSort} hideOnMobile>Margin</SortTh>
+            <th className="text-right px-3 py-2 hidden sm:table-cell">Tags</th>
+          </tr>
+        </thead>
+        <tbody>
+          {visible.map((c) => {
+            const rev = c.salePrice * c.velocity;
+            return (
+              <tr key={c.id} className="border-t border-border-base hover:bg-bg-card-hi">
+                <td className="px-3 py-2">
+                  <div className="flex items-center gap-1.5">
+                    <Link
+                      to={`/item/${c.id}`}
+                      target="_blank"
+                      className="text-text-cream hover:text-aether hover:underline decoration-1 underline-offset-4 truncate"
+                    >
+                      {c.name}
+                    </Link>
+                    <CopyButton text={c.name} />
+                  </div>
+                </td>
+                <td className="px-3 py-2 text-right font-mono">{fmtGil(c.salePrice)}</td>
+                <td className="px-3 py-2 text-right font-mono">{c.velocity.toFixed(1)}</td>
+                <td className="px-3 py-2 text-right font-mono text-gold">{fmtGil(Math.round(rev))}</td>
+                <td className={`px-3 py-2 text-right font-mono hidden sm:table-cell ${
+                  c.margin != null ? (c.margin > 0.2 ? 'text-jade' : c.margin > 0 ? 'text-text-cream' : 'text-red-400') : 'text-text-low'
+                }`}>
+                  {c.margin != null ? `${(c.margin * 100).toFixed(0)}%` : '—'}
+                </td>
+                <td className="px-3 py-2 text-right hidden sm:table-cell">
+                  <div className="flex flex-wrap justify-end gap-1">
+                    {[...c.tags].map((t) => (
+                      <span key={t} className="font-mono text-[9px] text-text-dim border border-border-base px-1 py-0.5 leading-none">{t}</span>
+                    ))}
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      {hasMore && (
+        <div className="px-3 py-2 border-t border-border-base text-center">
+          <button
+            type="button"
+            onClick={onShowMore}
+            className="font-mono text-[10px] tracking-widest uppercase text-aether hover:underline"
+          >
+            Show more ({sorted.length - visibleCount} remaining)
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SortTh({ col, current, onClick, hideOnMobile, children }: {
+  col: ListSort; current: ListSort; onClick: (c: ListSort) => void;
+  hideOnMobile?: boolean; children: React.ReactNode;
+}) {
+  const active = col === current;
+  return (
+    <th
+      className={`text-right px-3 py-2 cursor-pointer select-none ${active ? 'text-gold' : 'text-text-dim hover:text-text-cream'} ${hideOnMobile ? 'hidden sm:table-cell' : ''}`}
+      onClick={() => onClick(col)}
+    >
+      {children}{active ? ' ▼' : ''}
+    </th>
   );
 }
