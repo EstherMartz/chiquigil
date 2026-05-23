@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { ITEM_SEARCH_CATEGORIES, categoryLabel } from '../../lib/itemSearchCategories';
 import type { HqMode, QueryFilter, QueryMode, QueryScope, QuerySort } from './types';
 import { btnPrimary } from '../../components/buttonStyles';
+import { CategorySelect } from '../../components/CategorySelect';
 
 interface Props {
   value: QueryFilter;
@@ -29,12 +30,6 @@ export function QueryBuilder({ value, onChange, onRun, busy }: Props) {
     setTimeout(() => setCopied(false), 1500);
   }
 
-  function toggleCat(id: number) {
-    const set = new Set(value.searchCategories);
-    set.has(id) ? set.delete(id) : set.add(id);
-    patch({ searchCategories: [...set] });
-  }
-
   function intInput(e: ChangeEvent<HTMLInputElement>): number {
     return Math.max(0, Number(e.target.value) || 0);
   }
@@ -49,22 +44,12 @@ export function QueryBuilder({ value, onChange, onRun, busy }: Props) {
         <label className="font-mono text-[10px] tracking-widest text-text-low uppercase block mb-2">
           Categories ({value.searchCategories.length || 'all'})
         </label>
-        <div className="flex flex-wrap gap-1 max-h-40 overflow-y-auto">
-          {ITEM_SEARCH_CATEGORIES.map((c) => {
-            const on = value.searchCategories.includes(c.id);
-            return (
-              <button
-                key={c.id}
-                onClick={() => toggleCat(c.id)}
-                className={`font-mono text-[10px] px-2 py-1 border ${
-                  on ? 'border-gold text-gold' : 'border-border-base text-text-low hover:text-aether'
-                }`}
-              >
-                {categoryLabel(c.id)}
-              </button>
-            );
-          })}
-        </div>
+        <CategorySelect
+          categories={ITEM_SEARCH_CATEGORIES.map((c) => ({ id: c.id, name: categoryLabel(c.id) }))}
+          selected={value.searchCategories}
+          onChange={(ids) => patch({ searchCategories: ids })}
+          placeholder="Search categories…"
+        />
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

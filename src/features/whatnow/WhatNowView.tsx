@@ -21,6 +21,7 @@ import { CRYSTALS_SEARCH_CATEGORY } from '../queries/commonFilters';
 import { buildHeatmapCells, type HeatmapCell } from '../heatmap/buildHeatmapData';
 import { fmtGil } from '../../lib/format';
 import { Spinner } from '../../components/Spinner';
+import { ProgressBar } from '../../components/ProgressBar';
 import { StatusBanner } from '../../components/StatusBanner';
 import { CopyButton } from '../../components/CopyButton';
 import type { SnapshotItem } from '../../lib/itemSnapshot';
@@ -152,14 +153,20 @@ export function WhatNowView() {
   }, [notReady, itemSnap.data, recipeSnap.data, vendorSnap.data, shopSnap.data, questSnap.data, gatherSnap.data, hideCrystals]);
 
   const [scanTime, setScanTime] = useState<number | null>(null);
+  const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
 
   const run = useMutation<ScanResult>({
     mutationFn: async () => {
       const t0 = Date.now();
+      setProgress({ current: 0, total: candidateIds.length });
       const sale = await fetchInBatches<MarketItem>(
         candidateIds,
         (chunk) => fetchMarketData(world, chunk),
-        { chunkSize: 100, concurrency: 4 },
+        {
+          chunkSize: 100,
+          concurrency: 4,
+          onProgress: (done) => setProgress({ current: Math.min(done * 100, candidateIds.length), total: candidateIds.length }),
+        },
       );
       const market = sale.data;
       const items = itemSnap.data!.items;
@@ -196,6 +203,7 @@ export function WhatNowView() {
       const gatherCells = buildHeatmapCells(gatherItems, market, new Map());
 
       setScanTime(Date.now() - t0);
+      setProgress(null);
 
       return {
         craft: pickCraft(craftRows),
@@ -225,7 +233,11 @@ export function WhatNowView() {
       </div>
 
       {notReady && <span className="font-mono text-[10px] text-text-low">Loading catalogs…</span>}
-      {run.isPending && <Spinner label={`Scanning ${world} market for best opportunities…`} />}
+      {run.isPending && (
+        progress
+          ? <ProgressBar current={progress.current} total={progress.total} label={`Scanning ${world} market…`} />
+          : <Spinner label={`Scanning ${world} market for best opportunities…`} />
+      )}
       {run.isError && <StatusBanner kind="error">Scan failed: {(run.error as Error).message}</StatusBanner>}
 
       {run.data && (

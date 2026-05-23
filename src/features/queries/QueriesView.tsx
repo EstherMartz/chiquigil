@@ -17,6 +17,7 @@ import { CraftFlipResults } from './CraftFlipResults';
 import { RepostResults } from './RepostResults';
 import type { QueryFilter, QueryResultRow, CraftFlipRow, RepostRow, PresetCategory } from './types';
 import { Spinner } from '../../components/Spinner';
+import { ProgressBar } from '../../components/ProgressBar';
 import { StatusBanner } from '../../components/StatusBanner';
 import { InfoTooltip } from '../../components/InfoTooltip';
 import { filterToParams, paramsToFilter } from '../../lib/queryUrlParams';
@@ -50,6 +51,7 @@ export function QueriesView({ category, heading, onRowsChange, initialPresetId }
   const initialPreset = (initialPresetId && presets.find((p) => p.id === initialPresetId)) || presets[0];
   const [filter, setFilter] = useState<QueryFilter>(() => paramsToFilter(params, initialPreset.filter));
   const [activePresetId, setActivePresetId] = useState<string | null>(initialPreset.id);
+  const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
 
   const candidateIds = useMemo(() => {
     if (!snapshot.data) return [];
@@ -70,10 +72,15 @@ export function QueriesView({ category, heading, onRowsChange, initialPresetId }
     mutationFn: async () => {
       if (!snapshot.data) throw new Error('Item snapshot not ready');
       const target = filter.scope === 'home' ? world : dc;
+      setProgress({ current: 0, total: candidateIds.length });
       const result = await fetchInBatches<MarketData[string]>(
         candidateIds,
         async (chunk) => fetchMarketData(target, chunk),
-        { chunkSize: 25, concurrency: 4 },
+        {
+          chunkSize: 25,
+          concurrency: 4,
+          onProgress: (done) => setProgress({ current: Math.min(done * 25, candidateIds.length), total: candidateIds.length }),
+        },
       );
       const narrowedIds = filter.mode === 'craft'
         ? narrowForCraftFlip(snapshot.data.items, result.data, filter)
@@ -103,6 +110,7 @@ export function QueriesView({ category, heading, onRowsChange, initialPresetId }
     setFilter(p.filter);
     setActivePresetId(id);
     run.reset();
+    setProgress(null);
   }
 
   function onFilterChange(next: QueryFilter) {
@@ -187,7 +195,11 @@ export function QueriesView({ category, heading, onRowsChange, initialPresetId }
             )}
           </div>
 
-          {run.isPending && <Spinner label={`Fetching prices for ${candidateIds.length} items…`} />}
+          {run.isPending && (
+            progress
+              ? <ProgressBar current={progress.current} total={progress.total} label="Fetching prices…" />
+              : <Spinner label={`Fetching prices for ${candidateIds.length} items…`} />
+          )}
           {run.isError && <StatusBanner kind="error">Query failed: {(run.error as Error).message}</StatusBanner>}
           {run.data?.filterAtRun.mode === 'craft' && recipes.isLoading && (
             <Spinner label={`Resolving ${run.data.narrowedIds.length} recipes…`} />
