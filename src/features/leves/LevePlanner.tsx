@@ -1,5 +1,6 @@
 import { fmtGil } from '../../lib/format';
 import { ItemNameLinks } from '../../components/ItemNameLinks';
+import { EmptyState } from '../../components/EmptyState';
 import { useLevePlanStore } from './levePlanStore';
 import type { LeveRow } from './computeLevePlan';
 import type { LeveJobFilter } from './levePlanStore';
@@ -69,49 +70,46 @@ export function LevePlanner({ rows }: Props) {
         EXP shown is the raw base — over-level penalties are not applied.
       </p>
 
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="text-text-dim font-mono text-[10px] tracking-widest uppercase">
-            <th className="text-left px-2 py-1">Name</th>
-            <th className="text-left px-2 py-1">Job</th>
-            <th className="text-right px-2 py-1">Lvl</th>
-            <th className="text-left px-2 py-1">City</th>
-            <th className="text-right px-2 py-1">Gross</th>
-            <th className="text-right px-2 py-1">Mat Cost</th>
-            <th className="text-right px-2 py-1">Net Gil</th>
-            <th className="text-right px-2 py-1">EXP</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr key={r.id} className="border-t border-border-base">
-              <td className="px-2 py-1.5">
-                {r.targetItemId != null
-                  ? <ItemNameLinks id={r.targetItemId} name={r.targetItemQty != null ? `${r.name} ×${r.targetItemQty}` : r.name} />
-                  : <span>{r.name}</span>}
-              </td>
-              <td className="px-2 py-1.5 font-mono text-text-low">{r.classJobCode}</td>
-              <td className="px-2 py-1.5 text-right font-mono">{r.level}</td>
-              <td className="px-2 py-1.5 font-mono text-text-low">{r.city}</td>
-              <td className="px-2 py-1.5 text-right font-mono">{fmtGil(r.grossGil)}</td>
-              <td className="px-2 py-1.5 text-right font-mono">
-                {r.type !== 'doh' ? '—' : !r.hasMatCostData ? '?' : fmtGil(r.matCost ?? 0)}
-              </td>
-              <td className="px-2 py-1.5 text-right font-mono text-gold-hi">
-                {!r.hasMatCostData ? '—' : fmtGil(r.netGil)}
-              </td>
-              <td className="px-2 py-1.5 text-right font-mono">{r.exp.toLocaleString()}</td>
+      {rows.length > 0 ? (
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-text-dim font-mono text-[10px] tracking-widest uppercase">
+              <th className="text-left px-2 py-1">Name</th>
+              <th className="text-left px-2 py-1">Job</th>
+              <th className="text-right px-2 py-1">Lvl</th>
+              <th className="text-left px-2 py-1">City</th>
+              <th className="text-right px-2 py-1">Gross</th>
+              <th className="text-right px-2 py-1">Mat Cost</th>
+              <th className="text-right px-2 py-1">Net Gil</th>
+              <th className="text-right px-2 py-1">EXP</th>
             </tr>
-          ))}
-          {rows.length === 0 && (
-            <tr>
-              <td colSpan={8} className="px-2 py-3 text-center text-text-low font-mono text-[11px] italic">
-                Click Run query to populate this plan.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.id} className="border-t border-border-base">
+                <td className="px-2 py-1.5">
+                  {r.targetItemId != null
+                    ? <ItemNameLinks id={r.targetItemId} name={r.targetItemQty != null ? `${r.name} ×${r.targetItemQty}` : r.name} />
+                    : <span>{r.name}</span>}
+                </td>
+                <td className="px-2 py-1.5 font-mono text-text-low">{r.classJobCode}</td>
+                <td className="px-2 py-1.5 text-right font-mono">{r.level}</td>
+                <td className="px-2 py-1.5 font-mono text-text-low">{r.city}</td>
+                <td className="px-2 py-1.5 text-right font-mono">{fmtGil(r.grossGil)}</td>
+                <td className="px-2 py-1.5 text-right font-mono">
+                  {r.type !== 'doh' ? '—' : !r.hasMatCostData ? '?' : fmtGil(r.matCost ?? 0)}
+                </td>
+                <td className="px-2 py-1.5 text-right font-mono text-gold-hi">
+                  {!r.hasMatCostData ? '—' : fmtGil(r.netGil)}
+                </td>
+                <td className="px-2 py-1.5 text-right font-mono">{r.exp.toLocaleString()}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : (
+        <EmptyState icon="❖" message="Click Run Query to populate this plan." />
+      )}
     </section>
   );
 }
