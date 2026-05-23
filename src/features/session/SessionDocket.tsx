@@ -1,4 +1,4 @@
-import { fmtGil, garlandItemUrl, gamerEscapeItemUrl } from '../../lib/format';
+import { fmtGil, garlandItemUrl, gamerEscapeItemUrl, universalisItemUrl } from '../../lib/format';
 import { useSnapshotById } from '../queries/useSnapshotById';
 import { CopyButton } from '../../components/CopyButton';
 import { RecipeHover } from '../../components/RecipeHover';
@@ -53,6 +53,15 @@ export function SessionDocket({ result, hasGenerated }: Props) {
                   title="Gamer Escape wiki"
                 >
                   {' GE'}
+                </a>
+                <a
+                  href={universalisItemUrl(p.id)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-body text-lg sm:text-xl text-text-cream leading-tight hover:text-aether hover:underline decoration-1 underline-offset-4 transition-colors"
+                  title="Universalis (market data)"
+                >
+                  {' UV'}
                 </a>
                 <CopyButton text={p.name} />
               </RecipeHover>

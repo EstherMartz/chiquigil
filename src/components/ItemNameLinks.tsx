@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { garlandItemUrl, gamerEscapeItemUrl } from '../lib/format';
+import { garlandItemUrl, gamerEscapeItemUrl, universalisItemUrl } from '../lib/format';
 import { useSnapshotById } from '../features/queries/useSnapshotById';
 import { CopyButton } from './CopyButton';
 import { RecipeHover } from './RecipeHover';
@@ -61,6 +61,15 @@ export function ItemNameLinks({ id, name, suffix, sub, crafter }: Props) {
           title="Gamer Escape wiki"
         >
           GE
+        </a>
+        <a
+          href={universalisItemUrl(id)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-mono text-[9px] text-text-low hover:text-aether transition-colors shrink-0"
+          title="Universalis (market data)"
+        >
+          UV
         </a>
       </RecipeHover>
       {(sub || crafter) && (

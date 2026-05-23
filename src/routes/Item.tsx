@@ -17,7 +17,7 @@ import { CrossWorldListingsBlock } from '../features/items/CrossWorldListingsBlo
 import { findItemCurrencyOffers } from '../features/items/currencyOffers';
 import { AddToWatchlistButton } from '../features/items/AddToWatchlistButton';
 import { AddToShoppingListButton } from '../features/shoppingList/AddToShoppingListButton';
-import { fmtGil, garlandItemUrl, gamerEscapeItemUrl } from '../lib/format';
+import { fmtGil, garlandItemUrl, gamerEscapeItemUrl, universalisItemUrl } from '../lib/format';
 import { Gil } from '../components/Gil';
 import { rarityBorderLeftClass, rarityLabel, rarityTextClass } from '../features/items/rarity';
 import { categoryLabel } from '../lib/itemSearchCategories';
@@ -247,6 +247,15 @@ function HeaderBlock({ name, ilvl, sc, canHq, rarity, itemId, recipe }: {
           title="Gamer Escape wiki"
         >
           GE ↗
+        </a>
+        <a
+          href={universalisItemUrl(itemId)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-mono text-[10px] tracking-widest uppercase border border-border-base text-aether px-3 py-2 hover:border-aether transition-colors"
+          title="Universalis (market data)"
+        >
+          UV ↗
         </a>
       </div>
     </header>
@@ -510,6 +519,15 @@ function SourcesBlock({ itemId, itemName, gather }: {
           >
             GE ↗
           </a>
+          {' / '}
+          <a
+            href={universalisItemUrl(itemId)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-aether hover:underline decoration-1 underline-offset-4 not-italic"
+          >
+            UV ↗
+          </a>
         </div>
       </section>
     );
@@ -540,6 +558,15 @@ function SourcesBlock({ itemId, itemName, gather }: {
             className="text-aether hover:underline decoration-1 underline-offset-4 not-italic"
           >
             GE ↗
+          </a>
+          {' / '}
+          <a
+            href={universalisItemUrl(itemId)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-aether hover:underline decoration-1 underline-offset-4 not-italic"
+          >
+            UV ↗
           </a>
         </div>
       </div>

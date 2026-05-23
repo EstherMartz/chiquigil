@@ -15,6 +15,10 @@ export function garlandItemUrl(id: number): string {
   return `https://www.garlandtools.org/db/#item/${id}`;
 }
 
+export function universalisItemUrl(id: number): string {
+  return `https://universalis.app/market/${id}`;
+}
+
 export function gamerEscapeItemUrl(name: string): string {
   return `https://ffxiv.gamerescape.com/wiki/${encodeURIComponent(name.replace(/ /g, '_'))}`;
 }

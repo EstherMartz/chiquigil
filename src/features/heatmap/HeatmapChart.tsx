@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { squarify } from './squarify';
 import type { HeatmapCell } from './buildHeatmapData';
-import { fmtGil, garlandItemUrl, gamerEscapeItemUrl } from '../../lib/format';
+import { fmtGil, garlandItemUrl, gamerEscapeItemUrl, universalisItemUrl } from '../../lib/format';
 import { CopyButton } from '../../components/CopyButton';
 
 const CHART_HEIGHT = 520;
@@ -154,6 +154,15 @@ export function HeatmapChart({ cells }: { cells: HeatmapCell[] }) {
               title="Gamer Escape wiki"
             >
               GE ↗
+            </a>
+            <a
+              href={universalisItemUrl(selected.id)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-mono text-[10px] tracking-widest uppercase border border-border-base text-aether px-3 py-2 hover:border-aether transition-colors"
+              title="Universalis (market data)"
+            >
+              UV ↗
             </a>
             <a
               href={garlandItemUrl(selected.id)}

@@ -3,7 +3,7 @@ import { fetchRecipeForItem, type Recipe } from '../lib/recipes';
 import { getCachedRecipe, putCachedRecipe } from '../lib/recipeCache';
 import { useGarlandItem } from '../features/queries/useGarlandItem';
 import { useSnapshotById } from '../features/queries/useSnapshotById';
-import { garlandItemUrl, gamerEscapeItemUrl } from '../lib/format';
+import { garlandItemUrl, gamerEscapeItemUrl, universalisItemUrl } from '../lib/format';
 import type { GarlandIngredient, IngredientSource } from '../lib/garlandData';
 
 interface Props {
@@ -139,6 +139,15 @@ export function RecipePopover({ itemId, itemName }: Props) {
               GE ↗
             </a>
             <a
+              href={universalisItemUrl(itemId)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-mono text-[10px] text-text-low hover:text-aether transition-colors"
+              title="Universalis (market data)"
+            >
+              UV ↗
+            </a>
+            <a
               href={garlandItemUrl(itemId)}
               target="_blank"
               rel="noopener noreferrer"
@@ -187,6 +196,15 @@ function IngredientRow({ r }: { r: GarlandIngredient }) {
       >
         ↗
       </a>
+      <a
+        href={universalisItemUrl(r.id)}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-text-cream hover:text-aether hover:underline decoration-1 underline-offset-2 transition-colors"
+        title="Universalis (market data)"
+      >
+        UV
+      </a>
     </li>
   );
 }
@@ -213,15 +231,26 @@ function FallbackIngredients({ recipe }: { recipe: Recipe }) {
               {itemName}
             </a>
             {snap?.name && (
-              <a
-                href={gamerEscapeItemUrl(snap.name)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-text-cream hover:text-aether hover:underline decoration-1 underline-offset-2 transition-colors"
-                title="Gamer Escape wiki"
-              >
-                ↗
-              </a>
+              <>
+                <a
+                  href={gamerEscapeItemUrl(snap.name)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-text-cream hover:text-aether hover:underline decoration-1 underline-offset-2 transition-colors"
+                  title="Gamer Escape wiki"
+                >
+                  ↗
+                </a>
+                <a
+                  href={universalisItemUrl(ing.itemId)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-text-cream hover:text-aether hover:underline decoration-1 underline-offset-2 transition-colors"
+                  title="Universalis (market data)"
+                >
+                  UV
+                </a>
+              </>
             )}
           </li>
         );
