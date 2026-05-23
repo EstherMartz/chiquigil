@@ -13,10 +13,10 @@ export function Header() {
       <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
         <div>
           <div className="font-mono text-[11px] tracking-widest text-aether uppercase mb-1">
-            Final Fantasy XIV · Crafting Helper
+            Mone a fer dinerets
           </div>
           <h1 className="font-display font-semibold text-3xl tracking-wide leading-tight">
-            Phantom <span className="text-gold italic">Crafting</span> Ledger
+            <span className="text-gold italic">Gilipichi</span>
           </h1>
         </div>
         <div className="flex flex-col sm:flex-row sm:items-end gap-3 sm:gap-4 min-w-0">

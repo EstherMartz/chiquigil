@@ -64,10 +64,10 @@ export function Sidebar() {
       {/* Branding */}
       <div className="px-4 pb-3 border-b border-border-base flex-shrink-0">
         <div className="font-mono text-[10px] tracking-widest text-aether uppercase mb-1">
-          Final Fantasy XIV · Crafting Helper
+          Mone a fer dinerets
         </div>
         <h1 className="font-display font-semibold text-xl tracking-wide leading-tight">
-          Phantom <span className="text-gold italic">Crafting</span> Ledger
+          <span className="text-gold italic">Gilipichi</span>
         </h1>
       </div>
 
@@ -101,7 +101,7 @@ export function Sidebar() {
       {/* Mobile top bar */}
       <div className="md:hidden sticky top-0 z-30 bg-bg-deep border-b border-border-base px-4 py-2 flex items-center justify-between">
         <div className="font-mono text-[10px] tracking-widest text-aether uppercase">
-          Phantom
+          Gilipichi
         </div>
         <button
           onClick={() => setMobileOpen(!mobileOpen)}

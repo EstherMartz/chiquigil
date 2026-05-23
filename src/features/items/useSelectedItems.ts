@@ -3,7 +3,7 @@
  * starter packs UNION user-added custom items, minus any excluded ids.
  *
  * Replaces an identical useMemo block previously duplicated in
- * ArbitrageView, BestDealsView, and Watchlist route.
+ * DcFlipView, BestDealsView, and Watchlist route.
  */
 import { useMemo } from 'react';
 import type { TrackedItem } from './types';

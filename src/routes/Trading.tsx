@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ArbitrageView } from '../features/insights/ArbitrageView';
+import { DcFlipView } from '../features/insights/DcFlipView';
 import { BestDealsView } from '../features/insights/BestDealsView';
 import { MaterialFlipView } from '../features/insights/MaterialFlipView';
 import { QueriesView } from '../features/queries/QueriesView';
 import { SectionHeader } from '../components/SectionHeader';
 
-type Tab = 'arbitrage' | 'deals' | 'materialFlip' | 'queries';
+type Tab = 'dcFlip' | 'deals' | 'materialFlip' | 'queries';
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: 'arbitrage',    label: 'Arbitrage' },
+  { id: 'dcFlip',       label: 'DC Flip' },
   { id: 'deals',        label: 'Best deals' },
   { id: 'materialFlip', label: 'Material flip' },
   { id: 'queries',      label: 'Queries' },
@@ -18,7 +18,7 @@ const TABS: { id: Tab; label: string }[] = [
 export default function Trading() {
   const [params] = useSearchParams();
   const presetParam = params.get('preset') ?? undefined;
-  const [tab, setTab] = useState<Tab>(presetParam ? 'queries' : 'arbitrage');
+  const [tab, setTab] = useState<Tab>(presetParam ? 'queries' : 'dcFlip');
   return (
     <div className="max-w-7xl mx-auto px-4 space-y-4">
       <SectionHeader label="Trading" />
@@ -35,7 +35,7 @@ export default function Trading() {
           </button>
         ))}
       </nav>
-      {tab === 'arbitrage' && <ArbitrageView />}
+      {tab === 'dcFlip' && <DcFlipView />}
       {tab === 'deals' && <BestDealsView />}
       {tab === 'materialFlip' && <MaterialFlipView />}
       {tab === 'queries' && <QueriesView category="trading" initialPresetId={presetParam} />}

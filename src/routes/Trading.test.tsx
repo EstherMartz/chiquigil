@@ -27,13 +27,13 @@ function withProviders(node: React.ReactNode) {
 }
 
 describe('Trading route', () => {
-  it('renders four tabs with Arbitrage active by default', () => {
+  it('renders four tabs with DC Flip active by default', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ items: {}, results: [] }),
     }));
     render(withProviders(<Trading />));
-    expect(screen.getByRole('button', { name: /arbitrage/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /dc flip/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /best deals/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /material flip/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /queries/i })).toBeInTheDocument();
