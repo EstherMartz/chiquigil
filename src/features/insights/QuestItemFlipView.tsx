@@ -187,7 +187,7 @@ function FilterBar({
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder="Maple, Linseed…"
-          className="mt-1 block w-48 bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+          className="mt-1 block w-48 bg-bg-card border border-border-base px-3 py-2 font-mono text-sm placeholder:text-text-low"
         />
       </label>
       <label className="block">

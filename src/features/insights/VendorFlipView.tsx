@@ -11,6 +11,7 @@ import { defaultVendorFlipFilter, type VendorFlipFilter, type VendorFlipSort, ty
 import { CRYSTALS_SEARCH_CATEGORY } from '../queries/commonFilters';
 import { Spinner } from '../../components/Spinner';
 import { StatusBanner } from '../../components/StatusBanner';
+import { EmptyState } from '../../components/EmptyState';
 
 interface RunResult {
   saleMap: MarketData;
@@ -85,6 +86,10 @@ export function VendorFlipView() {
       {run.isError && <StatusBanner kind="error">Universalis fetch failed: {(run.error as Error).message}</StatusBanner>}
       {run.data && run.data.skipped > 0 && (
         <StatusBanner kind="error">{run.data.skipped} batch(es) skipped (Universalis error)</StatusBanner>
+      )}
+
+      {!run.data && !run.isPending && (
+        <EmptyState icon="❖" message="Scan for NPC vendor items you can flip on the marketboard for profit." />
       )}
 
       {run.data && (

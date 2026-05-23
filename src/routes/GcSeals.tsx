@@ -10,6 +10,7 @@ import { Spinner } from '../components/Spinner';
 import { StatusBanner } from '../components/StatusBanner';
 import { SectionHeader } from '../components/SectionHeader';
 import { ItemNameLinks } from '../components/ItemNameLinks';
+import { EmptyState } from '../components/EmptyState';
 import { fmtGil } from '../lib/format';
 
 interface RunResult {
@@ -124,6 +125,10 @@ export default function GcSeals() {
         <StatusBanner kind="error">
           {mutation.data.skipped} batch(es) skipped (Universalis error)
         </StatusBanner>
+      )}
+
+      {!mutation.data && !mutation.isPending && (
+        <EmptyState icon="❖" message="Find equippable gear to buy cheaply and trade in for Grand Company seals." />
       )}
 
       {mutation.data && mutation.data.rows.length > 0 && (

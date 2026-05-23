@@ -147,13 +147,14 @@ export function ShoppingListPanel({ searchableItems, onPlan }: Props) {
           )}
         </div>
         <div className="flex gap-2">
-          <button
-            onClick={() => clear()}
-            disabled={items.length === 0}
-            className="font-mono text-[10px] tracking-widest uppercase border border-border-base text-text-low px-3 py-2 hover:border-crimson hover:text-crimson disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            Clear list
-          </button>
+          {items.length > 0 && (
+            <button
+              onClick={() => clear()}
+              className="font-mono text-[10px] tracking-widest uppercase border border-border-base text-text-low px-3 py-2 hover:border-crimson hover:text-crimson transition-colors"
+            >
+              Clear list
+            </button>
+          )}
           <button
             onClick={onPlan}
             disabled={items.length === 0}

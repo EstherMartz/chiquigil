@@ -153,6 +153,7 @@ export default function Settings() {
 
   return (
     <div className="space-y-10">
+      <h2 className="font-display text-lg text-gold tracking-wide">Settings</h2>
       <section>
         <SectionHeader label="My Crafters" />
         <p className="font-mono text-[10px] text-text-low mb-3">

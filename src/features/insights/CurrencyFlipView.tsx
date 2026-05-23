@@ -13,6 +13,7 @@ import { CURRENCIES, getCurrencyById, type CurrencyId } from '../../lib/currenci
 import { CRYSTALS_SEARCH_CATEGORY } from '../queries/commonFilters';
 import { Spinner } from '../../components/Spinner';
 import { StatusBanner } from '../../components/StatusBanner';
+import { EmptyState } from '../../components/EmptyState';
 
 interface RunResult {
   saleMap: MarketData;
@@ -104,6 +105,10 @@ export function CurrencyFlipView() {
       {run.isError && <StatusBanner kind="error">Universalis fetch failed: {(run.error as Error).message}</StatusBanner>}
       {run.data && run.data.skipped > 0 && (
         <StatusBanner kind="error">{run.data.skipped} batch(es) skipped (Universalis error)</StatusBanner>
+      )}
+
+      {!run.data && !run.isPending && (
+        <EmptyState icon="❖" message="Find the best gil return for your earned currency (scrips, poetics, etc.)." />
       )}
 
       {run.data && (
