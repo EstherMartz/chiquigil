@@ -182,6 +182,17 @@ export default function Settings() {
         </p>
       </section>
       <section>
+        <SectionHeader label="Backup & restore" />
+        <p className="text-text-low text-sm mb-3">
+          Export saves your retainer levels, world/DC, watchlist, starter pack toggles, custom items,
+          and per-item overrides as a JSON file.
+        </p>
+        <p className="text-crimson text-xs mb-3 font-mono">
+          ⚠ Importing will overwrite all current settings, watchlist, and saved data.
+        </p>
+        <ExportImportPanel />
+      </section>
+      <section>
         <SectionHeader label="Data caches" />
         <p className="text-text-low text-sm mb-4 max-w-prose">
           All catalogs are cached locally and reused across sessions. Universalis prices have a 30-minute
@@ -241,14 +252,6 @@ export default function Settings() {
             {allBusy ? '⟳ Refreshing…' : '⟳ Refresh all data'}
           </button>
         </div>
-      </section>
-      <section>
-        <SectionHeader label="Backup & restore" />
-        <p className="text-text-low text-sm mb-3">
-          Export saves your retainer levels, world/DC, watchlist, starter pack toggles, custom items,
-          and per-item overrides as a JSON file. Import overwrites your current state.
-        </p>
-        <ExportImportPanel />
       </section>
     </div>
   );

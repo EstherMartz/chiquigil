@@ -181,7 +181,7 @@ function FilterBar({
   return (
     <div className="flex flex-wrap items-end gap-3 p-3 border border-border-base bg-bg-card">
       <label className="block">
-        <span className="font-mono text-[10px] tracking-widest text-text-low uppercase">Item search</span>
+        <span className="font-mono text-[10px] tracking-widest text-text-low">Item search</span>
         <input
           type="text"
           value={search}
@@ -191,7 +191,7 @@ function FilterBar({
         />
       </label>
       <label className="block">
-        <span className="font-mono text-[10px] tracking-widest text-text-low uppercase">Category</span>
+        <span className="font-mono text-[10px] tracking-widest text-text-low">Category</span>
         <select
           value={categorySearch}
           onChange={(e) => onCategoryChange(e.target.value)}
@@ -206,7 +206,7 @@ function FilterBar({
         </select>
       </label>
       <label className="block">
-        <span className="font-mono text-[10px] tracking-widest text-text-low uppercase">Min listings</span>
+        <span className="font-mono text-[10px] tracking-widest text-text-low">Min listings</span>
         <input
           type="number" min={0} step={1} value={minListings}
           onChange={(e) => onMinListingsChange(Math.max(0, Number(e.target.value) || 0))}
@@ -214,7 +214,7 @@ function FilterBar({
         />
       </label>
       <div className="flex flex-col gap-1">
-        <span className="font-mono text-[10px] tracking-widest text-text-low uppercase">HQ mode</span>
+        <span className="font-mono text-[10px] tracking-widest text-text-low">HQ mode</span>
         <div className="flex gap-2">
           {(['nq', 'hq', 'either'] as HqMode[]).map((mode) => (
             <button
@@ -230,7 +230,7 @@ function FilterBar({
         </div>
       </div>
       <label className="block">
-        <span className="font-mono text-[10px] tracking-widest text-text-low uppercase">Sort by</span>
+        <span className="font-mono text-[10px] tracking-widest text-text-low">Sort by</span>
         <select
           value={sortBy}
           onChange={(e) => onSortByChange(e.target.value as QuestItemSort)}
