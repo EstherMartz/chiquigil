@@ -70,6 +70,41 @@ export async function fetchHistoryWithin(
   return parseHistoryResponse(await res.json());
 }
 
+function median(values: number[]): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0
+    ? Math.round((sorted[mid - 1] + sorted[mid]) / 2)
+    : sorted[mid];
+}
+
+export function dailyMedianBuckets(
+  entries: HistoryEntry[],
+  lookbackDays: number,
+  nowMs: number = Date.now(),
+): (number | null)[] {
+  const todayStart = Math.floor(nowMs / DAY_MS) * DAY_MS;
+  const oldestStart = todayStart - (lookbackDays - 1) * DAY_MS;
+
+  const byDay = new Map<number, number[]>();
+  for (const e of entries) {
+    const tsMs = e.timestamp * 1000;
+    const dayStart = Math.floor(tsMs / DAY_MS) * DAY_MS;
+    if (dayStart < oldestStart || dayStart > todayStart) continue;
+    const dayIndex = Math.round((dayStart - oldestStart) / DAY_MS);
+    const arr = byDay.get(dayIndex) ?? [];
+    arr.push(e.pricePerUnit);
+    byDay.set(dayIndex, arr);
+  }
+
+  const result: (number | null)[] = [];
+  for (let i = 0; i < lookbackDays; i++) {
+    const prices = byDay.get(i);
+    result.push(prices && prices.length > 0 ? median(prices) : null);
+  }
+  return result;
+}
+
 /**
  * Compute the 7-day delta percentage of price between the recent week
  * (sales in days 0-6) and the prior week (sales in days 7-13). Both

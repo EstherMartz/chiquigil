@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildHistoryUrl, parseHistoryResponse, dailyBuckets, buildHistoryUrlWithin, computeWeekDelta } from './universalisHistory';
+import { buildHistoryUrl, parseHistoryResponse, dailyBuckets, buildHistoryUrlWithin, computeWeekDelta, dailyMedianBuckets } from './universalisHistory';
 
 describe('buildHistoryUrl', () => {
   it('builds a Chaos history URL with entriesToReturn', () => {
@@ -124,5 +124,65 @@ describe('computeWeekDelta', () => {
       { pricePerUnit: 120, quantity: 1, timestamp: sec(NOW - 2 * DAY), hq: false },
     ];
     expect(computeWeekDelta(entries, NOW)).toBeCloseTo(20, 5);
+  });
+});
+
+describe('dailyMedianBuckets', () => {
+  const DAY_MS = 86_400_000;
+  function sec(ms: number) { return Math.floor(ms / 1000); }
+
+  it('returns 7 nulls when entries is empty', () => {
+    expect(dailyMedianBuckets([], 7)).toEqual([null, null, null, null, null, null, null]);
+  });
+
+  it('computes median for a day with odd number of sales', () => {
+    const now = Date.now();
+    const todayStart = Math.floor(now / DAY_MS) * DAY_MS;
+    const entries = [
+      { pricePerUnit: 100, quantity: 1, timestamp: sec(todayStart + 1000), hq: false },
+      { pricePerUnit: 300, quantity: 1, timestamp: sec(todayStart + 2000), hq: false },
+      { pricePerUnit: 200, quantity: 1, timestamp: sec(todayStart + 3000), hq: false },
+    ];
+    const result = dailyMedianBuckets(entries, 7);
+    expect(result).toHaveLength(7);
+    expect(result[6]).toBe(200); // today = last slot, median of [100,200,300]
+  });
+
+  it('computes median for even count (average of two middle values)', () => {
+    const now = Date.now();
+    const todayStart = Math.floor(now / DAY_MS) * DAY_MS;
+    const entries = [
+      { pricePerUnit: 100, quantity: 1, timestamp: sec(todayStart + 1000), hq: false },
+      { pricePerUnit: 200, quantity: 1, timestamp: sec(todayStart + 2000), hq: false },
+      { pricePerUnit: 300, quantity: 1, timestamp: sec(todayStart + 3000), hq: false },
+      { pricePerUnit: 400, quantity: 1, timestamp: sec(todayStart + 4000), hq: false },
+    ];
+    const result = dailyMedianBuckets(entries, 7);
+    expect(result[6]).toBe(250);
+  });
+
+  it('fills days without sales as null', () => {
+    const now = Date.now();
+    const todayStart = Math.floor(now / DAY_MS) * DAY_MS;
+    const twoDaysAgo = todayStart - 2 * DAY_MS;
+    const entries = [
+      { pricePerUnit: 500, quantity: 1, timestamp: sec(twoDaysAgo + 1000), hq: false },
+    ];
+    const result = dailyMedianBuckets(entries, 7);
+    expect(result[4]).toBe(500);
+    expect(result[5]).toBeNull();
+    expect(result[6]).toBeNull();
+  });
+
+  it('ignores entries older than lookbackDays', () => {
+    const now = Date.now();
+    const todayStart = Math.floor(now / DAY_MS) * DAY_MS;
+    const entries = [
+      { pricePerUnit: 9999, quantity: 1, timestamp: sec(todayStart - 10 * DAY_MS), hq: false },
+      { pricePerUnit: 100, quantity: 1, timestamp: sec(todayStart + 1000), hq: false },
+    ];
+    const result = dailyMedianBuckets(entries, 7);
+    expect(result[6]).toBe(100);
+    expect(result.slice(0, 6).every((v) => v === null)).toBe(true);
   });
 });
