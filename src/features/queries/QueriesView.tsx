@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useSettingsStore } from '../settings/store';
 import { useItemSnapshot } from './useItemSnapshot';
+import { useSparklineHistory } from '../sparklines/useSparklineHistory';
 import { useMutation } from '@tanstack/react-query';
 import { fetchInBatches } from '../../lib/universalisBulk';
 import { fetchMarketData, type MarketData } from '../../lib/universalis';
@@ -40,7 +41,7 @@ interface Props {
 }
 
 export function QueriesView({ category, heading, onRowsChange, initialPresetId }: Props) {
-  const { world, dc, retainerLevels, hideCrystals } = useSettingsStore();
+  const { world, dc, retainerLevels, hideCrystals, showSparklines } = useSettingsStore();
   const [params, setParams] = useSearchParams();
   const snapshot = useItemSnapshot();
   const isGathering = category === 'gathering';
@@ -96,6 +97,15 @@ export function QueriesView({ category, heading, onRowsChange, initialPresetId }
   });
 
   const recipes = useRecipes(run.data?.narrowedIds ?? []);
+
+  const sparklineIds = useMemo(() => {
+    if (!run.data) return [];
+    if (derived?.kind === 'query') return derived.rows.map((r) => r.id);
+    if (derived?.kind === 'craft') return derived.rows.map((r) => r.id);
+    return [];
+  }, [run.data, derived]);
+
+  const sparklineHistory = useSparklineHistory(sparklineIds, world, showSparklines);
 
   // Sync filter to URL params
   useEffect(() => {
@@ -212,6 +222,8 @@ export function QueriesView({ category, heading, onRowsChange, initialPresetId }
               totalCandidates={candidateIds.length}
               skippedChunks={run.data?.skipped ?? 0}
               gatheringCatalog={isGathering ? gatheringCatalog.data : undefined}
+              sparklineMap={showSparklines ? sparklineHistory.data : undefined}
+              sparklineLoading={sparklineHistory.isLoading}
             />
           )}
           {derived?.kind === 'craft' && (
@@ -219,6 +231,8 @@ export function QueriesView({ category, heading, onRowsChange, initialPresetId }
               rows={derived.rows}
               totalCandidates={run.data?.narrowedIds.length ?? 0}
               skippedChunks={run.data?.skipped ?? 0}
+              sparklineMap={showSparklines ? sparklineHistory.data : undefined}
+              sparklineLoading={sparklineHistory.isLoading}
             />
           )}
           {derived?.kind === 'repost' && (
