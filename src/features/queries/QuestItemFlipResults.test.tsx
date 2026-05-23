@@ -69,7 +69,7 @@ describe('QuestItemFlipResults', () => {
   it('item name links to Garland Tools', () => {
     renderRows([mkRow({ itemId: 100, itemName: 'Maple Lumber' })]);
     const link = screen.getByRole('link', { name: 'Maple Lumber' });
-    expect(link.getAttribute('href')).toMatch(/garlandtools\.org.*100/);
+    expect(link.getAttribute('href')).toBe('/item/100');
   });
 
   it('shows category name in its own column', () => {

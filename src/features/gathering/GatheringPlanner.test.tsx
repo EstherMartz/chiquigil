@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type React from 'react';
 import { GatheringPlanner } from './GatheringPlanner';
@@ -24,7 +25,11 @@ beforeEach(() => {
 
 function withProviders(node: React.ReactNode) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return <QueryClientProvider client={qc}>{node}</QueryClientProvider>;
+  return (
+    <QueryClientProvider client={qc}>
+      <MemoryRouter>{node}</MemoryRouter>
+    </QueryClientProvider>
+  );
 }
 
 describe('GatheringPlanner', () => {
@@ -121,6 +126,6 @@ describe('GatheringPlanner', () => {
     render(withProviders(<GatheringPlanner rows={rows} />));
     const link = screen.getByRole('link', { name: /cobalt ore/i });
     expect(link).toHaveAttribute('href');
-    expect(link.getAttribute('href')).toContain('garlandtools.org');
+    expect(link.getAttribute('href')).toBe('/item/5544');
   });
 });

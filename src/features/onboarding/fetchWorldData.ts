@@ -1,5 +1,3 @@
-import { dcOf } from '../../lib/europeWorlds';
-
 export interface WorldEntry {
   name: string;
   dc: string;
