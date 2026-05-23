@@ -1,4 +1,4 @@
-import { garlandItemUrl } from '../lib/format';
+import { garlandItemUrl, gamerEscapeItemUrl } from '../lib/format';
 import { useSnapshotById } from '../features/queries/useSnapshotById';
 import { CopyButton } from './CopyButton';
 import { RecipeHover } from './RecipeHover';
@@ -46,6 +46,15 @@ export function ItemNameLinks({ id, name, suffix, sub, crafter }: Props) {
         </a>
         {suffix}
         <CopyButton text={name} />
+        <a
+          href={gamerEscapeItemUrl(name)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-mono text-[9px] text-text-low hover:text-aether transition-colors shrink-0"
+          title="Open on Gamer Escape (wiki)"
+        >
+          GE
+        </a>
       </RecipeHover>
       {(sub || crafter) && (
         <div className="font-mono text-[10px] text-text-low mt-0.5 flex items-center gap-2 flex-wrap">
