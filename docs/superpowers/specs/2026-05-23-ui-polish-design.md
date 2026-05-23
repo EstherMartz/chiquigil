@@ -177,19 +177,7 @@ New `src/components/CategorySelect.tsx`.
 
 ### 5a. Preset Button Tooltips
 
-Add `<InfoTooltip>` wrappers around preset buttons in QueriesView and CraftBatchView.
-
-**Descriptions:**
-
-| Preset | Tooltip |
-|--------|---------|
-| Undersupply | "Items with fewer listings than average daily sales — low competition." |
-| Craft-flip {world} | "Items you can craft and sell for profit on {world}." |
-| Housing Crafts | "Furnishings and housing items with active demand." |
-| Materials Crafts | "Crafting materials other players need — steady sellers." |
-| MEGA VALUE HQ | "High-quality items worth over 1M gil." |
-| FAST SELLERS HQ | "High-quality items with high daily sales velocity." |
-| Budget presets (500k, 1M, etc.) | "Set crafting budget to {amount} gil." |
+**Already implemented.** QueriesView already wraps each preset in `<InfoTooltip label={p.desc}>`, and each preset in `presets.ts` has a `desc` field with a full description. No changes needed.
 
 ### 5b. Cleanup Page Helper Text
 
