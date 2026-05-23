@@ -24,6 +24,7 @@ import { Spinner } from '../../components/Spinner';
 import { ProgressBar } from '../../components/ProgressBar';
 import { StatusBanner } from '../../components/StatusBanner';
 import { CopyButton } from '../../components/CopyButton';
+import { EmptyState } from '../../components/EmptyState';
 import type { SnapshotItem } from '../../lib/itemSnapshot';
 
 const SAMPLE_SIZE = 300;
@@ -255,7 +256,7 @@ export function WhatNowView() {
 
 function OpportunityCard({ label, pick, color }: { label: string; pick: TopPick | null; color: string }) {
   return (
-    <div className="border border-border-base bg-bg-card p-4 space-y-3">
+    <div className={`border bg-bg-card p-4 space-y-3 ${pick ? 'border-border-base' : 'border-border-base/50 bg-bg-card/50'}`}>
       <div className="font-mono text-[10px] tracking-widest uppercase text-text-low">{label}</div>
       {pick ? (
         <>
@@ -282,7 +283,7 @@ function OpportunityCard({ label, pick, color }: { label: string; pick: TopPick 
           </Link>
         </>
       ) : (
-        <div className="text-text-low text-sm italic">No opportunities found</div>
+        <EmptyState icon="◇" message="No opportunities found" />
       )}
     </div>
   );

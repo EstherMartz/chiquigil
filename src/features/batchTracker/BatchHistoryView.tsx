@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useBatchTrackerStore } from './batchTrackerStore';
 import { BatchDetail } from './BatchDetail';
 import { fmtGil } from '../../lib/format';
+import { EmptyState } from '../../components/EmptyState';
 
 export function BatchHistoryView() {
   const batches = useBatchTrackerStore((s) => s.batches);
@@ -10,9 +11,7 @@ export function BatchHistoryView() {
 
   if (batches.length === 0) {
     return (
-      <p className="text-text-dim text-sm font-mono text-center py-8">
-        No saved batches yet. Generate a batch and click "Save &amp; Track" to start tracking.
-      </p>
+      <EmptyState icon="☐" message="No saved batches yet. Generate a batch and click Save & Track to start tracking." />
     );
   }
 

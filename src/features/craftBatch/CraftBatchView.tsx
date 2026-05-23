@@ -19,6 +19,7 @@ import { Spinner } from '../../components/Spinner';
 import { ExportCsvButton } from '../../components/ExportCsvButton';
 import { ExportTeamcraftButton } from '../../components/ExportTeamcraftButton';
 import { useUiStore, rowPadClass } from '../ui/uiStore';
+import { EmptyState } from '../../components/EmptyState';
 import type { BatchItem, BatchResult } from './types';
 import { CRYSTALS_SEARCH_CATEGORY } from '../queries/commonFilters';
 import type { CsvColumn } from '../../lib/csv';
@@ -273,9 +274,7 @@ export function CraftBatchView() {
 
           {/* Empty state */}
           {batch.items.length === 0 && (
-            <p className="text-text-dim text-sm font-mono text-center py-8">
-              No profitable items found within budget. Try increasing your budget.
-            </p>
+            <EmptyState icon="◇" message="No profitable items found within budget. Try increasing your budget." />
           )}
 
           {/* Action Bar */}

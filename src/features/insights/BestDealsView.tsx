@@ -9,6 +9,7 @@ import { LoadMoreFooter } from '../../components/LoadMoreFooter';
 import { useLoadMore } from '../../lib/useLoadMore';
 import { Spinner } from '../../components/Spinner';
 import { StatusBanner } from '../../components/StatusBanner';
+import { EmptyState } from '../../components/EmptyState';
 
 export function BestDealsView() {
   const { world, dc } = useSettingsStore();
@@ -46,9 +47,7 @@ export function BestDealsView() {
       {market.isLoading && <Spinner label="Fetching DC market data…" />}
 
       {!market.isLoading && rows.length === 0 && (
-        <div className="border border-border-base bg-bg-card p-6 text-text-low text-sm italic">
-          No items below the discount threshold right now.
-        </div>
+        <EmptyState icon="◇" message="No items below the discount threshold right now." />
       )}
 
       {!market.isLoading && rows.length > 0 && (
