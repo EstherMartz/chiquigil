@@ -16,7 +16,7 @@ import { InfoTooltip } from '../../components/InfoTooltip';
 import { colorFromDelta } from '../../features/sparklines/sparklineColor';
 import { formatSparklineTooltip } from '../../features/sparklines/sparklineTooltip';
 
-const COLS_BASE: { key: SortKey; label: string; align?: 'right'; hideOnMobile?: boolean }[] = [
+const COLS_BASE: { key: SortKey | null; label: string; align?: 'right'; hideOnMobile?: boolean }[] = [
   { key: 'name', label: 'Item' },
   { key: 'crafter', label: 'Craft' },
   { key: 'lvl', label: 'Lvl', align: 'right', hideOnMobile: true },

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { runDcFlip, type DcFlipRow } from './dcFlip';
+import { runDcFlip } from './dcFlip';
 import type { MarketData } from '../../lib/universalis';
 import type { SnapshotItem } from '../../lib/itemSnapshot';
 

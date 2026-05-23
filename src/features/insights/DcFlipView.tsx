@@ -5,7 +5,7 @@ import { useItemSnapshot } from '../queries/useItemSnapshot';
 import { useSelectedItems } from '../items/useSelectedItems';
 import { fetchInBatches } from '../../lib/universalisBulk';
 import { fetchMarketData, type MarketData } from '../../lib/universalis';
-import { runDcFlip, type DcFlipRow } from './dcFlip';
+import { runDcFlip } from './dcFlip';
 import { fmtGil } from '../../lib/format';
 import { ItemNameLinks } from '../../components/ItemNameLinks';
 import { CopyButton } from '../../components/CopyButton';
