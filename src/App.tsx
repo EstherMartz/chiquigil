@@ -1,6 +1,8 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { useState } from 'react';
 import { Sidebar } from './components/layout/Sidebar';
 import { ContentBar } from './components/layout/ContentBar';
+import { OnboardingWizard } from './features/onboarding/OnboardingWizard';
 import Home from './routes/Home';
 import Watchlist from './routes/Watchlist';
 import Crafts from './routes/Crafts';
@@ -21,9 +23,16 @@ import Item from './routes/Item';
 import Settings from './routes/Settings';
 
 export default function App() {
+  const [showOnboarding, setShowOnboarding] = useState(
+    () => !localStorage.getItem('ffxiv-helper:onboarded'),
+  );
+
   return (
     <div className="flex min-h-screen">
       <Sidebar />
+      {showOnboarding && (
+        <OnboardingWizard onComplete={() => setShowOnboarding(false)} />
+      )}
       <main className="flex-1 min-w-0 pt-8 pb-20 px-4">
         <div className="max-w-7xl mx-auto">
           <ContentBar />

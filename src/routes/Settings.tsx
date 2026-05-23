@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ExportImportPanel } from '../features/settings/ExportImportPanel';
 import { SectionHeader } from '../components/SectionHeader';
 import { LevelsEditor } from '../features/settings/LevelsEditor';
+import { OnboardingWizard } from '../features/onboarding/OnboardingWizard';
 import { useSettingsStore } from '../features/settings/store';
 import { useUiStore, type Density } from '../features/ui/uiStore';
 import { btnPrimaryLarge, btnDanger } from '../components/buttonStyles';
@@ -52,6 +53,8 @@ export default function Settings() {
   const setHideCrystals = useSettingsStore((s) => s.setHideCrystals);
   const showSparklines = useSettingsStore((s) => s.showSparklines);
   const setShowSparklines = useSettingsStore((s) => s.setShowSparklines);
+
+  const [showRedo, setShowRedo] = useState(false);
 
   const [status, setStatus] = useState<Record<DatasetKey, CacheStatus>>({
     item:   { ts: null, hasData: false },
@@ -270,6 +273,21 @@ export default function Settings() {
           </button>
         </div>
       </section>
+      <div className="pt-4 border-t border-border-base">
+        <button
+          type="button"
+          onClick={() => setShowRedo(true)}
+          className="font-mono text-[10px] text-text-low hover:text-aether transition-colors"
+        >
+          Not your world? Run setup again →
+        </button>
+        {showRedo && (
+          <OnboardingWizard
+            prefill
+            onComplete={() => setShowRedo(false)}
+          />
+        )}
+      </div>
     </div>
   );
 }
