@@ -50,6 +50,8 @@ export default function Settings() {
   const setDensity = useUiStore((s) => s.setDensity);
   const hideCrystals = useSettingsStore((s) => s.hideCrystals);
   const setHideCrystals = useSettingsStore((s) => s.setHideCrystals);
+  const showSparklines = useSettingsStore((s) => s.showSparklines);
+  const setShowSparklines = useSettingsStore((s) => s.setShowSparklines);
 
   const [status, setStatus] = useState<Record<DatasetKey, CacheStatus>>({
     item:   { ts: null, hasData: false },
@@ -164,6 +166,20 @@ export default function Settings() {
       <section>
         <SectionHeader label="Display" />
         <DensityToggle value={density} onChange={setDensity} />
+        <label className="flex items-center gap-2 cursor-pointer mt-3">
+          <input
+            type="checkbox"
+            checked={showSparklines}
+            onChange={(e) => setShowSparklines(e.target.checked)}
+            className="accent-gold w-4 h-4"
+          />
+          <span className="font-mono text-[10px] tracking-widest uppercase text-text-dim">
+            Show price sparklines
+          </span>
+        </label>
+        <p className="font-mono text-[10px] text-text-low mt-1 ml-6">
+          Loads 7-day sale history for items in Watchlist and Crafts results. Uses additional Universalis API calls.
+        </p>
       </section>
       <section>
         <SectionHeader label="Filters" />
