@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { garlandItemUrl, gamerEscapeItemUrl } from '../lib/format';
 import { useSnapshotById } from '../features/queries/useSnapshotById';
 import { CopyButton } from './CopyButton';
@@ -35,23 +36,29 @@ export function ItemNameLinks({ id, name, suffix, sub, crafter }: Props) {
             i{ilvl}
           </span>
         )}
+        <Link
+          to={`/item/${id}`}
+          className="text-text-cream hover:text-aether hover:underline decoration-1 underline-offset-4 transition-colors"
+        >
+          {name}
+        </Link>
+        {suffix}
+        <CopyButton text={name} />
         <a
           href={garlandItemUrl(id)}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-text-cream hover:text-aether hover:underline decoration-1 underline-offset-4 transition-colors"
-          title="Open on Garland Tools (recipe, NPC vendors, drop sources)"
+          className="font-mono text-[9px] text-text-low hover:text-aether transition-colors shrink-0"
+          title="Garland Tools"
         >
-          {name}
+          GT
         </a>
-        {suffix}
-        <CopyButton text={name} />
         <a
           href={gamerEscapeItemUrl(name)}
           target="_blank"
           rel="noopener noreferrer"
           className="font-mono text-[9px] text-text-low hover:text-aether transition-colors shrink-0"
-          title="Open on Gamer Escape (wiki)"
+          title="Gamer Escape wiki"
         >
           GE
         </a>
