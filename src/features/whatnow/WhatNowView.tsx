@@ -24,7 +24,6 @@ import { Spinner } from '../../components/Spinner';
 import { ProgressBar } from '../../components/ProgressBar';
 import { StatusBanner } from '../../components/StatusBanner';
 import { CopyButton } from '../../components/CopyButton';
-import { EmptyState } from '../../components/EmptyState';
 import type { SnapshotItem } from '../../lib/itemSnapshot';
 
 const SAMPLE_SIZE = 300;
@@ -241,50 +240,51 @@ export function WhatNowView() {
       )}
       {run.isError && <StatusBanner kind="error">Scan failed: {(run.error as Error).message}</StatusBanner>}
 
-      {run.data && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          <OpportunityCard label="Craft & Sell" pick={run.data.craft} color="text-jade" />
-          <OpportunityCard label="Vendor Flip" pick={run.data.vendor} color="text-gold" />
-          <OpportunityCard label="Currency Exchange" pick={run.data.currency} color="text-aether" />
-          <OpportunityCard label="GC Supply (sell on MB)" pick={run.data.gcSupply} color="text-gold" />
-          <OpportunityCard label="Gather & Sell" pick={run.data.gathering} color="text-jade" />
-        </div>
-      )}
+      {run.data && (() => {
+        const cards = [
+          { label: 'Craft & Sell', pick: run.data.craft, color: 'text-jade' },
+          { label: 'Vendor Flip', pick: run.data.vendor, color: 'text-gold' },
+          { label: 'Currency Exchange', pick: run.data.currency, color: 'text-aether' },
+          { label: 'GC Supply (sell on MB)', pick: run.data.gcSupply, color: 'text-gold' },
+          { label: 'Gather & Sell', pick: run.data.gathering, color: 'text-jade' },
+        ].filter((c) => c.pick != null);
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {cards.map((c) => (
+              <OpportunityCard key={c.label} label={c.label} pick={c.pick} color={c.color} />
+            ))}
+          </div>
+        );
+      })()}
     </div>
   );
 }
 
-function OpportunityCard({ label, pick, color }: { label: string; pick: TopPick | null; color: string }) {
+function OpportunityCard({ label, pick, color }: { label: string; pick: TopPick; color: string }) {
   return (
-    <div className={`border bg-bg-card p-4 space-y-3 ${pick ? 'border-border-base' : 'border-border-base/50 bg-bg-card/50'}`}>
+    <div className="border border-border-base bg-bg-card p-4 space-y-3">
       <div className="font-mono text-[10px] tracking-widest uppercase text-text-low">{label}</div>
-      {pick ? (
-        <>
-          <div className="flex items-center gap-2">
-            <Link
-              to={pick.link}
-              target="_blank"
-              className="font-display text-base text-text-cream hover:text-aether hover:underline decoration-1 underline-offset-4 truncate"
-            >
-              {pick.name}
-            </Link>
-            <CopyButton text={pick.name} />
-          </div>
-          <div className="flex items-baseline gap-3">
-            <span className={`font-mono text-lg ${color}`}>{pick.metric}</span>
-            <span className="font-mono text-[10px] text-text-low">{pick.metricLabel}</span>
-          </div>
-          <div className="font-mono text-[10px] text-text-dim">{pick.secondary}</div>
-          <Link
-            to={pick.pageLink}
-            className="inline-block font-mono text-[10px] tracking-widest uppercase text-aether hover:underline decoration-1 underline-offset-4"
-          >
-            {pick.pageLabel} →
-          </Link>
-        </>
-      ) : (
-        <EmptyState icon="◇" message="No opportunities found" />
-      )}
+      <div className="flex items-center gap-2">
+        <Link
+          to={pick.link}
+          target="_blank"
+          className="font-display text-base text-text-cream hover:text-aether hover:underline decoration-1 underline-offset-4 truncate"
+        >
+          {pick.name}
+        </Link>
+        <CopyButton text={pick.name} />
+      </div>
+      <div className="flex items-baseline gap-3">
+        <span className={`font-mono text-lg ${color}`}>{pick.metric}</span>
+        <span className="font-mono text-[10px] text-text-low">{pick.metricLabel}</span>
+      </div>
+      <div className="font-mono text-[10px] text-text-dim">{pick.secondary}</div>
+      <Link
+        to={pick.pageLink}
+        className="inline-block font-mono text-[10px] tracking-widest uppercase text-aether hover:underline decoration-1 underline-offset-4"
+      >
+        {pick.pageLabel} →
+      </Link>
     </div>
   );
 }
