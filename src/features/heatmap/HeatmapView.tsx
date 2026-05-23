@@ -15,6 +15,7 @@ import { ITEM_SEARCH_CATEGORIES, type ItemSearchCategoryEntry } from '../../lib/
 import { CRYSTALS_SEARCH_CATEGORY } from '../queries/commonFilters';
 import { Spinner } from '../../components/Spinner';
 import { StatusBanner } from '../../components/StatusBanner';
+import { EmptyState } from '../../components/EmptyState';
 import { CopyButton } from '../../components/CopyButton';
 import { fmtGil } from '../../lib/format';
 
@@ -250,6 +251,10 @@ export function HeatmapView() {
       {run.isError && <StatusBanner kind="error">Scan failed: {(run.error as Error).message}</StatusBanner>}
       {run.data && run.data.skipped > 0 && (
         <StatusBanner kind="error">{run.data.skipped} batch(es) skipped (Universalis error)</StatusBanner>
+      )}
+
+      {!run.data && !run.isPending && (
+        <EmptyState icon="❖" message="Visualize market activity — size shows velocity, color shows margin." />
       )}
 
       {run.data && filteredCells.length > 0 && (
