@@ -804,7 +804,9 @@ async function fetchSectors(): Promise<Map<number, SectorData>> {
     }
 
     const [, nameRaw, letterOrUndefined] = match;
-    const letter = letterOrUndefined || String.fromCharCode(64 + (row_id % 26 || 26)); // Fallback to derived letter
+    // Manual letter overrides for sectors missing letter suffixes in XIVAPI (patch 7.x Northern Empty)
+    const LETTER_OVERRIDES: Record<number, string> = { 144: 'H', 145: 'I', 146: 'J', 147: 'K', 148: 'L', 149: 'M' };
+    const letter = letterOrUndefined || LETTER_OVERRIDES[row_id] || '?';
     const zone = fields.Map?.fields?.Name || 'Unknown Zone';
 
     sectors.set(row_id, {

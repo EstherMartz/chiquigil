@@ -7230,7 +7230,7 @@
     {
       "id": 144,
       "name": "the Vyrstrant Dropoff",
-      "letter": "N",
+      "letter": "H",
       "zone": "The Northern Empty",
       "rankReq": 141,
       "durationMin": 1940,
@@ -7286,7 +7286,7 @@
     {
       "id": 145,
       "name": "Axeblade Bight",
-      "letter": "O",
+      "letter": "I",
       "zone": "The Northern Empty",
       "rankReq": 142,
       "durationMin": 1960,
@@ -7342,7 +7342,7 @@
     {
       "id": 146,
       "name": "the Puffin Assembly",
-      "letter": "P",
+      "letter": "J",
       "zone": "The Northern Empty",
       "rankReq": 143,
       "durationMin": 1970,
@@ -7398,7 +7398,7 @@
     {
       "id": 147,
       "name": "southern Aerslaent Plunge",
-      "letter": "Q",
+      "letter": "K",
       "zone": "The Northern Empty",
       "rankReq": 144,
       "durationMin": 1990,
@@ -7454,7 +7454,7 @@
     {
       "id": 148,
       "name": "the Solkronn Gallery",
-      "letter": "R",
+      "letter": "L",
       "zone": "The Northern Empty",
       "rankReq": 145,
       "durationMin": 2000,
@@ -7515,7 +7515,7 @@
     {
       "id": 149,
       "name": "central Den of the Greatsword",
-      "letter": "S",
+      "letter": "M",
       "zone": "The Northern Empty",
       "rankReq": 145,
       "durationMin": 2000,
@@ -7575,7 +7575,7 @@
     }
   ],
   "meta": {
-    "generatedAt": "2026-05-23T16:13:25.667Z",
+    "generatedAt": "2026-05-23T16:16:12.186Z",
     "sectorCount": 143,
     "uniqueItems": 345
   }
