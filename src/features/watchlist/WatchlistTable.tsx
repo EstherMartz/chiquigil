@@ -10,8 +10,13 @@ import { MarketStateBadge } from '../../components/MarketStateBadge';
 import { ExportCsvButton } from '../../components/ExportCsvButton';
 import { CopyButton } from '../../components/CopyButton';
 import type { CsvColumn } from '../../lib/csv';
+import { Sparkline } from '../../components/Sparkline';
+import { SparklineShimmer } from '../../components/SparklineShimmer';
+import { InfoTooltip } from '../../components/InfoTooltip';
+import { colorFromDelta } from '../../features/sparklines/sparklineColor';
+import { formatSparklineTooltip } from '../../features/sparklines/sparklineTooltip';
 
-const COLS: { key: SortKey; label: string; align?: 'right'; hideOnMobile?: boolean }[] = [
+const COLS_BASE: { key: SortKey; label: string; align?: 'right'; hideOnMobile?: boolean }[] = [
   { key: 'name', label: 'Item' },
   { key: 'crafter', label: 'Craft' },
   { key: 'lvl', label: 'Lvl', align: 'right', hideOnMobile: true },
@@ -41,10 +46,28 @@ const WATCHLIST_CSV_COLUMNS: CsvColumn<WatchlistRow>[] = [
   { key: 'gilPerDay', label: 'Gil/day', value: (r) => r.gilPerDay ?? 'N/A' },
 ];
 
-export function WatchlistTable({ rows, onSelect }: { rows: WatchlistRow[]; onSelect: (id: number) => void }) {
+export function WatchlistTable({ rows, onSelect, sparklineMap, sparklineLoading }: {
+  rows: WatchlistRow[];
+  onSelect: (id: number) => void;
+  sparklineMap?: Map<number, (number | null)[]>;
+  sparklineLoading?: boolean;
+}) {
   const { catFilter, sortKey, sortDir, setSort, density } = useUiStore();
   const lm = useLoadMore(rows, 25);
   const rowY = rowPadClass(density);
+  const showSparkline = sparklineMap != null;
+
+  const cols: typeof COLS_BASE = [
+    { key: 'name', label: 'Item' },
+    { key: 'crafter', label: 'Craft' },
+    { key: 'lvl', label: 'Lvl', align: 'right', hideOnMobile: true },
+    { key: 'dc', label: 'Sale', align: 'right' },
+    ...(showSparkline ? [{ key: null as SortKey | null, label: '', hideOnMobile: true }] : []),
+    { key: 'trend', label: 'Trend', hideOnMobile: true },
+    { key: 'profit', label: 'Profit', align: 'right' },
+    { key: 'gilDay', label: 'Gil/day', align: 'right' },
+    { key: 'spd', label: 'Velocity', align: 'right', hideOnMobile: true },
+  ];
 
   if (rows.length === 0) {
     const presetId = CATEGORY_TO_TRADING_PRESET[catFilter];
@@ -76,15 +99,18 @@ export function WatchlistTable({ rows, onSelect }: { rows: WatchlistRow[]; onSel
         <table className="w-full text-sm border-collapse">
         <thead>
           <tr>
-            {COLS.map((c) => {
+            {cols.map((c, idx) => {
               const sorted = sortKey === c.key;
               const arrow = sorted ? (sortDir === 'asc' ? ' ▲' : ' ▼') : '';
+              const isClickable = c.key != null;
               return (
                 <th
-                  key={c.key}
-                  onClick={() => setSort(c.key)}
-                  className={`px-3 py-2 bg-bg-card-hi font-mono text-[10px] tracking-widest uppercase cursor-pointer select-none whitespace-nowrap sticky top-0 z-10 ${
-                    sorted ? 'text-gold' : 'text-text-dim hover:text-aether'
+                  key={`${c.key}-${idx}`}
+                  onClick={() => isClickable && setSort(c.key as SortKey)}
+                  className={`px-3 py-2 bg-bg-card-hi font-mono text-[10px] tracking-widest uppercase ${
+                    isClickable ? 'cursor-pointer' : ''
+                  } select-none whitespace-nowrap sticky top-0 z-10 ${
+                    sorted ? 'text-gold' : isClickable ? 'text-text-dim hover:text-aether' : 'text-text-dim'
                   } ${c.align === 'right' ? 'text-right' : 'text-left'} ${c.hideOnMobile ? 'hidden md:table-cell' : ''}`}
                 >
                   {c.label}{arrow}
@@ -130,6 +156,19 @@ export function WatchlistTable({ rows, onSelect }: { rows: WatchlistRow[]; onSel
                   : r.dcMinNQ ? <>{fmtGil(r.dcMinNQ)} <span className="text-text-low text-[10px]">NQ</span></>
                   : <span className="text-text-low">—</span>}
               </td>
+              {showSparkline && (
+                <td className={`px-3 ${rowY} hidden md:table-cell`}>
+                  {(() => {
+                    const buckets = sparklineMap!.get(r.id);
+                    if (!buckets) return sparklineLoading ? <SparklineShimmer /> : null;
+                    return (
+                      <InfoTooltip label={<pre className="font-mono text-[10px] whitespace-pre">{formatSparklineTooltip(buckets)}</pre>}>
+                        <Sparkline points={buckets} color={colorFromDelta(r.delta)} />
+                      </InfoTooltip>
+                    );
+                  })()}
+                </td>
+              )}
               <td className={`px-3 ${rowY} hidden md:table-cell`}>
                 <MarketStateBadge delta={r.delta} listings={r.pListings} />
               </td>

@@ -4,6 +4,10 @@ import { categoryLabel } from '../../lib/itemSearchCategories';
 import { ItemNameLinks } from '../../components/ItemNameLinks';
 import { InfoTooltip } from '../../components/InfoTooltip';
 import { HqStar } from '../../components/HqStar';
+import { Sparkline } from '../../components/Sparkline';
+import { SparklineShimmer } from '../../components/SparklineShimmer';
+import { colorFromPoints } from '../../features/sparklines/sparklineColor';
+import { formatSparklineTooltip } from '../../features/sparklines/sparklineTooltip';
 import { ResultTableScaffold, EmptyResults } from './ResultTableScaffold';
 import { useUiStore, rowPadClass } from '../ui/uiStore';
 import type { QueryResultRow } from './types';
@@ -15,15 +19,18 @@ interface Props {
   totalCandidates: number;
   skippedChunks: number;
   gatheringCatalog?: GatheringCatalog;
+  sparklineMap?: Map<number, (number | null)[]>;
+  sparklineLoading?: boolean;
 }
 
 type SortKey = 'name' | 'unitPrice' | 'averagePrice' | 'dealPct' | 'velocity' | 'gilFlow';
 type SortDir = 'asc' | 'desc';
 
-const COLS: { key: SortKey | null; label: string; hint?: string; align?: 'right'; hideOnMobile?: boolean }[] = [
+const getCols = (showSparkline: boolean): { key: SortKey | null; label: string; hint?: string; align?: 'right'; hideOnMobile?: boolean }[] => [
   { key: null, label: '#' },
   { key: 'name', label: 'Item' },
   { key: 'unitPrice', label: 'Current', hint: 'Cheapest active listing right now on the selected scope.', align: 'right' },
+  ...(showSparkline ? [{ key: null as SortKey | null, label: '', hideOnMobile: true }] : []),
   { key: 'averagePrice', label: 'Average', hint: '7-day average sale price from Universalis history.', align: 'right', hideOnMobile: true },
   { key: 'dealPct', label: 'Disc.', hint: 'How far below the 7-day average the current cheapest listing is.', align: 'right' },
   { key: 'velocity', label: 'Velocity', hint: 'Sales per day on the selected scope (home world or DC).', align: 'right', hideOnMobile: true },
@@ -51,11 +58,12 @@ const CSV_COLUMNS: CsvColumn<QueryResultRow>[] = [
   { key: 'hq', label: 'HQ' },
 ];
 
-export function QueryResults({ rows, totalCandidates, skippedChunks, gatheringCatalog }: Props) {
+export function QueryResults({ rows, totalCandidates, skippedChunks, gatheringCatalog, sparklineMap, sparklineLoading }: Props) {
   const density = useUiStore((s) => s.density);
   const rowY = rowPadClass(density);
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const showSparkline = sparklineMap != null;
 
   const sortedRows = useMemo(() => {
     if (!sortKey) return rows;
@@ -91,7 +99,7 @@ export function QueryResults({ rows, totalCandidates, skippedChunks, gatheringCa
         <table className="w-full text-sm">
           <thead>
             <tr className="font-mono text-[10px] tracking-widest uppercase">
-              {COLS.map((c) => {
+              {getCols(showSparkline).map((c) => {
                 const sortable = c.key !== null;
                 const sorted = sortable && sortKey === c.key;
                 const arrow = sorted ? (sortDir === 'asc' ? ' ▲' : ' ▼') : '';
@@ -134,6 +142,19 @@ export function QueryResults({ rows, totalCandidates, skippedChunks, gatheringCa
                   />
                 </td>
                 <td className={`px-3 ${rowY} text-right font-mono`}>{fmtGil(r.unitPrice)}</td>
+                {showSparkline && (
+                  <td className={`px-3 ${rowY} hidden md:table-cell`}>
+                    {(() => {
+                      const buckets = sparklineMap!.get(r.id);
+                      if (!buckets) return sparklineLoading ? <SparklineShimmer /> : null;
+                      return (
+                        <InfoTooltip label={<pre className="font-mono text-[10px] whitespace-pre">{formatSparklineTooltip(buckets)}</pre>}>
+                          <Sparkline points={buckets} color={colorFromPoints(buckets)} />
+                        </InfoTooltip>
+                      );
+                    })()}
+                  </td>
+                )}
                 <td className={`px-3 ${rowY} text-right font-mono text-text-low hidden md:table-cell`}>{fmtGil(r.averagePrice)}</td>
                 <td className={`px-3 ${rowY} text-right font-mono text-jade`}>-{r.dealPct}%</td>
                 <td className={`px-3 ${rowY} text-right font-mono hidden md:table-cell`}>{r.velocity.toFixed(1)}</td>

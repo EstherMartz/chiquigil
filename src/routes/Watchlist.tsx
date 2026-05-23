@@ -4,6 +4,7 @@ import { useWatchlistStore } from '../features/items/watchlistStore';
 import { useUiStore } from '../features/ui/uiStore';
 import { useMarketData } from '../features/watchlist/useMarketData';
 import { useWatchlistHistory } from '../features/watchlist/useWatchlistHistory';
+import { useSparklineHistory } from '../features/sparklines/useSparklineHistory';
 import { useRecipes } from '../features/profit/useRecipes';
 import { useItemNames } from '../features/profit/useItemNames';
 import { useSelectedItems } from '../features/items/useSelectedItems';
@@ -17,7 +18,7 @@ import { StatusBanner } from '../components/StatusBanner';
 import { btnPrimaryLarge } from '../components/buttonStyles';
 
 export default function Watchlist() {
-  const { world, dc, retainerLevels, defaultCraftTimeSeconds } = useSettingsStore();
+  const { world, dc, retainerLevels, defaultCraftTimeSeconds, showSparklines } = useSettingsStore();
   const { perItemFlags, setCraftIntermediates, setCraftTime } = useWatchlistStore();
   const ui = useUiStore();
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
@@ -26,6 +27,7 @@ export default function Watchlist() {
   const ids = useMemo(() => items.map((i) => i.id), [items]);
   const market = useMarketData(ids, world, dc);
   const history = useWatchlistHistory(ids, dc);
+  const sparklineHistory = useSparklineHistory(ids, world, showSparklines);
   const recipes = useRecipes(ids);
 
   const ingredientIds = useMemo(() => {
@@ -83,7 +85,14 @@ export default function Watchlist() {
       {(market.isLoading || recipes.isLoading) && (
         <div className="py-6"><Spinner label="Fetching market data + recipes…" /></div>
       )}
-      {!market.isLoading && !recipes.isLoading && <WatchlistTable rows={filtered} onSelect={setSelectedItemId} />}
+      {!market.isLoading && !recipes.isLoading && (
+        <WatchlistTable
+          rows={filtered}
+          onSelect={setSelectedItemId}
+          sparklineMap={showSparklines ? sparklineHistory.data : undefined}
+          sparklineLoading={sparklineHistory.isLoading}
+        />
+      )}
 
       {selected && selectedRecipe && market.data && (
         <RecipeModal
