@@ -3,7 +3,7 @@ import { fetchRecipeForItem, type Recipe } from '../lib/recipes';
 import { getCachedRecipe, putCachedRecipe } from '../lib/recipeCache';
 import { useGarlandItem } from '../features/queries/useGarlandItem';
 import { useSnapshotById } from '../features/queries/useSnapshotById';
-import { garlandItemUrl } from '../lib/format';
+import { garlandItemUrl, gamerEscapeItemUrl } from '../lib/format';
 import type { GarlandIngredient, IngredientSource } from '../lib/garlandData';
 
 interface Props {
@@ -128,7 +128,16 @@ export function RecipePopover({ itemId, itemName }: Props) {
             )}
           </div>
 
-          <div className="mt-3 pt-2 border-t border-border-base flex justify-end">
+          <div className="mt-3 pt-2 border-t border-border-base flex justify-end gap-3">
+            <a
+              href={gamerEscapeItemUrl(itemName)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-mono text-[10px] text-text-low hover:text-aether transition-colors"
+              title="Gamer Escape wiki"
+            >
+              GE ↗
+            </a>
             <a
               href={garlandItemUrl(itemId)}
               target="_blank"
@@ -169,6 +178,15 @@ function IngredientRow({ r }: { r: GarlandIngredient }) {
       >
         {r.name}
       </a>
+      <a
+        href={gamerEscapeItemUrl(r.name)}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-text-cream hover:text-aether hover:underline decoration-1 underline-offset-2 transition-colors"
+        title="Gamer Escape wiki"
+      >
+        ↗
+      </a>
     </li>
   );
 }
@@ -179,6 +197,7 @@ function FallbackIngredients({ recipe }: { recipe: Recipe }) {
     <ul className="space-y-0.5">
       {recipe.ingredients.map((ing) => {
         const snap = byId.get(ing.itemId);
+        const itemName = snap?.name ?? `#${ing.itemId}`;
         return (
           <li key={ing.itemId} className="flex items-baseline gap-2 font-mono text-[11px]">
             <span className="text-gold tabular-nums w-6 text-right">{ing.amount}×</span>
@@ -191,8 +210,19 @@ function FallbackIngredients({ recipe }: { recipe: Recipe }) {
               rel="noopener noreferrer"
               className="text-text-cream hover:text-aether transition-colors flex-1 truncate"
             >
-              {snap?.name ?? `#${ing.itemId}`}
+              {itemName}
             </a>
+            {snap?.name && (
+              <a
+                href={gamerEscapeItemUrl(snap.name)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-text-cream hover:text-aether hover:underline decoration-1 underline-offset-2 transition-colors"
+                title="Gamer Escape wiki"
+              >
+                ↗
+              </a>
+            )}
           </li>
         );
       })}

@@ -14,3 +14,5 @@ coverage
 *.png
 test-results.txt
 test_output.txt
+
+.vercel

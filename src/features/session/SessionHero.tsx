@@ -1,4 +1,4 @@
-import { fmtGil, garlandItemUrl } from '../../lib/format';
+import { fmtGil, garlandItemUrl, gamerEscapeItemUrl } from '../../lib/format';
 import { useSnapshotById } from '../queries/useSnapshotById';
 import { CopyButton } from '../../components/CopyButton';
 import { RecipeHover } from '../../components/RecipeHover';
@@ -89,6 +89,15 @@ export function SessionHero({ result, hasGenerated, strategy, stale, diagnostics
             {top.name}
           </a>
           <span className="text-gold-hi">.</span>
+          <a
+            href={gamerEscapeItemUrl(top.name)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-text-cream hover:text-gold hover:underline decoration-1 underline-offset-4 transition-colors text-sm"
+            title="Gamer Escape wiki"
+          >
+            GE
+          </a>
           <CopyButton text={top.name} className="ml-3 align-middle" />
         </RecipeHover>
       </h1>

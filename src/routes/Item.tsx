@@ -17,7 +17,7 @@ import { CrossWorldListingsBlock } from '../features/items/CrossWorldListingsBlo
 import { findItemCurrencyOffers } from '../features/items/currencyOffers';
 import { AddToWatchlistButton } from '../features/items/AddToWatchlistButton';
 import { AddToShoppingListButton } from '../features/shoppingList/AddToShoppingListButton';
-import { fmtGil, garlandItemUrl } from '../lib/format';
+import { fmtGil, garlandItemUrl, gamerEscapeItemUrl } from '../lib/format';
 import { Gil } from '../components/Gil';
 import { rarityBorderLeftClass, rarityLabel, rarityTextClass } from '../features/items/rarity';
 import { categoryLabel } from '../lib/itemSearchCategories';
@@ -201,6 +201,7 @@ export default function Item() {
 
       <SourcesBlock
         itemId={itemId}
+        itemName={displayName}
         gather={gather}
       />
     </div>
@@ -237,6 +238,15 @@ function HeaderBlock({ name, ilvl, sc, canHq, rarity, itemId, recipe }: {
           title="Open on Garland Tools"
         >
           Open on Garland ↗
+        </a>
+        <a
+          href={gamerEscapeItemUrl(name)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-mono text-[10px] tracking-widest uppercase border border-border-base text-aether px-3 py-2 hover:border-aether transition-colors"
+          title="Gamer Escape wiki"
+        >
+          GE ↗
         </a>
       </div>
     </header>
@@ -472,8 +482,9 @@ function UsedInSortHeader({ col, current, onClick, hideOnMobile, children }: {
   );
 }
 
-function SourcesBlock({ itemId, gather }: {
+function SourcesBlock({ itemId, itemName, gather }: {
   itemId: number;
+  itemName: string;
   gather: { level: number; timed: boolean; hidden: boolean } | undefined;
 }) {
   if (!gather) {
@@ -489,6 +500,15 @@ function SourcesBlock({ itemId, gather }: {
             className="text-aether hover:underline decoration-1 underline-offset-4 not-italic"
           >
             View full sources on Garland ↗
+          </a>
+          {' / '}
+          <a
+            href={gamerEscapeItemUrl(itemName)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-aether hover:underline decoration-1 underline-offset-4 not-italic"
+          >
+            GE ↗
           </a>
         </div>
       </section>
@@ -511,6 +531,15 @@ function SourcesBlock({ itemId, gather }: {
             className="text-aether hover:underline decoration-1 underline-offset-4 not-italic"
           >
             View full sources on Garland ↗
+          </a>
+          {' / '}
+          <a
+            href={gamerEscapeItemUrl(itemName)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-aether hover:underline decoration-1 underline-offset-4 not-italic"
+          >
+            GE ↗
           </a>
         </div>
       </div>
