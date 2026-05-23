@@ -1,0 +1,237 @@
+import { useMemo, useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
+import { useSettingsStore } from '../settings/store';
+import { useItemSnapshot } from '../queries/useItemSnapshot';
+import { useSelectedItems } from '../items/useSelectedItems';
+import { fetchInBatches } from '../../lib/universalisBulk';
+import { fetchMarketData, type MarketData } from '../../lib/universalis';
+import { runDcFlip, type DcFlipRow } from './dcFlip';
+import { fmtGil } from '../../lib/format';
+import { ItemNameLinks } from '../../components/ItemNameLinks';
+import { CopyButton } from '../../components/CopyButton';
+import { LoadMoreFooter } from '../../components/LoadMoreFooter';
+import { useLoadMore } from '../../lib/useLoadMore';
+import { Spinner } from '../../components/Spinner';
+import { ProgressBar } from '../../components/ProgressBar';
+import { StatusBanner } from '../../components/StatusBanner';
+import { EmptyState } from '../../components/EmptyState';
+import { useUiStore, rowPadClass } from '../ui/uiStore';
+
+type SortKey = 'name' | 'buyWorld' | 'dcPrice' | 'phantomPrice' | 'spread' | 'velocity';
+type SortDir = 'asc' | 'desc';
+
+const MAX_CANDIDATES = 500;
+
+interface RunResult {
+  dcMarket: MarketData;
+  homeMarket: MarketData;
+  skipped: number;
+}
+
+export function DcFlipView() {
+  const { world, dc } = useSettingsStore();
+  const snapshot = useItemSnapshot();
+  const watchlistItems = useSelectedItems();
+  const density = useUiStore((s) => s.density);
+  const rowY = rowPadClass(density);
+
+  const [minSpread, setMinSpread] = useState(10_000);
+  const [minVelocity, setMinVelocity] = useState(1);
+  const [sortKey, setSortKey] = useState<SortKey>('spread');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
+
+  // Build candidate IDs: watchlist first, then top-ilvl catalog items
+  const candidateIds = useMemo(() => {
+    if (!snapshot.data) return [];
+    const ids = new Set<number>();
+    // Watchlist items first
+    for (const item of watchlistItems) ids.add(item.id);
+    // Fill with catalog items (tradeable, sorted by ilvl desc)
+    const catalog = [...snapshot.data.items]
+      .filter((i) => i.sc > 0)
+      .sort((a, b) => b.ilvl - a.ilvl);
+    for (const item of catalog) {
+      if (ids.size >= MAX_CANDIDATES) break;
+      ids.add(item.id);
+    }
+    return [...ids];
+  }, [snapshot.data, watchlistItems]);
+
+  const run = useMutation<RunResult>({
+    mutationFn: async () => {
+      if (!snapshot.data) throw new Error('Item snapshot not ready');
+      setProgress({ current: 0, total: candidateIds.length });
+
+      // Fetch DC and home market in parallel
+      const [dcResult, homeResult] = await Promise.all([
+        fetchInBatches<MarketData[string]>(
+          candidateIds,
+          (chunk) => fetchMarketData(dc, chunk),
+          {
+            chunkSize: 100, concurrency: 4,
+            onProgress: (done) => setProgress({ current: Math.min(done * 100, candidateIds.length), total: candidateIds.length }),
+          },
+        ),
+        fetchInBatches<MarketData[string]>(
+          candidateIds,
+          (chunk) => fetchMarketData(world, chunk),
+          { chunkSize: 100, concurrency: 4 },
+        ),
+      ]);
+
+      setProgress(null);
+      return {
+        dcMarket: dcResult.data,
+        homeMarket: homeResult.data,
+        skipped: dcResult.errors.length + homeResult.errors.length,
+      };
+    },
+  });
+
+  const rows = useMemo(() => {
+    if (!snapshot.data || !run.data) return [];
+    return runDcFlip(
+      snapshot.data.items,
+      run.data.dcMarket,
+      run.data.homeMarket,
+      { homeWorld: world, minSpread, minVelocity },
+    );
+  }, [snapshot.data, run.data, world, minSpread, minVelocity]);
+
+  const sortedRows = useMemo(() => {
+    const mul = sortDir === 'asc' ? 1 : -1;
+    return [...rows].sort((a, b) => {
+      if (sortKey === 'name') return a.name.localeCompare(b.name) * mul;
+      if (sortKey === 'buyWorld') return a.buyWorld.localeCompare(b.buyWorld) * mul;
+      return (a[sortKey] - b[sortKey]) * mul;
+    });
+  }, [rows, sortKey, sortDir]);
+
+  const lm = useLoadMore(sortedRows, 25);
+
+  function toggleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortDir(key === 'name' || key === 'buyWorld' ? 'asc' : 'desc');
+    }
+  }
+
+  const notReady = !snapshot.data;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-end gap-3 p-3 border border-border-base bg-bg-card">
+        <label className="block">
+          <span className="font-mono text-[10px] tracking-widest text-text-low">Min spread (gil)</span>
+          <input
+            type="number" min={0} step={1000}
+            value={minSpread}
+            onChange={(e) => setMinSpread(Math.max(0, Number(e.target.value) || 0))}
+            className="mt-1 block w-32 bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+          />
+        </label>
+        <label className="block">
+          <span className="font-mono text-[10px] tracking-widest text-text-low">Min velocity / day</span>
+          <input
+            type="number" min={0} step={0.5}
+            value={minVelocity}
+            onChange={(e) => setMinVelocity(Math.max(0, Number(e.target.value) || 0))}
+            className="mt-1 block w-32 bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+          />
+        </label>
+        <button
+          type="button"
+          onClick={() => { run.reset(); run.mutate(); }}
+          disabled={run.isPending || notReady}
+          title={notReady ? 'Loading item catalog…' : undefined}
+          className="font-mono text-[10px] tracking-widest uppercase border border-gold text-gold px-4 py-2 hover:bg-gold hover:text-bg-deep disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {run.isPending ? 'Scanning…' : 'Run scan'}
+        </button>
+      </div>
+
+      <p className="font-mono text-[10px] text-text-low">
+        Finds items cheaper on other {dc} worlds than on {world}. Travel to buy, relist at home.
+      </p>
+
+      {run.isPending && (
+        progress
+          ? <ProgressBar current={progress.current} total={progress.total} label={`Scanning ${dc} market…`} />
+          : <Spinner label={`Scanning ${dc} market…`} />
+      )}
+      {run.isError && <StatusBanner kind="error">Scan failed: {(run.error as Error).message}</StatusBanner>}
+      {run.data && run.data.skipped > 0 && (
+        <StatusBanner kind="error">{run.data.skipped} batch(es) skipped (Universalis error)</StatusBanner>
+      )}
+
+      {!run.data && !run.isPending && (
+        <EmptyState icon="⇄" message={`Scan ${dc} for items you can buy cheap and flip on ${world}.`} />
+      )}
+
+      {run.data && sortedRows.length === 0 && (
+        <EmptyState icon="⇄" message={`No items found with a spread above ${fmtGil(minSpread)}. Try lowering the threshold or running again after the market updates.`} />
+      )}
+
+      {run.data && sortedRows.length > 0 && (
+        <div className="border border-border-base bg-bg-card overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="font-mono text-[10px] tracking-widest uppercase">
+                {([
+                  { key: 'name' as SortKey, label: 'Item', align: 'left' },
+                  { key: 'buyWorld' as SortKey, label: 'Buy on', align: 'left' },
+                  { key: 'dcPrice' as SortKey, label: 'DC Price', align: 'right' },
+                  { key: 'phantomPrice' as SortKey, label: `${world} Price`, align: 'right' },
+                  { key: 'spread' as SortKey, label: 'Spread', align: 'right' },
+                  { key: 'velocity' as SortKey, label: 'Velocity', align: 'right', hideOnMobile: true },
+                ] as const).map((c) => {
+                  const sorted = sortKey === c.key;
+                  const arrow = sorted ? (sortDir === 'asc' ? ' ▲' : ' ▼') : '';
+                  return (
+                    <th
+                      key={c.key}
+                      onClick={() => toggleSort(c.key)}
+                      className={`px-3 py-2 cursor-pointer select-none ${
+                        c.align === 'right' ? 'text-right' : 'text-left'
+                      } ${sorted ? 'text-gold' : 'text-text-dim hover:text-aether'} ${
+                        'hideOnMobile' in c && c.hideOnMobile ? 'hidden md:table-cell' : ''
+                      }`}
+                    >
+                      {c.label}{arrow}
+                    </th>
+                  );
+                })}
+              </tr>
+            </thead>
+            <tbody>
+              {lm.visible.map((r) => (
+                <tr key={r.id} className="border-t border-border-base hover:bg-bg-card-hi">
+                  <td className={`px-3 ${rowY}`}>
+                    <div className="flex items-center gap-2">
+                      <ItemNameLinks id={r.id} name={r.name} />
+                      <CopyButton text={r.name} />
+                    </div>
+                  </td>
+                  <td className={`px-3 ${rowY} text-aether`}>{r.buyWorld}</td>
+                  <td className={`px-3 ${rowY} text-right font-mono`}>{fmtGil(r.dcPrice)}</td>
+                  <td className={`px-3 ${rowY} text-right font-mono`}>{fmtGil(r.phantomPrice)}</td>
+                  <td className={`px-3 ${rowY} text-right font-mono text-jade`}>+{fmtGil(r.spread)}</td>
+                  <td className={`px-3 ${rowY} text-right font-mono hidden md:table-cell`}>{r.velocity.toFixed(1)}/day</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <LoadMoreFooter
+            hasMore={lm.hasMore}
+            total={lm.total}
+            shown={lm.shown}
+            onLoadMore={lm.loadMore}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
