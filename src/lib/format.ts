@@ -6,6 +6,11 @@ export function fmtGil(n: number | null | undefined): string {
   return n.toLocaleString();
 }
 
+export function fmtGilFull(n: number | null | undefined): string {
+  if (n == null) return '';
+  return n.toLocaleString();
+}
+
 export function garlandItemUrl(id: number): string {
   return `https://www.garlandtools.org/db/#item/${id}`;
 }

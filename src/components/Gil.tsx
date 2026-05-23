@@ -1,4 +1,4 @@
-import { fmtGil } from '../lib/format';
+import { fmtGil, fmtGilFull } from '../lib/format';
 
 interface Props {
   value: number | null | undefined;
@@ -19,8 +19,9 @@ interface Props {
  */
 export function Gil({ value, big, bare, display, className }: Props) {
   const text = display ?? fmtGil(value ?? null);
+  const full = fmtGilFull(value ?? null);
   return (
-    <span className={`tabular-nums ${className ?? ''}`}>
+    <span className={`tabular-nums ${className ?? ''}`} title={full ? `${full} gil` : undefined}>
       {!bare && (
         <span aria-hidden className={`text-gold/70 mr-1 ${big ? 'text-base' : 'text-[9px]'}`}>⊚</span>
       )}

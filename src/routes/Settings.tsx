@@ -152,7 +152,7 @@ export default function Settings() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 space-y-10">
+    <div className="space-y-10">
       <section>
         <SectionHeader label="My Crafters" />
         <p className="font-mono text-[10px] text-text-low mb-3">

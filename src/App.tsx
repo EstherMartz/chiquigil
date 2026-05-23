@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { Header } from './components/layout/Header';
+import { Sidebar } from './components/layout/Sidebar';
+import { ContentBar } from './components/layout/ContentBar';
 import Home from './routes/Home';
 import Watchlist from './routes/Watchlist';
 import Crafts from './routes/Crafts';
@@ -21,31 +22,36 @@ import Settings from './routes/Settings';
 
 export default function App() {
   return (
-    <div className="min-h-screen pt-8 pb-20">
-      <Header />
-      <Routes>
-        <Route path="/" element={<Navigate to="/trading" replace />} />
-        <Route path="/home" element={<Home />} />
-        <Route path="/watchlist" element={<Watchlist />} />
-        <Route path="/crafts" element={<Crafts />} />
-        <Route path="/trading" element={<Trading />} />
-        <Route path="/gathering" element={<Gathering />} />
-        <Route path="/gathering/plan" element={<GatheringPlan />} />
-        <Route path="/leves" element={<LevePlan />} />
-        <Route path="/shopping-list" element={<ShoppingList />} />
-        <Route path="/vendor-flip" element={<VendorFlip />} />
-        <Route path="/currency-flip" element={<CurrencyFlip />} />
-        <Route path="/gc-seals" element={<GcSeals />} />
-        <Route path="/craft-batch" element={<CraftBatch />} />
-        <Route path="/batch-history" element={<BatchHistory />} />
-        <Route path="/cleanup" element={<Cleanup />} />
-        <Route path="/quest-items" element={<QuestItems />} />
-        <Route path="/heatmap" element={<Heatmap />} />
-        <Route path="/item/:id" element={<Item />} />
-        <Route path="/queries" element={<Navigate to="/crafts" replace />} />
-        <Route path="/insights" element={<Navigate to="/trading" replace />} />
-        <Route path="/settings" element={<Settings />} />
-      </Routes>
+    <div className="flex min-h-screen">
+      <Sidebar />
+      <main className="flex-1 min-w-0 pt-8 pb-20 px-4">
+        <div className="max-w-7xl mx-auto">
+          <ContentBar />
+          <Routes>
+            <Route path="/" element={<Navigate to="/trading" replace />} />
+            <Route path="/home" element={<Home />} />
+            <Route path="/watchlist" element={<Watchlist />} />
+            <Route path="/crafts" element={<Crafts />} />
+            <Route path="/trading" element={<Trading />} />
+            <Route path="/gathering" element={<Gathering />} />
+            <Route path="/gathering/plan" element={<GatheringPlan />} />
+            <Route path="/leves" element={<LevePlan />} />
+            <Route path="/shopping-list" element={<ShoppingList />} />
+            <Route path="/vendor-flip" element={<VendorFlip />} />
+            <Route path="/currency-flip" element={<CurrencyFlip />} />
+            <Route path="/gc-seals" element={<GcSeals />} />
+            <Route path="/craft-batch" element={<CraftBatch />} />
+            <Route path="/batch-history" element={<BatchHistory />} />
+            <Route path="/cleanup" element={<Cleanup />} />
+            <Route path="/quest-items" element={<QuestItems />} />
+            <Route path="/heatmap" element={<Heatmap />} />
+            <Route path="/item/:id" element={<Item />} />
+            <Route path="/queries" element={<Navigate to="/crafts" replace />} />
+            <Route path="/insights" element={<Navigate to="/trading" replace />} />
+            <Route path="/settings" element={<Settings />} />
+          </Routes>
+        </div>
+      </main>
     </div>
   );
 }

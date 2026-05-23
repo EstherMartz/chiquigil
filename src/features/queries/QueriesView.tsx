@@ -149,7 +149,7 @@ export function QueriesView({ category, heading, onRowsChange, initialPresetId }
   }, [derived, onRowsChange]);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 space-y-4">
+    <div className="space-y-4">
       {heading && <h2 className="font-display text-lg text-gold tracking-wide">{heading}</h2>}
 
       <div className="flex flex-wrap gap-2">

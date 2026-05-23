@@ -24,9 +24,17 @@ export function AllaganPasteBox({ onParse, onClear, parseError, parsedSummary }:
 
   return (
     <div className="space-y-3">
-      <p className="font-mono text-[10px] text-text-low tracking-widest uppercase">
-        Paste your Allagan Tools / Inventory Tools CSV
-      </p>
+      <div>
+        <p className="font-mono text-[10px] text-text-low tracking-widest uppercase">
+          Inventory Analyzer
+        </p>
+        <p className="font-mono text-[10px] text-text-low mt-1">
+          Paste your inventory CSV to find items worth selling.{' '}
+          <span className="text-aether cursor-help" title="Export your inventory from the Allagan Tools or Inventory Tools FFXIV plugin (Inventory → Export as CSV), then paste the contents here or use Upload CSV.">
+            How to export ⓘ
+          </span>
+        </p>
+      </div>
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
