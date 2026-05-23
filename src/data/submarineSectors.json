@@ -619,11 +619,6964 @@
           "tier": "rare"
         }
       ]
+    },
+    {
+      "id": 11,
+      "name": "the Cobalt Shoals",
+      "letter": "K",
+      "zone": "Deep-sea Site",
+      "rankReq": 20,
+      "durationMin": 480,
+      "distance": 12,
+      "loot": [
+        {
+          "itemId": 12923,
+          "name": "Bamboo Weave",
+          "tier": "common"
+        },
+        {
+          "itemId": 12586,
+          "name": "Birch Branch",
+          "tier": "common"
+        },
+        {
+          "itemId": 12229,
+          "name": "Deep-blue Crystal",
+          "tier": "common"
+        },
+        {
+          "itemId": 12223,
+          "name": "Raw Celestine",
+          "tier": "common"
+        },
+        {
+          "itemId": 19,
+          "name": "Water Cluster",
+          "tier": "common"
+        },
+        {
+          "itemId": 7,
+          "name": "Water Shard",
+          "tier": "common"
+        },
+        {
+          "itemId": 12924,
+          "name": "Balsa Wood Scrap",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12585,
+          "name": "Dark Chestnut Branch",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12928,
+          "name": "Empty Crystal",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 21921,
+          "name": "Aurelia Polyp",
+          "tier": "rare"
+        },
+        {
+          "itemId": 10099,
+          "name": "Unaspected Crystal",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "name": "the Mystic Basin",
+      "letter": "L",
+      "zone": "Deep-sea Site",
+      "rankReq": 24,
+      "durationMin": 540,
+      "distance": 13,
+      "loot": [
+        {
+          "itemId": 12924,
+          "name": "Balsa Wood Scrap",
+          "tier": "common"
+        },
+        {
+          "itemId": 12226,
+          "name": "Deep-red Cluster",
+          "tier": "common"
+        },
+        {
+          "itemId": 17,
+          "name": "Earth Cluster",
+          "tier": "common"
+        },
+        {
+          "itemId": 5,
+          "name": "Earth Shard",
+          "tier": "common"
+        },
+        {
+          "itemId": 7588,
+          "name": "Ferberite",
+          "tier": "common"
+        },
+        {
+          "itemId": 12223,
+          "name": "Raw Celestine",
+          "tier": "common"
+        },
+        {
+          "itemId": 12925,
+          "name": "Balsa Wood Lumber",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12928,
+          "name": "Empty Crystal",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 5120,
+          "name": "Platinum Ore",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12921,
+          "name": "Black Clay",
+          "tier": "rare"
+        },
+        {
+          "itemId": 23337,
+          "name": "Faded Copy of Ambient Abyss",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "name": "deep-sea site 4",
+      "letter": "M",
+      "zone": "Deep-sea Site",
+      "rankReq": 27,
+      "durationMin": 600,
+      "distance": 13,
+      "loot": [
+        {
+          "itemId": 12924,
+          "name": "Balsa Wood Scrap",
+          "tier": "common"
+        },
+        {
+          "itemId": 12586,
+          "name": "Birch Branch",
+          "tier": "common"
+        },
+        {
+          "itemId": 12228,
+          "name": "Deep-green Cluster",
+          "tier": "common"
+        },
+        {
+          "itemId": 15,
+          "name": "Ice Cluster",
+          "tier": "common"
+        },
+        {
+          "itemId": 3,
+          "name": "Ice Shard",
+          "tier": "common"
+        },
+        {
+          "itemId": 12223,
+          "name": "Raw Celestine",
+          "tier": "common"
+        },
+        {
+          "itemId": 12224,
+          "name": "Vivianite",
+          "tier": "common"
+        },
+        {
+          "itemId": 12925,
+          "name": "Balsa Wood Lumber",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12585,
+          "name": "Dark Chestnut Branch",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12928,
+          "name": "Empty Crystal",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 22506,
+          "name": "Extravagant Salvaged Earring",
+          "tier": "rare"
+        },
+        {
+          "itemId": 10099,
+          "name": "Unaspected Crystal",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "name": "the Central Rimilala Trench",
+      "letter": "N",
+      "zone": "Deep-sea Site",
+      "rankReq": 27,
+      "durationMin": 600,
+      "distance": 13,
+      "loot": [
+        {
+          "itemId": 12924,
+          "name": "Balsa Wood Scrap",
+          "tier": "common"
+        },
+        {
+          "itemId": 12229,
+          "name": "Deep-blue Crystal",
+          "tier": "common"
+        },
+        {
+          "itemId": 17,
+          "name": "Earth Cluster",
+          "tier": "common"
+        },
+        {
+          "itemId": 5,
+          "name": "Earth Shard",
+          "tier": "common"
+        },
+        {
+          "itemId": 7588,
+          "name": "Ferberite",
+          "tier": "common"
+        },
+        {
+          "itemId": 12223,
+          "name": "Raw Celestine",
+          "tier": "common"
+        },
+        {
+          "itemId": 12925,
+          "name": "Balsa Wood Lumber",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 5118,
+          "name": "Gold Ore",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 5120,
+          "name": "Platinum Ore",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 22441,
+          "name": "Crimson Coral",
+          "tier": "rare"
+        },
+        {
+          "itemId": 12657,
+          "name": "Magnanimous Mogcrown",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "name": "the Wreckage of Discovery I",
+      "letter": "O",
+      "zone": "Deep-sea Site",
+      "rankReq": 30,
+      "durationMin": 660,
+      "distance": 14,
+      "loot": [
+        {
+          "itemId": 5188,
+          "name": "Diamond",
+          "tier": "common"
+        },
+        {
+          "itemId": 5189,
+          "name": "Emerald",
+          "tier": "common"
+        },
+        {
+          "itemId": 5187,
+          "name": "Ruby",
+          "tier": "common"
+        },
+        {
+          "itemId": 5192,
+          "name": "Sapphire",
+          "tier": "common"
+        },
+        {
+          "itemId": 12544,
+          "name": "Star Ruby",
+          "tier": "common"
+        },
+        {
+          "itemId": 12545,
+          "name": "Star Sapphire",
+          "tier": "common"
+        },
+        {
+          "itemId": 23222,
+          "name": "Marine Wax Ester",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 9360,
+          "name": "Platinum Ingot",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 22501,
+          "name": "Salvaged Bracelet",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 22502,
+          "name": "Salvaged Earring",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 22503,
+          "name": "Salvaged Necklace",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 22500,
+          "name": "Salvaged Ring",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 22505,
+          "name": "Extravagant Salvaged Bracelet",
+          "tier": "rare"
+        },
+        {
+          "itemId": 22506,
+          "name": "Extravagant Salvaged Earring",
+          "tier": "rare"
+        },
+        {
+          "itemId": 22507,
+          "name": "Extravagant Salvaged Necklace",
+          "tier": "rare"
+        },
+        {
+          "itemId": 22504,
+          "name": "Extravagant Salvaged Ring",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "name": "Komura",
+      "letter": "P",
+      "zone": "Deep-sea Site",
+      "rankReq": 30,
+      "durationMin": 660,
+      "distance": 14,
+      "loot": [
+        {
+          "itemId": 12925,
+          "name": "Balsa Wood Lumber",
+          "tier": "common"
+        },
+        {
+          "itemId": 12579,
+          "name": "Birch Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 12228,
+          "name": "Deep-green Cluster",
+          "tier": "common"
+        },
+        {
+          "itemId": 12220,
+          "name": "Red Moko Grass",
+          "tier": "common"
+        },
+        {
+          "itemId": 12221,
+          "name": "Cassia Log",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12222,
+          "name": "Chemically Treated Chimera Hide",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12578,
+          "name": "Dark Chestnut Log",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12928,
+          "name": "Empty Crystal",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12926,
+          "name": "Synthetic Fiber",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12657,
+          "name": "Magnanimous Mogcrown",
+          "tier": "rare"
+        },
+        {
+          "itemId": 12922,
+          "name": "Synthetic Resin",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "name": "Kanayama",
+      "letter": "Q",
+      "zone": "Deep-sea Site",
+      "rankReq": 34,
+      "durationMin": 720,
+      "distance": 14,
+      "loot": [
+        {
+          "itemId": 12925,
+          "name": "Balsa Wood Lumber",
+          "tier": "common"
+        },
+        {
+          "itemId": 12226,
+          "name": "Deep-red Cluster",
+          "tier": "common"
+        },
+        {
+          "itemId": 12223,
+          "name": "Raw Celestine",
+          "tier": "common"
+        },
+        {
+          "itemId": 12224,
+          "name": "Vivianite",
+          "tier": "common"
+        },
+        {
+          "itemId": 12533,
+          "name": "Aurum Regis Sand",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12539,
+          "name": "Cloud Mica",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12928,
+          "name": "Empty Crystal",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12532,
+          "name": "Hardsilver Sand",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12551,
+          "name": "Raw Larimar",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12926,
+          "name": "Synthetic Fiber",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12537,
+          "name": "Titanium Ore",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 23875,
+          "name": "Crystal Boule",
+          "tier": "rare"
+        },
+        {
+          "itemId": 12922,
+          "name": "Synthetic Resin",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "name": "concealed bay",
+      "letter": "R",
+      "zone": "Deep-sea Site",
+      "rankReq": 37,
+      "durationMin": 780,
+      "distance": 15,
+      "loot": [
+        {
+          "itemId": 5067,
+          "name": "Rose Gold Ingot",
+          "tier": "common"
+        },
+        {
+          "itemId": 9360,
+          "name": "Platinum Ingot",
+          "tier": "common"
+        },
+        {
+          "itemId": 15976,
+          "name": "Combed Wool Rug",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 9733,
+          "name": "Dead Man's Chest",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 23222,
+          "name": "Marine Wax Ester",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 17019,
+          "name": "Plundered Treasure",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 22501,
+          "name": "Salvaged Bracelet",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 22502,
+          "name": "Salvaged Earring",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 22503,
+          "name": "Salvaged Necklace",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 22500,
+          "name": "Salvaged Ring",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 23875,
+          "name": "Crystal Boule",
+          "tier": "rare"
+        },
+        {
+          "itemId": 22505,
+          "name": "Extravagant Salvaged Bracelet",
+          "tier": "rare"
+        },
+        {
+          "itemId": 22506,
+          "name": "Extravagant Salvaged Earring",
+          "tier": "rare"
+        },
+        {
+          "itemId": 22507,
+          "name": "Extravagant Salvaged Necklace",
+          "tier": "rare"
+        },
+        {
+          "itemId": 22504,
+          "name": "Extravagant Salvaged Ring",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "name": "deep-sea site 5",
+      "letter": "S",
+      "zone": "Deep-sea Site",
+      "rankReq": 37,
+      "durationMin": 780,
+      "distance": 15,
+      "loot": [
+        {
+          "itemId": 12925,
+          "name": "Balsa Wood Lumber",
+          "tier": "common"
+        },
+        {
+          "itemId": 12230,
+          "name": "Deep-blue Cluster",
+          "tier": "common"
+        },
+        {
+          "itemId": 12929,
+          "name": "Empty Cluster",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12926,
+          "name": "Synthetic Fiber",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 21921,
+          "name": "Aurelia Polyp",
+          "tier": "rare"
+        },
+        {
+          "itemId": 22441,
+          "name": "Crimson Coral",
+          "tier": "rare"
+        },
+        {
+          "itemId": 23337,
+          "name": "Faded Copy of Ambient Abyss",
+          "tier": "rare"
+        },
+        {
+          "itemId": 12922,
+          "name": "Synthetic Resin",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "name": "Purgatory",
+      "letter": "T",
+      "zone": "Deep-sea Site",
+      "rankReq": 40,
+      "durationMin": 840,
+      "distance": 15,
+      "loot": [
+        {
+          "itemId": 14934,
+          "name": "Dinosaur Fossil",
+          "tier": "common"
+        },
+        {
+          "itemId": 12223,
+          "name": "Raw Celestine",
+          "tier": "common"
+        },
+        {
+          "itemId": 12224,
+          "name": "Vivianite",
+          "tier": "common"
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "name": "deep-sea site 6",
+      "letter": "U",
+      "zone": "Deep-sea Site",
+      "rankReq": 40,
+      "durationMin": 840,
+      "distance": 15,
+      "loot": [
+        {
+          "itemId": 12579,
+          "name": "Birch Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 12221,
+          "name": "Cassia Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 12578,
+          "name": "Dark Chestnut Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 12230,
+          "name": "Deep-blue Cluster",
+          "tier": "common"
+        },
+        {
+          "itemId": 5395,
+          "name": "Spruce Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 12927,
+          "name": "Aetherochemical Fiber",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 5365,
+          "name": "Bamboo Stick",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 19930,
+          "name": "Beech Log",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12928,
+          "name": "Empty Crystal",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 19932,
+          "name": "Persimmon Log",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 19933,
+          "name": "Zelkova Log",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 21921,
+          "name": "Aurelia Polyp",
+          "tier": "rare"
+        },
+        {
+          "itemId": 14957,
+          "name": "Old-growth Camphorwood Log",
+          "tier": "rare"
+        },
+        {
+          "itemId": 12922,
+          "name": "Synthetic Resin",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 22,
+      "name": "the Rimilala Shelf",
+      "letter": "V",
+      "zone": "Deep-sea Site",
+      "rankReq": 44,
+      "durationMin": 900,
+      "distance": 16,
+      "loot": [
+        {
+          "itemId": 5116,
+          "name": "Cobalt Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 12228,
+          "name": "Deep-green Cluster",
+          "tier": "common"
+        },
+        {
+          "itemId": 12534,
+          "name": "Mythrite Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 19,
+          "name": "Water Cluster",
+          "tier": "common"
+        },
+        {
+          "itemId": 5121,
+          "name": "Darksteel Ore",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12929,
+          "name": "Empty Cluster",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 16725,
+          "name": "Luminium Ore",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 19957,
+          "name": "Molybdenum Ore",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12537,
+          "name": "Titanium Ore",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 23337,
+          "name": "Faded Copy of Ambient Abyss",
+          "tier": "rare"
+        },
+        {
+          "itemId": 25008,
+          "name": "Kamacite Ore",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 23,
+      "name": "deep-sea site 7",
+      "letter": "W",
+      "zone": "Deep-sea Site",
+      "rankReq": 44,
+      "durationMin": 900,
+      "distance": 16,
+      "loot": [
+        {
+          "itemId": 12221,
+          "name": "Cassia Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 5512,
+          "name": "Clear Glass Lens",
+          "tier": "common"
+        },
+        {
+          "itemId": 12226,
+          "name": "Deep-red Cluster",
+          "tier": "common"
+        },
+        {
+          "itemId": 14,
+          "name": "Fire Cluster",
+          "tier": "common"
+        },
+        {
+          "itemId": 15,
+          "name": "Ice Cluster",
+          "tier": "common"
+        },
+        {
+          "itemId": 12927,
+          "name": "Aetherochemical Fiber",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12925,
+          "name": "Balsa Wood Lumber",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12610,
+          "name": "Crystal Glass",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 16908,
+          "name": "Tempered Glass",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 24902,
+          "name": "Abroader Otter",
+          "tier": "rare"
+        },
+        {
+          "itemId": 7040,
+          "name": "Belah'dian Glass",
+          "tier": "rare"
+        },
+        {
+          "itemId": 7047,
+          "name": "Frosted Glass Lens",
+          "tier": "rare"
+        },
+        {
+          "itemId": 8028,
+          "name": "Polarized Glass",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 24,
+      "name": "Glittersand Basin",
+      "letter": "X",
+      "zone": "Deep-sea Site",
+      "rankReq": 47,
+      "durationMin": 960,
+      "distance": 16,
+      "loot": [
+        {
+          "itemId": 12533,
+          "name": "Aurum Regis Sand",
+          "tier": "common"
+        },
+        {
+          "itemId": 12532,
+          "name": "Hardsilver Sand",
+          "tier": "common"
+        },
+        {
+          "itemId": 14955,
+          "name": "Lumythrite Sand",
+          "tier": "common"
+        },
+        {
+          "itemId": 12531,
+          "name": "Mythrite Sand",
+          "tier": "common"
+        },
+        {
+          "itemId": 19952,
+          "name": "Durium Sand",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 19956,
+          "name": "Palladium Sand",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 5226,
+          "name": "Astral Moraine",
+          "tier": "rare"
+        },
+        {
+          "itemId": 20014,
+          "name": "Dawnlight Aethersand",
+          "tier": "rare"
+        },
+        {
+          "itemId": 20013,
+          "name": "Dusklight Aethersand",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 25,
+      "name": "Flickering Dip",
+      "letter": "Y",
+      "zone": "Deep-sea Site",
+      "rankReq": 47,
+      "durationMin": 960,
+      "distance": 16,
+      "loot": [
+        {
+          "itemId": 12538,
+          "name": "Adamantite Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 12539,
+          "name": "Cloud Mica",
+          "tier": "common"
+        },
+        {
+          "itemId": 7008,
+          "name": "Granite",
+          "tier": "common"
+        },
+        {
+          "itemId": 5230,
+          "name": "Limestone",
+          "tier": "common"
+        },
+        {
+          "itemId": 7010,
+          "name": "Marble",
+          "tier": "common"
+        },
+        {
+          "itemId": 5231,
+          "name": "Siltstone",
+          "tier": "common"
+        },
+        {
+          "itemId": 12927,
+          "name": "Aetherochemical Fiber",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 25008,
+          "name": "Kamacite Ore",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 23222,
+          "name": "Marine Wax Ester",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 22441,
+          "name": "Crimson Coral",
+          "tier": "rare"
+        },
+        {
+          "itemId": 23337,
+          "name": "Faded Copy of Ambient Abyss",
+          "tier": "rare"
+        },
+        {
+          "itemId": 12922,
+          "name": "Synthetic Resin",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 26,
+      "name": "the Wreckage of the Headway",
+      "letter": "Z",
+      "zone": "Deep-sea Site",
+      "rankReq": 50,
+      "durationMin": 1020,
+      "distance": 17,
+      "loot": [
+        {
+          "itemId": 5067,
+          "name": "Rose Gold Ingot",
+          "tier": "common"
+        },
+        {
+          "itemId": 5118,
+          "name": "Gold Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 16,
+          "name": "Wind Cluster",
+          "tier": "common"
+        },
+        {
+          "itemId": 9733,
+          "name": "Dead Man's Chest",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 17019,
+          "name": "Plundered Treasure",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 22501,
+          "name": "Salvaged Bracelet",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 22502,
+          "name": "Salvaged Earring",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 22503,
+          "name": "Salvaged Necklace",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 22500,
+          "name": "Salvaged Ring",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 22505,
+          "name": "Extravagant Salvaged Bracelet",
+          "tier": "rare"
+        },
+        {
+          "itemId": 22506,
+          "name": "Extravagant Salvaged Earring",
+          "tier": "rare"
+        },
+        {
+          "itemId": 22507,
+          "name": "Extravagant Salvaged Necklace",
+          "tier": "rare"
+        },
+        {
+          "itemId": 22504,
+          "name": "Extravagant Salvaged Ring",
+          "tier": "rare"
+        },
+        {
+          "itemId": 24908,
+          "name": "Salvaged Coinage",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 27,
+      "name": "the Upwell",
+      "letter": "AA",
+      "zone": "Deep-sea Site",
+      "rankReq": 50,
+      "durationMin": 1020,
+      "distance": 17,
+      "loot": [
+        {
+          "itemId": 7671,
+          "name": "Clear Prism",
+          "tier": "common"
+        },
+        {
+          "itemId": 7621,
+          "name": "Glamour Dispeller",
+          "tier": "common"
+        },
+        {
+          "itemId": 10386,
+          "name": "Grade 6 Dark Matter",
+          "tier": "common"
+        },
+        {
+          "itemId": 10335,
+          "name": "Dark Matter Cluster",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 21800,
+          "name": "Glamour Prism",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 17837,
+          "name": "Grade 7 Dark Matter",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 16906,
+          "name": "Wool Top",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 21921,
+          "name": "Aurelia Polyp",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 28,
+      "name": "the Rimilala Trench Bottom",
+      "letter": "AB",
+      "zone": "Deep-sea Site",
+      "rankReq": 50,
+      "durationMin": 1020,
+      "distance": 17,
+      "loot": [
+        {
+          "itemId": 12925,
+          "name": "Balsa Wood Lumber",
+          "tier": "common"
+        },
+        {
+          "itemId": 17,
+          "name": "Earth Cluster",
+          "tier": "common"
+        },
+        {
+          "itemId": 18,
+          "name": "Lightning Cluster",
+          "tier": "common"
+        }
+      ]
+    },
+    {
+      "id": 29,
+      "name": "stone temple",
+      "letter": "AC",
+      "zone": "Deep-sea Site",
+      "rankReq": 50,
+      "durationMin": 1020,
+      "distance": 17,
+      "loot": [
+        {
+          "itemId": 7009,
+          "name": "Cut Stone",
+          "tier": "common"
+        },
+        {
+          "itemId": 5067,
+          "name": "Rose Gold Ingot",
+          "tier": "common"
+        },
+        {
+          "itemId": 5118,
+          "name": "Gold Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 7589,
+          "name": "Native Gold",
+          "tier": "common"
+        },
+        {
+          "itemId": 9360,
+          "name": "Platinum Ingot",
+          "tier": "common"
+        },
+        {
+          "itemId": 5121,
+          "name": "Darksteel Ore",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 9733,
+          "name": "Dead Man's Chest",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 19953,
+          "name": "Doman Iron Ore",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12657,
+          "name": "Magnanimous Mogcrown",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 17019,
+          "name": "Plundered Treasure",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 16706,
+          "name": "Scintillant Ingot",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 23875,
+          "name": "Crystal Boule",
+          "tier": "rare"
+        },
+        {
+          "itemId": 24503,
+          "name": "Undersea Spoils",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 30,
+      "name": "sunken vault",
+      "letter": "AD",
+      "zone": "Deep-sea Site",
+      "rankReq": 50,
+      "durationMin": 1020,
+      "distance": 17,
+      "loot": [
+        {
+          "itemId": 12230,
+          "name": "Deep-blue Cluster",
+          "tier": "common"
+        },
+        {
+          "itemId": 12228,
+          "name": "Deep-green Cluster",
+          "tier": "common"
+        },
+        {
+          "itemId": 12226,
+          "name": "Deep-red Cluster",
+          "tier": "common"
+        },
+        {
+          "itemId": 11,
+          "name": "Earth Crystal",
+          "tier": "common"
+        },
+        {
+          "itemId": 8,
+          "name": "Fire Crystal",
+          "tier": "common"
+        },
+        {
+          "itemId": 9,
+          "name": "Ice Crystal",
+          "tier": "common"
+        },
+        {
+          "itemId": 12,
+          "name": "Lightning Crystal",
+          "tier": "common"
+        },
+        {
+          "itemId": 13,
+          "name": "Water Crystal",
+          "tier": "common"
+        },
+        {
+          "itemId": 16,
+          "name": "Wind Cluster",
+          "tier": "common"
+        },
+        {
+          "itemId": 19967,
+          "name": "Rhodonite",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 19964,
+          "name": "Star Spinel",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 19962,
+          "name": "Triphane",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 10099,
+          "name": "Unaspected Crystal",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 24505,
+          "name": "Cerulean Crystal Boule",
+          "tier": "rare"
+        },
+        {
+          "itemId": 24490,
+          "name": "Emerald Crystal Boule",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 32,
+      "name": "South Isle of Zozonan",
+      "letter": "A",
+      "zone": "Sea of Ash",
+      "rankReq": 50,
+      "durationMin": 480,
+      "distance": 12,
+      "loot": [
+        {
+          "itemId": 11,
+          "name": "Earth Crystal",
+          "tier": "common"
+        },
+        {
+          "itemId": 5,
+          "name": "Earth Shard",
+          "tier": "common"
+        },
+        {
+          "itemId": 12532,
+          "name": "Hardsilver Sand",
+          "tier": "common"
+        },
+        {
+          "itemId": 5232,
+          "name": "Stiperstone",
+          "tier": "common"
+        },
+        {
+          "itemId": 12926,
+          "name": "Synthetic Fiber",
+          "tier": "common"
+        },
+        {
+          "itemId": 20791,
+          "name": "Cloudsbreath",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 27801,
+          "name": "Hard Mudstone",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 27696,
+          "name": "Truegold Sand",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 26528,
+          "name": "Cocobolo Lumber",
+          "tier": "rare"
+        },
+        {
+          "itemId": 26531,
+          "name": "Pure Titanium Ore",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 33,
+      "name": "Wreckage of the Windwalker",
+      "letter": "B",
+      "zone": "Sea of Ash",
+      "rankReq": 50,
+      "durationMin": 480,
+      "distance": 12,
+      "loot": [
+        {
+          "itemId": 8,
+          "name": "Fire Crystal",
+          "tier": "common"
+        },
+        {
+          "itemId": 2,
+          "name": "Fire Shard",
+          "tier": "common"
+        },
+        {
+          "itemId": 5391,
+          "name": "Mahogany Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 27683,
+          "name": "White Oak Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 26528,
+          "name": "Cocobolo Lumber",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 26529,
+          "name": "Cryptomeria Log",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 27684,
+          "name": "Miracle Apple Log",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 14957,
+          "name": "Old-growth Camphorwood Log",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 5392,
+          "name": "Teak Log",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 27697,
+          "name": "Truegold Ore",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 27685,
+          "name": "White Ash Log",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12921,
+          "name": "Black Clay",
+          "tier": "rare"
+        },
+        {
+          "itemId": 12920,
+          "name": "Red Clay",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 34,
+      "name": "North Isle of Zozonan",
+      "letter": "C",
+      "zone": "Sea of Ash",
+      "rankReq": 54,
+      "durationMin": 540,
+      "distance": 13,
+      "loot": [
+        {
+          "itemId": 12923,
+          "name": "Bamboo Weave",
+          "tier": "common"
+        },
+        {
+          "itemId": 27696,
+          "name": "Truegold Sand",
+          "tier": "common"
+        },
+        {
+          "itemId": 13,
+          "name": "Water Crystal",
+          "tier": "common"
+        },
+        {
+          "itemId": 7,
+          "name": "Water Shard",
+          "tier": "common"
+        },
+        {
+          "itemId": 12538,
+          "name": "Adamantite Ore",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 5120,
+          "name": "Platinum Ore",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 26531,
+          "name": "Pure Titanium Ore",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 27697,
+          "name": "Truegold Ore",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12921,
+          "name": "Black Clay",
+          "tier": "rare"
+        },
+        {
+          "itemId": 12920,
+          "name": "Red Clay",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 35,
+      "name": "Sea of Ash 1",
+      "letter": "D",
+      "zone": "Sea of Ash",
+      "rankReq": 54,
+      "durationMin": 540,
+      "distance": 13,
+      "loot": [
+        {
+          "itemId": 5116,
+          "name": "Cobalt Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 12,
+          "name": "Lightning Crystal",
+          "tier": "common"
+        },
+        {
+          "itemId": 6,
+          "name": "Lightning Shard",
+          "tier": "common"
+        },
+        {
+          "itemId": 12531,
+          "name": "Mythrite Sand",
+          "tier": "common"
+        },
+        {
+          "itemId": 12224,
+          "name": "Vivianite",
+          "tier": "common"
+        },
+        {
+          "itemId": 27698,
+          "name": "Bluespirit Ore",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 27699,
+          "name": "Manasilver Sand",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 23222,
+          "name": "Marine Wax Ester",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 14151,
+          "name": "Smithsonite Ore",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 22441,
+          "name": "Crimson Coral",
+          "tier": "rare"
+        },
+        {
+          "itemId": 26802,
+          "name": "Sharksucker-class Insubmersible",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 36,
+      "name": "the Southern Charnel Trench",
+      "letter": "E",
+      "zone": "Sea of Ash",
+      "rankReq": 57,
+      "durationMin": 600,
+      "distance": 14,
+      "loot": [
+        {
+          "itemId": 12221,
+          "name": "Cassia Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 5384,
+          "name": "Cedar Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 12578,
+          "name": "Dark Chestnut Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 19933,
+          "name": "Zelkova Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 5226,
+          "name": "Astral Moraine",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 26528,
+          "name": "Cocobolo Lumber",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 27684,
+          "name": "Miracle Apple Log",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 27686,
+          "name": "Sandteak Log",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 27685,
+          "name": "White Ash Log",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 24902,
+          "name": "Abroader Otter",
+          "tier": "rare"
+        },
+        {
+          "itemId": 19934,
+          "name": "Torreya Log",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 37,
+      "name": "Sea of Ash 2",
+      "letter": "F",
+      "zone": "Sea of Ash",
+      "rankReq": 57,
+      "durationMin": 600,
+      "distance": 14,
+      "loot": [
+        {
+          "itemId": 12927,
+          "name": "Aetherochemical Fiber",
+          "tier": "common"
+        },
+        {
+          "itemId": 5512,
+          "name": "Clear Glass Lens",
+          "tier": "common"
+        },
+        {
+          "itemId": 12223,
+          "name": "Raw Celestine",
+          "tier": "common"
+        },
+        {
+          "itemId": 12220,
+          "name": "Red Moko Grass",
+          "tier": "common"
+        },
+        {
+          "itemId": 12610,
+          "name": "Crystal Glass",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 24490,
+          "name": "Emerald Crystal Boule",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 19980,
+          "name": "Kudzu Cloth",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 16908,
+          "name": "Tempered Glass",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 10099,
+          "name": "Unaspected Crystal",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 24902,
+          "name": "Abroader Otter",
+          "tier": "rare"
+        },
+        {
+          "itemId": 8028,
+          "name": "Polarized Glass",
+          "tier": "rare"
+        },
+        {
+          "itemId": 12922,
+          "name": "Synthetic Resin",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 38,
+      "name": "Sea of Ash 3",
+      "letter": "G",
+      "zone": "Sea of Ash",
+      "rankReq": 60,
+      "durationMin": 660,
+      "distance": 15,
+      "loot": [
+        {
+          "itemId": 5066,
+          "name": "Electrum Ingot",
+          "tier": "common"
+        },
+        {
+          "itemId": 5118,
+          "name": "Gold Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 9360,
+          "name": "Platinum Ingot",
+          "tier": "common"
+        },
+        {
+          "itemId": 22505,
+          "name": "Extravagant Salvaged Bracelet",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 22506,
+          "name": "Extravagant Salvaged Earring",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 22507,
+          "name": "Extravagant Salvaged Necklace",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 22504,
+          "name": "Extravagant Salvaged Ring",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 19967,
+          "name": "Rhodonite",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 22501,
+          "name": "Salvaged Bracelet",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 22502,
+          "name": "Salvaged Earring",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 22503,
+          "name": "Salvaged Necklace",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 22500,
+          "name": "Salvaged Ring",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 24908,
+          "name": "Salvaged Coinage",
+          "tier": "rare"
+        },
+        {
+          "itemId": 24503,
+          "name": "Undersea Spoils",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 39,
+      "name": "Ascetic's Demise",
+      "letter": "H",
+      "zone": "Sea of Ash",
+      "rankReq": 60,
+      "durationMin": 660,
+      "distance": 15,
+      "loot": [
+        {
+          "itemId": 7588,
+          "name": "Ferberite",
+          "tier": "common"
+        },
+        {
+          "itemId": 12520,
+          "name": "Hardsilver Nugget",
+          "tier": "common"
+        },
+        {
+          "itemId": 5113,
+          "name": "Silver Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 12224,
+          "name": "Vivianite",
+          "tier": "common"
+        },
+        {
+          "itemId": 27698,
+          "name": "Bluespirit Ore",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 26529,
+          "name": "Cryptomeria Log",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 25008,
+          "name": "Kamacite Ore",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 19938,
+          "name": "Koppranickel Nugget",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 27699,
+          "name": "Manasilver Sand",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 26531,
+          "name": "Pure Titanium Ore",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 27700,
+          "name": "Titancopper Sand",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 24505,
+          "name": "Cerulean Crystal Boule",
+          "tier": "rare"
+        },
+        {
+          "itemId": 26802,
+          "name": "Sharksucker-class Insubmersible",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 40,
+      "name": "the Central Charnel Trench",
+      "letter": "I",
+      "zone": "Sea of Ash",
+      "rankReq": 60,
+      "durationMin": 660,
+      "distance": 15,
+      "loot": [
+        {
+          "itemId": 27801,
+          "name": "Hard Mudstone",
+          "tier": "common"
+        },
+        {
+          "itemId": 12926,
+          "name": "Synthetic Fiber",
+          "tier": "common"
+        },
+        {
+          "itemId": 12537,
+          "name": "Titanium Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 14,
+          "name": "Fire Cluster",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 15,
+          "name": "Ice Cluster",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 18,
+          "name": "Lightning Cluster",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12544,
+          "name": "Star Ruby",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 27701,
+          "name": "Titancopper Ore",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 27803,
+          "name": "Volcanic Tuff",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 19,
+          "name": "Water Cluster",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 16,
+          "name": "Wind Cluster",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 27293,
+          "name": "Antique Vessels",
+          "tier": "rare"
+        },
+        {
+          "itemId": 19967,
+          "name": "Rhodonite",
+          "tier": "rare"
+        },
+        {
+          "itemId": 27287,
+          "name": "Ruby Crystal Boule",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 41,
+      "name": "the Catacombs of the Father",
+      "letter": "J",
+      "zone": "Sea of Ash",
+      "rankReq": 60,
+      "durationMin": 660,
+      "distance": 15,
+      "loot": [
+        {
+          "itemId": 19930,
+          "name": "Beech Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 12221,
+          "name": "Cassia Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 10,
+          "name": "Wind Crystal",
+          "tier": "common"
+        },
+        {
+          "itemId": 12606,
+          "name": "Astral Oil",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 26529,
+          "name": "Cryptomeria Log",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 27684,
+          "name": "Miracle Apple Log",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 20270,
+          "name": "Nagxian Silk",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 27683,
+          "name": "White Oak Log",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 19933,
+          "name": "Zelkova Log",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 26802,
+          "name": "Sharksucker-class Insubmersible",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 42,
+      "name": "Sea of Ash 4",
+      "letter": "K",
+      "zone": "Sea of Ash",
+      "rankReq": 60,
+      "durationMin": 660,
+      "distance": 15,
+      "loot": [
+        {
+          "itemId": 27801,
+          "name": "Hard Mudstone",
+          "tier": "common"
+        },
+        {
+          "itemId": 27697,
+          "name": "Truegold Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 13,
+          "name": "Water Crystal",
+          "tier": "common"
+        },
+        {
+          "itemId": 12230,
+          "name": "Deep-blue Cluster",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12228,
+          "name": "Deep-green Cluster",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 26531,
+          "name": "Pure Titanium Ore",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 19967,
+          "name": "Rhodonite",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 27701,
+          "name": "Titancopper Ore",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 10099,
+          "name": "Unaspected Crystal",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 27287,
+          "name": "Ruby Crystal Boule",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 43,
+      "name": "the Midden Pit",
+      "letter": "L",
+      "zone": "Sea of Ash",
+      "rankReq": 63,
+      "durationMin": 720,
+      "distance": 16,
+      "loot": [
+        {
+          "itemId": 27696,
+          "name": "Truegold Sand",
+          "tier": "common"
+        },
+        {
+          "itemId": 9,
+          "name": "Ice Crystal",
+          "tier": "common"
+        },
+        {
+          "itemId": 5563,
+          "name": "White Scorpion",
+          "tier": "common"
+        },
+        {
+          "itemId": 5226,
+          "name": "Astral Moraine",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 26528,
+          "name": "Cocobolo Lumber",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 27702,
+          "name": "Dimythrite Sand",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 17837,
+          "name": "Grade 7 Dark Matter",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 27699,
+          "name": "Manasilver Sand",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 27700,
+          "name": "Titancopper Sand",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 28621,
+          "name": "Meerkat",
+          "tier": "rare"
+        },
+        {
+          "itemId": 26531,
+          "name": "Pure Titanium Ore",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 44,
+      "name": "the Lone Glove",
+      "letter": "M",
+      "zone": "Sea of Ash",
+      "rankReq": 63,
+      "durationMin": 720,
+      "distance": 16,
+      "loot": [
+        {
+          "itemId": 5564,
+          "name": "Black Scorpion",
+          "tier": "common"
+        },
+        {
+          "itemId": 11,
+          "name": "Earth Crystal",
+          "tier": "common"
+        },
+        {
+          "itemId": 27683,
+          "name": "White Oak Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 26528,
+          "name": "Cocobolo Lumber",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 17837,
+          "name": "Grade 7 Dark Matter",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 27687,
+          "name": "Lignum Vitae Log",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 14957,
+          "name": "Old-growth Camphorwood Log",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 27686,
+          "name": "Sandteak Log",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 27685,
+          "name": "White Ash Log",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 26529,
+          "name": "Cryptomeria Log",
+          "tier": "rare"
+        },
+        {
+          "itemId": 28621,
+          "name": "Meerkat",
+          "tier": "rare"
+        },
+        {
+          "itemId": 25186,
+          "name": "Piety Materia VII",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 45,
+      "name": "Coldtoe Isle",
+      "letter": "N",
+      "zone": "Sea of Ash",
+      "rankReq": 65,
+      "durationMin": 780,
+      "distance": 17,
+      "loot": [
+        {
+          "itemId": 5067,
+          "name": "Rose Gold Ingot",
+          "tier": "common"
+        },
+        {
+          "itemId": 5118,
+          "name": "Gold Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 12,
+          "name": "Lightning Crystal",
+          "tier": "common"
+        },
+        {
+          "itemId": 27708,
+          "name": "Deepgold Ingot",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 27996,
+          "name": "Grade 2 Tincture of Dexterity",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 27998,
+          "name": "Grade 2 Tincture of Intelligence",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 27995,
+          "name": "Grade 2 Tincture of Strength",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 24908,
+          "name": "Salvaged Coinage",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 24503,
+          "name": "Undersea Spoils",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 27293,
+          "name": "Antique Vessels",
+          "tier": "rare"
+        },
+        {
+          "itemId": 28136,
+          "name": "Golden Ewer",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 46,
+      "name": "Smuggler's Knot",
+      "letter": "O",
+      "zone": "Sea of Ash",
+      "rankReq": 65,
+      "durationMin": 780,
+      "distance": 17,
+      "loot": [
+        {
+          "itemId": 11,
+          "name": "Earth Crystal",
+          "tier": "common"
+        },
+        {
+          "itemId": 19934,
+          "name": "Torreya Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 27683,
+          "name": "White Oak Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 26528,
+          "name": "Cocobolo Lumber",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 26529,
+          "name": "Cryptomeria Log",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 27687,
+          "name": "Lignum Vitae Log",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 27686,
+          "name": "Sandteak Log",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 27685,
+          "name": "White Ash Log",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 24490,
+          "name": "Emerald Crystal Boule",
+          "tier": "rare"
+        },
+        {
+          "itemId": 28621,
+          "name": "Meerkat",
+          "tier": "rare"
+        },
+        {
+          "itemId": 30093,
+          "name": "Silver Dasher",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 47,
+      "name": "the Open Robe",
+      "letter": "P",
+      "zone": "Sea of Ash",
+      "rankReq": 65,
+      "durationMin": 780,
+      "distance": 20,
+      "loot": [
+        {
+          "itemId": 27753,
+          "name": "Pixie Floss Boll",
+          "tier": "common"
+        },
+        {
+          "itemId": 10,
+          "name": "Wind Crystal",
+          "tier": "common"
+        },
+        {
+          "itemId": 27817,
+          "name": "Yellow Alumen",
+          "tier": "common"
+        },
+        {
+          "itemId": 22441,
+          "name": "Crimson Coral",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 27759,
+          "name": "Dwarven Cotton Boll",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 27736,
+          "name": "Sea Swallow Skin",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 27773,
+          "name": "Vampire Cup Vine",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 27774,
+          "name": "Vampire Vine Sap",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 27293,
+          "name": "Antique Vessels",
+          "tier": "rare"
+        },
+        {
+          "itemId": 28980,
+          "name": "Golden Crystal Boule",
+          "tier": "rare"
+        },
+        {
+          "itemId": 26802,
+          "name": "Sharksucker-class Insubmersible",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 48,
+      "name": "Nald'thal's Pipe",
+      "letter": "Q",
+      "zone": "Sea of Ash",
+      "rankReq": 66,
+      "durationMin": 800,
+      "distance": 20,
+      "loot": [
+        {
+          "itemId": 8,
+          "name": "Fire Crystal",
+          "tier": "common"
+        },
+        {
+          "itemId": 5232,
+          "name": "Stiperstone",
+          "tier": "common"
+        },
+        {
+          "itemId": 27701,
+          "name": "Titancopper Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 12537,
+          "name": "Titanium Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 24902,
+          "name": "Abroader Otter",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 29590,
+          "name": "Pelagic Clay",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 27287,
+          "name": "Ruby Crystal Boule",
+          "tier": "uncommon"
+        }
+      ]
+    },
+    {
+      "id": 49,
+      "name": "the Slipped Anchor",
+      "letter": "R",
+      "zone": "Sea of Ash",
+      "rankReq": 67,
+      "durationMin": 820,
+      "distance": 21,
+      "loot": [
+        {
+          "itemId": 27702,
+          "name": "Dimythrite Sand",
+          "tier": "common"
+        },
+        {
+          "itemId": 12531,
+          "name": "Mythrite Sand",
+          "tier": "common"
+        },
+        {
+          "itemId": 13,
+          "name": "Water Crystal",
+          "tier": "common"
+        },
+        {
+          "itemId": 27703,
+          "name": "Dimythrite Ore",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12534,
+          "name": "Mythrite Ore",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 24908,
+          "name": "Salvaged Coinage",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 24503,
+          "name": "Undersea Spoils",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 21921,
+          "name": "Aurelia Polyp",
+          "tier": "rare"
+        },
+        {
+          "itemId": 30034,
+          "name": "Sintered Whetstone",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 50,
+      "name": "Glutton's Belly",
+      "letter": "S",
+      "zone": "Sea of Ash",
+      "rankReq": 69,
+      "durationMin": 860,
+      "distance": 21,
+      "loot": [
+        {
+          "itemId": 12924,
+          "name": "Balsa Wood Scrap",
+          "tier": "common"
+        },
+        {
+          "itemId": 12,
+          "name": "Lightning Crystal",
+          "tier": "common"
+        },
+        {
+          "itemId": 12926,
+          "name": "Synthetic Fiber",
+          "tier": "common"
+        },
+        {
+          "itemId": 26528,
+          "name": "Cocobolo Lumber",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12230,
+          "name": "Deep-blue Cluster",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12922,
+          "name": "Synthetic Resin",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 24505,
+          "name": "Cerulean Crystal Boule",
+          "tier": "rare"
+        },
+        {
+          "itemId": 22442,
+          "name": "Colossus Slab",
+          "tier": "rare"
+        },
+        {
+          "itemId": 28136,
+          "name": "Golden Ewer",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 51,
+      "name": "the Blue Hole",
+      "letter": "T",
+      "zone": "Sea of Ash",
+      "rankReq": 70,
+      "durationMin": 880,
+      "distance": 22,
+      "loot": [
+        {
+          "itemId": 27684,
+          "name": "Miracle Apple Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 27683,
+          "name": "White Oak Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 12923,
+          "name": "Bamboo Weave",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 20791,
+          "name": "Cloudsbreath",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 26529,
+          "name": "Cryptomeria Log",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 24902,
+          "name": "Abroader Otter",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 53,
+      "name": "the Isle of Sacrament",
+      "letter": "A",
+      "zone": "Sea of Jade",
+      "rankReq": 70,
+      "durationMin": 880,
+      "distance": 22,
+      "loot": [
+        {
+          "itemId": 27684,
+          "name": "Miracle Apple Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 27683,
+          "name": "White Oak Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 12923,
+          "name": "Bamboo Weave",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 20791,
+          "name": "Cloudsbreath",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 26529,
+          "name": "Cryptomeria Log",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 24902,
+          "name": "Abroader Otter",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 54,
+      "name": "the Kraken's Tomb",
+      "letter": "B",
+      "zone": "Sea of Jade",
+      "rankReq": 70,
+      "durationMin": 880,
+      "distance": 22,
+      "loot": [
+        {
+          "itemId": 27699,
+          "name": "Manasilver Sand",
+          "tier": "common"
+        },
+        {
+          "itemId": 27696,
+          "name": "Truegold Sand",
+          "tier": "common"
+        },
+        {
+          "itemId": 12230,
+          "name": "Deep-blue Cluster",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 29590,
+          "name": "Pelagic Clay",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 30034,
+          "name": "Sintered Whetstone",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 22442,
+          "name": "Colossus Slab",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 55,
+      "name": "Sea of Jade 1",
+      "letter": "C",
+      "zone": "Sea of Jade",
+      "rankReq": 70,
+      "durationMin": 880,
+      "distance": 22,
+      "loot": [
+        {
+          "itemId": 27702,
+          "name": "Dimythrite Sand",
+          "tier": "common"
+        },
+        {
+          "itemId": 27700,
+          "name": "Titancopper Sand",
+          "tier": "common"
+        },
+        {
+          "itemId": 27293,
+          "name": "Antique Vessels",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12924,
+          "name": "Balsa Wood Scrap",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12921,
+          "name": "Black Clay",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 21921,
+          "name": "Aurelia Polyp",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 56,
+      "name": "Rogo-Tumu-Here's Haunt",
+      "letter": "D",
+      "zone": "Sea of Jade",
+      "rankReq": 72,
+      "durationMin": 900,
+      "distance": 23,
+      "loot": [
+        {
+          "itemId": 27698,
+          "name": "Bluespirit Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 12228,
+          "name": "Deep-green Cluster",
+          "tier": "common"
+        },
+        {
+          "itemId": 12226,
+          "name": "Deep-red Cluster",
+          "tier": "common"
+        },
+        {
+          "itemId": 27697,
+          "name": "Truegold Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 12925,
+          "name": "Balsa Wood Lumber",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 26531,
+          "name": "Pure Titanium Ore",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12922,
+          "name": "Synthetic Resin",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 30093,
+          "name": "Silver Dasher",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 57,
+      "name": "the Stone Barbs",
+      "letter": "E",
+      "zone": "Sea of Jade",
+      "rankReq": 72,
+      "durationMin": 900,
+      "distance": 23,
+      "loot": [
+        {
+          "itemId": 27686,
+          "name": "Sandteak Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 27685,
+          "name": "White Ash Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 28136,
+          "name": "Golden Ewer",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12920,
+          "name": "Red Clay",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12926,
+          "name": "Synthetic Fiber",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 28621,
+          "name": "Meerkat",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 58,
+      "name": "Rogo-Tumu-Here's Repose",
+      "letter": "F",
+      "zone": "Sea of Jade",
+      "rankReq": 73,
+      "durationMin": 920,
+      "distance": 24,
+      "loot": [
+        {
+          "itemId": 12230,
+          "name": "Deep-blue Cluster",
+          "tier": "common"
+        },
+        {
+          "itemId": 27703,
+          "name": "Dimythrite Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 27701,
+          "name": "Titancopper Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 12927,
+          "name": "Aetherochemical Fiber",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 29590,
+          "name": "Pelagic Clay",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 17019,
+          "name": "Plundered Treasure",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 31322,
+          "name": "Plum Paper Parasol",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 59,
+      "name": "Tangaroa's Prow",
+      "letter": "G",
+      "zone": "Sea of Jade",
+      "rankReq": 74,
+      "durationMin": 930,
+      "distance": 24,
+      "loot": [
+        {
+          "itemId": 27699,
+          "name": "Manasilver Sand",
+          "tier": "common"
+        },
+        {
+          "itemId": 27696,
+          "name": "Truegold Sand",
+          "tier": "common"
+        },
+        {
+          "itemId": 26528,
+          "name": "Cocobolo Lumber",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 23222,
+          "name": "Marine Wax Ester",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 29590,
+          "name": "Pelagic Clay",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 31671,
+          "name": "Hard to Miss Orchestrion Roll",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 60,
+      "name": "Sea of Jade 2",
+      "letter": "H",
+      "zone": "Sea of Jade",
+      "rankReq": 75,
+      "durationMin": 940,
+      "distance": 25,
+      "loot": [
+        {
+          "itemId": 27687,
+          "name": "Lignum Vitae Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 27686,
+          "name": "Sandteak Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 12929,
+          "name": "Empty Cluster",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 29590,
+          "name": "Pelagic Clay",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 24503,
+          "name": "Undersea Spoils",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 30386,
+          "name": "Gemseeker's Pack",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 61,
+      "name": "the Blind Sound",
+      "letter": "I",
+      "zone": "Sea of Jade",
+      "rankReq": 75,
+      "durationMin": 940,
+      "distance": 25,
+      "loot": [
+        {
+          "itemId": 27703,
+          "name": "Dimythrite Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 27702,
+          "name": "Dimythrite Sand",
+          "tier": "common"
+        },
+        {
+          "itemId": 27699,
+          "name": "Manasilver Sand",
+          "tier": "common"
+        },
+        {
+          "itemId": 12230,
+          "name": "Deep-blue Cluster",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12922,
+          "name": "Synthetic Resin",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 32205,
+          "name": "Tankard",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 62,
+      "name": "Sea of Jade 3",
+      "letter": "J",
+      "zone": "Sea of Jade",
+      "rankReq": 75,
+      "durationMin": 940,
+      "distance": 25,
+      "loot": [
+        {
+          "itemId": 27698,
+          "name": "Bluespirit Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 27701,
+          "name": "Titancopper Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 27700,
+          "name": "Titancopper Sand",
+          "tier": "common"
+        },
+        {
+          "itemId": 12226,
+          "name": "Deep-red Cluster",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 23222,
+          "name": "Marine Wax Ester",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 32214,
+          "name": "Antique Sink",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 63,
+      "name": "Moergynn's Forge",
+      "letter": "K",
+      "zone": "Sea of Jade",
+      "rankReq": 76,
+      "durationMin": 950,
+      "distance": 26,
+      "loot": [
+        {
+          "itemId": 5118,
+          "name": "Gold Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 27697,
+          "name": "Truegold Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 27696,
+          "name": "Truegold Sand",
+          "tier": "common"
+        },
+        {
+          "itemId": 26528,
+          "name": "Cocobolo Lumber",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 26531,
+          "name": "Pure Titanium Ore",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 33120,
+          "name": "Nemesis Orchestrion Roll",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 64,
+      "name": "Tangaroa's Beacon",
+      "letter": "L",
+      "zone": "Sea of Jade",
+      "rankReq": 78,
+      "durationMin": 960,
+      "distance": 28,
+      "loot": [
+        {
+          "itemId": 27686,
+          "name": "Sandteak Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 19934,
+          "name": "Torreya Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 27685,
+          "name": "White Ash Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 20791,
+          "name": "Cloudsbreath",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 26529,
+          "name": "Cryptomeria Log",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 32248,
+          "name": "Parkside Tree",
+          "tier": "rare"
+        },
+        {
+          "itemId": 32223,
+          "name": "Royal Lion",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 65,
+      "name": "Sea of Jade 4",
+      "letter": "M",
+      "zone": "Sea of Jade",
+      "rankReq": 80,
+      "durationMin": 980,
+      "distance": 30,
+      "loot": [
+        {
+          "itemId": 27687,
+          "name": "Lignum Vitae Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 27684,
+          "name": "Miracle Apple Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 27683,
+          "name": "White Oak Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 29590,
+          "name": "Pelagic Clay",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 30034,
+          "name": "Sintered Whetstone",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 32848,
+          "name": "Syldrion-class Insubmersible",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 66,
+      "name": "the Forest of Kelp",
+      "letter": "N",
+      "zone": "Sea of Jade",
+      "rankReq": 81,
+      "durationMin": 1000,
+      "distance": 31,
+      "loot": [
+        {
+          "itemId": 27687,
+          "name": "Lignum Vitae Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 27684,
+          "name": "Miracle Apple Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 27683,
+          "name": "White Oak Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 29590,
+          "name": "Pelagic Clay",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 26531,
+          "name": "Pure Titanium Ore",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 33872,
+          "name": "Rusted Suit of Armor",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 67,
+      "name": "Sea of Jade 5",
+      "letter": "O",
+      "zone": "Sea of Jade",
+      "rankReq": 83,
+      "durationMin": 1040,
+      "distance": 32,
+      "loot": [
+        {
+          "itemId": 27698,
+          "name": "Bluespirit Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 27701,
+          "name": "Titancopper Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 27700,
+          "name": "Titancopper Sand",
+          "tier": "common"
+        },
+        {
+          "itemId": 28980,
+          "name": "Golden Crystal Boule",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 32223,
+          "name": "Royal Lion",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 33848,
+          "name": "By Design Orchestrion Roll",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 68,
+      "name": "Bladefall Chasm",
+      "letter": "P",
+      "zone": "Sea of Jade",
+      "rankReq": 85,
+      "durationMin": 1080,
+      "distance": 33,
+      "loot": [
+        {
+          "itemId": 27687,
+          "name": "Lignum Vitae Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 27684,
+          "name": "Miracle Apple Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 27683,
+          "name": "White Oak Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 28621,
+          "name": "Meerkat",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 31322,
+          "name": "Plum Paper Parasol",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 32248,
+          "name": "Parkside Tree",
+          "tier": "uncommon"
+        }
+      ]
+    },
+    {
+      "id": 69,
+      "name": "Stormport",
+      "letter": "Q",
+      "zone": "Sea of Jade",
+      "rankReq": 87,
+      "durationMin": 1120,
+      "distance": 34,
+      "loot": [
+        {
+          "itemId": 27703,
+          "name": "Dimythrite Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 27702,
+          "name": "Dimythrite Sand",
+          "tier": "common"
+        },
+        {
+          "itemId": 27699,
+          "name": "Manasilver Sand",
+          "tier": "common"
+        },
+        {
+          "itemId": 26529,
+          "name": "Cryptomeria Log",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 29590,
+          "name": "Pelagic Clay",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 33871,
+          "name": "Ancient Bone",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 70,
+      "name": "Wyrm's Rest",
+      "letter": "R",
+      "zone": "Sea of Jade",
+      "rankReq": 88,
+      "durationMin": 1140,
+      "distance": 35,
+      "loot": [
+        {
+          "itemId": 27686,
+          "name": "Sandteak Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 19934,
+          "name": "Torreya Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 27685,
+          "name": "White Ash Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 32214,
+          "name": "Antique Sink",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 32848,
+          "name": "Syldrion-class Insubmersible",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 33873,
+          "name": "Damaged Icebox",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 71,
+      "name": "Sea of Jade 6",
+      "letter": "S",
+      "zone": "Sea of Jade",
+      "rankReq": 89,
+      "durationMin": 1160,
+      "distance": 36,
+      "loot": [
+        {
+          "itemId": 27703,
+          "name": "Dimythrite Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 27702,
+          "name": "Dimythrite Sand",
+          "tier": "common"
+        },
+        {
+          "itemId": 27699,
+          "name": "Manasilver Sand",
+          "tier": "common"
+        },
+        {
+          "itemId": 31671,
+          "name": "Hard to Miss Orchestrion Roll",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 33120,
+          "name": "Nemesis Orchestrion Roll",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 33287,
+          "name": "Portrait of Gestahl",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 72,
+      "name": "the Devil's Crypt",
+      "letter": "T",
+      "zone": "Sea of Jade",
+      "rankReq": 90,
+      "durationMin": 1180,
+      "distance": 37,
+      "loot": [
+        {
+          "itemId": 5118,
+          "name": "Gold Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 27697,
+          "name": "Truegold Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 27696,
+          "name": "Truegold Sand",
+          "tier": "common"
+        },
+        {
+          "itemId": 30093,
+          "name": "Silver Dasher",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 32205,
+          "name": "Tankard",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 33695,
+          "name": "Benben Stone",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 74,
+      "name": "Mastbound's Bounty",
+      "letter": "A",
+      "zone": "Sirensong Sea",
+      "rankReq": 90,
+      "durationMin": 1180,
+      "distance": 37,
+      "loot": [
+        {
+          "itemId": 36087,
+          "name": "Coconut",
+          "tier": "common"
+        },
+        {
+          "itemId": 36086,
+          "name": "Palm Syrup",
+          "tier": "common"
+        },
+        {
+          "itemId": 36094,
+          "name": "Sideritis Leaves",
+          "tier": "common"
+        },
+        {
+          "itemId": 29590,
+          "name": "Pelagic Clay",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 30034,
+          "name": "Sintered Whetstone",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 33848,
+          "name": "By Design Orchestrion Roll",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 75,
+      "name": "Sirensong Sea 1",
+      "letter": "B",
+      "zone": "Sirensong Sea",
+      "rankReq": 90,
+      "durationMin": 1180,
+      "distance": 37,
+      "loot": [
+        {
+          "itemId": 36097,
+          "name": "Alien Onion",
+          "tier": "common"
+        },
+        {
+          "itemId": 36089,
+          "name": "Giant Popoto",
+          "tier": "common"
+        },
+        {
+          "itemId": 36096,
+          "name": "Sykon",
+          "tier": "common"
+        },
+        {
+          "itemId": 28621,
+          "name": "Meerkat",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 29590,
+          "name": "Pelagic Clay",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 33873,
+          "name": "Damaged Icebox",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 76,
+      "name": "Sirensong Sea 2",
+      "letter": "C",
+      "zone": "Sirensong Sea",
+      "rankReq": 90,
+      "durationMin": 1180,
+      "distance": 37,
+      "loot": [
+        {
+          "itemId": 36181,
+          "name": "Annite",
+          "tier": "common"
+        },
+        {
+          "itemId": 36180,
+          "name": "Chloroschist",
+          "tier": "common"
+        },
+        {
+          "itemId": 36175,
+          "name": "Pewter Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 26528,
+          "name": "Cocobolo Lumber",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 30093,
+          "name": "Silver Dasher",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 37490,
+          "name": "Driftseeds",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 77,
+      "name": "Anthemoessa",
+      "letter": "D",
+      "zone": "Sirensong Sea",
+      "rankReq": 91,
+      "durationMin": 1190,
+      "distance": 38,
+      "loot": [
+        {
+          "itemId": 36190,
+          "name": "Horse Chestnut Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 36194,
+          "name": "Integral Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 36193,
+          "name": "Ironwood Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 26528,
+          "name": "Cocobolo Lumber",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 30386,
+          "name": "Gemseeker's Pack",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 37487,
+          "name": "False Classic Spectacles",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 78,
+      "name": "Magos Trench",
+      "letter": "E",
+      "zone": "Sirensong Sea",
+      "rankReq": 92,
+      "durationMin": 1210,
+      "distance": 39,
+      "loot": [
+        {
+          "itemId": 36174,
+          "name": "Raw Ametrine",
+          "tier": "common"
+        },
+        {
+          "itemId": 36177,
+          "name": "Raw Blue Zircon",
+          "tier": "common"
+        },
+        {
+          "itemId": 36178,
+          "name": "Raw Star Quartz",
+          "tier": "common"
+        },
+        {
+          "itemId": 33695,
+          "name": "Benben Stone",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 32248,
+          "name": "Parkside Tree",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 37489,
+          "name": "Deep-sea Marble",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 79,
+      "name": "Thrall's Unrest",
+      "letter": "F",
+      "zone": "Sirensong Sea",
+      "rankReq": 93,
+      "durationMin": 1220,
+      "distance": 40,
+      "loot": [
+        {
+          "itemId": 36206,
+          "name": "AR-Caean Cotton Boll",
+          "tier": "common"
+        },
+        {
+          "itemId": 36083,
+          "name": "Dark Rye",
+          "tier": "common"
+        },
+        {
+          "itemId": 36205,
+          "name": "Scarlet Moko Grass",
+          "tier": "common"
+        },
+        {
+          "itemId": 24505,
+          "name": "Cerulean Crystal Boule",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 31322,
+          "name": "Plum Paper Parasol",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 37485,
+          "name": "Blue Blossom Parasol",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 80,
+      "name": "Crow's Drop",
+      "letter": "G",
+      "zone": "Sirensong Sea",
+      "rankReq": 95,
+      "durationMin": 1250,
+      "distance": 41,
+      "loot": [
+        {
+          "itemId": 36164,
+          "name": "Bismuth Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 36165,
+          "name": "Manganese Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 36176,
+          "name": "Phrygian Gold Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 37083,
+          "name": "Basaltic Clay",
+          "tier": "uncommon"
+        }
+      ]
+    },
+    {
+      "id": 81,
+      "name": "Sirensong Sea 3",
+      "letter": "H",
+      "zone": "Sirensong Sea",
+      "rankReq": 96,
+      "durationMin": 1270,
+      "distance": 42,
+      "loot": [
+        {
+          "itemId": 36087,
+          "name": "Coconut",
+          "tier": "common"
+        },
+        {
+          "itemId": 36086,
+          "name": "Palm Syrup",
+          "tier": "common"
+        },
+        {
+          "itemId": 36094,
+          "name": "Sideritis Leaves",
+          "tier": "common"
+        },
+        {
+          "itemId": 33848,
+          "name": "By Design Orchestrion Roll",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 26802,
+          "name": "Sharksucker-class Insubmersible",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 38684,
+          "name": "Weatherproof Cloth",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 82,
+      "name": "the Anthemoessa Undertow",
+      "letter": "I",
+      "zone": "Sirensong Sea",
+      "rankReq": 96,
+      "durationMin": 1270,
+      "distance": 42,
+      "loot": [
+        {
+          "itemId": 36164,
+          "name": "Bismuth Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 36165,
+          "name": "Manganese Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 36176,
+          "name": "Phrygian Gold Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 21921,
+          "name": "Aurelia Polyp",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 37485,
+          "name": "Blue Blossom Parasol",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 38580,
+          "name": "Wall-climbing Ivy",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 83,
+      "name": "Sirensong Sea 4",
+      "letter": "J",
+      "zone": "Sirensong Sea",
+      "rankReq": 97,
+      "durationMin": 1280,
+      "distance": 42,
+      "loot": [
+        {
+          "itemId": 36174,
+          "name": "Raw Ametrine",
+          "tier": "common"
+        },
+        {
+          "itemId": 36177,
+          "name": "Raw Blue Zircon",
+          "tier": "common"
+        },
+        {
+          "itemId": 36178,
+          "name": "Raw Star Quartz",
+          "tier": "common"
+        },
+        {
+          "itemId": 37489,
+          "name": "Deep-sea Marble",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 28980,
+          "name": "Golden Crystal Boule",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 38685,
+          "name": "Weathered Pipe",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 84,
+      "name": "Seafoam Tide",
+      "letter": "K",
+      "zone": "Sirensong Sea",
+      "rankReq": 98,
+      "durationMin": 1300,
+      "distance": 43,
+      "loot": [
+        {
+          "itemId": 36097,
+          "name": "Alien Onion",
+          "tier": "common"
+        },
+        {
+          "itemId": 36089,
+          "name": "Giant Popoto",
+          "tier": "common"
+        },
+        {
+          "itemId": 36096,
+          "name": "Sykon",
+          "tier": "common"
+        },
+        {
+          "itemId": 33873,
+          "name": "Damaged Icebox",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 32848,
+          "name": "Syldrion-class Insubmersible",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 38607,
+          "name": "Flagstone Steps",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 85,
+      "name": "the Beak",
+      "letter": "L",
+      "zone": "Sirensong Sea",
+      "rankReq": 99,
+      "durationMin": 1310,
+      "distance": 44,
+      "loot": [
+        {
+          "itemId": 36190,
+          "name": "Horse Chestnut Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 36194,
+          "name": "Integral Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 36193,
+          "name": "Ironwood Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 36094,
+          "name": "Sideritis Leaves",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 37490,
+          "name": "Driftseeds",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 38608,
+          "name": "Flagstone Loft",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 86,
+      "name": "Seafarer's End",
+      "letter": "M",
+      "zone": "Sirensong Sea",
+      "rankReq": 100,
+      "durationMin": 1330,
+      "distance": 44,
+      "loot": [
+        {
+          "itemId": 36181,
+          "name": "Annite",
+          "tier": "common"
+        },
+        {
+          "itemId": 36180,
+          "name": "Chloroschist",
+          "tier": "common"
+        },
+        {
+          "itemId": 36175,
+          "name": "Pewter Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 37487,
+          "name": "False Classic Spectacles",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 24503,
+          "name": "Undersea Spoils",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 38619,
+          "name": "Damaged Highland Turret",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 87,
+      "name": "Drifter's Decay",
+      "letter": "N",
+      "zone": "Sirensong Sea",
+      "rankReq": 101,
+      "durationMin": 1340,
+      "distance": 45,
+      "loot": [
+        {
+          "itemId": 36190,
+          "name": "Horse Chestnut Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 36194,
+          "name": "Integral Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 36193,
+          "name": "Ironwood Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 37485,
+          "name": "Blue Blossom Parasol",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 37487,
+          "name": "False Classic Spectacles",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 39382,
+          "name": "Charcoal Iron",
+          "tier": "rare"
+        },
+        {
+          "itemId": 39587,
+          "name": "White Granite",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 88,
+      "name": "Lugat's Landing",
+      "letter": "O",
+      "zone": "Sirensong Sea",
+      "rankReq": 101,
+      "durationMin": 1340,
+      "distance": 45,
+      "loot": [
+        {
+          "itemId": 36087,
+          "name": "Coconut",
+          "tier": "common"
+        },
+        {
+          "itemId": 36086,
+          "name": "Palm Syrup",
+          "tier": "common"
+        },
+        {
+          "itemId": 36094,
+          "name": "Sideritis Leaves",
+          "tier": "common"
+        },
+        {
+          "itemId": 38685,
+          "name": "Weathered Pipe",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 38684,
+          "name": "Weatherproof Cloth",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 39387,
+          "name": "Classical Water Jug",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 89,
+      "name": "the Frozen Spring",
+      "letter": "P",
+      "zone": "Sirensong Sea",
+      "rankReq": 102,
+      "durationMin": 1360,
+      "distance": 46,
+      "loot": [
+        {
+          "itemId": 36174,
+          "name": "Raw Ametrine",
+          "tier": "common"
+        },
+        {
+          "itemId": 36177,
+          "name": "Raw Blue Zircon",
+          "tier": "common"
+        },
+        {
+          "itemId": 36178,
+          "name": "Raw Star Quartz",
+          "tier": "common"
+        },
+        {
+          "itemId": 38607,
+          "name": "Flagstone Steps",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 38580,
+          "name": "Wall-climbing Ivy",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 39585,
+          "name": "Timeworn Thaumaturgic Instruments",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 90,
+      "name": "Sirensong Sea 5",
+      "letter": "Q",
+      "zone": "Sirensong Sea",
+      "rankReq": 103,
+      "durationMin": 1370,
+      "distance": 47,
+      "loot": [
+        {
+          "itemId": 36164,
+          "name": "Bismuth Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 36165,
+          "name": "Manganese Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 36176,
+          "name": "Phrygian Gold Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 38619,
+          "name": "Damaged Highland Turret",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 38608,
+          "name": "Flagstone Loft",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 39588,
+          "name": "Ominous Plating",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 91,
+      "name": "Tidewind Isle",
+      "letter": "R",
+      "zone": "Sirensong Sea",
+      "rankReq": 104,
+      "durationMin": 1390,
+      "distance": 47,
+      "loot": [
+        {
+          "itemId": 36206,
+          "name": "AR-Caean Cotton Boll",
+          "tier": "common"
+        },
+        {
+          "itemId": 36083,
+          "name": "Dark Rye",
+          "tier": "common"
+        },
+        {
+          "itemId": 36205,
+          "name": "Scarlet Moko Grass",
+          "tier": "common"
+        },
+        {
+          "itemId": 33873,
+          "name": "Damaged Icebox",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 37489,
+          "name": "Deep-sea Marble",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 39586,
+          "name": "Enigmatic Gear",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 92,
+      "name": "Bloodbreak",
+      "letter": "S",
+      "zone": "Sirensong Sea",
+      "rankReq": 105,
+      "durationMin": 1400,
+      "distance": 48,
+      "loot": [
+        {
+          "itemId": 36181,
+          "name": "Annite",
+          "tier": "common"
+        },
+        {
+          "itemId": 36180,
+          "name": "Chloroschist",
+          "tier": "common"
+        },
+        {
+          "itemId": 36175,
+          "name": "Pewter Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 33848,
+          "name": "By Design Orchestrion Roll",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 33287,
+          "name": "Portrait of Gestahl",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 39476,
+          "name": "Suzusaurus",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 93,
+      "name": "the Crystal Font",
+      "letter": "T",
+      "zone": "Sirensong Sea",
+      "rankReq": 105,
+      "durationMin": 1400,
+      "distance": 48,
+      "loot": [
+        {
+          "itemId": 36097,
+          "name": "Alien Onion",
+          "tier": "common"
+        },
+        {
+          "itemId": 36089,
+          "name": "Giant Popoto",
+          "tier": "common"
+        },
+        {
+          "itemId": 36096,
+          "name": "Sykon",
+          "tier": "common"
+        },
+        {
+          "itemId": 33871,
+          "name": "Ancient Bone",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 37083,
+          "name": "Basaltic Clay",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 39618,
+          "name": "Dreams Aloft Orchestrion Roll",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 95,
+      "name": "Weeping Trellis",
+      "letter": "A",
+      "zone": "Lilac Sea",
+      "rankReq": 105,
+      "durationMin": 1400,
+      "distance": 48,
+      "loot": [
+        {
+          "itemId": 36181,
+          "name": "Annite",
+          "tier": "common"
+        },
+        {
+          "itemId": 36180,
+          "name": "Chloroschist",
+          "tier": "common"
+        },
+        {
+          "itemId": 36175,
+          "name": "Pewter Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 37489,
+          "name": "Deep-sea Marble",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 38607,
+          "name": "Flagstone Steps",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 40638,
+          "name": "Classic Tableware",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 96,
+      "name": "the Forsaken Isle",
+      "letter": "B",
+      "zone": "Lilac Sea",
+      "rankReq": 105,
+      "durationMin": 1400,
+      "distance": 48,
+      "loot": [
+        {
+          "itemId": 36087,
+          "name": "Coconut",
+          "tier": "common"
+        },
+        {
+          "itemId": 36086,
+          "name": "Palm Syrup",
+          "tier": "common"
+        },
+        {
+          "itemId": 36094,
+          "name": "Sideritis Leaves",
+          "tier": "common"
+        },
+        {
+          "itemId": 37485,
+          "name": "Blue Blossom Parasol",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 37490,
+          "name": "Driftseeds",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 40699,
+          "name": "Damaged Side Table",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 97,
+      "name": "Fortune's Ford",
+      "letter": "C",
+      "zone": "Lilac Sea",
+      "rankReq": 105,
+      "durationMin": 1400,
+      "distance": 48,
+      "loot": [
+        {
+          "itemId": 36190,
+          "name": "Horse Chestnut Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 36194,
+          "name": "Integral Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 36193,
+          "name": "Ironwood Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 39387,
+          "name": "Classical Water Jug",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 39618,
+          "name": "Dreams Aloft Orchestrion Roll",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 40698,
+          "name": "Mossy Log",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 98,
+      "name": "Lilac Sea 1",
+      "letter": "D",
+      "zone": "Lilac Sea",
+      "rankReq": 106,
+      "durationMin": 1420,
+      "distance": 48,
+      "loot": [
+        {
+          "itemId": 36097,
+          "name": "Alien Onion",
+          "tier": "common"
+        },
+        {
+          "itemId": 36089,
+          "name": "Giant Popoto",
+          "tier": "common"
+        },
+        {
+          "itemId": 36096,
+          "name": "Sykon",
+          "tier": "common"
+        },
+        {
+          "itemId": 39585,
+          "name": "Timeworn Thaumaturgic Instruments",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 38580,
+          "name": "Wall-climbing Ivy",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 40659,
+          "name": "Raw Log Half Partition",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 99,
+      "name": "Runners' Reach",
+      "letter": "E",
+      "zone": "Lilac Sea",
+      "rankReq": 107,
+      "durationMin": 1430,
+      "distance": 48,
+      "loot": [
+        {
+          "itemId": 36206,
+          "name": "AR-Caean Cotton Boll",
+          "tier": "common"
+        },
+        {
+          "itemId": 36083,
+          "name": "Dark Rye",
+          "tier": "common"
+        },
+        {
+          "itemId": 36205,
+          "name": "Scarlet Moko Grass",
+          "tier": "common"
+        },
+        {
+          "itemId": 38685,
+          "name": "Weathered Pipe",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 38684,
+          "name": "Weatherproof Cloth",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 40697,
+          "name": "Iroko Lumber",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 100,
+      "name": "Bellflower Flood",
+      "letter": "F",
+      "zone": "Lilac Sea",
+      "rankReq": 108,
+      "durationMin": 1450,
+      "distance": 49,
+      "loot": [
+        {
+          "itemId": 36164,
+          "name": "Bismuth Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 36165,
+          "name": "Manganese Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 36176,
+          "name": "Phrygian Gold Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 39586,
+          "name": "Enigmatic Gear",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 39588,
+          "name": "Ominous Plating",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 40696,
+          "name": "Weathered Fitting",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 101,
+      "name": "Lilac Sea 2",
+      "letter": "G",
+      "zone": "Lilac Sea",
+      "rankReq": 110,
+      "durationMin": 1480,
+      "distance": 49,
+      "loot": [
+        {
+          "itemId": 36174,
+          "name": "Raw Ametrine",
+          "tier": "common"
+        },
+        {
+          "itemId": 36177,
+          "name": "Raw Blue Zircon",
+          "tier": "common"
+        },
+        {
+          "itemId": 36178,
+          "name": "Raw Star Quartz",
+          "tier": "common"
+        },
+        {
+          "itemId": 37083,
+          "name": "Basaltic Clay",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 39476,
+          "name": "Suzusaurus",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 40381,
+          "name": "Goggle-eyed Dogu",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 102,
+      "name": "Lilac Sea 3",
+      "letter": "H",
+      "zone": "Lilac Sea",
+      "rankReq": 111,
+      "durationMin": 1490,
+      "distance": 50,
+      "loot": [
+        {
+          "itemId": 36174,
+          "name": "Raw Ametrine",
+          "tier": "common"
+        },
+        {
+          "itemId": 36177,
+          "name": "Raw Blue Zircon",
+          "tier": "common"
+        },
+        {
+          "itemId": 36178,
+          "name": "Raw Star Quartz",
+          "tier": "common"
+        },
+        {
+          "itemId": 37083,
+          "name": "Basaltic Clay",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 37487,
+          "name": "False Classic Spectacles",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 41652,
+          "name": "Deep-sea Umbrite",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 103,
+      "name": "northwest Bellflower",
+      "letter": "I",
+      "zone": "Lilac Sea",
+      "rankReq": 112,
+      "durationMin": 1510,
+      "distance": 50,
+      "loot": [
+        {
+          "itemId": 36164,
+          "name": "Bismuth Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 36165,
+          "name": "Manganese Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 36176,
+          "name": "Phrygian Gold Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 40699,
+          "name": "Damaged Side Table",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 38607,
+          "name": "Flagstone Steps",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 41427,
+          "name": "Minute Mindflayer Sprinkler",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 104,
+      "name": "Corolla Isle",
+      "letter": "J",
+      "zone": "Lilac Sea",
+      "rankReq": 113,
+      "durationMin": 1520,
+      "distance": 50,
+      "loot": [
+        {
+          "itemId": 36087,
+          "name": "Coconut",
+          "tier": "common"
+        },
+        {
+          "itemId": 36086,
+          "name": "Palm Syrup",
+          "tier": "common"
+        },
+        {
+          "itemId": 36094,
+          "name": "Sideritis Leaves",
+          "tier": "common"
+        },
+        {
+          "itemId": 40698,
+          "name": "Mossy Log",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 40659,
+          "name": "Raw Log Half Partition",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 41103,
+          "name": "Wood Slice Loft",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 105,
+      "name": "southeast Bellflower",
+      "letter": "K",
+      "zone": "Lilac Sea",
+      "rankReq": 114,
+      "durationMin": 1540,
+      "distance": 50,
+      "loot": [
+        {
+          "itemId": 36164,
+          "name": "Bismuth Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 36165,
+          "name": "Manganese Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 36176,
+          "name": "Phrygian Gold Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 40638,
+          "name": "Classic Tableware",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 38580,
+          "name": "Wall-climbing Ivy",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 41651,
+          "name": "Alzadaal's Treasure Rug",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 106,
+      "name": "the floral reef",
+      "letter": "L",
+      "zone": "Lilac Sea",
+      "rankReq": 115,
+      "durationMin": 1550,
+      "distance": 51,
+      "loot": [
+        {
+          "itemId": 36190,
+          "name": "Horse Chestnut Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 36194,
+          "name": "Integral Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 36193,
+          "name": "Ironwood Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 38608,
+          "name": "Flagstone Loft",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 40697,
+          "name": "Iroko Lumber",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 41664,
+          "name": "Pennons Aloft Orchestrion Roll",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 107,
+      "name": "Wingsreach",
+      "letter": "M",
+      "zone": "Lilac Sea",
+      "rankReq": 115,
+      "durationMin": 1550,
+      "distance": 51,
+      "loot": [
+        {
+          "itemId": 36206,
+          "name": "AR-Caean Cotton Boll",
+          "tier": "common"
+        },
+        {
+          "itemId": 36083,
+          "name": "Dark Rye",
+          "tier": "common"
+        },
+        {
+          "itemId": 36205,
+          "name": "Scarlet Moko Grass",
+          "tier": "common"
+        },
+        {
+          "itemId": 40381,
+          "name": "Goggle-eyed Dogu",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 39587,
+          "name": "White Granite",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 41665,
+          "name": "From Fear to Fortitude Orchestrion Roll",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 108,
+      "name": "the Floating Standard",
+      "letter": "N",
+      "zone": "Lilac Sea",
+      "rankReq": 116,
+      "durationMin": 1570,
+      "distance": 51,
+      "loot": [
+        {
+          "itemId": 43981,
+          "name": "Turali Corn",
+          "tier": "common"
+        },
+        {
+          "itemId": 43988,
+          "name": "Turali Pineapple",
+          "tier": "common"
+        },
+        {
+          "itemId": 43978,
+          "name": "Ut'ohmu Tomato",
+          "tier": "common"
+        },
+        {
+          "itemId": 37083,
+          "name": "Basaltic Clay",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 41427,
+          "name": "Minute Mindflayer Sprinkler",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 41143,
+          "name": "Bluecap Mushroom Lamp",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 109,
+      "name": "the Fluttering Bay",
+      "letter": "O",
+      "zone": "Lilac Sea",
+      "rankReq": 117,
+      "durationMin": 1580,
+      "distance": 51,
+      "loot": [
+        {
+          "itemId": 44002,
+          "name": "Lar Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 43992,
+          "name": "Mountain Chromite Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 43993,
+          "name": "Ruthenium Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 39476,
+          "name": "Suzusaurus",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 40696,
+          "name": "Weathered Fitting",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 41821,
+          "name": "Stuffed Punutiy",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 110,
+      "name": "Lilac Sea 4",
+      "letter": "P",
+      "zone": "Lilac Sea",
+      "rankReq": 118,
+      "durationMin": 1600,
+      "distance": 52,
+      "loot": [
+        {
+          "itemId": 44015,
+          "name": "Ceiba Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 44016,
+          "name": "Dark Mahogany Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 44014,
+          "name": "Ginseng Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 33873,
+          "name": "Damaged Icebox",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 38607,
+          "name": "Flagstone Steps",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 41818,
+          "name": "Stuffed Axolotl Eft",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 111,
+      "name": "Proudkeel",
+      "letter": "Q",
+      "zone": "Lilac Sea",
+      "rankReq": 119,
+      "durationMin": 1610,
+      "distance": 52,
+      "loot": [
+        {
+          "itemId": 43987,
+          "name": "Mesquite Beans",
+          "tier": "common"
+        },
+        {
+          "itemId": 43986,
+          "name": "White Pepper",
+          "tier": "common"
+        },
+        {
+          "itemId": 43985,
+          "name": "Yyasulani Garlic",
+          "tier": "common"
+        },
+        {
+          "itemId": 40699,
+          "name": "Damaged Side Table",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 38608,
+          "name": "Flagstone Loft",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 41806,
+          "name": "High-density Fiberboard",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 112,
+      "name": "east Dodie's Abyss",
+      "letter": "R",
+      "zone": "Lilac Sea",
+      "rankReq": 119,
+      "durationMin": 1610,
+      "distance": 52,
+      "loot": [
+        {
+          "itemId": 44006,
+          "name": "Raw Black Star",
+          "tier": "common"
+        },
+        {
+          "itemId": 44003,
+          "name": "Raw Ihuykanite",
+          "tier": "common"
+        },
+        {
+          "itemId": 44004,
+          "name": "Raw Pink Beryl",
+          "tier": "common"
+        },
+        {
+          "itemId": 41651,
+          "name": "Alzadaal's Treasure Rug",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 41664,
+          "name": "Pennons Aloft Orchestrion Roll",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44326,
+          "name": "Subterranean Drop Orchestrion Roll",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 113,
+      "name": "Lilac Sea 5",
+      "letter": "S",
+      "zone": "Lilac Sea",
+      "rankReq": 120,
+      "durationMin": 1630,
+      "distance": 52,
+      "loot": [
+        {
+          "itemId": 44025,
+          "name": "Mountain Flax",
+          "tier": "common"
+        },
+        {
+          "itemId": 44026,
+          "name": "Sarcenet",
+          "tier": "common"
+        },
+        {
+          "itemId": 44024,
+          "name": "Snow Cotton",
+          "tier": "common"
+        },
+        {
+          "itemId": 40698,
+          "name": "Mossy Log",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 41103,
+          "name": "Wood Slice Loft",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 41820,
+          "name": "Fluffy-wuffy Stuffed Drippy",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 114,
+      "name": "west Dodie's Abyss",
+      "letter": "T",
+      "zone": "Lilac Sea",
+      "rankReq": 120,
+      "durationMin": 1630,
+      "distance": 52,
+      "loot": [
+        {
+          "itemId": 43994,
+          "name": "Cobalt Tungsten Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 44007,
+          "name": "Magnesia Powder",
+          "tier": "common"
+        },
+        {
+          "itemId": 43995,
+          "name": "Titanium Gold Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 41652,
+          "name": "Deep-sea Umbrite",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 41665,
+          "name": "From Fear to Fortitude Orchestrion Roll",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44327,
+          "name": "Tinkerer's Treasure Trove Orchestrion Roll",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 116,
+      "name": "the Indigo Shallows",
+      "letter": "A",
+      "zone": "South Indigo Deep",
+      "rankReq": 120,
+      "durationMin": 1630,
+      "distance": 52,
+      "loot": [
+        {
+          "itemId": 43982,
+          "name": "Mountain Rock Salt",
+          "tier": "common"
+        },
+        {
+          "itemId": 43979,
+          "name": "Royal Maple Sap",
+          "tier": "common"
+        },
+        {
+          "itemId": 43981,
+          "name": "Turali Corn",
+          "tier": "common"
+        },
+        {
+          "itemId": 41820,
+          "name": "Fluffy-wuffy Stuffed Drippy",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 43977,
+          "name": "Mountain Salt",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 43974,
+          "name": "Royal Maple Syrup",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 43976,
+          "name": "Turali Corn Oil",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 45037,
+          "name": "Nature's Bounty Orchestrion Roll",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 117,
+      "name": "Voyagers' Reprieve",
+      "letter": "B",
+      "zone": "South Indigo Deep",
+      "rankReq": 120,
+      "durationMin": 1630,
+      "distance": 52,
+      "loot": [
+        {
+          "itemId": 43994,
+          "name": "Cobalt Tungsten Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 43992,
+          "name": "Mountain Chromite Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 43993,
+          "name": "Ruthenium Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 37485,
+          "name": "Blue Blossom Parasol",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 41143,
+          "name": "Bluecap Mushroom Lamp",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 43999,
+          "name": "Cobalt Tungsten Ingot",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 43997,
+          "name": "Mountain Chromite Ingot",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 43998,
+          "name": "Ruthenium Ingot",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 45073,
+          "name": "Aromatic Wood Strips",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 118,
+      "name": "north Delphinium Seashelf",
+      "letter": "C",
+      "zone": "South Indigo Deep",
+      "rankReq": 120,
+      "durationMin": 1630,
+      "distance": 52,
+      "loot": [
+        {
+          "itemId": 44025,
+          "name": "Mountain Flax",
+          "tier": "common"
+        },
+        {
+          "itemId": 44026,
+          "name": "Sarcenet",
+          "tier": "common"
+        },
+        {
+          "itemId": 44024,
+          "name": "Snow Cotton",
+          "tier": "common"
+        },
+        {
+          "itemId": 44030,
+          "name": "Mountain Linen",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44031,
+          "name": "Sarcenet Cloth",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44029,
+          "name": "Snow Cotton Cloth",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 41821,
+          "name": "Stuffed Punutiy",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 38580,
+          "name": "Wall-climbing Ivy",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44486,
+          "name": "Toco Toquito",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 119,
+      "name": "Rainbringer Rift",
+      "letter": "D",
+      "zone": "South Indigo Deep",
+      "rankReq": 121,
+      "durationMin": 1640,
+      "distance": 52,
+      "loot": [
+        {
+          "itemId": 44006,
+          "name": "Raw Black Star",
+          "tier": "common"
+        },
+        {
+          "itemId": 44003,
+          "name": "Raw Ihuykanite",
+          "tier": "common"
+        },
+        {
+          "itemId": 44004,
+          "name": "Raw Pink Beryl",
+          "tier": "common"
+        },
+        {
+          "itemId": 44012,
+          "name": "Black Star",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 33873,
+          "name": "Damaged Icebox",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44009,
+          "name": "Ihuykanite",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44010,
+          "name": "Pink Beryl",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44326,
+          "name": "Subterranean Drop Orchestrion Roll",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44900,
+          "name": "Laboratory Counter",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 120,
+      "name": "south Indigo Deep 1",
+      "letter": "E",
+      "zone": "South Indigo Deep",
+      "rankReq": 122,
+      "durationMin": 1660,
+      "distance": 52,
+      "loot": [
+        {
+          "itemId": 44055,
+          "name": "Br'aax Hide",
+          "tier": "common"
+        },
+        {
+          "itemId": 44054,
+          "name": "Hammerhead Crocodile Skin",
+          "tier": "common"
+        },
+        {
+          "itemId": 44053,
+          "name": "Silver Lobo Hide",
+          "tier": "common"
+        },
+        {
+          "itemId": 44060,
+          "name": "Br'aax Leather",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44059,
+          "name": "Hammerhead Crocodile Leather",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44058,
+          "name": "Silver Lobo Leather",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 32205,
+          "name": "Tankard",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44327,
+          "name": "Tinkerer's Treasure Trove Orchestrion Roll",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44911,
+          "name": "Weathered Porthole",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 121,
+      "name": "the Central Blue",
+      "letter": "F",
+      "zone": "South Indigo Deep",
+      "rankReq": 123,
+      "durationMin": 1670,
+      "distance": 53,
+      "loot": [
+        {
+          "itemId": 44017,
+          "name": "Acacia Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 44018,
+          "name": "Claro Walnut Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 44016,
+          "name": "Dark Mahogany Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 44022,
+          "name": "Acacia Lumber",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44023,
+          "name": "Claro Walnut Lumber",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44021,
+          "name": "Dark Mahogany Lumber",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 38608,
+          "name": "Flagstone Loft",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 41818,
+          "name": "Stuffed Axolotl Eft",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44488,
+          "name": "Spinettesaurus",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 122,
+      "name": "south Indigo Deep 2",
+      "letter": "G",
+      "zone": "South Indigo Deep",
+      "rankReq": 125,
+      "durationMin": 1700,
+      "distance": 53,
+      "loot": [
+        {
+          "itemId": 43996,
+          "name": "Ra'Kaznar Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 43995,
+          "name": "Titanium Gold Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 44005,
+          "name": "White Gold Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 41806,
+          "name": "High-density Fiberboard",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44001,
+          "name": "Ra'Kaznar Ingot",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44000,
+          "name": "Titanium Gold Nugget",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44011,
+          "name": "White Gold Ingot",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44895,
+          "name": "Climbing Wall Partition",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 123,
+      "name": "the Talon",
+      "letter": "H",
+      "zone": "South Indigo Deep",
+      "rankReq": 126,
+      "durationMin": 1720,
+      "distance": 54,
+      "loot": [
+        {
+          "itemId": 44055,
+          "name": "Br'aax Hide",
+          "tier": "common"
+        },
+        {
+          "itemId": 44054,
+          "name": "Hammerhead Crocodile Skin",
+          "tier": "common"
+        },
+        {
+          "itemId": 44053,
+          "name": "Silver Lobo Hide",
+          "tier": "common"
+        },
+        {
+          "itemId": 45073,
+          "name": "Aromatic Wood Strips",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44060,
+          "name": "Br'aax Leather",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44059,
+          "name": "Hammerhead Crocodile Leather",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44058,
+          "name": "Silver Lobo Leather",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 24503,
+          "name": "Undersea Spoils",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 48102,
+          "name": "Hewn Stone Circle",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 124,
+      "name": "southern Central Blue",
+      "letter": "I",
+      "zone": "South Indigo Deep",
+      "rankReq": 127,
+      "durationMin": 1730,
+      "distance": 54,
+      "loot": [
+        {
+          "itemId": 43982,
+          "name": "Mountain Rock Salt",
+          "tier": "common"
+        },
+        {
+          "itemId": 43979,
+          "name": "Royal Maple Sap",
+          "tier": "common"
+        },
+        {
+          "itemId": 43981,
+          "name": "Turali Corn",
+          "tier": "common"
+        },
+        {
+          "itemId": 41806,
+          "name": "High-density Fiberboard",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 43977,
+          "name": "Mountain Salt",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 43974,
+          "name": "Royal Maple Syrup",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44488,
+          "name": "Spinettesaurus",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 43976,
+          "name": "Turali Corn Oil",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 48099,
+          "name": "Fluorescent Tube Chandelier",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 125,
+      "name": "south Indigo Deep 3",
+      "letter": "J",
+      "zone": "South Indigo Deep",
+      "rankReq": 128,
+      "durationMin": 1750,
+      "distance": 54,
+      "loot": [
+        {
+          "itemId": 44006,
+          "name": "Raw Black Star",
+          "tier": "common"
+        },
+        {
+          "itemId": 44003,
+          "name": "Raw Ihuykanite",
+          "tier": "common"
+        },
+        {
+          "itemId": 44004,
+          "name": "Raw Pink Beryl",
+          "tier": "common"
+        },
+        {
+          "itemId": 44012,
+          "name": "Black Star",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44009,
+          "name": "Ihuykanite",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44010,
+          "name": "Pink Beryl",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 30093,
+          "name": "Silver Dasher",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 48131,
+          "name": "Round Stepping Star",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 126,
+      "name": "the Talonspoint Depths",
+      "letter": "K",
+      "zone": "South Indigo Deep",
+      "rankReq": 129,
+      "durationMin": 1760,
+      "distance": 54,
+      "loot": [
+        {
+          "itemId": 43994,
+          "name": "Cobalt Tungsten Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 43992,
+          "name": "Mountain Chromite Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 43993,
+          "name": "Ruthenium Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 43999,
+          "name": "Cobalt Tungsten Ingot",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 38608,
+          "name": "Flagstone Loft",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 43997,
+          "name": "Mountain Chromite Ingot",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 43998,
+          "name": "Ruthenium Ingot",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44486,
+          "name": "Toco Toquito",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 48731,
+          "name": "Outsized Crystal Glass",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 127,
+      "name": "Saltfarer's Eye",
+      "letter": "L",
+      "zone": "South Indigo Deep",
+      "rankReq": 130,
+      "durationMin": 1780,
+      "distance": 55,
+      "loot": [
+        {
+          "itemId": 44025,
+          "name": "Mountain Flax",
+          "tier": "common"
+        },
+        {
+          "itemId": 44026,
+          "name": "Sarcenet",
+          "tier": "common"
+        },
+        {
+          "itemId": 44024,
+          "name": "Snow Cotton",
+          "tier": "common"
+        },
+        {
+          "itemId": 44030,
+          "name": "Mountain Linen",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44031,
+          "name": "Sarcenet Cloth",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44029,
+          "name": "Snow Cotton Cloth",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44326,
+          "name": "Subterranean Drop Orchestrion Roll",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44261,
+          "name": "The Faces We Wear - Classic Spectacles",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 48149,
+          "name": "The Faces We Wear - Tinted Goggles",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 128,
+      "name": "Startail shallows",
+      "letter": "M",
+      "zone": "South Indigo Deep",
+      "rankReq": 130,
+      "durationMin": 1780,
+      "distance": 55,
+      "loot": [
+        {
+          "itemId": 44017,
+          "name": "Acacia Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 44018,
+          "name": "Claro Walnut Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 44016,
+          "name": "Dark Mahogany Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 44022,
+          "name": "Acacia Lumber",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44023,
+          "name": "Claro Walnut Lumber",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 33873,
+          "name": "Damaged Icebox",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44021,
+          "name": "Dark Mahogany Lumber",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 45037,
+          "name": "Nature's Bounty Orchestrion Roll",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 48224,
+          "name": "In Dawn's Embrace Orchestrion Roll",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 129,
+      "name": "Moonshadow Isle",
+      "letter": "N",
+      "zone": "South Indigo Deep",
+      "rankReq": 131,
+      "durationMin": 1790,
+      "distance": 55,
+      "loot": [
+        {
+          "itemId": 44025,
+          "name": "Mountain Flax",
+          "tier": "common"
+        },
+        {
+          "itemId": 44026,
+          "name": "Sarcenet",
+          "tier": "common"
+        },
+        {
+          "itemId": 44024,
+          "name": "Snow Cotton",
+          "tier": "common"
+        },
+        {
+          "itemId": 41652,
+          "name": "Deep-sea Umbrite",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44030,
+          "name": "Mountain Linen",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 48731,
+          "name": "Outsized Crystal Glass",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44031,
+          "name": "Sarcenet Cloth",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44029,
+          "name": "Snow Cotton Cloth",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 46262,
+          "name": "Pliable Plywood",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 130,
+      "name": "Emerald Drop",
+      "letter": "O",
+      "zone": "South Indigo Deep",
+      "rankReq": 132,
+      "durationMin": 1810,
+      "distance": 55,
+      "loot": [
+        {
+          "itemId": 43982,
+          "name": "Mountain Rock Salt",
+          "tier": "common"
+        },
+        {
+          "itemId": 43979,
+          "name": "Royal Maple Sap",
+          "tier": "common"
+        },
+        {
+          "itemId": 43981,
+          "name": "Turali Corn",
+          "tier": "common"
+        },
+        {
+          "itemId": 41651,
+          "name": "Alzadaal's Treasure Rug",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 48102,
+          "name": "Hewn Stone Circle",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 43977,
+          "name": "Mountain Salt",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 43974,
+          "name": "Royal Maple Syrup",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 43976,
+          "name": "Turali Corn Oil",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 46110,
+          "name": "Scroll Cabinet",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 131,
+      "name": "south Indigo Deep 4",
+      "letter": "P",
+      "zone": "South Indigo Deep",
+      "rankReq": 133,
+      "durationMin": 1820,
+      "distance": 56,
+      "loot": [
+        {
+          "itemId": 43994,
+          "name": "Cobalt Tungsten Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 43992,
+          "name": "Mountain Chromite Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 43993,
+          "name": "Ruthenium Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 43999,
+          "name": "Cobalt Tungsten Ingot",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 38608,
+          "name": "Flagstone Loft",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 43997,
+          "name": "Mountain Chromite Ingot",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 43998,
+          "name": "Ruthenium Ingot",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44261,
+          "name": "The Faces We Wear - Classic Spectacles",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 46846,
+          "name": "The Faces We Wear - Petite Pince-nez",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 132,
+      "name": "south Delphinium Seashelf",
+      "letter": "Q",
+      "zone": "South Indigo Deep",
+      "rankReq": 134,
+      "durationMin": 1840,
+      "distance": 56,
+      "loot": [
+        {
+          "itemId": 44055,
+          "name": "Br'aax Hide",
+          "tier": "common"
+        },
+        {
+          "itemId": 44054,
+          "name": "Hammerhead Crocodile Skin",
+          "tier": "common"
+        },
+        {
+          "itemId": 44053,
+          "name": "Silver Lobo Hide",
+          "tier": "common"
+        },
+        {
+          "itemId": 33695,
+          "name": "Benben Stone",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44060,
+          "name": "Br'aax Leather",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44059,
+          "name": "Hammerhead Crocodile Leather",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44058,
+          "name": "Silver Lobo Leather",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44488,
+          "name": "Spinettesaurus",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 46837,
+          "name": "The Faces We Wear - Mythril-edged Eyepatch (Right)",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 133,
+      "name": "Startail shelf",
+      "letter": "R",
+      "zone": "South Indigo Deep",
+      "rankReq": 134,
+      "durationMin": 1840,
+      "distance": 56,
+      "loot": [
+        {
+          "itemId": 44006,
+          "name": "Raw Black Star",
+          "tier": "common"
+        },
+        {
+          "itemId": 44003,
+          "name": "Raw Ihuykanite",
+          "tier": "common"
+        },
+        {
+          "itemId": 44004,
+          "name": "Raw Pink Beryl",
+          "tier": "common"
+        },
+        {
+          "itemId": 44012,
+          "name": "Black Star",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 38608,
+          "name": "Flagstone Loft",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 38607,
+          "name": "Flagstone Steps",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44009,
+          "name": "Ihuykanite",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44010,
+          "name": "Pink Beryl",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 46104,
+          "name": "Overhead Studio Light",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 134,
+      "name": "Cradle of the Winds",
+      "letter": "S",
+      "zone": "South Indigo Deep",
+      "rankReq": 135,
+      "durationMin": 1850,
+      "distance": 56,
+      "loot": [
+        {
+          "itemId": 43996,
+          "name": "Ra'Kaznar Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 43995,
+          "name": "Titanium Gold Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 44005,
+          "name": "White Gold Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 44001,
+          "name": "Ra'Kaznar Ingot",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44000,
+          "name": "Titanium Gold Nugget",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 38580,
+          "name": "Wall-climbing Ivy",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44011,
+          "name": "White Gold Ingot",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 41103,
+          "name": "Wood Slice Loft",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 46836,
+          "name": "The Faces We Wear - Mythril-edged Eyepatch (Left)",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 135,
+      "name": "Startail Trench",
+      "letter": "T",
+      "zone": "South Indigo Deep",
+      "rankReq": 135,
+      "durationMin": 1850,
+      "distance": 56,
+      "loot": [
+        {
+          "itemId": 44017,
+          "name": "Acacia Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 44018,
+          "name": "Claro Walnut Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 44016,
+          "name": "Dark Mahogany Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 44022,
+          "name": "Acacia Lumber",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44023,
+          "name": "Claro Walnut Lumber",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44021,
+          "name": "Dark Mahogany Lumber",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 48224,
+          "name": "In Dawn's Embrace Orchestrion Roll",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44327,
+          "name": "Tinkerer's Treasure Trove Orchestrion Roll",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 46146,
+          "name": "Coffee Break Orchestrion Roll",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 137,
+      "name": "eastern Blackblood Wells",
+      "letter": "A",
+      "zone": "The Northern Empty",
+      "rankReq": 135,
+      "durationMin": 1850,
+      "distance": 56,
+      "loot": [
+        {
+          "itemId": 44024,
+          "name": "Snow Cotton",
+          "tier": "common"
+        },
+        {
+          "itemId": 44026,
+          "name": "Sarcenet",
+          "tier": "common"
+        },
+        {
+          "itemId": 44025,
+          "name": "Mountain Flax",
+          "tier": "common"
+        },
+        {
+          "itemId": 44029,
+          "name": "Snow Cotton Cloth",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44031,
+          "name": "Sarcenet Cloth",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44030,
+          "name": "Mountain Linen",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 46837,
+          "name": "The Faces We Wear - Mythril-edged Eyepatch (Right)",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 46836,
+          "name": "The Faces We Wear - Mythril-edged Eyepatch (Left)",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 50456,
+          "name": "The Faces We Wear - Blindfold Eyepatch (Left)",
+          "tier": "rare"
+        },
+        {
+          "itemId": 50457,
+          "name": "The Faces We Wear - Blindfold Eyepatch (Right)",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 138,
+      "name": "Sea Wolf Cove",
+      "letter": "B",
+      "zone": "The Northern Empty",
+      "rankReq": 135,
+      "durationMin": 1850,
+      "distance": 56,
+      "loot": [
+        {
+          "itemId": 43979,
+          "name": "Royal Maple Sap",
+          "tier": "common"
+        },
+        {
+          "itemId": 43982,
+          "name": "Mountain Rock Salt",
+          "tier": "common"
+        },
+        {
+          "itemId": 43981,
+          "name": "Turali Corn",
+          "tier": "common"
+        },
+        {
+          "itemId": 43974,
+          "name": "Royal Maple Syrup",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 43977,
+          "name": "Mountain Salt",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 43976,
+          "name": "Turali Corn Oil",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 38608,
+          "name": "Flagstone Loft",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44895,
+          "name": "Climbing Wall Partition",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 49853,
+          "name": "Peeling Wallpaper Sticker",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 139,
+      "name": "southernmost Hanthbyrt",
+      "letter": "C",
+      "zone": "The Northern Empty",
+      "rankReq": 135,
+      "durationMin": 1850,
+      "distance": 56,
+      "loot": [
+        {
+          "itemId": 43992,
+          "name": "Mountain Chromite Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 43993,
+          "name": "Ruthenium Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 43994,
+          "name": "Cobalt Tungsten Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 43997,
+          "name": "Mountain Chromite Ingot",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 43998,
+          "name": "Ruthenium Ingot",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 43999,
+          "name": "Cobalt Tungsten Ingot",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 41143,
+          "name": "Bluecap Mushroom Lamp",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 46104,
+          "name": "Overhead Studio Light",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 46089,
+          "name": "Forged Leaves Ceiling Light",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 140,
+      "name": "Oeyaseik",
+      "letter": "D",
+      "zone": "The Northern Empty",
+      "rankReq": 136,
+      "durationMin": 1870,
+      "distance": 56,
+      "loot": [
+        {
+          "itemId": 44053,
+          "name": "Silver Lobo Hide",
+          "tier": "common"
+        },
+        {
+          "itemId": 44054,
+          "name": "Hammerhead Crocodile Skin",
+          "tier": "common"
+        },
+        {
+          "itemId": 44055,
+          "name": "Br'aax Hide",
+          "tier": "common"
+        },
+        {
+          "itemId": 44058,
+          "name": "Silver Lobo Leather",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44059,
+          "name": "Hammerhead Crocodile Leather",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44060,
+          "name": "Br'aax Leather",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 46262,
+          "name": "Pliable Plywood",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 46846,
+          "name": "The Faces We Wear - Petite Pince-nez",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 46121,
+          "name": "Imitation Battlefield",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 141,
+      "name": "northeast Hanthbyrt",
+      "letter": "E",
+      "zone": "The Northern Empty",
+      "rankReq": 137,
+      "durationMin": 1880,
+      "distance": 56,
+      "loot": [
+        {
+          "itemId": 44003,
+          "name": "Raw Ihuykanite",
+          "tier": "common"
+        },
+        {
+          "itemId": 44004,
+          "name": "Raw Pink Beryl",
+          "tier": "common"
+        },
+        {
+          "itemId": 44006,
+          "name": "Raw Black Star",
+          "tier": "common"
+        },
+        {
+          "itemId": 44009,
+          "name": "Ihuykanite",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44010,
+          "name": "Pink Beryl",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44012,
+          "name": "Black Star",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 41806,
+          "name": "High-density Fiberboard",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 40699,
+          "name": "Damaged Side Table",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 50831,
+          "name": "Fortune-teller's Velvet",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 142,
+      "name": "Vyrstrant",
+      "letter": "F",
+      "zone": "The Northern Empty",
+      "rankReq": 138,
+      "durationMin": 1900,
+      "distance": 58,
+      "loot": [
+        {
+          "itemId": 44005,
+          "name": "White Gold Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 43995,
+          "name": "Titanium Gold Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 43996,
+          "name": "Ra'Kaznar Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 39587,
+          "name": "White Granite",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12537,
+          "name": "Titanium Ore",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44001,
+          "name": "Ra'Kaznar Ingot",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 32205,
+          "name": "Tankard",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 40698,
+          "name": "Mossy Log",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 50794,
+          "name": "Hearts Tread and Trampled Orchestrion Roll",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 143,
+      "name": "the Sunken Jawbone",
+      "letter": "G",
+      "zone": "The Northern Empty",
+      "rankReq": 140,
+      "durationMin": 1930,
+      "distance": 58,
+      "loot": [
+        {
+          "itemId": 44017,
+          "name": "Acacia Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 44016,
+          "name": "Dark Mahogany Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 44018,
+          "name": "Claro Walnut Log",
+          "tier": "common"
+        },
+        {
+          "itemId": 44022,
+          "name": "Acacia Lumber",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44021,
+          "name": "Dark Mahogany Lumber",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44023,
+          "name": "Claro Walnut Lumber",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 24503,
+          "name": "Undersea Spoils",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 46146,
+          "name": "Coffee Break Orchestrion Roll",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 50796,
+          "name": "Fall into Forever Orchestrion Roll",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 144,
+      "name": "the Vyrstrant Dropoff",
+      "letter": "N",
+      "zone": "The Northern Empty",
+      "rankReq": 141,
+      "durationMin": 1940,
+      "distance": 59,
+      "loot": [
+        {
+          "itemId": 44024,
+          "name": "Snow Cotton",
+          "tier": "common"
+        },
+        {
+          "itemId": 44026,
+          "name": "Sarcenet",
+          "tier": "common"
+        },
+        {
+          "itemId": 44025,
+          "name": "Mountain Flax",
+          "tier": "common"
+        },
+        {
+          "itemId": 44029,
+          "name": "Snow Cotton Cloth",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44031,
+          "name": "Sarcenet Cloth",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44030,
+          "name": "Mountain Linen",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 38608,
+          "name": "Flagstone Loft",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 46110,
+          "name": "Scroll Cabinet",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 51264,
+          "name": "Everkeep Wall Decoration",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 145,
+      "name": "Axeblade Bight",
+      "letter": "O",
+      "zone": "The Northern Empty",
+      "rankReq": 142,
+      "durationMin": 1960,
+      "distance": 59,
+      "loot": [
+        {
+          "itemId": 43979,
+          "name": "Royal Maple Sap",
+          "tier": "common"
+        },
+        {
+          "itemId": 43982,
+          "name": "Mountain Rock Salt",
+          "tier": "common"
+        },
+        {
+          "itemId": 43981,
+          "name": "Turali Corn",
+          "tier": "common"
+        },
+        {
+          "itemId": 43974,
+          "name": "Royal Maple Syrup",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 43977,
+          "name": "Mountain Salt",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 43976,
+          "name": "Turali Corn Oil",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 16908,
+          "name": "Tempered Glass",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 48731,
+          "name": "Outsized Crystal Glass",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 52632,
+          "name": "Weatherproof Plywood",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 146,
+      "name": "the Puffin Assembly",
+      "letter": "P",
+      "zone": "The Northern Empty",
+      "rankReq": 143,
+      "durationMin": 1970,
+      "distance": 59,
+      "loot": [
+        {
+          "itemId": 43992,
+          "name": "Mountain Chromite Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 43993,
+          "name": "Ruthenium Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 43994,
+          "name": "Cobalt Tungsten Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 43997,
+          "name": "Mountain Chromite Ingot",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 43998,
+          "name": "Ruthenium Ingot",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 43999,
+          "name": "Cobalt Tungsten Ingot",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 50796,
+          "name": "Fall into Forever Orchestrion Roll",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 50794,
+          "name": "Hearts Tread and Trampled Orchestrion Roll",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 52358,
+          "name": "Fond Farewells Orchestrion Roll",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 147,
+      "name": "southern Aerslaent Plunge",
+      "letter": "Q",
+      "zone": "The Northern Empty",
+      "rankReq": 144,
+      "durationMin": 1990,
+      "distance": 59,
+      "loot": [
+        {
+          "itemId": 44053,
+          "name": "Silver Lobo Hide",
+          "tier": "common"
+        },
+        {
+          "itemId": 44054,
+          "name": "Hammerhead Crocodile Skin",
+          "tier": "common"
+        },
+        {
+          "itemId": 44055,
+          "name": "Br'aax Hide",
+          "tier": "common"
+        },
+        {
+          "itemId": 44058,
+          "name": "Silver Lobo Leather",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44059,
+          "name": "Hammerhead Crocodile Leather",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44060,
+          "name": "Br'aax Leather",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 48149,
+          "name": "The Faces We Wear - Tinted Goggles",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 46846,
+          "name": "The Faces We Wear - Petite Pince-nez",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 51269,
+          "name": "Garden Mood Lighting",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 148,
+      "name": "the Solkronn Gallery",
+      "letter": "R",
+      "zone": "The Northern Empty",
+      "rankReq": 145,
+      "durationMin": 2000,
+      "distance": 60,
+      "loot": [
+        {
+          "itemId": 44003,
+          "name": "Raw Ihuykanite",
+          "tier": "common"
+        },
+        {
+          "itemId": 44004,
+          "name": "Raw Pink Beryl",
+          "tier": "common"
+        },
+        {
+          "itemId": 44006,
+          "name": "Raw Black Star",
+          "tier": "common"
+        },
+        {
+          "itemId": 44009,
+          "name": "Ihuykanite",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44010,
+          "name": "Pink Beryl",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44012,
+          "name": "Black Star",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 46836,
+          "name": "The Faces We Wear - Mythril-edged Eyepatch (Left)",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 46837,
+          "name": "The Faces We Wear - Mythril-edged Eyepatch (Right)",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 52442,
+          "name": "The Faces We Wear - Sash Blinder (Left)",
+          "tier": "rare"
+        },
+        {
+          "itemId": 52443,
+          "name": "The Faces We Wear - Sash Blinder (Right)",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 149,
+      "name": "central Den of the Greatsword",
+      "letter": "S",
+      "zone": "The Northern Empty",
+      "rankReq": 145,
+      "durationMin": 2000,
+      "distance": 60,
+      "loot": [
+        {
+          "itemId": 44005,
+          "name": "White Gold Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 43995,
+          "name": "Titanium Gold Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 43996,
+          "name": "Ra'Kaznar Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 44011,
+          "name": "White Gold Ingot",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44000,
+          "name": "Titanium Gold Nugget",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 44001,
+          "name": "Ra'Kaznar Ingot",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 50456,
+          "name": "The Faces We Wear - Blindfold Eyepatch (Left)",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 50457,
+          "name": "The Faces We Wear - Blindfold Eyepatch (Right)",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 52444,
+          "name": "The Faces We Wear - Studded Eyepatch (Left)",
+          "tier": "rare"
+        },
+        {
+          "itemId": 52445,
+          "name": "The Faces We Wear - Studded Eyepatch (Right)",
+          "tier": "rare"
+        }
+      ]
     }
   ],
   "meta": {
-    "generatedAt": "2026-05-23T15:58:10.898Z",
-    "sectorCount": 10,
-    "uniqueItems": 41
+    "generatedAt": "2026-05-23T16:13:25.667Z",
+    "sectorCount": 143,
+    "uniqueItems": 345
   }
 }
