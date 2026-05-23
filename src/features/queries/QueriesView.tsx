@@ -98,6 +98,30 @@ export function QueriesView({ category, heading, onRowsChange, initialPresetId }
 
   const recipes = useRecipes(run.data?.narrowedIds ?? []);
 
+  const derived = useMemo(() => {
+    if (!run.data || !snapshot.data) return null;
+    const f = run.data.filterAtRun;
+    switch (f.mode) {
+      case 'craft': {
+        if (run.data.narrowedIds.length === 0) {
+          return { kind: 'craft' as const, rows: [] as CraftFlipRow[] };
+        }
+        if (!recipes.data) return null;
+        const rows = runCraftFlip(snapshot.data.items, run.data.priceMap, recipes.data, f, retainerLevels);
+        return { kind: 'craft' as const, rows };
+      }
+      case 'repost': {
+        const rows: RepostRow[] = runRepost(snapshot.data.items, run.data.priceMap, f);
+        return { kind: 'repost' as const, rows };
+      }
+      case 'standard':
+      default: {
+        const rows: QueryResultRow[] = runQuery(snapshot.data.items, run.data.priceMap, f);
+        return { kind: 'query' as const, rows };
+      }
+    }
+  }, [run.data, recipes.data, snapshot.data]);
+
   const sparklineIds = useMemo(() => {
     if (!run.data) return [];
     if (derived?.kind === 'query') return derived.rows.map((r) => r.id);
@@ -127,30 +151,6 @@ export function QueriesView({ category, heading, onRowsChange, initialPresetId }
     setFilter(next);
     setActivePresetId(null);
   }
-
-  const derived = useMemo(() => {
-    if (!run.data || !snapshot.data) return null;
-    const f = run.data.filterAtRun;
-    switch (f.mode) {
-      case 'craft': {
-        if (run.data.narrowedIds.length === 0) {
-          return { kind: 'craft' as const, rows: [] as CraftFlipRow[] };
-        }
-        if (!recipes.data) return null;
-        const rows = runCraftFlip(snapshot.data.items, run.data.priceMap, recipes.data, f, retainerLevels);
-        return { kind: 'craft' as const, rows };
-      }
-      case 'repost': {
-        const rows: RepostRow[] = runRepost(snapshot.data.items, run.data.priceMap, f);
-        return { kind: 'repost' as const, rows };
-      }
-      case 'standard':
-      default: {
-        const rows: QueryResultRow[] = runQuery(snapshot.data.items, run.data.priceMap, f);
-        return { kind: 'query' as const, rows };
-      }
-    }
-  }, [run.data, recipes.data, snapshot.data]);
 
   useEffect(() => {
     if (!onRowsChange) return;
