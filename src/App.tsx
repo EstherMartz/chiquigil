@@ -21,6 +21,7 @@ import CraftBatch from './routes/CraftBatch';
 import BatchHistory from './routes/BatchHistory';
 import Item from './routes/Item';
 import Settings from './routes/Settings';
+import Submarines from './routes/Submarines';
 
 export default function App() {
   const [showOnboarding, setShowOnboarding] = useState(
@@ -58,6 +59,7 @@ export default function App() {
             <Route path="/queries" element={<Navigate to="/crafts" replace />} />
             <Route path="/insights" element={<Navigate to="/trading" replace />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/submarines" element={<Submarines />} />
           </Routes>
         </div>
       </main>
