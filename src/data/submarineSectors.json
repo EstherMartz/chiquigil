@@ -1,0 +1,629 @@
+{
+  "sectors": [
+    {
+      "id": 1,
+      "name": "the Ivory Shoals",
+      "letter": "A",
+      "zone": "Deep-sea Site",
+      "rankReq": 1,
+      "durationMin": 180,
+      "distance": 10,
+      "loot": [
+        {
+          "itemId": 12220,
+          "name": "Red Moko Grass",
+          "tier": "common"
+        },
+        {
+          "itemId": 7590,
+          "name": "Scarlet Sap",
+          "tier": "common"
+        },
+        {
+          "itemId": 13,
+          "name": "Water Crystal",
+          "tier": "common"
+        },
+        {
+          "itemId": 10,
+          "name": "Wind Crystal",
+          "tier": "common"
+        },
+        {
+          "itemId": 12923,
+          "name": "Bamboo Weave",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12586,
+          "name": "Birch Branch",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12928,
+          "name": "Empty Crystal",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 10099,
+          "name": "Unaspected Crystal",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "deep-sea site 1",
+      "letter": "B",
+      "zone": "Deep-sea Site",
+      "rankReq": 1,
+      "durationMin": 180,
+      "distance": 10,
+      "loot": [
+        {
+          "itemId": 11,
+          "name": "Earth Crystal",
+          "tier": "common"
+        },
+        {
+          "itemId": 7588,
+          "name": "Ferberite",
+          "tier": "common"
+        },
+        {
+          "itemId": 9,
+          "name": "Ice Crystal",
+          "tier": "common"
+        },
+        {
+          "itemId": 12923,
+          "name": "Bamboo Weave",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12928,
+          "name": "Empty Crystal",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 5118,
+          "name": "Gold Ore",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 10099,
+          "name": "Unaspected Crystal",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "deep-sea site 2",
+      "letter": "C",
+      "zone": "Deep-sea Site",
+      "rankReq": 4,
+      "durationMin": 240,
+      "distance": 10,
+      "loot": [
+        {
+          "itemId": 12220,
+          "name": "Red Moko Grass",
+          "tier": "common"
+        },
+        {
+          "itemId": 7590,
+          "name": "Scarlet Sap",
+          "tier": "common"
+        },
+        {
+          "itemId": 13,
+          "name": "Water Crystal",
+          "tier": "common"
+        },
+        {
+          "itemId": 10,
+          "name": "Wind Crystal",
+          "tier": "common"
+        },
+        {
+          "itemId": 12923,
+          "name": "Bamboo Weave",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12586,
+          "name": "Birch Branch",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12928,
+          "name": "Empty Crystal",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 10099,
+          "name": "Unaspected Crystal",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "the Lightless Basin",
+      "letter": "D",
+      "zone": "Deep-sea Site",
+      "rankReq": 4,
+      "durationMin": 240,
+      "distance": 10,
+      "loot": [
+        {
+          "itemId": 11,
+          "name": "Earth Crystal",
+          "tier": "common"
+        },
+        {
+          "itemId": 7588,
+          "name": "Ferberite",
+          "tier": "common"
+        },
+        {
+          "itemId": 9,
+          "name": "Ice Crystal",
+          "tier": "common"
+        },
+        {
+          "itemId": 12224,
+          "name": "Vivianite",
+          "tier": "common"
+        },
+        {
+          "itemId": 12923,
+          "name": "Bamboo Weave",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12928,
+          "name": "Empty Crystal",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 5118,
+          "name": "Gold Ore",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 22441,
+          "name": "Crimson Coral",
+          "tier": "rare"
+        },
+        {
+          "itemId": 10099,
+          "name": "Unaspected Crystal",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "deep-sea site 3",
+      "letter": "E",
+      "zone": "Deep-sea Site",
+      "rankReq": 7,
+      "durationMin": 300,
+      "distance": 11,
+      "loot": [
+        {
+          "itemId": 12586,
+          "name": "Birch Branch",
+          "tier": "common"
+        },
+        {
+          "itemId": 12220,
+          "name": "Red Moko Grass",
+          "tier": "common"
+        },
+        {
+          "itemId": 13,
+          "name": "Water Crystal",
+          "tier": "common"
+        },
+        {
+          "itemId": 10,
+          "name": "Wind Crystal",
+          "tier": "common"
+        },
+        {
+          "itemId": 12923,
+          "name": "Bamboo Weave",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12585,
+          "name": "Dark Chestnut Branch",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12225,
+          "name": "Deep-red Crystal",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12928,
+          "name": "Empty Crystal",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 21921,
+          "name": "Aurelia Polyp",
+          "tier": "rare"
+        },
+        {
+          "itemId": 10099,
+          "name": "Unaspected Crystal",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "name": "the Southern Rimilala Trench",
+      "letter": "F",
+      "zone": "Deep-sea Site",
+      "rankReq": 7,
+      "durationMin": 300,
+      "distance": 11,
+      "loot": [
+        {
+          "itemId": 11,
+          "name": "Earth Crystal",
+          "tier": "common"
+        },
+        {
+          "itemId": 5118,
+          "name": "Gold Ore",
+          "tier": "common"
+        },
+        {
+          "itemId": 9,
+          "name": "Ice Crystal",
+          "tier": "common"
+        },
+        {
+          "itemId": 12224,
+          "name": "Vivianite",
+          "tier": "common"
+        },
+        {
+          "itemId": 12923,
+          "name": "Bamboo Weave",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12227,
+          "name": "Deep-green Crystal",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12928,
+          "name": "Empty Crystal",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 5120,
+          "name": "Platinum Ore",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 22441,
+          "name": "Crimson Coral",
+          "tier": "rare"
+        },
+        {
+          "itemId": 10099,
+          "name": "Unaspected Crystal",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "name": "the Umbrella Narrow",
+      "letter": "G",
+      "zone": "Deep-sea Site",
+      "rankReq": 10,
+      "durationMin": 360,
+      "distance": 11,
+      "loot": [
+        {
+          "itemId": 12923,
+          "name": "Bamboo Weave",
+          "tier": "common"
+        },
+        {
+          "itemId": 12586,
+          "name": "Birch Branch",
+          "tier": "common"
+        },
+        {
+          "itemId": 12229,
+          "name": "Deep-blue Crystal",
+          "tier": "common"
+        },
+        {
+          "itemId": 12220,
+          "name": "Red Moko Grass",
+          "tier": "common"
+        },
+        {
+          "itemId": 13,
+          "name": "Water Crystal",
+          "tier": "common"
+        },
+        {
+          "itemId": 10,
+          "name": "Wind Crystal",
+          "tier": "common"
+        },
+        {
+          "itemId": 12924,
+          "name": "Balsa Wood Scrap",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12585,
+          "name": "Dark Chestnut Branch",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12928,
+          "name": "Empty Crystal",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 21921,
+          "name": "Aurelia Polyp",
+          "tier": "rare"
+        },
+        {
+          "itemId": 10099,
+          "name": "Unaspected Crystal",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "name": "Offender's Rot",
+      "letter": "H",
+      "zone": "Deep-sea Site",
+      "rankReq": 14,
+      "durationMin": 420,
+      "distance": 12,
+      "loot": [
+        {
+          "itemId": 12923,
+          "name": "Bamboo Weave",
+          "tier": "common"
+        },
+        {
+          "itemId": 12225,
+          "name": "Deep-red Crystal",
+          "tier": "common"
+        },
+        {
+          "itemId": 12,
+          "name": "Lightning Crystal",
+          "tier": "common"
+        },
+        {
+          "itemId": 13,
+          "name": "Water Crystal",
+          "tier": "common"
+        },
+        {
+          "itemId": 12924,
+          "name": "Balsa Wood Scrap",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12586,
+          "name": "Birch Branch",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12585,
+          "name": "Dark Chestnut Branch",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12928,
+          "name": "Empty Crystal",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 7590,
+          "name": "Scarlet Sap",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12920,
+          "name": "Red Clay",
+          "tier": "rare"
+        },
+        {
+          "itemId": 10099,
+          "name": "Unaspected Crystal",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "name": "Neolith Island",
+      "letter": "I",
+      "zone": "Deep-sea Site",
+      "rankReq": 17,
+      "durationMin": 420,
+      "distance": 12,
+      "loot": [
+        {
+          "itemId": 12923,
+          "name": "Bamboo Weave",
+          "tier": "common"
+        },
+        {
+          "itemId": 12225,
+          "name": "Deep-red Crystal",
+          "tier": "common"
+        },
+        {
+          "itemId": 8,
+          "name": "Fire Crystal",
+          "tier": "common"
+        },
+        {
+          "itemId": 9,
+          "name": "Ice Crystal",
+          "tier": "common"
+        },
+        {
+          "itemId": 12924,
+          "name": "Balsa Wood Scrap",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 12928,
+          "name": "Empty Crystal",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 7588,
+          "name": "Ferberite",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 5118,
+          "name": "Gold Ore",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 5120,
+          "name": "Platinum Ore",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 22442,
+          "name": "Colossus Slab",
+          "tier": "rare"
+        },
+        {
+          "itemId": 12920,
+          "name": "Red Clay",
+          "tier": "rare"
+        },
+        {
+          "itemId": 10099,
+          "name": "Unaspected Crystal",
+          "tier": "rare"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "name": "unidentified derelict",
+      "letter": "J",
+      "zone": "Deep-sea Site",
+      "rankReq": 20,
+      "durationMin": 480,
+      "distance": 12,
+      "loot": [
+        {
+          "itemId": 5188,
+          "name": "Diamond",
+          "tier": "common"
+        },
+        {
+          "itemId": 5189,
+          "name": "Emerald",
+          "tier": "common"
+        },
+        {
+          "itemId": 5187,
+          "name": "Ruby",
+          "tier": "common"
+        },
+        {
+          "itemId": 5192,
+          "name": "Sapphire",
+          "tier": "common"
+        },
+        {
+          "itemId": 12544,
+          "name": "Star Ruby",
+          "tier": "common"
+        },
+        {
+          "itemId": 12545,
+          "name": "Star Sapphire",
+          "tier": "common"
+        },
+        {
+          "itemId": 5067,
+          "name": "Rose Gold Ingot",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 9360,
+          "name": "Platinum Ingot",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 22502,
+          "name": "Salvaged Earring",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 22501,
+          "name": "Salvaged Bracelet",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 22503,
+          "name": "Salvaged Necklace",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 22500,
+          "name": "Salvaged Ring",
+          "tier": "uncommon"
+        },
+        {
+          "itemId": 22506,
+          "name": "Extravagant Salvaged Earring",
+          "tier": "rare"
+        },
+        {
+          "itemId": 22505,
+          "name": "Extravagant Salvaged Bracelet",
+          "tier": "rare"
+        },
+        {
+          "itemId": 22507,
+          "name": "Extravagant Salvaged Necklace",
+          "tier": "rare"
+        },
+        {
+          "itemId": 22504,
+          "name": "Extravagant Salvaged Ring",
+          "tier": "rare"
+        }
+      ]
+    }
+  ],
+  "meta": {
+    "generatedAt": "2026-05-23T15:58:10.898Z",
+    "sectorCount": 10,
+    "uniqueItems": 41
+  }
+}
