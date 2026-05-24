@@ -9,7 +9,7 @@ import { runVendorFlip } from '../queries/runVendorFlip';
 import { VendorFlipResults } from '../queries/VendorFlipResults';
 import { defaultVendorFlipFilter, type VendorFlipFilter, type VendorFlipSort, type HqMode } from '../queries/types';
 import { CRYSTALS_SEARCH_CATEGORY } from '../queries/commonFilters';
-import { Spinner } from '../../components/Spinner';
+import { Spinner, SpinGlyph } from '../../components/Spinner';
 import { StatusBanner } from '../../components/StatusBanner';
 import { EmptyState } from '../../components/EmptyState';
 
@@ -114,9 +114,9 @@ function FilterBar({ value, onChange, onRun, onRefreshVendors, busy, notReady }:
   notReady: boolean;
 }) {
   return (
-    <div className="flex flex-wrap items-end gap-3 p-3 border border-border-base bg-bg-card">
+    <div className="flex flex-wrap items-end gap-3 p-3 border border-border-base bg-bg-card justify-between">
       <label className="block">
-        <span className="font-mono text-[10px] tracking-widest text-text-low uppercase">Min profit (gil/u)</span>
+        <span className="font-mono text-[13px] tracking-widest text-text-low uppercase">Min profit (gil/u)</span>
         <input
           type="number" min={0} step={100} value={value.minProfit}
           onChange={(e) => onChange({ ...value, minProfit: Math.max(0, Number(e.target.value) || 0) })}
@@ -181,22 +181,24 @@ function FilterBar({ value, onChange, onRun, onRefreshVendors, busy, notReady }:
           <option value="velocity">Velocity</option>
         </select>
       </label>
-      <button
-        type="button"
-        onClick={onRun} disabled={busy || notReady}
-        title={notReady ? 'Loading vendor catalog…' : undefined}
-        className="font-mono text-[10px] tracking-widest uppercase border border-gold text-gold px-4 py-2 hover:bg-gold hover:text-bg-deep disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {busy ? 'Running…' : 'Run scan'}
-      </button>
-      <button
-        type="button"
-        onClick={() => { void onRefreshVendors(); }}
-        className="font-mono text-[10px] tracking-widest uppercase border border-border-base text-text-low px-3 py-2 hover:border-aether hover:text-aether"
-        title="Re-fetch the gil-shop catalog"
-      >
-        ⟳ Vendors
-      </button>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => { void onRefreshVendors(); }}
+          className="font-mono text-[10px] tracking-widest uppercase border border-border-base text-text-dim px-3 py-2 hover:text-aether"
+          title="Re-fetch the gil-shop catalog"
+        >
+          ⟳ Vendors
+        </button>
+        <button
+          type="button"
+          onClick={onRun} disabled={busy || notReady}
+          title={notReady ? 'Loading vendor catalog…' : undefined}
+          className="font-mono text-[10px] tracking-widest uppercase bg-gold text-bg-deep px-4 py-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+        >
+          {busy ? <>Running…<SpinGlyph /></> : 'Run scan'}
+        </button>
+      </div>
     </div>
   );
 }

@@ -81,7 +81,7 @@ export function CrossWorldListingsBlock({ listings, homeWorld, homeMinNQ, homeMi
           </thead>
           <tbody>
             {rows.map((r, i) => (
-              <tr key={`${r.world}:${i}:${r.price}:${r.hq ? 'h' : 'n'}`} className="border-t border-border-base hover:bg-bg-card-hi">
+              <tr key={`${r.world}:${i}:${r.price}:${r.hq ? 'h' : 'n'}`} className="border-t border-border-base hover:bg-bg-card-hi transition-colors">
                 <td className="px-3 py-2 text-right font-mono text-text-low">{i + 1}</td>
                 <td className={`px-3 py-2 font-mono text-[11px] ${dcClass(r.dc)}`}>{r.dc ?? '—'}</td>
                 <td className="px-3 py-2">

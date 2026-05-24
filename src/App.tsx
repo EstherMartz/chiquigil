@@ -35,9 +35,8 @@ export default function App() {
         <OnboardingWizard onComplete={() => setShowOnboarding(false)} />
       )}
       <main className="flex-1 min-w-0 pt-8 pb-20 px-4">
-        <div className="max-w-7xl mx-auto">
-          <ContentBar />
-          <Routes>
+        <ContentBar />
+        <Routes>
             <Route path="/" element={<Navigate to="/trading" replace />} />
             <Route path="/home" element={<Home />} />
             <Route path="/watchlist" element={<Watchlist />} />
@@ -61,7 +60,6 @@ export default function App() {
             <Route path="/settings" element={<Settings />} />
             <Route path="/submarines" element={<Submarines />} />
           </Routes>
-        </div>
       </main>
     </div>
   );

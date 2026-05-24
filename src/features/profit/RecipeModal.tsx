@@ -85,7 +85,7 @@ export function RecipeModal({
             {recipe.ingredients.map((ing) => {
               const unit = dc[ing.itemId]?.minNQ ?? phantom[ing.itemId]?.avgNQ ?? 0;
               return (
-                <tr key={ing.itemId} className="border-b border-border-base">
+                <tr key={ing.itemId} className="border-b border-border-base hover:bg-bg-card-hi transition-colors">
                   <td className="py-2">{ingredientName(ing.itemId)}</td>
                   <td className="py-2 text-right font-mono">{ing.amount}</td>
                   <td className="py-2 text-right font-mono">{fmtGil(unit)}</td>

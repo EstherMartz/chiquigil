@@ -80,7 +80,7 @@ export function CurrencyFlipResults({ rows, currency, totalCandidates, skippedCh
           </thead>
           <tbody>
             {visible.map((r, i) => (
-              <tr key={r.id} className="border-t border-border-base hover:bg-bg-card-hi">
+              <tr key={r.id} className="border-t border-border-base hover:bg-bg-card-hi transition-colors">
                 <td className={`px-3 ${rowY} text-text-low font-mono text-xs`}>{i + 1}</td>
                 <td className={`px-3 ${rowY}`}>
                   <ItemNameLinks id={r.id} name={r.name} />

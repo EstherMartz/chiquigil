@@ -12,12 +12,13 @@ export function AetheryteChip() {
     <Link
       to="/settings"
       title="Tap to retune your home world or data center"
-      className="inline-flex items-center gap-2 border border-border-base hover:border-aether px-2.5 py-1.5 font-mono text-[10px] tracking-widest uppercase text-text-dim hover:text-aether transition-colors"
+      className="inline-flex items-center gap-2 border border-border-base hover:border-aether hover:bg-bg-card-hi px-2.5 py-1.5 font-mono text-[13px] tracking-widest uppercase text-text-dim hover:text-aether transition-colors cursor-pointer"
     >
       <span aria-hidden className="text-aether text-[11px] leading-none">◆</span>
       <span className="text-text-cream">{world}</span>
       <span className="text-text-low">·</span>
       <span>{dc}</span>
+      <span aria-hidden className="text-text-low text-[11px] leading-none">▾</span>
     </Link>
   );
 }

@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 
 const navItemClass = ({ isActive }: { isActive: boolean }) =>
-  `block px-4 py-1.5 font-mono text-xs tracking-widest transition-colors ${
-    isActive ? 'text-gold' : 'text-text-dim hover:text-aether'
+  `block px-4 py-1.5 font-mono text-[13px] tracking-widest transition-colors border-l-[3px] ${
+    isActive
+      ? 'text-gold border-l-gold'
+      : 'text-text-dim hover:text-aether border-l-transparent'
   }`;
 
 interface NavGroup {
@@ -64,7 +66,7 @@ export function Sidebar() {
     <aside className="hidden md:flex md:flex-col fixed md:relative w-[220px] min-w-[220px] h-screen md:h-full sticky top-0 bg-bg-card border-r border-border-base z-20">
       {/* Branding */}
       <div className="px-4 pb-3 border-b border-border-base flex-shrink-0">
-        <div className="font-mono text-[10px] tracking-widest text-aether uppercase mb-1">
+        <div className="font-mono text-[13px] tracking-widest text-aether uppercase mb-1">
           Mone a fer dinerets
         </div>
         <h1 className="font-display font-semibold text-xl tracking-wide leading-tight">
@@ -73,10 +75,10 @@ export function Sidebar() {
       </div>
 
       {/* Nav groups */}
-      <nav className="py-4 space-y-4 overflow-y-auto flex-1">
-        {NAV_GROUPS.map((group) => (
-          <div key={group.label}>
-            <div className="px-4 font-mono text-[10px] tracking-widest uppercase text-text-low mb-1">
+      <nav className="py-4 space-y-6 overflow-y-auto flex-1">
+        {NAV_GROUPS.map((group, idx) => (
+          <div key={group.label} className={idx > 0 ? 'border-t border-border-base/50 pt-4' : ''}>
+            <div className="px-4 font-mono text-[13px] tracking-widest uppercase text-text-low mb-2">
               {group.label}
             </div>
             <div>
@@ -101,7 +103,7 @@ export function Sidebar() {
     <>
       {/* Mobile top bar */}
       <div className="md:hidden sticky top-0 z-30 bg-bg-deep border-b border-border-base px-4 py-2 flex items-center justify-between">
-        <div className="font-mono text-[10px] tracking-widest text-aether uppercase">
+        <div className="font-mono text-[13px] tracking-widest text-aether uppercase">
           Gilipichi
         </div>
         <button
@@ -125,10 +127,10 @@ export function Sidebar() {
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <nav className="py-4 space-y-4">
-          {NAV_GROUPS.map((group) => (
-            <div key={group.label}>
-              <div className="px-4 font-mono text-[10px] tracking-widest uppercase text-text-low mb-1">
+        <nav className="py-4 space-y-6">
+          {NAV_GROUPS.map((group, idx) => (
+            <div key={group.label} className={idx > 0 ? 'border-t border-border-base/50 pt-4' : ''}>
+              <div className="px-4 font-mono text-[13px] tracking-widest uppercase text-text-low mb-2">
                 {group.label}
               </div>
               <div>

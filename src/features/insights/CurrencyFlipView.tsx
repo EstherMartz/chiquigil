@@ -11,7 +11,7 @@ import { CurrencyFlipResults } from '../queries/CurrencyFlipResults';
 import { defaultCurrencyFlipFilter, type CurrencyFlipFilter, type CurrencyFlipSort } from '../queries/types';
 import { CURRENCIES, getCurrencyById, type CurrencyId } from '../../lib/currencies';
 import { CRYSTALS_SEARCH_CATEGORY } from '../queries/commonFilters';
-import { Spinner } from '../../components/Spinner';
+import { Spinner, SpinGlyph } from '../../components/Spinner';
 import { StatusBanner } from '../../components/StatusBanner';
 import { EmptyState } from '../../components/EmptyState';
 
@@ -134,9 +134,9 @@ function TopStrip({ currencyId, onChangeCurrency, onRun, onRefreshCatalog, busy,
   notReady: boolean;
 }) {
   return (
-    <div className="flex flex-wrap items-end gap-3 p-3 border border-border-base bg-bg-card">
+    <div className="flex flex-wrap items-end gap-3 p-3 border border-border-base bg-bg-card justify-between">
       <label className="block">
-        <span className="font-mono text-[10px] tracking-widest text-text-low uppercase">Currency</span>
+        <span className="font-mono text-[13px] tracking-widest text-text-low uppercase">Currency</span>
         <select
           aria-label="Currency"
           value={currencyId}
@@ -148,22 +148,24 @@ function TopStrip({ currencyId, onChangeCurrency, onRun, onRefreshCatalog, busy,
           ))}
         </select>
       </label>
-      <button
-        type="button"
-        onClick={onRun} disabled={busy || notReady}
-        title={notReady ? 'Loading currency catalog…' : undefined}
-        className="font-mono text-[10px] tracking-widest uppercase border border-gold text-gold px-4 py-2 hover:bg-gold hover:text-bg-deep disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {busy ? 'Running…' : 'Run scan'}
-      </button>
-      <button
-        type="button"
-        onClick={() => { void onRefreshCatalog(); }}
-        className="font-mono text-[10px] tracking-widest uppercase border border-border-base text-text-low px-3 py-2 hover:border-aether hover:text-aether"
-        title="Re-fetch the SpecialShop catalog"
-      >
-        ⟳ Catalog
-      </button>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => { void onRefreshCatalog(); }}
+          className="font-mono text-[10px] tracking-widest uppercase border border-border-base text-text-dim px-3 py-2 hover:text-aether"
+          title="Re-fetch the SpecialShop catalog"
+        >
+          ⟳ Catalog
+        </button>
+        <button
+          type="button"
+          onClick={onRun} disabled={busy || notReady}
+          title={notReady ? 'Loading currency catalog…' : undefined}
+          className="font-mono text-[10px] tracking-widest uppercase bg-gold text-bg-deep px-4 py-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+        >
+          {busy ? <>Running…<SpinGlyph /></> : 'Run scan'}
+        </button>
+      </div>
     </div>
   );
 }
@@ -175,7 +177,7 @@ function FilterBar({ value, onChange }: {
   return (
     <div className="flex flex-wrap items-end gap-3 p-3 border border-border-base bg-bg-card">
       <label className="block">
-        <span className="font-mono text-[10px] tracking-widest text-text-low uppercase">Min gil/unit</span>
+        <span className="font-mono text-[13px] tracking-widest text-text-low uppercase">Min gil/unit</span>
         <input
           type="number" min={0} step={100} value={value.minGilPerUnit}
           onChange={(e) => onChange({ ...value, minGilPerUnit: Math.max(0, Number(e.target.value) || 0) })}
@@ -183,7 +185,7 @@ function FilterBar({ value, onChange }: {
         />
       </label>
       <label className="block">
-        <span className="font-mono text-[10px] tracking-widest text-text-low uppercase">Min sales/day</span>
+        <span className="font-mono text-[13px] tracking-widest text-text-low uppercase">Min sales/day</span>
         <input
           type="number" min={0} step={0.1} value={value.minVelocity}
           onChange={(e) => onChange({ ...value, minVelocity: Math.max(0, Number(e.target.value) || 0) })}
@@ -191,7 +193,7 @@ function FilterBar({ value, onChange }: {
         />
       </label>
       <label className="block">
-        <span className="font-mono text-[10px] tracking-widest text-text-low uppercase">Max listings</span>
+        <span className="font-mono text-[13px] tracking-widest text-text-low uppercase">Max listings</span>
         <input
           type="number" min={0} step={1} value={value.maxListings ?? ''}
           onChange={(e) => {
@@ -203,7 +205,7 @@ function FilterBar({ value, onChange }: {
         />
       </label>
       <div className="flex flex-col gap-1">
-        <span className="font-mono text-[10px] tracking-widest text-text-low uppercase">HQ mode</span>
+        <span className="font-mono text-[13px] tracking-widest text-text-low uppercase">HQ mode</span>
         <div className="flex gap-2">
           {(['nq', 'hq', 'either'] as const).map((mode) => (
             <button
@@ -219,7 +221,7 @@ function FilterBar({ value, onChange }: {
         </div>
       </div>
       <label className="block">
-        <span className="font-mono text-[10px] tracking-widest text-text-low uppercase">Sort</span>
+        <span className="font-mono text-[13px] tracking-widest text-text-low uppercase">Sort</span>
         <select
           value={value.sort}
           onChange={(e) => onChange({ ...value, sort: e.target.value as CurrencyFlipSort })}

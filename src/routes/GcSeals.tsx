@@ -6,7 +6,7 @@ import { fetchInBatches } from '../lib/universalisBulk';
 import { fetchMarketData, type MarketData } from '../lib/universalis';
 import { runGcSeals } from '../features/gcSeals/runGcSeals';
 import { EQUIPPABLE_SC } from '../lib/gcSealsYield';
-import { Spinner } from '../components/Spinner';
+import { Spinner, SpinGlyph } from '../components/Spinner';
 import { StatusBanner } from '../components/StatusBanner';
 import { SectionHeader } from '../components/SectionHeader';
 import { ItemNameLinks } from '../components/ItemNameLinks';
@@ -59,62 +59,63 @@ export default function GcSeals() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 space-y-4">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h2 className="font-display text-lg text-gold tracking-wide">GC Seals</h2>
-          <p className="font-mono text-[11px] text-text-low max-w-prose">
-            Equippable gear ranked by seals per gil, best deals first.
-          </p>
+      <div>
+        <h2 className="font-display text-lg text-gold tracking-wide">GC Seals</h2>
+        <p className="font-mono text-[11px] text-text-low max-w-prose">
+          Equippable gear ranked by seals per gil, best deals first.
+        </p>
+      </div>
+
+      <div className="flex flex-col sm:flex-row gap-4 items-end justify-between">
+        <div className="flex flex-col sm:flex-row gap-4 items-start">
+          <div className="flex flex-col gap-2">
+            <label className="font-mono text-[13px] tracking-widest uppercase text-text-low">
+              Max Price
+            </label>
+            <input
+              type="number"
+              value={maxPrice}
+              onChange={(e) => setMaxPrice(Math.max(0, parseInt(e.target.value) || 0))}
+              className="font-mono text-xs px-2 py-1 bg-bg-card-lo border border-border-base text-text-cream w-32"
+            />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label className="font-mono text-[13px] tracking-widest uppercase text-text-low">
+              Scope
+            </label>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setScope('home')}
+                className={`font-mono text-[10px] tracking-widest uppercase px-3 py-1 border transition-colors ${
+                  scope === 'home'
+                    ? 'border-gold text-gold'
+                    : 'border-border-base text-text-dim hover:text-aether'
+                }`}
+              >
+                Home
+              </button>
+              <button
+                onClick={() => setScope('dc')}
+                className={`font-mono text-[10px] tracking-widest uppercase px-3 py-1 border transition-colors ${
+                  scope === 'dc'
+                    ? 'border-gold text-gold'
+                    : 'border-border-base text-text-dim hover:text-aether'
+                }`}
+              >
+                DC
+              </button>
+            </div>
+          </div>
         </div>
+
         <button
           onClick={() => mutation.mutate()}
           disabled={!ready || mutation.isPending}
-          className="font-mono text-[10px] tracking-widest uppercase px-3 py-2 border border-gold text-gold disabled:border-border-base disabled:text-text-low"
+          className="font-mono text-[10px] tracking-widest uppercase bg-gold text-bg-deep px-4 py-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
         >
-          {ready ? (mutation.isPending ? 'Running…' : 'Run query') : 'Loading data…'}
+          {ready ? (mutation.isPending ? <>Running…<SpinGlyph /></> : 'Run query') : 'Loading data…'}
         </button>
-      </div>
-
-      <div className="flex flex-col sm:flex-row gap-4 items-start">
-        <div className="flex flex-col gap-2">
-          <label className="font-mono text-[10px] tracking-widest uppercase text-text-low">
-            Max Price
-          </label>
-          <input
-            type="number"
-            value={maxPrice}
-            onChange={(e) => setMaxPrice(Math.max(0, parseInt(e.target.value) || 0))}
-            className="font-mono text-xs px-2 py-1 bg-bg-card-lo border border-border-base text-text-cream w-32"
-          />
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <label className="font-mono text-[10px] tracking-widest uppercase text-text-low">
-            Scope
-          </label>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setScope('home')}
-              className={`font-mono text-[10px] tracking-widest uppercase px-3 py-1 border transition-colors ${
-                scope === 'home'
-                  ? 'border-gold text-gold'
-                  : 'border-border-base text-text-dim hover:text-aether'
-              }`}
-            >
-              Home
-            </button>
-            <button
-              onClick={() => setScope('dc')}
-              className={`font-mono text-[10px] tracking-widest uppercase px-3 py-1 border transition-colors ${
-                scope === 'dc'
-                  ? 'border-gold text-gold'
-                  : 'border-border-base text-text-dim hover:text-aether'
-              }`}
-            >
-              DC
-            </button>
-          </div>
-        </div>
       </div>
 
       {mutation.isPending && <Spinner label="Fetching gear market data…" />}

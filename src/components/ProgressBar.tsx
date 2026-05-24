@@ -9,9 +9,9 @@ export function ProgressBar({ current, total, label }: Props) {
 
   return (
     <div className="space-y-1.5">
-      <div className="relative h-1 w-full overflow-hidden rounded-full bg-bg-card-hi">
+      <div className="relative h-2 w-full overflow-hidden rounded-full bg-bg-card-hi shadow-inner">
         <div
-          className="h-full rounded-full bg-aether transition-[width] duration-300"
+          className="h-full rounded-full bg-aether transition-[width] duration-300 shadow-lg shadow-aether/50"
           style={{ width: `${percentage}%` }}
         />
         {current < total && (

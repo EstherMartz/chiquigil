@@ -41,7 +41,7 @@ export function QueryBuilder({ value, onChange, onRun, busy }: Props) {
   return (
     <div className="border border-border-base bg-bg-card p-4 space-y-4">
       <div>
-        <label className="font-mono text-[10px] tracking-widest text-text-low block mb-2">
+        <label className="font-mono text-[13px] tracking-widest text-text-low block mb-2">
           Categories ({value.searchCategories.length || 'all'})
         </label>
         <CategorySelect
@@ -54,7 +54,7 @@ export function QueryBuilder({ value, onChange, onRun, busy }: Props) {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <label className="block">
-          <span className="font-mono text-[10px] tracking-widest text-text-low">HQ</span>
+          <span className="font-mono text-[13px] tracking-widest text-text-low">HQ</span>
           <select
             value={value.hq}
             onChange={(e) => patch({ hq: e.target.value as HqMode })}
@@ -67,7 +67,7 @@ export function QueryBuilder({ value, onChange, onRun, busy }: Props) {
         </label>
 
         <label className="block">
-          <span className="font-mono text-[10px] tracking-widest text-text-low">Min discount %</span>
+          <span className="font-mono text-[13px] tracking-widest text-text-low">Min discount %</span>
           <input
             type="number" min={0} max={99} value={value.minDealPct}
             onChange={(e) => patch({ minDealPct: Math.min(99, intInput(e)) })}
@@ -76,7 +76,7 @@ export function QueryBuilder({ value, onChange, onRun, busy }: Props) {
         </label>
 
         <label className="block">
-          <span className="font-mono text-[10px] tracking-widest text-text-low">Min velocity / day</span>
+          <span className="font-mono text-[13px] tracking-widest text-text-low">Min velocity / day</span>
           <input
             type="number" min={0} step={0.5} value={value.minVelocity}
             onChange={(e) => patch({ minVelocity: intInput(e) })}
@@ -85,7 +85,7 @@ export function QueryBuilder({ value, onChange, onRun, busy }: Props) {
         </label>
 
         <label className="block">
-          <span className="font-mono text-[10px] tracking-widest text-text-low">Sort by</span>
+          <span className="font-mono text-[13px] tracking-widest text-text-low">Sort by</span>
           <select
             value={value.sort}
             onChange={(e) => patch({ sort: e.target.value as QuerySort })}
@@ -96,7 +96,7 @@ export function QueryBuilder({ value, onChange, onRun, busy }: Props) {
         </label>
 
         <label className="block">
-          <span className="font-mono text-[10px] tracking-widest text-text-low">Min price (gil)</span>
+          <span className="font-mono text-[13px] tracking-widest text-text-low">Min price (gil)</span>
           <input
             type="number" min={0} step={1000}
             value={value.minPrice ?? ''}
@@ -106,7 +106,7 @@ export function QueryBuilder({ value, onChange, onRun, busy }: Props) {
         </label>
 
         <label className="block">
-          <span className="font-mono text-[10px] tracking-widest text-text-low">Max price (gil)</span>
+          <span className="font-mono text-[13px] tracking-widest text-text-low">Max price (gil)</span>
           <input
             type="number" min={0} step={1000}
             value={value.maxPrice ?? ''}
@@ -116,7 +116,7 @@ export function QueryBuilder({ value, onChange, onRun, busy }: Props) {
         </label>
 
         <label className="block">
-          <span className="font-mono text-[10px] tracking-widest text-text-low">Limit</span>
+          <span className="font-mono text-[13px] tracking-widest text-text-low">Limit</span>
           <input
             type="number" min={1} max={1000} value={value.limit}
             onChange={(e) => patch({ limit: Math.max(1, Math.min(1000, intInput(e) || 100)) })}
@@ -142,7 +142,7 @@ export function QueryBuilder({ value, onChange, onRun, busy }: Props) {
         </div>
 
         <label className="block">
-          <span className="font-mono text-[10px] tracking-widest text-text-low">Scope</span>
+          <span className="font-mono text-[13px] tracking-widest text-text-low">Scope</span>
           <select
             value={value.scope}
             onChange={(e) => patch({ scope: e.target.value as QueryScope })}
@@ -154,7 +154,7 @@ export function QueryBuilder({ value, onChange, onRun, busy }: Props) {
         </label>
 
         <label className="block">
-          <span className="font-mono text-[10px] tracking-widest text-text-low">Max listings</span>
+          <span className="font-mono text-[13px] tracking-widest text-text-low">Max listings</span>
           <input
             type="number" min={0} step={1}
             value={value.maxListings ?? ''}
@@ -164,7 +164,7 @@ export function QueryBuilder({ value, onChange, onRun, busy }: Props) {
         </label>
 
         <label className="block">
-          <span className="font-mono text-[10px] tracking-widest text-text-low">Min gap (gil)</span>
+          <span className="font-mono text-[13px] tracking-widest text-text-low">Min gap (gil)</span>
           <input
             type="number" min={0} step={1000}
             value={value.minGap ?? ''}
@@ -175,7 +175,7 @@ export function QueryBuilder({ value, onChange, onRun, busy }: Props) {
         </label>
 
         <label className="block">
-          <span className="font-mono text-[10px] tracking-widest text-text-low">Mode</span>
+          <span className="font-mono text-[13px] tracking-widest text-text-low">Mode</span>
           <select
             value={value.mode}
             onChange={(e) => patch({ mode: e.target.value as QueryMode })}

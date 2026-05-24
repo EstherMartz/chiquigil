@@ -126,7 +126,7 @@ export function QueryResults({ rows, totalCandidates, skippedChunks, gatheringCa
           </thead>
           <tbody>
             {visible.map((r, i) => (
-              <tr key={r.id} className="border-t border-border-base hover:bg-bg-card-hi">
+              <tr key={r.id} className="border-t border-border-base hover:bg-bg-card-hi transition-colors">
                 <td className={`px-3 ${rowY} font-mono text-text-low`}>{i + 1}</td>
                 <td className={`px-3 ${rowY}`}>
                   <ItemNameLinks

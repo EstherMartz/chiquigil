@@ -13,7 +13,7 @@ import { buildHeatmapCells, type HeatmapCell, type CellTag, type HeatmapSourceSe
 import { HeatmapChart } from './HeatmapChart';
 import { ITEM_SEARCH_CATEGORIES, type ItemSearchCategoryEntry } from '../../lib/itemSearchCategories';
 import { CRYSTALS_SEARCH_CATEGORY } from '../queries/commonFilters';
-import { Spinner } from '../../components/Spinner';
+import { Spinner, SpinGlyph } from '../../components/Spinner';
 import { StatusBanner } from '../../components/StatusBanner';
 import { EmptyState } from '../../components/EmptyState';
 import { CopyButton } from '../../components/CopyButton';
@@ -169,7 +169,7 @@ export function HeatmapView() {
 
         {mode === 'category' && (
           <label className="block">
-            <span className="font-mono text-[10px] tracking-widest text-text-low uppercase">Group</span>
+            <span className="font-mono text-[13px] tracking-widest text-text-low uppercase">Group</span>
             <select
               value={group}
               onChange={(e) => setGroup(e.target.value as ItemSearchCategoryEntry['group'])}
@@ -187,9 +187,9 @@ export function HeatmapView() {
           onClick={() => { run.reset(); run.mutate(); setPostFilter(DEFAULT_POST_FILTER); }}
           disabled={run.isPending || notReady}
           title={notReady ? 'Loading catalogs…' : undefined}
-          className="font-mono text-[10px] tracking-widest uppercase border border-gold text-gold px-4 py-2 hover:bg-gold hover:text-bg-deep disabled:opacity-50 disabled:cursor-not-allowed"
+          className="font-mono text-[10px] tracking-widest uppercase bg-gold text-bg-deep px-4 py-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
         >
-          {run.isPending ? 'Scanning…' : 'Run scan'}
+          {run.isPending ? <>Scanning…<SpinGlyph /></> : 'Run scan'}
         </button>
       </div>
 
@@ -197,7 +197,7 @@ export function HeatmapView() {
       {run.data && run.data.cells.length > 0 && (
         <div className="flex flex-wrap items-end gap-3 p-3 border border-border-base bg-bg-card">
           <div className="flex flex-col gap-1">
-            <span className="font-mono text-[10px] tracking-widest text-text-low uppercase">Show</span>
+            <span className="font-mono text-[13px] tracking-widest text-text-low uppercase">Show</span>
             <div className="flex flex-wrap gap-1.5">
               {TAG_LABELS.map(({ tag, label }) => {
                 const active = postFilter.activeTags.has(tag);
@@ -221,7 +221,7 @@ export function HeatmapView() {
             </div>
           </div>
           <label className="block">
-            <span className="font-mono text-[10px] tracking-widest text-text-low uppercase">Min vel/day</span>
+            <span className="font-mono text-[13px] tracking-widest text-text-low uppercase">Min vel/day</span>
             <input
               type="number" min={0} step={0.5} value={postFilter.minVelocity}
               onChange={(e) => setPostFilter({ ...postFilter, minVelocity: Math.max(0, Number(e.target.value) || 0) })}
@@ -229,7 +229,7 @@ export function HeatmapView() {
             />
           </label>
           <label className="block">
-            <span className="font-mono text-[10px] tracking-widest text-text-low uppercase">Min margin %</span>
+            <span className="font-mono text-[13px] tracking-widest text-text-low uppercase">Min margin %</span>
             <input
               type="number" min={-100} max={100} step={5} value={postFilter.minMargin}
               onChange={(e) => setPostFilter({ ...postFilter, minMargin: Number(e.target.value) || -100 })}
@@ -337,7 +337,7 @@ function HeatmapList({ cells, sort, onSort, visibleCount, onShowMore }: {
           {visible.map((c) => {
             const rev = c.salePrice * c.velocity;
             return (
-              <tr key={c.id} className="border-t border-border-base hover:bg-bg-card-hi">
+              <tr key={c.id} className="border-t border-border-base hover:bg-bg-card-hi transition-colors">
                 <td className="px-3 py-2">
                   <div className="flex items-center gap-1.5">
                     <Link
