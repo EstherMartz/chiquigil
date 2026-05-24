@@ -6,6 +6,8 @@ export interface LogEntry {
   retainer?: string;
   source?: 'manual' | 'csv-import';
   csvName?: string;
+  batchId?: string;
+  qty?: number;
 }
 
 const DAY_MS = 864e5;

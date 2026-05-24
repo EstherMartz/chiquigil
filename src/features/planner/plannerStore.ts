@@ -11,6 +11,7 @@ export interface PlannerState {
   lanes: Record<LaneKey, PlanItem[]>;
   daily: { date: string; done: Record<string, boolean> };
   importedSaleKeys: string[];
+  lastImportBatchId: string | null;
 
   logGil: (amount: number, opts?: { itemId?: string; note?: string }) => void;
   recordSale: (lane: LaneKey, itemId: string) => void;
@@ -23,12 +24,13 @@ export interface PlannerState {
   dailyResetIfStale: () => void;
   deleteLogEntry: (ts: number) => void;
   importCsv: (sales: ParsedSale[]) => { imported: number; matched: number; skipped: number };
+  rollbackLastImport: () => number;
   resetAll: () => void;
 }
 
-function defaultState(): Pick<PlannerState, '_v' | 'goal' | 'log' | 'lanes' | 'daily' | 'importedSaleKeys'> {
+function defaultState(): Pick<PlannerState, '_v' | 'goal' | 'log' | 'lanes' | 'daily' | 'importedSaleKeys' | 'lastImportBatchId'> {
   const s = seedPlanner();
-  return { _v: 1, ...s, importedSaleKeys: [] };
+  return { _v: 1, ...s, importedSaleKeys: [], lastImportBatchId: null };
 }
 
 export const usePlannerStore = create<PlannerState>()(
@@ -146,6 +148,7 @@ export const usePlannerStore = create<PlannerState>()(
 
       importCsv: (sales) => {
         const state = get();
+        const batchId = 'b' + Date.now().toString(36);
         const existingKeys = new Set(state.importedSaleKeys);
         const batchKeys = new Set<string>();
         const allPlanItems = LANE_ORDER.flatMap((lane) => state.lanes[lane]);
@@ -186,6 +189,8 @@ export const usePlannerStore = create<PlannerState>()(
             retainer: sale.retainer,
             source: 'csv-import',
             csvName: sale.matchedItemId ? undefined : sale.name,
+            batchId,
+            qty: sale.quantity,
           });
           newKeys.push(key);
         }
@@ -209,10 +214,58 @@ export const usePlannerStore = create<PlannerState>()(
             goal: { ...s.goal, current: s.goal.current + treasuryDelta },
             log: [...s.log, ...newLogEntries],
             importedSaleKeys: [...s.importedSaleKeys, ...newKeys],
+            lastImportBatchId: batchId,
           };
         });
 
         return { imported: importedCount, matched: matchedCount, skipped: skippedCount };
+      },
+
+      rollbackLastImport: () => {
+        const state = get();
+        if (!state.lastImportBatchId) return 0;
+        const bid = state.lastImportBatchId;
+        const batchEntries = state.log.filter((l) => l.batchId === bid);
+        if (batchEntries.length === 0) return 0;
+
+        const itemDecrements = new Map<string, { units: number; earned: number }>();
+        let treasuryDelta = 0;
+
+        for (const entry of batchEntries) {
+          treasuryDelta += entry.amount;
+          if (entry.itemId) {
+            const prev = itemDecrements.get(entry.itemId) ?? { units: 0, earned: 0 };
+            prev.earned += entry.amount;
+            prev.units += entry.qty ?? 1;
+            itemDecrements.set(entry.itemId, prev);
+          }
+        }
+
+        // Remove dedup keys added by this batch (they're the last N keys appended)
+        const remainingKeys = state.importedSaleKeys.slice(0, state.importedSaleKeys.length - batchEntries.length);
+
+        set((s) => {
+          const lanes = structuredCloneLanes(s.lanes);
+          for (const [itemId, dec] of itemDecrements) {
+            for (const lane of LANE_ORDER) {
+              const it = lanes[lane].find((x) => x.id === itemId);
+              if (it) {
+                it.units = Math.max(0, it.units - dec.units);
+                it.earned = Math.max(0, it.earned - dec.earned);
+                break;
+              }
+            }
+          }
+          return {
+            lanes,
+            goal: { ...s.goal, current: Math.max(0, s.goal.current - treasuryDelta) },
+            log: s.log.filter((l) => l.batchId !== bid),
+            importedSaleKeys: remainingKeys,
+            lastImportBatchId: null,
+          };
+        });
+
+        return batchEntries.length;
       },
 
       resetAll: () => set(() => defaultState()),

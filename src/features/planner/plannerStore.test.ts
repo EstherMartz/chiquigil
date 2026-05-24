@@ -220,4 +220,53 @@ describe('plannerStore', () => {
       expect(updatedItem.earned).toBe(500_000);
     });
   });
+
+  describe('rollbackLastImport', () => {
+    it('reverses all entries from the last import batch', () => {
+      const item = usePlannerStore.getState().lanes.craft[0];
+      const startCurrent = usePlannerStore.getState().goal.current;
+      const startLogLen = usePlannerStore.getState().log.length;
+      const sale: ParsedSale = {
+        name: item.name,
+        quantity: 3,
+        unitPrice: 100_000,
+        world: 'Phantom',
+        retainer: 'Ret',
+        soldAt: new Date('2026-05-24T10:00:00Z').getTime(),
+      };
+      usePlannerStore.getState().importCsv([sale]);
+      expect(usePlannerStore.getState().lastImportBatchId).not.toBeNull();
+
+      const rolled = usePlannerStore.getState().rollbackLastImport();
+      expect(rolled).toBe(1);
+
+      const s = usePlannerStore.getState();
+      const afterItem = s.lanes.craft.find((i) => i.id === item.id)!;
+      expect(afterItem.units).toBe(0);
+      expect(afterItem.earned).toBe(0);
+      expect(s.goal.current).toBe(startCurrent);
+      expect(s.log.length).toBe(startLogLen);
+      expect(s.lastImportBatchId).toBeNull();
+      expect(s.importedSaleKeys.length).toBe(0);
+    });
+
+    it('returns 0 when no import to rollback', () => {
+      expect(usePlannerStore.getState().rollbackLastImport()).toBe(0);
+    });
+
+    it('allows re-importing the same data after rollback', () => {
+      const sale: ParsedSale = {
+        name: 'Open Book',
+        quantity: 1,
+        unitPrice: 89_989,
+        world: 'Phantom',
+        retainer: "El'jonah",
+        soldAt: new Date('2026-05-24T19:38:26Z').getTime(),
+      };
+      usePlannerStore.getState().importCsv([sale]);
+      usePlannerStore.getState().rollbackLastImport();
+      const result = usePlannerStore.getState().importCsv([sale]);
+      expect(result.imported).toBe(1);
+    });
+  });
 });
