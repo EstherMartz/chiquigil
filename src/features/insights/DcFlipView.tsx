@@ -128,7 +128,7 @@ export function DcFlipView() {
           <label className="block">
             <span className="font-mono text-[13px] tracking-widest text-text-low">Min spread (gil)</span>
             <input
-              type="number" min={0} step={1000}
+              type="number" inputMode="decimal" min={0} step={1000}
               value={minSpread}
               onChange={(e) => setMinSpread(Math.max(0, Number(e.target.value) || 0))}
               className="mt-1 block w-32 bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
@@ -137,7 +137,7 @@ export function DcFlipView() {
           <label className="block">
             <span className="font-mono text-[13px] tracking-widest text-text-low">Min velocity / day</span>
             <input
-              type="number" min={0} step={0.5}
+              type="number" inputMode="decimal" min={0} step={0.5}
               value={minVelocity}
               onChange={(e) => setMinVelocity(Math.max(0, Number(e.target.value) || 0))}
               className="mt-1 block w-32 bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"

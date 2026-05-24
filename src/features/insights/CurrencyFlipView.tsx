@@ -183,7 +183,7 @@ function FilterBar({ value, onChange }: {
       <label className="block">
         <span className="font-mono text-[13px] tracking-widest text-text-low uppercase">Min gil/unit</span>
         <input
-          type="number" min={0} step={100} value={value.minGilPerUnit}
+          type="number" inputMode="decimal" min={0} step={100} value={value.minGilPerUnit}
           onChange={(e) => onChange({ ...value, minGilPerUnit: Math.max(0, Number(e.target.value) || 0) })}
           className="mt-1 block w-28 bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
         />
@@ -191,7 +191,7 @@ function FilterBar({ value, onChange }: {
       <label className="block">
         <span className="font-mono text-[13px] tracking-widest text-text-low uppercase">Min sales/day</span>
         <input
-          type="number" min={0} step={0.1} value={value.minVelocity}
+          type="number" inputMode="decimal" min={0} step={0.1} value={value.minVelocity}
           onChange={(e) => onChange({ ...value, minVelocity: Math.max(0, Number(e.target.value) || 0) })}
           className="mt-1 block w-28 bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
         />
@@ -199,7 +199,7 @@ function FilterBar({ value, onChange }: {
       <label className="block">
         <span className="font-mono text-[13px] tracking-widest text-text-low uppercase">Max listings</span>
         <input
-          type="number" min={0} step={1} value={value.maxListings ?? ''}
+          type="number" inputMode="decimal" min={0} step={1} value={value.maxListings ?? ''}
           onChange={(e) => {
             const n = Number(e.target.value);
             onChange({ ...value, maxListings: Number.isFinite(n) && n > 0 ? n : null });

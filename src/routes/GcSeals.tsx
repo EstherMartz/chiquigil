@@ -73,7 +73,7 @@ export default function GcSeals() {
               Max Price
             </label>
             <input
-              type="number"
+              type="number" inputMode="decimal"
               value={maxPrice}
               onChange={(e) => setMaxPrice(Math.max(0, parseInt(e.target.value) || 0))}
               className="font-mono text-xs px-2 py-1 bg-bg-card-lo border border-border-base text-text-cream w-32"
@@ -139,7 +139,40 @@ export default function GcSeals() {
       {mutation.data && mutation.data.rows.length > 0 && (
         <div className="space-y-3">
           <SectionHeader label={`Results (${mutation.data.rows.length} items)`} />
-          <table className="w-full text-xs font-mono">
+
+          {/* Mobile card list */}
+          <div className="md:hidden border border-border-base bg-bg-card divide-y divide-border-base">
+            {mutation.data.rows.map((row, idx) => (
+              <div key={row.id} className="p-3 active:bg-bg-card-hi transition-colors">
+                <div className="flex items-baseline gap-2">
+                  <span className="font-mono text-[11px] text-text-low w-6 shrink-0">{idx + 1}</span>
+                  <div className="flex-1 min-w-0">
+                    <ItemNameLinks id={row.id} name={row.name} />
+                    <div className="font-mono text-[10px] text-text-low mt-0.5">
+                      i{row.ilvl} · {row.world}
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2 mt-2 pl-8 font-mono text-xs">
+                  <div>
+                    <div className="font-mono text-[9px] tracking-widest uppercase text-text-low">Price</div>
+                    <div className="mt-0.5 text-gold tabular-nums">{fmtGil(row.price)}</div>
+                  </div>
+                  <div>
+                    <div className="font-mono text-[9px] tracking-widest uppercase text-text-low">Seals</div>
+                    <div className="mt-0.5 tabular-nums">{row.seals.toLocaleString()}</div>
+                  </div>
+                  <div>
+                    <div className="font-mono text-[9px] tracking-widest uppercase text-text-low">S/Gil</div>
+                    <div className="mt-0.5 text-aether tabular-nums">{row.sealsPerGil.toFixed(2)}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop table */}
+          <table className="w-full text-xs font-mono hidden md:table">
             <thead>
               <tr className="border-b border-border-base">
                 <th className="text-left px-2 py-1 text-text-low font-normal">#</th>
@@ -153,7 +186,7 @@ export default function GcSeals() {
             </thead>
             <tbody>
               {mutation.data.rows.map((row, idx) => (
-                <tr key={row.id} className="border-b border-border-base hover:bg-bg-card-hi/50 transition-colors">
+                <tr key={row.id} className="border-b border-border-base hover:bg-bg-card-hi/50 active:bg-bg-card-hi/50 transition-colors">
                   <td className="px-2 py-1.5 text-text-low">{idx + 1}</td>
                   <td className="px-2 py-1.5">
                     <ItemNameLinks id={row.id} name={row.name} />

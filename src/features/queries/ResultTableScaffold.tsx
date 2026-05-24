@@ -12,6 +12,10 @@ interface Props<T extends { id: number }> {
   emptyState: ReactNode;
   /** Render the table body given the current page-visible slice. */
   renderTable: (visible: T[]) => ReactNode;
+  /** Optional mobile card layout. When provided, renders below md; the
+   *  table is hidden below md. When omitted, the table renders at all
+   *  sizes (existing behavior). */
+  renderMobile?: (visible: T[]) => ReactNode;
   csvColumns?: CsvColumn<T>[];
   csvFilename?: string;
 }
@@ -23,10 +27,13 @@ interface Props<T extends { id: number }> {
  * differ — but everything around the table is now one piece.
  */
 export function ResultTableScaffold<T extends { id: number }>({
-  rows, totalCandidates, skippedChunks, emptyState, renderTable, csvColumns, csvFilename,
+  rows, totalCandidates, skippedChunks, emptyState, renderTable, renderMobile, csvColumns, csvFilename,
 }: Props<T>) {
   const lm = useLoadMore(rows, 25);
   if (rows.length === 0) return <>{emptyState}</>;
+  const tableWrapClass = renderMobile
+    ? 'hidden md:block border border-border-base bg-bg-card overflow-x-auto'
+    : 'border border-border-base bg-bg-card overflow-x-auto';
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-3">
@@ -40,7 +47,18 @@ export function ResultTableScaffold<T extends { id: number }>({
           <ExportCsvButton rows={rows} columns={csvColumns} filename={csvFilename} />
         )}
       </div>
-      <div className="border border-border-base bg-bg-card overflow-x-auto">
+      {renderMobile && (
+        <div className="md:hidden border border-border-base bg-bg-card divide-y divide-border-base">
+          {renderMobile(lm.visible)}
+          <LoadMoreFooter
+            hasMore={lm.hasMore}
+            total={lm.total}
+            shown={lm.shown}
+            onLoadMore={lm.loadMore}
+          />
+        </div>
+      )}
+      <div className={tableWrapClass}>
         {renderTable(lm.visible)}
         <LoadMoreFooter
           hasMore={lm.hasMore}

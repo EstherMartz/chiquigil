@@ -69,7 +69,7 @@ export function QueryBuilder({ value, onChange, onRun, busy }: Props) {
         <label className="block">
           <span className="font-mono text-[13px] tracking-widest text-text-low">Min discount %</span>
           <input
-            type="number" min={0} max={99} value={value.minDealPct}
+            type="number" inputMode="decimal" min={0} max={99} value={value.minDealPct}
             onChange={(e) => patch({ minDealPct: Math.min(99, intInput(e)) })}
             className="mt-1 block w-full bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
           />
@@ -78,7 +78,7 @@ export function QueryBuilder({ value, onChange, onRun, busy }: Props) {
         <label className="block">
           <span className="font-mono text-[13px] tracking-widest text-text-low">Min velocity / day</span>
           <input
-            type="number" min={0} step={0.5} value={value.minVelocity}
+            type="number" inputMode="decimal" min={0} step={0.5} value={value.minVelocity}
             onChange={(e) => patch({ minVelocity: intInput(e) })}
             className="mt-1 block w-full bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
           />
@@ -98,7 +98,7 @@ export function QueryBuilder({ value, onChange, onRun, busy }: Props) {
         <label className="block">
           <span className="font-mono text-[13px] tracking-widest text-text-low">Min price (gil)</span>
           <input
-            type="number" min={0} step={1000}
+            type="number" inputMode="decimal" min={0} step={1000}
             value={value.minPrice ?? ''}
             onChange={(e) => patch({ minPrice: nullableIntInput(e) })}
             className="mt-1 block w-full bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
@@ -108,7 +108,7 @@ export function QueryBuilder({ value, onChange, onRun, busy }: Props) {
         <label className="block">
           <span className="font-mono text-[13px] tracking-widest text-text-low">Max price (gil)</span>
           <input
-            type="number" min={0} step={1000}
+            type="number" inputMode="decimal" min={0} step={1000}
             value={value.maxPrice ?? ''}
             onChange={(e) => patch({ maxPrice: nullableIntInput(e) })}
             className="mt-1 block w-full bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
@@ -118,7 +118,7 @@ export function QueryBuilder({ value, onChange, onRun, busy }: Props) {
         <label className="block">
           <span className="font-mono text-[13px] tracking-widest text-text-low">Limit</span>
           <input
-            type="number" min={1} max={1000} value={value.limit}
+            type="number" inputMode="decimal" min={1} max={1000} value={value.limit}
             onChange={(e) => patch({ limit: Math.max(1, Math.min(1000, intInput(e) || 100)) })}
             className="mt-1 block w-full bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
           />
@@ -156,7 +156,7 @@ export function QueryBuilder({ value, onChange, onRun, busy }: Props) {
         <label className="block">
           <span className="font-mono text-[13px] tracking-widest text-text-low">Max listings</span>
           <input
-            type="number" min={0} step={1}
+            type="number" inputMode="decimal" min={0} step={1}
             value={value.maxListings ?? ''}
             onChange={(e) => patch({ maxListings: nullableIntInput(e) })}
             className="mt-1 block w-full bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
@@ -166,7 +166,7 @@ export function QueryBuilder({ value, onChange, onRun, busy }: Props) {
         <label className="block">
           <span className="font-mono text-[13px] tracking-widest text-text-low">Min gap (gil)</span>
           <input
-            type="number" min={0} step={1000}
+            type="number" inputMode="decimal" min={0} step={1000}
             value={value.minGap ?? ''}
             onChange={(e) => patch({ minGap: nullableIntInput(e) })}
             className="mt-1 block w-full bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"

@@ -129,9 +129,10 @@ describe('Crafts route', () => {
     fireEvent.click(await screen.findByRole('button', { name: /run query/i }));
 
     await waitFor(
-      () => expect(screen.getByText(/Scarce Craft/)).toBeInTheDocument(),
+      // Item renders in both mobile card list and desktop table.
+      () => expect(screen.getAllByText(/Scarce Craft/).length).toBeGreaterThanOrEqual(1),
       { timeout: 5000 },
     );
-    expect(screen.queryByText(/Oversupplied/)).toBeNull();
+    expect(screen.queryAllByText(/Oversupplied/).length).toBe(0);
   });
 });

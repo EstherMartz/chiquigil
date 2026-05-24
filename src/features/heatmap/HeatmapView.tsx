@@ -223,7 +223,7 @@ export function HeatmapView() {
           <label className="block">
             <span className="font-mono text-[13px] tracking-widest text-text-low uppercase">Min vel/day</span>
             <input
-              type="number" min={0} step={0.5} value={postFilter.minVelocity}
+              type="number" inputMode="decimal" min={0} step={0.5} value={postFilter.minVelocity}
               onChange={(e) => setPostFilter({ ...postFilter, minVelocity: Math.max(0, Number(e.target.value) || 0) })}
               className="mt-1 block w-24 bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
             />
@@ -231,7 +231,7 @@ export function HeatmapView() {
           <label className="block">
             <span className="font-mono text-[13px] tracking-widest text-text-low uppercase">Min margin %</span>
             <input
-              type="number" min={-100} max={100} step={5} value={postFilter.minMargin}
+              type="number" inputMode="decimal" min={-100} max={100} step={5} value={postFilter.minMargin}
               onChange={(e) => setPostFilter({ ...postFilter, minMargin: Number(e.target.value) || -100 })}
               className="mt-1 block w-24 bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
             />

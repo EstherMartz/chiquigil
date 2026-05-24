@@ -48,6 +48,30 @@ export function CraftFlipResults({ rows, totalCandidates, skippedChunks, sparkli
       }
       csvColumns={CSV_COLUMNS}
       csvFilename={`craft-flip-${new Date().toISOString().slice(0, 10)}.csv`}
+      renderMobile={(visible) => (
+        <>
+          {visible.map((r, i) => (
+            <div key={r.id} className="p-3 active:bg-bg-card-hi transition-colors">
+              <div className="flex items-baseline gap-2">
+                <span className="font-mono text-[11px] text-text-low w-6 shrink-0">{i + 1}</span>
+                <div className="flex-1 min-w-0">
+                  <ItemNameLinks
+                    id={r.id}
+                    name={r.name}
+                    suffix={r.hq && <HqStar leading />}
+                    sub={categoryLabel(r.sc)}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-2 mt-2 pl-8 font-mono text-[12px]">
+                <MobileMetric label="Sale">{fmtGil(r.unitPrice)}</MobileMetric>
+                <MobileMetric label="Profit"><span className="text-jade">+{fmtGil(r.profit)}</span></MobileMetric>
+                <MobileMetric label="Gil/day"><span className="text-gold-hi">{fmtGil(Math.round(r.gilPerDay))}</span></MobileMetric>
+              </div>
+            </div>
+          ))}
+        </>
+      )}
       renderTable={(visible) => (
         <table className="w-full text-sm">
           <thead>
@@ -118,5 +142,14 @@ export function CraftFlipResults({ rows, totalCandidates, skippedChunks, sparkli
         </table>
       )}
     />
+  );
+}
+
+function MobileMetric({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <div className="font-mono text-[9px] tracking-widest uppercase text-text-low">{label}</div>
+      <div className="mt-0.5 truncate">{children}</div>
+    </div>
   );
 }
