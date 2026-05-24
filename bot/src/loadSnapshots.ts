@@ -9,17 +9,20 @@ export interface BotSnapshots {
   namesById: Map<number, string>;
   recipes: Map<number, Recipe>;
   gcSupplyIds: Set<number>;
+  vendorMap: Map<number, number>;
 }
 
 export async function loadSnapshots(snapshotsDir: string): Promise<BotSnapshots> {
-  const [itemsRaw, recipesRaw, questsRaw] = await Promise.all([
+  const [itemsRaw, recipesRaw, questsRaw, vendorRaw] = await Promise.all([
     readFile(join(snapshotsDir, 'items.json'), 'utf8'),
     readFile(join(snapshotsDir, 'recipes.json'), 'utf8'),
     readFile(join(snapshotsDir, 'quests.json'), 'utf8'),
+    readFile(join(snapshotsDir, 'vendorShop.json'), 'utf8'),
   ]);
   const itemsBundle = JSON.parse(itemsRaw) as { bakedAt: number; items: SnapshotItem[] };
   const recipesBundle = JSON.parse(recipesRaw) as { bakedAt: number; entries: Array<[number, Recipe]> };
   const questsBundle = JSON.parse(questsRaw) as { bakedAt: number; quests: SnapshotQuest[] };
+  const vendorBundle = JSON.parse(vendorRaw) as { bakedAt: number; entries: Array<[number, number]> };
 
   const itemsById = new Map<number, SnapshotItem>();
   const namesById = new Map<number, string>();
@@ -34,5 +37,7 @@ export async function loadSnapshots(snapshotsDir: string): Promise<BotSnapshots>
     for (const req of quest.requiredItems) gcSupplyIds.add(req.itemId);
   }
 
-  return { itemsById, namesById, recipes, gcSupplyIds };
+  const vendorMap = new Map<number, number>(vendorBundle.entries);
+
+  return { itemsById, namesById, recipes, gcSupplyIds, vendorMap };
 }
