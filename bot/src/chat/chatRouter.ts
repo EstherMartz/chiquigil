@@ -1,4 +1,4 @@
-import type { ChatInputCommandInteraction } from 'discord.js';
+import type { Message } from 'discord.js';
 import { EmbedBuilder } from 'discord.js';
 import { callOpenRouter, parseOpenRouterResponse, type ChatMessage } from './openrouter';
 import { TOOL_DEFINITIONS, executeTool, type ToolContext } from './tools';
@@ -14,22 +14,22 @@ export interface ChatDeps {
   toolCtx: ToolContext;
 }
 
-export async function handleChatCommand(
-  interaction: ChatInputCommandInteraction,
+export async function handleChatMessage(
+  msg: Message,
   deps: ChatDeps,
 ): Promise<void> {
-  const userId = interaction.user.id;
+  const userId = msg.author.id;
 
   // Rate limit
   const lastTs = cooldowns.get(userId) ?? 0;
-  if (Date.now() - lastTs < COOLDOWN_MS) {
-    await interaction.reply({ content: 'Espera un momentito ✨', ephemeral: true });
-    return;
-  }
+  if (Date.now() - lastTs < COOLDOWN_MS) return;
   cooldowns.set(userId, Date.now());
 
-  await interaction.deferReply();
-  const userMessage = interaction.options.getString('message', true);
+  if (msg.channel.isTextBased() && 'sendTyping' in msg.channel) {
+    await msg.channel.sendTyping();
+  }
+
+  const userMessage = msg.content;
   const startTime = Date.now();
 
   try {
@@ -77,12 +77,10 @@ export async function handleChatCommand(
       .setDescription(finalContent)
       .setFooter({ text: `${deps.model} · ${elapsed}s` });
 
-    await interaction.editReply({ embeds: [embed] });
+    await msg.reply({ embeds: [embed] });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    console.error('Chat error:', msg);
-    await interaction.editReply({
-      content: 'Ay, mi conexión con las estrellas falló ✨ Inténtalo otra vez',
-    });
+    const errMsg = e instanceof Error ? e.message : String(e);
+    console.error('Chat error:', errMsg);
+    await msg.reply('Ay, mi conexión con las estrellas falló ✨ Inténtalo otra vez');
   }
 }

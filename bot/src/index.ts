@@ -1,4 +1,4 @@
-import { Client, Events, GatewayIntentBits, Partials, type Message, type ChatInputCommandInteraction } from 'discord.js';
+import { Client, Events, GatewayIntentBits, Partials, type Message } from 'discord.js';
 import { config } from './config';
 import { loadSnapshots } from './loadSnapshots';
 import { handleCsv } from './handleCsv';
@@ -6,7 +6,7 @@ import { createCleanupCache, type CachedCleanup } from './cleanupCache';
 import { handleInteraction, newCacheId } from './interactions';
 import { fetchMarketForOutputs } from './fetchMarketForOutputs';
 import { registerCommands } from './registerCommands';
-import { handleChatCommand } from './chat/chatRouter';
+import { handleChatMessage, type ChatDeps } from './chat/chatRouter';
 import { buildNameIndex } from './chat/nameIndex';
 
 const TTL_MS = 30 * 60_000;       // 30-min sliding TTL
@@ -35,6 +35,16 @@ async function main() {
 
   const nameIndex = buildNameIndex(snapshots.namesById);
 
+  const chatDeps: ChatDeps | null = config.openrouterApiKey ? {
+    apiKey: config.openrouterApiKey,
+    model: config.chatModel,
+    toolCtx: {
+      snapshots,
+      nameIndex,
+      cfg: { world: config.world, dc: config.dc, region: config.region },
+    },
+  } : null;
+
   const client = new Client({
     intents: [
       GatewayIntentBits.Guilds,
@@ -46,19 +56,29 @@ async function main() {
 
   client.once(Events.ClientReady, async (c) => {
     console.log(`Logged in as ${c.user.tag}`);
+    await registerCommands(config.token, c.user.id, [...config.guildAllowlist]);
 
-    // Register slash commands
-    if (config.openrouterApiKey) {
-      await registerCommands(config.token, c.user.id, [...config.guildAllowlist]);
-      console.log('Chat feature enabled (OpenRouter key present)');
-    } else {
-      console.log('Chat feature disabled (no OPENROUTER_API_KEY)');
+    if (chatDeps && config.chatChannelId) {
+      console.log(`Chat enabled in channel ${config.chatChannelId}`);
+    } else if (!config.openrouterApiKey) {
+      console.log('Chat disabled (no OPENROUTER_API_KEY)');
+    } else if (!config.chatChannelId) {
+      console.log('Chat disabled (no CHAT_CHANNEL_ID)');
     }
   });
 
   client.on(Events.MessageCreate, async (msg: Message) => {
     if (msg.author.bot) return;
     if (!msg.guildId || !config.guildAllowlist.has(msg.guildId)) return;
+
+    // Chat channel — route to AI
+    if (chatDeps && config.chatChannelId && msg.channelId === config.chatChannelId) {
+      if (!msg.content.trim()) return;
+      await handleChatMessage(msg, chatDeps);
+      return;
+    }
+
+    // Legacy CSV via message attachment (still works outside chat channel)
     const attachment = msg.attachments.find((a) => a.name?.toLowerCase().endsWith('.csv'));
     if (!attachment) return;
 
@@ -102,21 +122,48 @@ async function main() {
   });
 
   client.on(Events.InteractionCreate, async (interaction) => {
-    // Handle /chat slash command
-    if (interaction.isChatInputCommand() && interaction.commandName === 'chat') {
-      if (!config.openrouterApiKey) {
-        await interaction.reply({ content: 'Chat no está configurado — falta OPENROUTER_API_KEY', ephemeral: true });
+    // Handle /cleanup slash command
+    if (interaction.isChatInputCommand() && interaction.commandName === 'cleanup') {
+      const attachment = interaction.options.getAttachment('csv', true);
+      if (!attachment.name?.toLowerCase().endsWith('.csv')) {
+        await interaction.reply({ content: 'Necesito un archivo .csv ✨', ephemeral: true });
         return;
       }
-      await handleChatCommand(interaction as ChatInputCommandInteraction, {
-        apiKey: config.openrouterApiKey,
-        model: config.chatModel,
-        toolCtx: {
-          snapshots,
-          nameIndex,
-          cfg: { world: config.world, dc: config.dc, region: config.region },
-        },
-      });
+
+      await interaction.deferReply();
+
+      try {
+        const res = await fetch(attachment.url);
+        if (!res.ok) throw new Error(`Attachment fetch failed: ${res.status}`);
+        const csv = await res.text();
+        const cacheId = newCacheId();
+        const out = await handleCsv(csv, snapshots, {
+          world: config.world,
+          dc: config.dc,
+          region: config.region,
+        }, { ownerId: interaction.user.id, cacheId });
+        await interaction.editReply({
+          content: out.reply.summary,
+          embeds: out.reply.embeds,
+          files: out.reply.files,
+          components: out.reply.components,
+        });
+        const entry: CachedCleanup = {
+          ownerId: interaction.user.id,
+          cacheId,
+          csv,
+          parsed: out.parsed,
+          marketIds: out.marketIds,
+          result: out.result,
+          usesByItemId: out.usesByItemId,
+          createdAt: Date.now(),
+          lastTouchedAt: Date.now(),
+        };
+        cache.set(interaction.user.id, entry);
+      } catch (e) {
+        const m = e instanceof Error ? e.message : String(e);
+        await interaction.editReply(`Couldn't process CSV: \`${m}\``);
+      }
       return;
     }
 
