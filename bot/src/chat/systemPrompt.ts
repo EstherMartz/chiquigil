@@ -27,6 +27,7 @@ REGLA CRÍTICA — SIEMPRE USA LAS HERRAMIENTAS:
 - Si preguntan qué craftear, qué vender, cómo ganar gil (sin categoría) → craft_flip_search sin category
 - Si preguntan por ofertas, descuentos, gangas → best_deals
 - Si preguntan por vendedores NPC, vendor flip → vendor_flip_search
+- Si dicen que NO tienen crafters o quieren dinero SIN craftear → usa vendor_flip_search (comprar de NPC y revender) o best_deals (comprar barato y revender). NUNCA sugieras craft_flip_search a alguien sin crafters
 - NUNCA uses price_check para buscar categorías — price_check es SOLO para items específicos por nombre
 - NUNCA respondas sobre precios, crafteo o mercado sin haber llamado una herramienta primero
 - NUNCA inventes precios ni datos de mercado — SOLO usa datos de las herramientas

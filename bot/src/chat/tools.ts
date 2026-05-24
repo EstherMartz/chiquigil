@@ -247,8 +247,8 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
         type: 'object',
         properties: {
           limit: { type: 'number', description: 'Number of results (default 5)' },
-          sort: { type: 'string', enum: ['gilPerDay', 'profit'], description: 'Sort field (default gilPerDay)' },
-          category: { type: 'string', enum: ['meals', 'food', 'medicine', 'potions', 'materials', 'cloth', 'leather', 'metal', 'lumber', 'stone', 'dyes', 'materia', 'furnishings', 'housing', 'minions', 'weapons', 'armor', 'accessories', 'gear'], description: 'Filter by item category (optional)' },
+          sort: { type: 'string', description: 'Sort: gilPerDay or profit (default gilPerDay)' },
+          category: { type: 'string', description: 'Filter by category: meals, food, medicine, potions, materials, cloth, leather, metal, lumber, stone, dyes, materia, furnishings, housing, minions, weapons, armor, accessories, gear (optional)' },
         },
       },
     },
@@ -263,7 +263,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
         properties: {
           limit: { type: 'number', description: 'Number of results (default 5)' },
           min_deal_pct: { type: 'number', description: 'Minimum discount % (default 20)' },
-          category: { type: 'string', enum: ['meals', 'food', 'medicine', 'potions', 'materials', 'cloth', 'leather', 'metal', 'lumber', 'stone', 'dyes', 'materia', 'furnishings', 'housing', 'minions', 'weapons', 'armor', 'accessories', 'gear'], description: 'Filter by item category (optional)' },
+          category: { type: 'string', description: 'Filter by category: meals, food, medicine, potions, materials, cloth, leather, metal, lumber, stone, dyes, materia, furnishings, housing, minions, weapons, armor, accessories, gear (optional)' },
         },
       },
     },
@@ -272,13 +272,13 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     type: 'function',
     function: {
       name: 'vendor_flip_search',
-      description: 'Find items that can be bought from NPC vendors and resold on the market board for profit.',
+      description: 'Find items that can be bought from NPC vendors and resold on the market board for profit. Does NOT require crafting — anyone can do this.',
       parameters: {
         type: 'object',
         properties: {
           limit: { type: 'number', description: 'Number of results (default 5)' },
-          sort: { type: 'string', enum: ['profitPerDay', 'markup'], description: 'Sort field (default profitPerDay)' },
-          category: { type: 'string', enum: ['meals', 'food', 'medicine', 'potions', 'materials', 'cloth', 'leather', 'metal', 'lumber', 'stone', 'dyes', 'materia', 'furnishings', 'housing', 'minions', 'weapons', 'armor', 'accessories', 'gear'], description: 'Filter by item category (optional)' },
+          sort: { type: 'string', description: 'Sort: profitPerDay or markup (default profitPerDay)' },
+          category: { type: 'string', description: 'Filter by category: meals, food, medicine, potions, materials, cloth, leather, metal, lumber, stone, dyes, materia, furnishings, housing, minions, weapons, armor, accessories, gear (optional)' },
         },
       },
     },
@@ -287,9 +287,16 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
 
 export async function executeTool(
   name: string,
-  args: Record<string, unknown>,
+  rawArgs: Record<string, unknown>,
   ctx: ToolContext,
 ): Promise<string> {
+  // Sanitize: coerce string numbers, strip empty strings
+  const args: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(rawArgs)) {
+    if (v === '' || v == null) continue;
+    if (typeof v === 'string' && /^\d+(\.\d+)?$/.test(v)) { args[k] = Number(v); continue; }
+    args[k] = v;
+  }
   try {
     switch (name) {
       case 'price_check': return await priceCheck(args, ctx);
