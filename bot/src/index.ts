@@ -131,23 +131,34 @@ async function main() {
       }
 
       await interaction.deferReply();
+      console.log(`[cleanup] ${interaction.user.tag} uploaded ${attachment.name} (${attachment.size} bytes)`);
 
       try {
+        console.log('[cleanup] fetching attachment…');
         const res = await fetch(attachment.url);
         if (!res.ok) throw new Error(`Attachment fetch failed: ${res.status}`);
         const csv = await res.text();
+        console.log(`[cleanup] CSV loaded (${csv.length} chars, ${csv.split('\n').length} lines)`);
+
         const cacheId = newCacheId();
+        console.log('[cleanup] running handleCsv…');
+        const startTime = Date.now();
         const out = await handleCsv(csv, snapshots, {
           world: config.world,
           dc: config.dc,
           region: config.region,
         }, { ownerId: interaction.user.id, cacheId });
+        const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+        console.log(`[cleanup] done in ${elapsed}s — ${out.parsed.entries.length} items parsed`);
+
         await interaction.editReply({
           content: out.reply.summary,
           embeds: out.reply.embeds,
           files: out.reply.files,
           components: out.reply.components,
         });
+        console.log('[cleanup] reply sent');
+
         const entry: CachedCleanup = {
           ownerId: interaction.user.id,
           cacheId,
@@ -162,7 +173,8 @@ async function main() {
         cache.set(interaction.user.id, entry);
       } catch (e) {
         const m = e instanceof Error ? e.message : String(e);
-        await interaction.editReply(`Couldn't process CSV: \`${m}\``);
+        console.error(`[cleanup] error: ${m}`);
+        await interaction.editReply(`No pude procesar el CSV: \`${m}\``).catch(() => {});
       }
       return;
     }
