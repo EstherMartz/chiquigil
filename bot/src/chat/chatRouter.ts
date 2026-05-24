@@ -1,6 +1,6 @@
 import type { Message } from 'discord.js';
 import { EmbedBuilder } from 'discord.js';
-import { callOpenRouter, parseOpenRouterResponse, type ChatMessage } from './openrouter';
+import { callLLM, parseOpenRouterResponse, type ChatMessage, type LLMProvider } from './openrouter';
 import { TOOL_DEFINITIONS, executeTool, type ToolContext } from './tools';
 import { SYSTEM_PROMPT } from './systemPrompt';
 
@@ -18,6 +18,7 @@ const CAT_GIFS = [
 const cooldowns = new Map<string, number>();
 
 export interface ChatDeps {
+  provider: LLMProvider;
   apiKey: string;
   model: string;
   toolCtx: ToolContext;
@@ -65,7 +66,7 @@ export async function handleChatMessage(
 
     for (let i = 0; i < MAX_ITERATIONS; i++) {
       console.log(`[chat] iteration ${i + 1}/${MAX_ITERATIONS} — calling OpenRouter…`);
-      const raw = await callOpenRouter(deps.apiKey, deps.model, messages, TOOL_DEFINITIONS);
+      const raw = await callLLM(deps.provider, deps.apiKey, deps.model, messages, TOOL_DEFINITIONS);
       const parsed = parseOpenRouterResponse(raw);
 
       if (parsed.toolCalls.length === 0) {

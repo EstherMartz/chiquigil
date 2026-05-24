@@ -36,9 +36,14 @@ async function main() {
 
   const nameIndex = buildNameIndex(snapshots.namesById);
 
-  const chatDeps: ChatDeps | null = config.openrouterApiKey ? {
-    apiKey: config.openrouterApiKey,
-    model: config.chatModel,
+  const chatApiKey = config.anthropicApiKey ?? config.openrouterApiKey;
+  const chatProvider = config.anthropicApiKey ? 'anthropic' as const : 'openrouter' as const;
+  const chatModel = config.anthropicApiKey ? (process.env.CHAT_MODEL ?? 'claude-haiku-4-5-20251001') : config.chatModel;
+
+  const chatDeps: ChatDeps | null = chatApiKey ? {
+    provider: chatProvider,
+    apiKey: chatApiKey,
+    model: chatModel,
     toolCtx: {
       snapshots,
       nameIndex,
@@ -62,9 +67,9 @@ async function main() {
     await registerCommands(config.token, c.user.id, [...config.guildAllowlist]);
 
     if (chatDeps && config.chatChannelId) {
-      console.log(`Chat enabled in channel ${config.chatChannelId}`);
-    } else if (!config.openrouterApiKey) {
-      console.log('Chat disabled (no OPENROUTER_API_KEY)');
+      console.log(`Chat enabled in channel ${config.chatChannelId} (${chatProvider}, ${chatModel})`);
+    } else if (!chatApiKey) {
+      console.log('Chat disabled (no ANTHROPIC_API_KEY or OPENROUTER_API_KEY)');
     } else if (!config.chatChannelId) {
       console.log('Chat disabled (no CHAT_CHANNEL_ID)');
     }
