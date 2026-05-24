@@ -1,10 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { usePlannerStore } from './plannerStore';
+import type { ParsedSale } from './parseSalesCsv';
 
 function resetStore() {
   usePlannerStore.getState().resetAll();
   // resetAll() uses the seed which sets startTs = Date.now(); also reset persist
-  usePlannerStore.setState((s) => ({ ...s, log: [], daily: { date: '', done: {} } }));
+  usePlannerStore.setState((s) => ({ ...s, log: [], daily: { date: '', done: {} }, importedSaleKeys: [] }));
 }
 
 describe('plannerStore', () => {
@@ -130,6 +131,93 @@ describe('plannerStore', () => {
       const after = usePlannerStore.getState().lanes.gather.find((i) => i.id === item.id)!;
       expect(after.earned).toBe(startEarned + 10_000);
       expect(after.units).toBe(startUnits + 1);
+    });
+  });
+
+  describe('importCsv', () => {
+    it('imports sales, matches to plan items, and updates treasury', () => {
+      const item = usePlannerStore.getState().lanes.craft[0]; // Plain Hooded Tunic
+      const sale: ParsedSale = {
+        name: item.name,
+        quantity: 1,
+        unitPrice: 2_799_998,
+        world: 'Phantom',
+        retainer: "La'vane",
+        soldAt: new Date('2026-05-24T18:33:10Z').getTime(),
+      };
+      const startCurrent = usePlannerStore.getState().goal.current;
+      const result = usePlannerStore.getState().importCsv([sale]);
+      expect(result).toEqual({ imported: 1, matched: 1, skipped: 0 });
+
+      const s = usePlannerStore.getState();
+      const updatedItem = s.lanes.craft.find((i) => i.id === item.id)!;
+      expect(updatedItem.units).toBe(1);
+      expect(updatedItem.earned).toBe(2_799_998);
+      expect(s.goal.current).toBe(startCurrent + 2_799_998);
+      expect(s.log[s.log.length - 1].source).toBe('csv-import');
+      expect(s.log[s.log.length - 1].retainer).toBe("La'vane");
+    });
+
+    it('logs unmatched sales to treasury without itemId', () => {
+      const sale: ParsedSale = {
+        name: 'Zabuton Cushion',
+        quantity: 1,
+        unitPrice: 38_899,
+        world: 'Phantom',
+        retainer: "La'vane",
+        soldAt: new Date('2026-05-24T00:03:49Z').getTime(),
+      };
+      const result = usePlannerStore.getState().importCsv([sale]);
+      expect(result).toEqual({ imported: 1, matched: 0, skipped: 0 });
+      const entry = usePlannerStore.getState().log[usePlannerStore.getState().log.length - 1];
+      expect(entry.itemId).toBeUndefined();
+      expect(entry.csvName).toBe('Zabuton Cushion');
+      expect(entry.source).toBe('csv-import');
+    });
+
+    it('skips duplicate rows on re-import', () => {
+      const sale: ParsedSale = {
+        name: 'Open Book',
+        quantity: 1,
+        unitPrice: 89_989,
+        world: 'Phantom',
+        retainer: "El'jonah",
+        soldAt: new Date('2026-05-24T19:38:26Z').getTime(),
+      };
+      usePlannerStore.getState().importCsv([sale]);
+      const logAfterFirst = usePlannerStore.getState().log.length;
+      const result = usePlannerStore.getState().importCsv([sale]);
+      expect(result).toEqual({ imported: 0, matched: 0, skipped: 1 });
+      expect(usePlannerStore.getState().log.length).toBe(logAfterFirst);
+    });
+
+    it('deduplicates within a single batch (same-file duplicates)', () => {
+      const sale: ParsedSale = {
+        name: 'Bamboo Copse',
+        quantity: 1,
+        unitPrice: 41_994,
+        world: 'Phantom',
+        retainer: "La'rosalia",
+        soldAt: new Date('2026-05-24T12:12:23Z').getTime(),
+      };
+      const result = usePlannerStore.getState().importCsv([sale, sale]);
+      expect(result).toEqual({ imported: 1, matched: 0, skipped: 1 });
+    });
+
+    it('handles quantity > 1 by multiplying unitPrice × quantity for total', () => {
+      const item = usePlannerStore.getState().lanes.craft[0];
+      const sale: ParsedSale = {
+        name: item.name,
+        quantity: 5,
+        unitPrice: 100_000,
+        world: 'Phantom',
+        retainer: 'Ret',
+        soldAt: new Date('2026-05-24T10:00:00Z').getTime(),
+      };
+      usePlannerStore.getState().importCsv([sale]);
+      const updatedItem = usePlannerStore.getState().lanes.craft.find((i) => i.id === item.id)!;
+      expect(updatedItem.units).toBe(5);
+      expect(updatedItem.earned).toBe(500_000);
     });
   });
 });

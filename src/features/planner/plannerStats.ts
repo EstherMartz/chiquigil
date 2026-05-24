@@ -3,6 +3,9 @@ export interface LogEntry {
   amount: number;
   note: string;
   itemId?: string;
+  retainer?: string;
+  source?: 'manual' | 'csv-import';
+  csvName?: string;
 }
 
 const DAY_MS = 864e5;

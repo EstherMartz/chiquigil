@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { todayStr, type LogEntry } from './plannerStats';
-import { seedPlanner, newItemId, type LaneKey, type PlanItem } from './seedPlanner';
+import { seedPlanner, newItemId, LANE_ORDER, type LaneKey, type PlanItem } from './seedPlanner';
+import { dedupKey, matchSalesToPlan, type ParsedSale } from './parseSalesCsv';
 
 export interface PlannerState {
   _v: 1;
@@ -9,6 +10,7 @@ export interface PlannerState {
   log: LogEntry[];
   lanes: Record<LaneKey, PlanItem[]>;
   daily: { date: string; done: Record<string, boolean> };
+  importedSaleKeys: string[];
 
   logGil: (amount: number, opts?: { itemId?: string; note?: string }) => void;
   recordSale: (lane: LaneKey, itemId: string) => void;
@@ -20,17 +22,18 @@ export interface PlannerState {
   toggleDaily: (taskId: string) => void;
   dailyResetIfStale: () => void;
   deleteLogEntry: (ts: number) => void;
+  importCsv: (sales: ParsedSale[]) => { imported: number; matched: number; skipped: number };
   resetAll: () => void;
 }
 
-function defaultState(): Pick<PlannerState, '_v' | 'goal' | 'log' | 'lanes' | 'daily'> {
+function defaultState(): Pick<PlannerState, '_v' | 'goal' | 'log' | 'lanes' | 'daily' | 'importedSaleKeys'> {
   const s = seedPlanner();
-  return { _v: 1, ...s };
+  return { _v: 1, ...s, importedSaleKeys: [] };
 }
 
 export const usePlannerStore = create<PlannerState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       ...defaultState(),
 
       logGil: (amount, opts) => set((s) => {
@@ -140,6 +143,77 @@ export const usePlannerStore = create<PlannerState>()(
           goal: { ...s.goal, current: Math.max(0, s.goal.current - entry.amount) },
         };
       }),
+
+      importCsv: (sales) => {
+        const state = get();
+        const existingKeys = new Set(state.importedSaleKeys);
+        const batchKeys = new Set<string>();
+        const allPlanItems = LANE_ORDER.flatMap((lane) => state.lanes[lane]);
+        const matched = matchSalesToPlan(sales, allPlanItems);
+
+        let importedCount = 0;
+        let matchedCount = 0;
+        let skippedCount = 0;
+        const newLogEntries: LogEntry[] = [];
+        const newKeys: string[] = [];
+        const itemIncrements = new Map<string, { units: number; earned: number }>();
+        let treasuryDelta = 0;
+
+        for (const sale of matched) {
+          const key = dedupKey(sale);
+          if (existingKeys.has(key) || batchKeys.has(key)) {
+            skippedCount++;
+            continue;
+          }
+          batchKeys.add(key);
+          const total = sale.quantity * sale.unitPrice;
+          treasuryDelta += total;
+          importedCount++;
+
+          if (sale.matchedItemId) {
+            matchedCount++;
+            const prev = itemIncrements.get(sale.matchedItemId) ?? { units: 0, earned: 0 };
+            prev.units += sale.quantity;
+            prev.earned += total;
+            itemIncrements.set(sale.matchedItemId, prev);
+          }
+
+          newLogEntries.push({
+            ts: sale.soldAt,
+            amount: total,
+            note: sale.matchedItemId ? `${sale.name} (csv)` : sale.name,
+            itemId: sale.matchedItemId,
+            retainer: sale.retainer,
+            source: 'csv-import',
+            csvName: sale.matchedItemId ? undefined : sale.name,
+          });
+          newKeys.push(key);
+        }
+
+        if (importedCount === 0) return { imported: 0, matched: 0, skipped: skippedCount };
+
+        set((s) => {
+          const lanes = structuredCloneLanes(s.lanes);
+          for (const [itemId, inc] of itemIncrements) {
+            for (const lane of LANE_ORDER) {
+              const it = lanes[lane].find((x) => x.id === itemId);
+              if (it) {
+                it.units += inc.units;
+                it.earned += inc.earned;
+                break;
+              }
+            }
+          }
+          return {
+            lanes,
+            goal: { ...s.goal, current: s.goal.current + treasuryDelta },
+            log: [...s.log, ...newLogEntries],
+            importedSaleKeys: [...s.importedSaleKeys, ...newKeys],
+          };
+        });
+
+        return { imported: importedCount, matched: matchedCount, skipped: skippedCount };
+      },
 
       resetAll: () => set(() => defaultState()),
     }),
