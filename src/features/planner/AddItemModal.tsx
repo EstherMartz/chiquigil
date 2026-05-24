@@ -5,12 +5,13 @@ interface Props {
   lane: LaneKey;
   onAdd: (partial: { name: string; src: string; price: number; perDay: number; supply: number | null }) => void;
   onClose: () => void;
+  prefill?: { name: string; price: number };
 }
 
-export function AddItemModal({ lane, onAdd, onClose }: Props) {
-  const [name, setName] = useState('');
+export function AddItemModal({ lane, onAdd, onClose, prefill }: Props) {
+  const [name, setName] = useState(prefill?.name ?? '');
   const [src, setSrc] = useState('');
-  const [price, setPrice] = useState('');
+  const [price, setPrice] = useState(prefill?.price ? String(prefill.price) : '');
   const [perDay, setPerDay] = useState('');
   const [supply, setSupply] = useState('');
 
