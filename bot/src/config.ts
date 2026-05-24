@@ -19,6 +19,7 @@ export const config = {
   snapshotsDir: process.env.SNAPSHOTS_DIR ?? '../public/data/snapshots',
   openrouterApiKey: optional('OPENROUTER_API_KEY'),
   anthropicApiKey: optional('ANTHROPIC_API_KEY'),
+  groqApiKey: optional('GROQ_API_KEY'),
   chatModel: process.env.CHAT_MODEL ?? 'meta-llama/llama-3.1-70b-instruct',
   chatChannelId: optional('CHAT_CHANNEL_ID'),
 };

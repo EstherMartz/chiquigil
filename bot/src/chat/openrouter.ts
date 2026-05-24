@@ -199,7 +199,7 @@ async function callAnthropic(
 
 // --- Unified caller ---
 
-export type LLMProvider = 'openrouter' | 'anthropic';
+export type LLMProvider = 'openrouter' | 'anthropic' | 'groq';
 
 export async function callLLM(
   provider: LLMProvider,
@@ -211,16 +211,21 @@ export async function callLLM(
   if (provider === 'anthropic') {
     return callAnthropic(apiKey, model, messages, tools);
   }
-  return callOpenRouter(apiKey, model, messages, tools);
+  if (provider === 'groq') {
+    return callOpenAICompatible('https://api.groq.com/openai/v1/chat/completions', 'Groq', apiKey, model, messages, tools);
+  }
+  return callOpenAICompatible('https://openrouter.ai/api/v1/chat/completions', 'OpenRouter', apiKey, model, messages, tools);
 }
 
-async function callOpenRouter(
+async function callOpenAICompatible(
+  endpoint: string,
+  label: string,
   apiKey: string,
   model: string,
   messages: ChatMessage[],
   tools: ToolDefinition[],
 ): Promise<OpenRouterResponse> {
-  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+  const res = await fetch(endpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -236,7 +241,7 @@ async function callOpenRouter(
   });
   if (!res.ok) {
     const text = await res.text().catch(() => '');
-    throw new Error(`OpenRouter ${res.status}: ${text.slice(0, 200)}`);
+    throw new Error(`${label} ${res.status}: ${text.slice(0, 200)}`);
   }
   return res.json() as Promise<OpenRouterResponse>;
 }

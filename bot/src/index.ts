@@ -36,9 +36,13 @@ async function main() {
 
   const nameIndex = buildNameIndex(snapshots.namesById);
 
-  const chatApiKey = config.anthropicApiKey ?? config.openrouterApiKey;
-  const chatProvider = config.anthropicApiKey ? 'anthropic' as const : 'openrouter' as const;
-  const chatModel = config.anthropicApiKey ? (process.env.CHAT_MODEL ?? 'claude-haiku-4-5-20251001') : config.chatModel;
+  const chatApiKey = config.anthropicApiKey ?? config.groqApiKey ?? config.openrouterApiKey;
+  const chatProvider = config.anthropicApiKey ? 'anthropic' as const
+    : config.groqApiKey ? 'groq' as const
+    : 'openrouter' as const;
+  const chatModel = config.anthropicApiKey ? (process.env.CHAT_MODEL ?? 'claude-haiku-4-5-20251001')
+    : config.groqApiKey ? (process.env.CHAT_MODEL ?? 'llama-3.3-70b-versatile')
+    : config.chatModel;
 
   const chatDeps: ChatDeps | null = chatApiKey ? {
     provider: chatProvider,
