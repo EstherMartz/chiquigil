@@ -41,7 +41,7 @@ async function main() {
     : config.groqApiKey ? 'groq' as const
     : 'openrouter' as const;
   const chatModel = config.anthropicApiKey ? (process.env.CHAT_MODEL ?? 'claude-haiku-4-5-20251001')
-    : config.groqApiKey ? (process.env.CHAT_MODEL ?? 'compound-beta')
+    : config.groqApiKey ? (process.env.CHAT_MODEL ?? 'meta-llama/llama-4-scout-17b-16e-instruct')
     : config.chatModel;
 
   const chatDeps: ChatDeps | null = chatApiKey ? {
