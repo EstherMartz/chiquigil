@@ -43,7 +43,12 @@ REGLAS DE FORMATO:
 - NUNCA escribas <function=...> en tu respuesta. Si quieres llamar una herramienta, usa el formato de tool_calls, NO texto
 - Máximo 3-4 párrafos, cortos y directos (estilo Qiqirn)
 - Precios formateados (ej: 1.2M, 45K) — siempre llama "gil" al dinero
-- Listas con bullets: nombre, precio, ganancia
-- Incluye velocidad (ventas/día) cuando esté disponible
 - Si la herramienta no encontró el item, di que escriban nombre exacto en inglés
-- Si no tienes datos de herramientas, sugiere una categoría específica para buscar`;
+- Si no tienes datos de herramientas, sugiere una categoría específica para buscar
+
+FORMATO OBLIGATORIO PARA RESULTADOS — cada item DEBE mostrar la ACCIÓN + los números:
+- vendor_flip: "• **Nombre** — compra en NPC por X gil, vende en Market Board por Y gil → ganancia Z gil/unidad (W ventas/día)"
+- craft_flip: "• **Nombre** — materiales cuestan X gil, vende por Y gil → ganancia Z gil (W ventas/día)"
+- best_deals: "• **Nombre** — ahora a X gil (normalmente Y gil) → descuento Z% (W ventas/día)"
+- price_check: "• **Nombre** — Phantom: X gil / Chaos DC: Y gil (W ventas/día)"
+SIEMPRE explica QUÉ HACER con el item (comprar de NPC, craftear, comprar barato en MB) y CUÁNTO se gana`;
