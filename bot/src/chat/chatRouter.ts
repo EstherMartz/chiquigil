@@ -6,6 +6,7 @@ import { SYSTEM_PROMPT } from './systemPrompt';
 
 const MAX_ITERATIONS = 3;
 const COOLDOWN_MS = 5000;
+const TYPING_INTERVAL_MS = 8000; // re-send typing every 8s (Discord expires at 10s)
 const cooldowns = new Map<string, number>();
 
 export interface ChatDeps {
@@ -20,19 +21,30 @@ export async function handleChatMessage(
 ): Promise<void> {
   const userId = msg.author.id;
 
-  // Rate limit
+  // Rate limit — tell the user instead of silently dropping
   const lastTs = cooldowns.get(userId) ?? 0;
-  if (Date.now() - lastTs < COOLDOWN_MS) return;
+  if (Date.now() - lastTs < COOLDOWN_MS) {
+    await msg.react('⏳').catch(() => {});
+    return;
+  }
   cooldowns.set(userId, Date.now());
 
-  if (msg.channel.isTextBased() && 'sendTyping' in msg.channel) {
-    await msg.channel.sendTyping();
-  }
+  // Keep typing indicator alive throughout the entire operation
+  let typingTimer: ReturnType<typeof setInterval> | null = null;
+  const sendTyping = async () => {
+    if (msg.channel.isTextBased() && 'sendTyping' in msg.channel) {
+      await msg.channel.sendTyping().catch(() => {});
+    }
+  };
+  await sendTyping();
+  typingTimer = setInterval(sendTyping, TYPING_INTERVAL_MS);
 
   const userMessage = msg.content;
   const startTime = Date.now();
 
   try {
+    console.log(`[chat] ${msg.author.tag}: "${userMessage.slice(0, 80)}"`);
+
     const messages: ChatMessage[] = [
       { role: 'system', content: SYSTEM_PROMPT },
       { role: 'user', content: userMessage },
@@ -41,13 +53,17 @@ export async function handleChatMessage(
     let finalContent: string | null = null;
 
     for (let i = 0; i < MAX_ITERATIONS; i++) {
+      console.log(`[chat] iteration ${i + 1}/${MAX_ITERATIONS} — calling OpenRouter…`);
       const raw = await callOpenRouter(deps.apiKey, deps.model, messages, TOOL_DEFINITIONS);
       const parsed = parseOpenRouterResponse(raw);
 
       if (parsed.toolCalls.length === 0) {
         finalContent = parsed.content;
+        console.log(`[chat] got final response (${finalContent?.length ?? 0} chars)`);
         break;
       }
+
+      console.log(`[chat] ${parsed.toolCalls.length} tool call(s): ${parsed.toolCalls.map((t) => t.name).join(', ')}`);
 
       // Append assistant message with tool calls
       messages.push({
@@ -58,7 +74,9 @@ export async function handleChatMessage(
 
       // Execute each tool and append results
       for (const tc of parsed.toolCalls) {
+        console.log(`[chat] executing ${tc.name}(${JSON.stringify(tc.args).slice(0, 100)})`);
         const result = await executeTool(tc.name, tc.args, deps.toolCtx);
+        console.log(`[chat] ${tc.name} returned ${result.length} chars`);
         messages.push({
           role: 'tool',
           content: result,
@@ -72,6 +90,8 @@ export async function handleChatMessage(
     }
 
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+    console.log(`[chat] replying (${elapsed}s total)`);
+
     const embed = new EmbedBuilder()
       .setColor(0xD4A958)
       .setDescription(finalContent)
@@ -80,7 +100,9 @@ export async function handleChatMessage(
     await msg.reply({ embeds: [embed] });
   } catch (e) {
     const errMsg = e instanceof Error ? e.message : String(e);
-    console.error('Chat error:', errMsg);
-    await msg.reply('Ay, mi conexión con las estrellas falló ✨ Inténtalo otra vez');
+    console.error(`[chat] error: ${errMsg}`);
+    await msg.reply('Ay, mi conexión con las estrellas falló ✨ Inténtalo otra vez').catch(() => {});
+  } finally {
+    if (typingTimer) clearInterval(typingTimer);
   }
 }
