@@ -1,3 +1,5 @@
+import type { PlanItem } from './seedPlanner';
+
 export interface ParsedSale {
   name: string;
   quantity: number;
@@ -5,6 +7,10 @@ export interface ParsedSale {
   world: string;
   retainer: string;
   soldAt: number; // epoch ms
+}
+
+export interface MatchedSale extends ParsedSale {
+  matchedItemId?: string;
 }
 
 function parseSoldAt(raw: string): number {
@@ -32,4 +38,19 @@ export function parseSalesCsv(text: string): ParsedSale[] {
     rows.push({ name, quantity, unitPrice, world, retainer, soldAt });
   }
   return rows;
+}
+
+export function dedupKey(sale: ParsedSale): string {
+  return `${sale.name.toLowerCase()}|${sale.quantity}|${sale.unitPrice}|${sale.soldAt}`;
+}
+
+export function matchSalesToPlan(sales: ParsedSale[], planItems: PlanItem[]): MatchedSale[] {
+  const nameMap = new Map<string, string>();
+  for (const item of planItems) {
+    nameMap.set(item.name.toLowerCase().trim(), item.id);
+  }
+  return sales.map((sale) => {
+    const itemId = nameMap.get(sale.name.toLowerCase().trim());
+    return { ...sale, matchedItemId: itemId };
+  });
 }
