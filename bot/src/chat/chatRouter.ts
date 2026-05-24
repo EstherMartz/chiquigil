@@ -7,6 +7,14 @@ import { SYSTEM_PROMPT } from './systemPrompt';
 const MAX_ITERATIONS = 3;
 const COOLDOWN_MS = 5000;
 const TYPING_INTERVAL_MS = 8000; // re-send typing every 8s (Discord expires at 10s)
+const CAT_CHANCE = 0.15; // ~1 in 7 responses
+const CAT_GIFS = [
+  'https://media.tenor.com/Yav3V4JTsjAAAAAd/cat-typing.gif',
+  'https://media.tenor.com/wfMCaxJdhhkAAAAd/cat-money.gif',
+  'https://media.tenor.com/F2FJBmJYIRMAAAAd/cat-cute.gif',
+  'https://media.tenor.com/DHLMxVnU1TQAAAAC/cat-nod.gif',
+  'https://media.tenor.com/gP6gauAPD0AAAAAd/cat-business.gif',
+];
 const cooldowns = new Map<string, number>();
 
 export interface ChatDeps {
@@ -99,6 +107,11 @@ export async function handleChatMessage(
       .setColor(0xD4A958)
       .setDescription(finalContent)
       .setFooter({ text: `${deps.model} · ${elapsed}s` });
+
+    if (Math.random() < CAT_CHANCE) {
+      const gif = CAT_GIFS[Math.floor(Math.random() * CAT_GIFS.length)];
+      embed.setImage(gif);
+    }
 
     await msg.reply({ embeds: [embed] });
     await msg.reactions.cache.get('✨')?.users.remove(msg.client.user?.id).catch(() => {});
