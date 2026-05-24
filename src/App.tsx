@@ -22,6 +22,7 @@ import BatchHistory from './routes/BatchHistory';
 import Item from './routes/Item';
 import Settings from './routes/Settings';
 import Submarines from './routes/Submarines';
+import Planner from './routes/Planner';
 
 export default function App() {
   const [showOnboarding, setShowOnboarding] = useState(
@@ -59,6 +60,7 @@ export default function App() {
             <Route path="/insights" element={<Navigate to="/trading" replace />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/submarines" element={<Submarines />} />
+            <Route path="/planner" element={<Planner />} />
           </Routes>
       </main>
     </div>
