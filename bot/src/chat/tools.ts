@@ -28,6 +28,7 @@ interface GlobalCache {
   phantom: MarketData;
   dc: MarketData;
   region: MarketData;
+  fetchedIds: Set<number>;
   ts: number;
 }
 
@@ -40,6 +41,7 @@ interface DiskCache {
   phantom: MarketData;
   dc: MarketData;
   region: MarketData;
+  fetchedIds?: number[];
   ts: number;
 }
 
@@ -50,6 +52,7 @@ export async function saveCacheToDisk(): Promise<void> {
     phantom: globalCache.phantom,
     dc: globalCache.dc,
     region: globalCache.region,
+    fetchedIds: [...globalCache.fetchedIds],
     ts: globalCache.ts,
   } satisfies DiskCache));
   const itemCount = Object.keys(globalCache.phantom).length;
@@ -65,7 +68,11 @@ export async function loadCacheFromDisk(): Promise<{ loaded: boolean; fresh: boo
       console.log('[cache] disk cache empty');
       return { loaded: false, fresh: false };
     }
-    globalCache = { phantom: disk.phantom, dc: disk.dc, region: disk.region, ts: disk.ts };
+    const fetchedIds = disk.fetchedIds ? new Set(disk.fetchedIds) : new Set([
+      ...Object.keys(disk.phantom).map(Number),
+      ...Object.keys(disk.dc).map(Number),
+    ]);
+    globalCache = { phantom: disk.phantom, dc: disk.dc, region: disk.region, fetchedIds, ts: disk.ts };
     const age = Math.round((Date.now() - disk.ts) / 60_000);
     const fresh = Date.now() - disk.ts < CACHE_TTL_MS;
     console.log(`[cache] loaded ${itemCount} items from disk (${age}min old${fresh ? '' : ', stale — will refresh in background'})`);
@@ -76,8 +83,8 @@ export async function loadCacheFromDisk(): Promise<{ loaded: boolean; fresh: boo
   }
 }
 
-export function pushToCache(_ids: number[], data: MarketBundle): void {
-  globalCache = { phantom: data.phantom, dc: data.dc, region: data.region, ts: Date.now() };
+export function pushToCache(ids: number[], data: MarketBundle): void {
+  globalCache = { phantom: data.phantom, dc: data.dc, region: data.region, fetchedIds: new Set(ids), ts: Date.now() };
 }
 
 export function invalidateCache(): void {
@@ -97,7 +104,7 @@ async function cachedMarketFetch(
 ): Promise<MarketBundle> {
   // Check if global cache has data for these IDs
   if (globalCache) {
-    const missing = ids.filter((id) => !(id in globalCache!.phantom) && !(id in globalCache!.dc));
+    const missing = ids.filter((id) => !globalCache!.fetchedIds.has(id));
     const fresh = Date.now() - globalCache.ts < CACHE_TTL_MS;
 
     if (missing.length === 0) {
@@ -112,9 +119,10 @@ async function cachedMarketFetch(
             mergeMarketData(globalCache.phantom, data.phantom);
             mergeMarketData(globalCache.dc, data.dc);
             mergeMarketData(globalCache.region, data.region);
+            for (const id of ids) globalCache.fetchedIds.add(id);
             globalCache.ts = Date.now();
           } else {
-            globalCache = { phantom: data.phantom, dc: data.dc, region: data.region, ts: Date.now() };
+            globalCache = { phantom: data.phantom, dc: data.dc, region: data.region, fetchedIds: new Set(ids), ts: Date.now() };
           }
           refreshing = false;
           saveCacheToDisk().catch(() => {});
@@ -138,7 +146,7 @@ async function cachedMarketFetch(
   // No cache at all — must wait
   console.log(`[chat] market cache MISS — fetching ${ids.length} ids…`);
   const data = await fetchMarketForOutputs(ids, cfg);
-  globalCache = { phantom: data.phantom, dc: data.dc, region: data.region, ts: Date.now() };
+  globalCache = { phantom: data.phantom, dc: data.dc, region: data.region, fetchedIds: new Set(ids), ts: Date.now() };
   return data;
 }
 
@@ -164,7 +172,7 @@ export function startCacheWarmup(ctx: ToolContext): void {
         const elapsed = ((Date.now() - start) / 1000).toFixed(1);
         console.log(`[cache] warmup done in ${elapsed}s (stale disk cache, refreshing in background…)`);
         fetchMarketForOutputs(allIds, ctx.cfg).then(async (data) => {
-          globalCache = { phantom: data.phantom, dc: data.dc, region: data.region, ts: Date.now() };
+          globalCache = { phantom: data.phantom, dc: data.dc, region: data.region, fetchedIds: new Set(allIds), ts: Date.now() };
           await saveCacheToDisk();
           console.log(`[cache] background refresh complete (${allIds.length} items)`);
         }).catch((e) => console.error('[cache] background refresh failed:', e));
