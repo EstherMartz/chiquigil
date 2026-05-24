@@ -88,7 +88,7 @@ describe('plannerStore', () => {
   describe('addItem / removeItem / toggleActive', () => {
     it('adds a new item to a lane and tags it active with zero earned/units', () => {
       const beforeCount = usePlannerStore.getState().lanes.craft.length;
-      usePlannerStore.getState().addItem('craft', { name: 'Test', src: 'test', price: 1000, perDay: 1, supply: null });
+      usePlannerStore.getState().addItem('craft', { name: 'Test', src: 'test', price: 1000, cost: 500, perDay: 1, supply: null });
       const lanes = usePlannerStore.getState().lanes.craft;
       expect(lanes.length).toBe(beforeCount + 1);
       const added = lanes[lanes.length - 1];

@@ -52,7 +52,7 @@ describe('dedupKey', () => {
 });
 
 function mkItem(name: string, id = 'i1'): PlanItem {
-  return { id, name, src: '', price: 0, perDay: 0, supply: null, active: true, earned: 0, units: 0 };
+  return { id, name, src: '', price: 0, cost: 0, perDay: 0, supply: null, active: true, earned: 0, units: 0 };
 }
 
 describe('matchSalesToPlan', () => {

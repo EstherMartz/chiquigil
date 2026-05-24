@@ -52,6 +52,11 @@ export function PlanItemRow({ item, onToggleActive, onPlus, onMinus, onDelete }:
         <span className="font-mono text-[10px] px-2 py-0.5 border border-border-base text-gold">
           {fmt(item.price)} g
         </span>
+        {item.cost > 0 && (
+          <span className="font-mono text-[10px] px-2 py-0.5 border border-border-base text-crimson">
+            −{fmt(item.cost)} cost
+          </span>
+        )}
         <span className="font-mono text-[10px] px-2 py-0.5 border border-border-base text-text-dim">
           {item.perDay}/day
         </span>
@@ -82,8 +87,13 @@ export function PlanItemRow({ item, onToggleActive, onPlus, onMinus, onDelete }:
         >
           +
         </button>
-        <span className="font-mono text-xs font-semibold text-jade ml-auto">
-          +{abbr(item.earned)}
+        <span className="font-mono text-xs font-semibold ml-auto flex items-center gap-1.5">
+          <span className="text-jade">+{abbr(item.earned)}</span>
+          {item.cost > 0 && item.units > 0 && (
+            <span className={item.earned - item.cost * item.units >= 0 ? 'text-jade' : 'text-crimson'}>
+              ({abbr(item.earned - item.cost * item.units)} net)
+            </span>
+          )}
         </span>
       </div>
     </div>

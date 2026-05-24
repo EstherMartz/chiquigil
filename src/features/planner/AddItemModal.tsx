@@ -3,7 +3,7 @@ import { LANE_META, type LaneKey } from './seedPlanner';
 
 interface Props {
   lane: LaneKey;
-  onAdd: (partial: { name: string; src: string; price: number; perDay: number; supply: number | null }) => void;
+  onAdd: (partial: { name: string; src: string; price: number; cost: number; perDay: number; supply: number | null }) => void;
   onClose: () => void;
   prefill?: { name: string; price: number };
 }
@@ -12,6 +12,7 @@ export function AddItemModal({ lane, onAdd, onClose, prefill }: Props) {
   const [name, setName] = useState(prefill?.name ?? '');
   const [src, setSrc] = useState('');
   const [price, setPrice] = useState(prefill?.price ? String(prefill.price) : '');
+  const [cost, setCost] = useState('');
   const [perDay, setPerDay] = useState('');
   const [supply, setSupply] = useState('');
 
@@ -20,12 +21,14 @@ export function AddItemModal({ lane, onAdd, onClose, prefill }: Props) {
   function commit() {
     if (!canSave) return;
     const p = parseInt(price.replace(/[^0-9]/g, ''), 10);
+    const c = parseInt(cost.replace(/[^0-9]/g, ''), 10);
     const pd = parseFloat(perDay);
     const sup = supply.trim() === '' ? null : parseFloat(supply);
     onAdd({
       name: name.trim(),
       src: src.trim() || 'custom',
       price: Number.isFinite(p) ? p : 0,
+      cost: Number.isFinite(c) ? c : 0,
       perDay: Number.isFinite(pd) ? pd : 0,
       supply: sup != null && Number.isFinite(sup) ? sup : null,
     });
@@ -67,13 +70,23 @@ export function AddItemModal({ lane, onAdd, onClose, prefill }: Props) {
             placeholder="e.g. Weaver, Cosmic Auxesia"
           />
         </label>
-        <div className="grid grid-cols-3 gap-3 mb-5">
+        <div className="grid grid-cols-4 gap-3 mb-5">
           <label className="block">
             <span className="font-mono text-[13px] tracking-widest uppercase text-text-low">Price</span>
             <input
               type="text"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
+              className="mt-1 block w-full bg-bg-deep border border-border-base px-3 py-2 font-mono text-sm"
+              placeholder="0"
+            />
+          </label>
+          <label className="block">
+            <span className="font-mono text-[13px] tracking-widest uppercase text-text-low">Cost</span>
+            <input
+              type="text"
+              value={cost}
+              onChange={(e) => setCost(e.target.value)}
               className="mt-1 block w-full bg-bg-deep border border-border-base px-3 py-2 font-mono text-sm"
               placeholder="0"
             />

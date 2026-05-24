@@ -28,11 +28,18 @@ export function HeroBlock() {
     const r = rate(week, days);
     const remaining = Math.max(0, goal.target - goal.current);
     const e = eta(remaining, r);
+    const totalEarned = LANE_ORDER.reduce(
+      (sum, lane) => sum + lanes[lane].reduce((s, it) => s + it.earned, 0), 0,
+    );
+    const totalInvested = LANE_ORDER.reduce(
+      (sum, lane) => sum + lanes[lane].reduce((s, it) => s + it.cost * it.units, 0), 0,
+    );
     return {
       today, week, days, rate: r, remaining,
       eta: e, pct: pct(goal.current, goal.target),
+      netProfit: totalEarned - totalInvested,
     };
-  }, [log, goal, now]);
+  }, [log, goal, lanes, now]);
 
   const [curVal, curUnit] = abbrParts(goal.current);
   const targetAbbr = abbr(goal.target);
@@ -73,6 +80,7 @@ export function HeroBlock() {
           <StatTile label="Today" value={(stats.today >= 0 ? '+' : '') + abbr(stats.today)} accent="gold" />
           <StatTile label="Last 7d" value={'+' + abbr(stats.week)} accent="jade" />
           <StatTile label="Rate / day" value={stats.rate > 0 ? abbr(stats.rate) : '—'} />
+          <StatTile label="Net Profit" value={abbr(stats.netProfit)} accent={stats.netProfit >= 0 ? 'jade' : 'crimson'} />
           <StatTile label="ETA" value={stats.eta != null ? stats.eta + 'd' : '—'} />
         </div>
       </div>
@@ -158,8 +166,8 @@ export function HeroBlock() {
   );
 }
 
-function StatTile({ label, value, accent }: { label: string; value: string; accent?: 'gold' | 'jade' }) {
-  const valueColor = accent === 'gold' ? 'text-gold' : accent === 'jade' ? 'text-jade' : 'text-text-cream';
+function StatTile({ label, value, accent }: { label: string; value: string; accent?: 'gold' | 'jade' | 'crimson' }) {
+  const valueColor = accent === 'gold' ? 'text-gold' : accent === 'jade' ? 'text-jade' : accent === 'crimson' ? 'text-crimson' : 'text-text-cream';
   return (
     <div className="border border-border-base bg-bg-card-hi/40 px-3 py-2 min-w-[104px]">
       <div className="font-mono text-[10px] tracking-widest uppercase text-text-low">{label}</div>
