@@ -6,6 +6,7 @@ import {
 import { LANE_ORDER } from './seedPlanner';
 import { EditGoalModal } from './EditGoalModal';
 import { LedgerDrawer } from './LedgerDrawer';
+import { SalesImport } from './SalesImport';
 
 export function HeroBlock() {
   const goal = usePlannerStore((s) => s.goal);
@@ -133,6 +134,7 @@ export function HeroBlock() {
         >
           Ledger
         </button>
+        <SalesImport />
         <button
           type="button"
           onClick={() => setEditOpen(true)}

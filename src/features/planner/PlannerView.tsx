@@ -4,6 +4,7 @@ import { LANE_ORDER } from './seedPlanner';
 import { HeroBlock } from './HeroBlock';
 import { LaneCard } from './LaneCard';
 import { DailyRhythm } from './DailyRhythm';
+import { SalesInsights } from './SalesInsights';
 
 export function PlannerView() {
   const lanes = usePlannerStore((s) => s.lanes);
@@ -27,6 +28,8 @@ export function PlannerView() {
   return (
     <div className="space-y-8">
       <HeroBlock />
+
+      <SalesInsights />
 
       <div>
         <div className="flex items-center gap-3 mb-3">
