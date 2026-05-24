@@ -29,6 +29,9 @@ export async function handleChatMessage(
   }
   cooldowns.set(userId, Date.now());
 
+  // Acknowledge receipt immediately so the user knows we're working on it
+  await msg.react('✨').catch(() => {});
+
   // Keep typing indicator alive throughout the entire operation
   let typingTimer: ReturnType<typeof setInterval> | null = null;
   const sendTyping = async () => {
@@ -98,9 +101,11 @@ export async function handleChatMessage(
       .setFooter({ text: `${deps.model} · ${elapsed}s` });
 
     await msg.reply({ embeds: [embed] });
+    await msg.reactions.cache.get('✨')?.users.remove(msg.client.user?.id).catch(() => {});
   } catch (e) {
     const errMsg = e instanceof Error ? e.message : String(e);
     console.error(`[chat] error: ${errMsg}`);
+    await msg.react('❌').catch(() => {});
     await msg.reply('Ay, mi conexión con las estrellas falló ✨ Inténtalo otra vez').catch(() => {});
   } finally {
     if (typingTimer) clearInterval(typingTimer);
