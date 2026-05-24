@@ -12,6 +12,36 @@ import { runVendorFlip } from '../../../src/features/queries/runVendorFlip';
 import { defaultVendorFlipFilter } from '../../../src/features/queries/types';
 import type { QueryFilter } from '../../../src/features/queries/types';
 import type { TrackedItem } from '../../../src/features/items/types';
+import { ITEM_SEARCH_CATEGORIES } from '../../../src/lib/itemSearchCategories';
+
+// Category keywords the LLM can use → search category IDs
+const CATEGORY_MAP: Record<string, number[]> = {
+  meals: [45, 46],
+  food: [45, 46],
+  medicine: [43],
+  potions: [43],
+  materials: [47, 48, 49, 50, 51, 52, 53],
+  cloth: [50],
+  leather: [51],
+  metal: [48],
+  lumber: [49],
+  stone: [47],
+  dyes: [54],
+  materia: [57],
+  furnishings: [56, 65, 66, 67, 68, 69, 70, 71, 72, 81, 82],
+  housing: [56, 65, 66, 67, 68, 69, 70, 71, 72, 81, 82],
+  minions: [75],
+  weapons: [1, 9, 10, 11, 12, 13, 14, 15, 16, 73, 76, 77, 78, 83, 84, 85, 86, 87, 88, 89, 91, 92],
+  armor: [31, 32, 33, 34, 35, 36, 37, 38],
+  accessories: [39, 40, 41, 42],
+  gear: [31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42],
+};
+
+function resolveCategory(cat: unknown): number[] {
+  if (!cat || typeof cat !== 'string') return [];
+  const key = cat.toLowerCase().trim();
+  return CATEGORY_MAP[key] ?? [];
+}
 
 export interface ToolContext {
   snapshots: BotSnapshots;
@@ -220,6 +250,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
         properties: {
           limit: { type: 'number', description: 'Number of results (default 5)' },
           sort: { type: 'string', enum: ['gilPerDay', 'profit'], description: 'Sort field (default gilPerDay)' },
+          category: { type: 'string', enum: ['meals', 'food', 'medicine', 'potions', 'materials', 'cloth', 'leather', 'metal', 'lumber', 'stone', 'dyes', 'materia', 'furnishings', 'housing', 'minions', 'weapons', 'armor', 'accessories', 'gear'], description: 'Filter by item category (optional)' },
         },
       },
     },
@@ -234,6 +265,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
         properties: {
           limit: { type: 'number', description: 'Number of results (default 5)' },
           min_deal_pct: { type: 'number', description: 'Minimum discount % (default 20)' },
+          category: { type: 'string', enum: ['meals', 'food', 'medicine', 'potions', 'materials', 'cloth', 'leather', 'metal', 'lumber', 'stone', 'dyes', 'materia', 'furnishings', 'housing', 'minions', 'weapons', 'armor', 'accessories', 'gear'], description: 'Filter by item category (optional)' },
         },
       },
     },
@@ -248,6 +280,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
         properties: {
           limit: { type: 'number', description: 'Number of results (default 5)' },
           sort: { type: 'string', enum: ['profitPerDay', 'markup'], description: 'Sort field (default profitPerDay)' },
+          category: { type: 'string', enum: ['meals', 'food', 'medicine', 'potions', 'materials', 'cloth', 'leather', 'metal', 'lumber', 'stone', 'dyes', 'materia', 'furnishings', 'housing', 'minions', 'weapons', 'armor', 'accessories', 'gear'], description: 'Filter by item category (optional)' },
         },
       },
     },
@@ -301,13 +334,14 @@ async function craftFlipSearch(args: Record<string, unknown>, ctx: ToolContext):
   const limit = Math.min(Number(args.limit) || 5, 15);
   const sortArg = String(args.sort ?? 'gilPerDay');
   const sort = sortArg === 'profit' ? 'unitPrice' as const : 'gilFlow' as const;
+  const searchCategories = resolveCategory(args.category);
 
   const snapshot = [...ctx.snapshots.itemsById.values()];
   const craftableIds = snapshot.filter((i) => ctx.snapshots.recipes.has(i.id)).map((i) => i.id);
   const market = await cachedMarketFetch(craftableIds, ctx.cfg);
 
   const filter: QueryFilter = {
-    searchCategories: [], hq: 'either', minDealPct: 0, minVelocity: 0.3,
+    searchCategories, hq: 'either', minDealPct: 0, minVelocity: 0.3,
     minPrice: null, maxPrice: null, sort, limit, scope: 'home',
     maxListings: null, mode: 'craft', minGap: null, trainedEye: false,
   };
@@ -323,8 +357,10 @@ async function craftFlipSearch(args: Record<string, unknown>, ctx: ToolContext):
 async function bestDealsSearch(args: Record<string, unknown>, ctx: ToolContext): Promise<string> {
   const limit = Math.min(Number(args.limit) || 5, 15);
   const minDealPct = Number(args.min_deal_pct) || 20;
+  const catFilter = new Set(resolveCategory(args.category));
 
-  const snapshot = [...ctx.snapshots.itemsById.values()];
+  let snapshot = [...ctx.snapshots.itemsById.values()];
+  if (catFilter.size > 0) snapshot = snapshot.filter((i) => catFilter.has(i.sc));
   const ids = snapshot.map((i) => i.id);
   const market = await cachedMarketFetch(ids, ctx.cfg);
 
@@ -343,12 +379,13 @@ async function vendorFlipSearch(args: Record<string, unknown>, ctx: ToolContext)
   const limit = Math.min(Number(args.limit) || 5, 15);
   const sortArg = String(args.sort ?? 'profitPerDay');
   const sort = (sortArg === 'markup' ? 'markup' : 'profitPerDay') as 'markup' | 'profitPerDay';
+  const searchCategories = resolveCategory(args.category);
 
   const snapshot = [...ctx.snapshots.itemsById.values()];
   const vendorIds = [...ctx.snapshots.vendorMap.keys()];
   const market = await cachedMarketFetch(vendorIds, ctx.cfg);
 
-  const filter = { ...defaultVendorFlipFilter(), sort, limit };
+  const filter = { ...defaultVendorFlipFilter(), sort, limit, searchCategories };
   const rows = runVendorFlip(snapshot, ctx.snapshots.vendorMap, market.phantom, filter);
   const results = rows.slice(0, limit).map((r) => ({
     name: r.name, vendorPrice: r.vendorPrice, salePrice: r.salePrice,
