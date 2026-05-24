@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Sidebar } from './components/layout/Sidebar';
 import { ContentBar } from './components/layout/ContentBar';
 import { OnboardingWizard } from './features/onboarding/OnboardingWizard';
+import { usePluginConnection } from './features/plugin/usePluginConnection';
 import Home from './routes/Home';
 import Watchlist from './routes/Watchlist';
 import Crafts from './routes/Crafts';
@@ -28,6 +29,8 @@ export default function App() {
   const [showOnboarding, setShowOnboarding] = useState(
     () => !localStorage.getItem('ffxiv-helper:onboarded'),
   );
+
+  usePluginConnection();
 
   return (
     <div className="flex min-h-screen">

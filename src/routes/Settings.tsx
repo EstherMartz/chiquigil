@@ -3,6 +3,7 @@ import { ExportImportPanel } from '../features/settings/ExportImportPanel';
 import { SectionHeader } from '../components/SectionHeader';
 import { LevelsEditor } from '../features/settings/LevelsEditor';
 import { OnboardingWizard } from '../features/onboarding/OnboardingWizard';
+import { PluginPanel } from '../features/plugin/PluginPanel';
 import { useSettingsStore } from '../features/settings/store';
 import { useUiStore, type Density } from '../features/ui/uiStore';
 import { btnPrimaryLarge, btnDanger } from '../components/buttonStyles';
@@ -200,6 +201,14 @@ export default function Settings() {
         <p className="font-mono text-[10px] text-text-low mt-1 ml-6">
           Excludes elemental crystals (category 58) from all scan results. Quest items always exclude them.
         </p>
+      </section>
+      <section>
+        <SectionHeader label="In-game plugin" />
+        <p className="text-text-low text-sm mb-3 max-w-prose">
+          Connect the ChiquigilBridge Dalamud plugin to keep your world, datacenter,
+          and crafter levels in sync with your character automatically.
+        </p>
+        <PluginPanel />
       </section>
       <section>
         <SectionHeader label="Backup & restore" />
