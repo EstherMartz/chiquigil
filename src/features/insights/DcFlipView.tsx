@@ -123,33 +123,35 @@ export function DcFlipView() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-end gap-3 p-3 border border-border-base bg-bg-card">
-        <label className="block">
-          <span className="font-mono text-[10px] tracking-widest text-text-low">Min spread (gil)</span>
-          <input
-            type="number" min={0} step={1000}
-            value={minSpread}
-            onChange={(e) => setMinSpread(Math.max(0, Number(e.target.value) || 0))}
-            className="mt-1 block w-32 bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
-          />
-        </label>
-        <label className="block">
-          <span className="font-mono text-[10px] tracking-widest text-text-low">Min velocity / day</span>
-          <input
-            type="number" min={0} step={0.5}
-            value={minVelocity}
-            onChange={(e) => setMinVelocity(Math.max(0, Number(e.target.value) || 0))}
-            className="mt-1 block w-32 bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
-          />
-        </label>
+      <div className="flex flex-wrap items-end gap-3 p-3 border border-border-base bg-bg-card justify-between">
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="block">
+            <span className="font-mono text-[13px] tracking-widest text-text-low">Min spread (gil)</span>
+            <input
+              type="number" min={0} step={1000}
+              value={minSpread}
+              onChange={(e) => setMinSpread(Math.max(0, Number(e.target.value) || 0))}
+              className="mt-1 block w-32 bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+            />
+          </label>
+          <label className="block">
+            <span className="font-mono text-[13px] tracking-widest text-text-low">Min velocity / day</span>
+            <input
+              type="number" min={0} step={0.5}
+              value={minVelocity}
+              onChange={(e) => setMinVelocity(Math.max(0, Number(e.target.value) || 0))}
+              className="mt-1 block w-32 bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+            />
+          </label>
+        </div>
         <button
           type="button"
           onClick={() => { run.reset(); run.mutate(); }}
           disabled={run.isPending || notReady}
           title={notReady ? 'Loading item catalog…' : undefined}
-          className="font-mono text-[10px] tracking-widest uppercase border border-gold text-gold px-4 py-2 hover:bg-gold hover:text-bg-deep disabled:opacity-50 disabled:cursor-not-allowed"
+          className="font-mono text-[10px] tracking-widest uppercase bg-gold text-bg-deep px-4 py-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
         >
-          {run.isPending ? 'Scanning…' : 'Run scan'}
+          {run.isPending ? <>Scanning…<span aria-hidden className="ml-1 inline-block animate-spin">❖</span></> : 'Run scan'}
         </button>
       </div>
 
@@ -168,7 +170,11 @@ export function DcFlipView() {
       )}
 
       {!run.data && !run.isPending && (
-        <EmptyState icon="⇄" message={`Scan ${dc} for items you can buy cheap and flip on ${world}.`} />
+        <EmptyState
+          icon="⇄"
+          message={`Scan ${dc} for items you can buy cheap and flip on ${world}.`}
+          action={!notReady ? { label: 'Run Scan', onClick: () => { run.reset(); run.mutate(); } } : undefined}
+        />
       )}
 
       {run.data && sortedRows.length === 0 && (

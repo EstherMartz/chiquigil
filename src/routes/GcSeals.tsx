@@ -129,7 +129,11 @@ export default function GcSeals() {
       )}
 
       {!mutation.data && !mutation.isPending && (
-        <EmptyState icon="❖" message="Find equippable gear to buy cheaply and trade in for Grand Company seals." />
+        <EmptyState
+          icon="❖"
+          message="Find equippable gear to buy cheaply and trade in for Grand Company seals."
+          action={ready ? { label: 'Run Query', onClick: () => mutation.mutate() } : undefined}
+        />
       )}
 
       {mutation.data && mutation.data.rows.length > 0 && (

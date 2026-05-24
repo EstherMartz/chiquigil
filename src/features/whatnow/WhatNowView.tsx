@@ -84,10 +84,11 @@ function pickGcSupply(rows: QuestItemRow[]): TopPick | null {
   if (rows.length === 0) return null;
   const r = rows[0];
   const price = r.hqPrice ?? r.nqPrice ?? 0;
+  const dailyRevenue = Math.round(price * r.velocity);
   return {
     id: r.itemId, name: r.itemName,
-    metric: fmtGil(price), metricLabel: 'sale price',
-    secondary: `${r.velocity.toFixed(1)}/day · ${r.categoryName} Lv.${r.level}`,
+    metric: fmtGil(dailyRevenue), metricLabel: 'gil/day · cost varies',
+    secondary: `sale ${fmtGil(price)} · ${r.velocity.toFixed(1)}/day · ${r.categoryName} Lv.${r.level}`,
     link: `/item/${r.itemId}`, pageLink: '/quest-items', pageLabel: 'GC Supply',
   };
 }
@@ -95,10 +96,11 @@ function pickGcSupply(rows: QuestItemRow[]): TopPick | null {
 function pickGathering(cells: HeatmapCell[]): TopPick | null {
   if (cells.length === 0) return null;
   const best = cells.reduce((a, b) => (a.salePrice * a.velocity > b.salePrice * b.velocity ? a : b));
+  const dailyRevenue = Math.round(best.salePrice * best.velocity);
   return {
     id: best.id, name: best.name,
-    metric: fmtGil(best.salePrice), metricLabel: 'sale price',
-    secondary: `${best.velocity.toFixed(1)}/day · ${fmtGil(Math.round(best.salePrice * best.velocity))}/day revenue`,
+    metric: fmtGil(dailyRevenue), metricLabel: 'gil/day · cost varies',
+    secondary: `sale ${fmtGil(best.salePrice)} · ${best.velocity.toFixed(1)}/day`,
     link: `/item/${best.id}`, pageLink: '/gathering', pageLabel: 'Gathering',
   };
 }
@@ -223,9 +225,9 @@ export function WhatNowView() {
           onClick={() => { run.reset(); run.mutate(); }}
           disabled={run.isPending || notReady}
           title={notReady ? 'Loading catalogs…' : undefined}
-          className="font-mono text-[10px] tracking-widest uppercase border border-gold text-gold px-5 py-2.5 hover:bg-gold hover:text-bg-deep disabled:opacity-50 disabled:cursor-not-allowed"
+          className="font-mono text-[10px] tracking-widest uppercase bg-gold text-bg-deep px-5 py-2.5 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
         >
-          {run.isPending ? 'Scanning…' : 'What should I do?'}
+          {run.isPending ? <>Scanning…<span aria-hidden className="ml-1 inline-block animate-spin">❖</span></> : 'What should I do?'}
         </button>
         {scanTime != null && run.data && (
           <span className="font-mono text-[10px] text-text-low">{(scanTime / 1000).toFixed(1)}s · {candidateIds.length.toLocaleString()} items checked</span>

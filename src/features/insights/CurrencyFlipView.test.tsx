@@ -79,7 +79,8 @@ describe('CurrencyFlipView', () => {
   it('renders the currency picker + Run button on initial load', () => {
     renderView();
     expect(screen.getByRole('combobox', { name: /currency/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /run scan/i })).toBeInTheDocument();
+    // Two "Run scan" buttons: TopStrip primary + EmptyState CTA.
+    expect(screen.getAllByRole('button', { name: /run scan/i }).length).toBeGreaterThanOrEqual(1);
   });
 
   it('shows candidate count for the selected currency', () => {
@@ -89,7 +90,7 @@ describe('CurrencyFlipView', () => {
 
   it('runs the scan, fetches home-world prices, and renders rows', async () => {
     renderView();
-    fireEvent.click(screen.getByRole('button', { name: /run scan/i }));
+    fireEvent.click(screen.getAllByRole('button', { name: /run scan/i })[0]);
     await waitFor(() => {
       expect(screen.getByText('Widget')).toBeInTheDocument();
       expect(screen.getByText('Gizmo')).toBeInTheDocument();

@@ -89,7 +89,11 @@ export function VendorFlipView() {
       )}
 
       {!run.data && !run.isPending && (
-        <EmptyState icon="❖" message="Scan for NPC vendor items you can flip on the marketboard for profit." />
+        <EmptyState
+          icon="❖"
+          message="Scan for NPC vendor items you can flip on the marketboard for profit."
+          action={snapshot.data && vendors.data ? { label: 'Run Scan', onClick: () => { run.reset(); run.mutate(); } } : undefined}
+        />
       )}
 
       {run.data && (
@@ -124,7 +128,7 @@ function FilterBar({ value, onChange, onRun, onRefreshVendors, busy, notReady }:
         />
       </label>
       <label className="block">
-        <span className="font-mono text-[10px] tracking-widest text-text-low uppercase">Min markup (×)</span>
+        <span className="font-mono text-[13px] tracking-widest text-text-low uppercase">Min markup (×)</span>
         <input
           type="number" min={1} step={0.5} value={value.minMarkup}
           onChange={(e) => onChange({ ...value, minMarkup: Math.max(1, Number(e.target.value) || 1) })}
@@ -132,7 +136,7 @@ function FilterBar({ value, onChange, onRun, onRefreshVendors, busy, notReady }:
         />
       </label>
       <label className="block">
-        <span className="font-mono text-[10px] tracking-widest text-text-low uppercase">Min sales/day</span>
+        <span className="font-mono text-[13px] tracking-widest text-text-low uppercase">Min sales/day</span>
         <input
           type="number" min={0} step={0.1} value={value.minVelocity}
           onChange={(e) => onChange({ ...value, minVelocity: Math.max(0, Number(e.target.value) || 0) })}
@@ -140,7 +144,7 @@ function FilterBar({ value, onChange, onRun, onRefreshVendors, busy, notReady }:
         />
       </label>
       <label className="block">
-        <span className="font-mono text-[10px] tracking-widest text-text-low uppercase">Max listings</span>
+        <span className="font-mono text-[13px] tracking-widest text-text-low uppercase">Max listings</span>
         <input
           type="number" min={0} step={1} value={value.maxListings ?? ''}
           onChange={(e) => {
@@ -152,7 +156,7 @@ function FilterBar({ value, onChange, onRun, onRefreshVendors, busy, notReady }:
         />
       </label>
       <div className="flex flex-col gap-1">
-        <span className="font-mono text-[10px] tracking-widest text-text-low uppercase">HQ mode</span>
+        <span className="font-mono text-[13px] tracking-widest text-text-low uppercase">HQ mode</span>
         <div className="flex gap-2">
           {(['nq', 'hq', 'either'] as HqMode[]).map((mode) => (
             <button
@@ -168,7 +172,7 @@ function FilterBar({ value, onChange, onRun, onRefreshVendors, busy, notReady }:
         </div>
       </div>
       <label className="block">
-        <span className="font-mono text-[10px] tracking-widest text-text-low uppercase">Sort</span>
+        <span className="font-mono text-[13px] tracking-widest text-text-low uppercase">Sort</span>
         <select
           value={value.sort}
           onChange={(e) => onChange({ ...value, sort: e.target.value as VendorFlipSort })}

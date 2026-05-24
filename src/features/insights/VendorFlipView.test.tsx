@@ -68,13 +68,14 @@ beforeEach(() => {
 describe('VendorFlipView', () => {
   it('renders the filter strip + initial idle state with candidate count', () => {
     renderView();
-    expect(screen.getByRole('button', { name: /run scan/i })).toBeInTheDocument();
+    // Two "Run scan" buttons: FilterBar primary + EmptyState CTA. Both should be present.
+    expect(screen.getAllByRole('button', { name: /run scan/i }).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText(/2 candidate items/i)).toBeInTheDocument();
   });
 
   it('runs the scan, fetches home-world prices, and renders rows', async () => {
     renderView();
-    fireEvent.click(screen.getByRole('button', { name: /run scan/i }));
+    fireEvent.click(screen.getAllByRole('button', { name: /run scan/i })[0]);
     await waitFor(() => {
       expect(screen.getByText('Widget')).toBeInTheDocument();
       expect(screen.getByText('Gizmo')).toBeInTheDocument();

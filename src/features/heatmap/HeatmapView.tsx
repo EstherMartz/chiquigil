@@ -254,7 +254,11 @@ export function HeatmapView() {
       )}
 
       {!run.data && !run.isPending && (
-        <EmptyState icon="❖" message="Visualize market activity — size shows velocity, color shows margin." />
+        <EmptyState
+          icon="❖"
+          message="Visualize market activity — size shows velocity, color shows margin."
+          action={!notReady ? { label: 'Run Scan', onClick: () => { run.reset(); run.mutate(); } } : undefined}
+        />
       )}
 
       {run.data && filteredCells.length > 0 && (

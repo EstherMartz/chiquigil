@@ -108,7 +108,11 @@ export function CurrencyFlipView() {
       )}
 
       {!run.data && !run.isPending && (
-        <EmptyState icon="❖" message="Find the best gil return for your earned currency (scrips, poetics, etc.)." />
+        <EmptyState
+          icon="❖"
+          message="Find the best gil return for your earned currency (scrips, poetics, etc.)."
+          action={snapshot.data && shop.data ? { label: 'Run Scan', onClick: () => { run.reset(); run.mutate(); } } : undefined}
+        />
       )}
 
       {run.data && (
