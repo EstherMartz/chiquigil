@@ -1,10 +1,13 @@
-import { Client, Events, GatewayIntentBits, Partials, type Message } from 'discord.js';
+import { Client, Events, GatewayIntentBits, Partials, type Message, type ChatInputCommandInteraction } from 'discord.js';
 import { config } from './config';
 import { loadSnapshots } from './loadSnapshots';
 import { handleCsv } from './handleCsv';
 import { createCleanupCache, type CachedCleanup } from './cleanupCache';
 import { handleInteraction, newCacheId } from './interactions';
 import { fetchMarketForOutputs } from './fetchMarketForOutputs';
+import { registerCommands } from './registerCommands';
+import { handleChatCommand } from './chat/chatRouter';
+import { buildNameIndex } from './chat/nameIndex';
 
 const TTL_MS = 30 * 60_000;       // 30-min sliding TTL
 const MAX_ENTRIES = 100;
@@ -24,11 +27,13 @@ function pickGreeting(): string {
 async function main() {
   console.log('Loading snapshots…');
   const snapshots = await loadSnapshots(config.snapshotsDir);
-  console.log(`Loaded ${snapshots.itemsById.size} items, ${snapshots.recipes.size} recipes.`);
+  console.log(`Loaded ${snapshots.itemsById.size} items, ${snapshots.recipes.size} recipes, ${snapshots.vendorMap.size} vendor prices.`);
 
   const cache = createCleanupCache({ ttlMs: TTL_MS, maxEntries: MAX_ENTRIES });
   const sweepTimer = setInterval(() => cache.evictExpired(), SWEEP_MS);
-  sweepTimer.unref?.(); // don't keep the event loop alive solely for sweeps
+  sweepTimer.unref?.();
+
+  const nameIndex = buildNameIndex(snapshots.namesById);
 
   const client = new Client({
     intents: [
@@ -39,8 +44,16 @@ async function main() {
     partials: [Partials.Channel],
   });
 
-  client.once(Events.ClientReady, (c) => {
+  client.once(Events.ClientReady, async (c) => {
     console.log(`Logged in as ${c.user.tag}`);
+
+    // Register slash commands
+    if (config.openrouterApiKey) {
+      await registerCommands(config.token, c.user.id, [...config.guildAllowlist]);
+      console.log('Chat feature enabled (OpenRouter key present)');
+    } else {
+      console.log('Chat feature disabled (no OPENROUTER_API_KEY)');
+    }
   });
 
   client.on(Events.MessageCreate, async (msg: Message) => {
@@ -88,14 +101,33 @@ async function main() {
     }
   });
 
-  client.on(Events.InteractionCreate, (interaction) =>
+  client.on(Events.InteractionCreate, async (interaction) => {
+    // Handle /chat slash command
+    if (interaction.isChatInputCommand() && interaction.commandName === 'chat') {
+      if (!config.openrouterApiKey) {
+        await interaction.reply({ content: 'Chat no está configurado — falta OPENROUTER_API_KEY', ephemeral: true });
+        return;
+      }
+      await handleChatCommand(interaction as ChatInputCommandInteraction, {
+        apiKey: config.openrouterApiKey,
+        model: config.chatModel,
+        toolCtx: {
+          snapshots,
+          nameIndex,
+          cfg: { world: config.world, dc: config.dc, region: config.region },
+        },
+      });
+      return;
+    }
+
+    // Handle button interactions (existing cleanup flow)
     handleInteraction(interaction, {
       cache,
       snapshots,
       cfg: { world: config.world, dc: config.dc, region: config.region },
       fetchMarket: fetchMarketForOutputs,
-    }).catch((err) => console.error('Interaction handler error:', err)),
-  );
+    }).catch((err) => console.error('Interaction handler error:', err));
+  });
 
   await client.login(config.token);
 }
