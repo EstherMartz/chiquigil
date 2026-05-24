@@ -26,7 +26,7 @@ export function CopyButton({ text, label = 'Copy item name', className }: Props)
       onClick={onClick}
       title={copied ? 'Copied' : label}
       aria-label={label}
-      className={`text-text-low hover:text-aether transition-colors inline-flex items-center align-middle ${className ?? ''}`}
+      className={`text-text-low hover:text-aether active:text-aether transition-colors inline-flex items-center justify-center align-middle p-2 -m-2 ${className ?? ''}`}
     >
       {copied ? (
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-jade">

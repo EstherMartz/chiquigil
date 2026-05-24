@@ -95,7 +95,62 @@ export function WatchlistTable({ rows, onSelect, sparklineMap, sparklineLoading 
         </div>
         <ExportCsvButton rows={rows} columns={WATCHLIST_CSV_COLUMNS} filename={`watchlist-${new Date().toISOString().slice(0, 10)}.csv`} />
       </div>
-      <div className="overflow-x-auto">
+
+      {/* Mobile card list */}
+      <div className="md:hidden divide-y divide-border-base">
+        {lm.visible.map((r) => (
+          <div key={r.id} className="p-3 active:bg-bg-card-hi transition-colors">
+            <div className="flex items-baseline gap-2">
+              <Link
+                to={`/item/${r.id}`}
+                className="text-text-cream hover:text-aether hover:underline decoration-1 underline-offset-4 flex-1 min-w-0 break-words"
+              >
+                {r.name}
+              </Link>
+              <CopyButton text={r.name} />
+              <button
+                onClick={() => onSelect(r.id)}
+                className="font-mono text-text-low hover:text-aether active:text-aether transition-colors shrink-0 px-2 py-2 -mr-2"
+                aria-label="Open per-item settings"
+              >
+                ⚙
+              </button>
+            </div>
+            <div className="font-mono text-[11px] text-text-low mt-1 flex items-center gap-2 flex-wrap">
+              <CraftTag crafter={r.crafter} status={r.craftStatus} />
+              <span>Lv {r.lvl}</span>
+              <span>·</span>
+              <span>{r.cat}{r.subcat ? ` · ${r.subcat}` : ''}</span>
+              {r.staleDays != null && r.staleDays > 3 && (
+                <span className="text-crimson">{r.staleDays.toFixed(0)}d stale</span>
+              )}
+            </div>
+            <div className="grid grid-cols-3 gap-2 mt-2 font-mono text-[12px]">
+              <MobileMetric label="Sale">
+                {r.craftable === false
+                  ? <span className="text-text-low text-[10px] tracking-widest uppercase">sale-only</span>
+                  : r.dcMinHQ ? <>{fmtGil(r.dcMinHQ)}<span className="text-text-low text-[10px] ml-1">HQ</span></>
+                  : r.dcMinNQ ? <>{fmtGil(r.dcMinNQ)}<span className="text-text-low text-[10px] ml-1">NQ</span></>
+                  : <span className="text-text-low">—</span>}
+              </MobileMetric>
+              <MobileMetric label="Profit">
+                {r.craftable === false
+                  ? <span className="text-text-low">—</span>
+                  : r.craftable === null
+                    ? <span className="text-text-low">…</span>
+                    : r.profit != null
+                      ? <span className={r.profit > 0 ? 'text-jade' : 'text-crimson'}>{fmtGil(r.profit)}</span>
+                      : <span className="text-text-low">—</span>}
+              </MobileMetric>
+              <MobileMetric label="Gil/day">
+                {r.gilPerDay != null ? fmtGil(Math.round(r.gilPerDay)) : <span className="text-text-low">—</span>}
+              </MobileMetric>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-sm border-collapse">
         <thead>
           <tr>
@@ -196,6 +251,15 @@ export function WatchlistTable({ rows, onSelect, sparklineMap, sparklineLoading 
         shown={lm.shown}
         onLoadMore={lm.loadMore}
       />
+    </div>
+  );
+}
+
+function MobileMetric({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <div className="font-mono text-[9px] tracking-widest uppercase text-text-low">{label}</div>
+      <div className="mt-0.5 truncate">{children}</div>
     </div>
   );
 }

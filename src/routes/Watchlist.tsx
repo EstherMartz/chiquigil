@@ -65,13 +65,13 @@ export default function Watchlist() {
   const selectedRecipe = selected && recipes.data?.get(selected.id);
 
   return (
-    <div className="max-w-7xl mx-auto px-4">
-      <div className="flex items-center justify-between mb-3">
+    <div>
+      <div className="flex flex-wrap items-center gap-2 mb-3">
         <FilterBar />
         <button
           onClick={() => { market.refetch(); recipes.refetch(); }}
           disabled={market.isFetching || recipes.isFetching}
-          className={btnPrimaryLarge}
+          className={`${btnPrimaryLarge} w-full sm:w-auto sm:ml-auto`}
         >
           ⟳ Refresh
         </button>

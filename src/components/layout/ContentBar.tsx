@@ -10,7 +10,7 @@ export function ContentBar() {
         <AetheryteChip />
         <Link
           to="/settings"
-          className="font-mono text-[13px] text-text-low hover:text-aether transition-colors"
+          className="font-mono text-[13px] text-text-low hover:text-aether active:text-aether transition-colors px-2 py-2 -mx-2"
           title="Change your world or data center"
         >
           change

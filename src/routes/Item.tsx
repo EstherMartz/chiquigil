@@ -500,38 +500,42 @@ function SourcesBlock({ itemId, itemName, gather }: {
   itemName: string;
   gather: { level: number; timed: boolean; hidden: boolean } | undefined;
 }) {
+  const externalLinks = (
+    <div className="flex flex-wrap gap-2">
+      <a
+        href={garlandItemUrl(itemId)}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="font-mono text-[11px] tracking-widest uppercase border border-border-base text-text-dim hover:text-aether hover:border-aether active:text-aether px-3 py-2 transition-colors"
+      >
+        Garland ↗
+      </a>
+      <a
+        href={gamerEscapeItemUrl(itemName)}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="font-mono text-[11px] tracking-widest uppercase border border-border-base text-text-dim hover:text-aether hover:border-aether active:text-aether px-3 py-2 transition-colors"
+      >
+        GE ↗
+      </a>
+      <a
+        href={universalisItemUrl(itemId)}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="font-mono text-[11px] tracking-widest uppercase border border-border-base text-text-dim hover:text-aether hover:border-aether active:text-aether px-3 py-2 transition-colors"
+      >
+        UV ↗
+      </a>
+    </div>
+  );
+
   if (!gather) {
     return (
       <section>
         <SectionHeader label="Sources" compact />
-        <div className="border border-border-base bg-bg-card p-4 text-text-low text-sm italic">
-          No gathering data in catalog.{' '}
-          <a
-            href={garlandItemUrl(itemId)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-aether hover:underline decoration-1 underline-offset-4 not-italic"
-          >
-            View full sources on Garland ↗
-          </a>
-          {' / '}
-          <a
-            href={gamerEscapeItemUrl(itemName)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-aether hover:underline decoration-1 underline-offset-4 not-italic"
-          >
-            GE ↗
-          </a>
-          {' / '}
-          <a
-            href={universalisItemUrl(itemId)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-aether hover:underline decoration-1 underline-offset-4 not-italic"
-          >
-            UV ↗
-          </a>
+        <div className="border border-border-base bg-bg-card p-4 space-y-3">
+          <div className="text-text-low text-sm italic">No gathering data in catalog.</div>
+          {externalLinks}
         </div>
       </section>
     );
@@ -539,40 +543,13 @@ function SourcesBlock({ itemId, itemName, gather }: {
   return (
     <section>
       <SectionHeader label="Sources" compact />
-      <div className="border border-border-base bg-bg-card p-4 space-y-2">
+      <div className="border border-border-base bg-bg-card p-4 space-y-3">
         <div className="flex items-baseline gap-3 flex-wrap">
           <span className="font-mono text-[10px] tracking-widest uppercase text-text-low">Gathering</span>
           <span className="text-text-cream">Lv {gather.level || '?'}</span>
           {gather.timed && <span className="text-gold font-mono text-[10px] tracking-widest uppercase">⏱ Timed</span>}
         </div>
-        <div className="text-text-low text-xs italic">
-          <a
-            href={garlandItemUrl(itemId)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-aether hover:underline decoration-1 underline-offset-4 not-italic"
-          >
-            View full sources on Garland ↗
-          </a>
-          {' / '}
-          <a
-            href={gamerEscapeItemUrl(itemName)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-aether hover:underline decoration-1 underline-offset-4 not-italic"
-          >
-            GE ↗
-          </a>
-          {' / '}
-          <a
-            href={universalisItemUrl(itemId)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-aether hover:underline decoration-1 underline-offset-4 not-italic"
-          >
-            UV ↗
-          </a>
-        </div>
+        {externalLinks}
       </div>
     </section>
   );

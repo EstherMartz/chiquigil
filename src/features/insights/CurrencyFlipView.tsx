@@ -152,7 +152,7 @@ function TopStrip({ currencyId, onChangeCurrency, onRun, onRefreshCatalog, busy,
           ))}
         </select>
       </label>
-      <div className="flex gap-2">
+      <div className="flex gap-2 w-full sm:w-auto sm:ml-auto order-last">
         <button
           type="button"
           onClick={() => { void onRefreshCatalog(); }}
@@ -165,7 +165,7 @@ function TopStrip({ currencyId, onChangeCurrency, onRun, onRefreshCatalog, busy,
           type="button"
           onClick={onRun} disabled={busy || notReady}
           title={notReady ? 'Loading currency catalog…' : undefined}
-          className="font-mono text-[10px] tracking-widest uppercase bg-gold text-bg-deep px-4 py-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+          className="font-mono text-[10px] tracking-widest uppercase bg-gold text-bg-deep px-4 py-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity flex-1 sm:flex-initial"
         >
           {busy ? <>Running…<SpinGlyph /></> : 'Run scan'}
         </button>

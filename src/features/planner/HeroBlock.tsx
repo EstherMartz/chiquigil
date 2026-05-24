@@ -47,20 +47,20 @@ export function HeroBlock() {
 
   return (
     <section
-      className="border border-border-base bg-bg-card p-6 relative overflow-hidden"
+      className="border border-border-base bg-bg-card p-4 sm:p-6 relative overflow-hidden"
       style={{
         backgroundImage:
           'radial-gradient(circle at 100% 0%, rgba(212,169,88,0.12), transparent 55%)',
       }}
     >
-      <div className="flex items-end justify-between gap-5 flex-wrap relative">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 sm:gap-5 relative">
         <div>
           <div className="font-mono text-[11px] tracking-widest uppercase text-text-low mb-2">
             Current Treasury
           </div>
-          <div className="font-display font-semibold text-5xl text-gold leading-none">
+          <div className="font-display font-semibold text-4xl sm:text-5xl text-gold leading-none">
             {curVal}
-            <span className="font-mono text-lg text-text-low ml-2">{curUnit}</span>
+            <span className="font-mono text-base sm:text-lg text-text-low ml-2">{curUnit}</span>
           </div>
           <div className="font-mono text-[13px] text-text-dim mt-2">
             toward <span className="text-gold">{targetAbbr}</span>
@@ -68,7 +68,7 @@ export function HeroBlock() {
             <span>{abbr(stats.remaining)} gil to go</span>
           </div>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
           <StatTile label="Today" value={(stats.today >= 0 ? '+' : '') + abbr(stats.today)} accent="gold" />
           <StatTile label="Last 7d" value={'+' + abbr(stats.week)} accent="jade" />
           <StatTile label="Rate / day" value={stats.rate > 0 ? abbr(stats.rate) : '—'} />

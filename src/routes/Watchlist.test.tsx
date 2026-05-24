@@ -86,11 +86,13 @@ describe('Watchlist route', () => {
     render(withProviders(<Watchlist />));
 
     await waitFor(() => {
-      expect(screen.getByText(/Courtly Lover's Temple Chain of Striking/)).toBeInTheDocument();
+      // Item name renders twice (mobile card + desktop table); both hidden via
+      // responsive CSS but JSDOM ignores `display` rules.
+      expect(screen.getAllByText(/Courtly Lover's Temple Chain of Striking/).length).toBeGreaterThanOrEqual(1);
     });
 
     await waitFor(() => {
-      expect(screen.getByText(/245k/)).toBeInTheDocument();
+      expect(screen.getAllByText(/245k/).length).toBeGreaterThanOrEqual(1);
     }, { timeout: 3000 });
   });
 });

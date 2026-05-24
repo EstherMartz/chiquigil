@@ -149,7 +149,7 @@ export function DcFlipView() {
           onClick={() => { run.reset(); run.mutate(); }}
           disabled={run.isPending || notReady}
           title={notReady ? 'Loading item catalog…' : undefined}
-          className="font-mono text-[10px] tracking-widest uppercase bg-gold text-bg-deep px-4 py-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+          className="font-mono text-[10px] tracking-widest uppercase bg-gold text-bg-deep px-4 py-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity w-full sm:w-auto"
         >
           {run.isPending ? <>Scanning…<span aria-hidden className="ml-1 inline-block animate-spin">❖</span></> : 'Run scan'}
         </button>
