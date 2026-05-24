@@ -8,6 +8,7 @@ import { fetchMarketForOutputs } from './fetchMarketForOutputs';
 import { registerCommands } from './registerCommands';
 import { handleChatMessage, type ChatDeps } from './chat/chatRouter';
 import { buildNameIndex } from './chat/nameIndex';
+import { startCacheWarmup } from './chat/tools';
 
 const TTL_MS = 30 * 60_000;       // 30-min sliding TTL
 const MAX_ENTRIES = 100;
@@ -44,6 +45,8 @@ async function main() {
       cfg: { world: config.world, dc: config.dc, region: config.region },
     },
   } : null;
+
+  if (chatDeps) startCacheWarmup(chatDeps.toolCtx);
 
   const client = new Client({
     intents: [

@@ -17,8 +17,9 @@ export interface ToolContext {
   cfg: { world: string; dc: string; region: string };
 }
 
-// --- Market data cache (5-min TTL) ---
-const CACHE_TTL_MS = 5 * 60_000;
+// --- Market data cache (1-hour TTL, auto-refreshed) ---
+const CACHE_TTL_MS = 60 * 60_000;
+const WARMUP_INTERVAL_MS = 60 * 60_000; // refresh every hour
 const marketCache = new Map<string, { data: MarketBundle; ts: number }>();
 
 async function cachedMarketFetch(
@@ -36,6 +37,34 @@ async function cachedMarketFetch(
   const data = await fetchMarketForOutputs(sorted, cfg);
   marketCache.set(key, { data, ts: Date.now() });
   return data;
+}
+
+export function startCacheWarmup(ctx: ToolContext): void {
+  const warmup = async () => {
+    console.log('[cache] warming up market data…');
+    const start = Date.now();
+    try {
+      const snapshot = [...ctx.snapshots.itemsById.values()];
+
+      // Pre-fetch craftable items (for craft_flip_search)
+      const craftableIds = snapshot.filter((i) => ctx.snapshots.recipes.has(i.id)).map((i) => i.id);
+      await cachedMarketFetch(craftableIds, ctx.cfg);
+
+      // Pre-fetch vendor items (for vendor_flip_search)
+      const vendorIds = [...ctx.snapshots.vendorMap.keys()];
+      await cachedMarketFetch(vendorIds, ctx.cfg);
+
+      const elapsed = ((Date.now() - start) / 1000).toFixed(1);
+      console.log(`[cache] warmup done in ${elapsed}s`);
+    } catch (e) {
+      console.error('[cache] warmup failed:', e instanceof Error ? e.message : e);
+    }
+  };
+
+  // Run immediately, then every hour
+  warmup();
+  const timer = setInterval(warmup, WARMUP_INTERVAL_MS);
+  timer.unref?.();
 }
 
 export const TOOL_DEFINITIONS: ToolDefinition[] = [
