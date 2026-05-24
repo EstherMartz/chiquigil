@@ -41,13 +41,32 @@ export function parseOpenRouterResponse(raw: OpenRouterResponse): ParsedResponse
   const choice = raw.choices[0];
   if (!choice) return { content: null, toolCalls: [] };
 
-  const toolCalls = (choice.message.tool_calls ?? []).map((tc) => ({
-    id: tc.id,
-    name: tc.function.name,
-    args: JSON.parse(tc.function.arguments) as Record<string, unknown>,
-  }));
+  // Native tool calls (OpenAI format)
+  if (choice.message.tool_calls?.length) {
+    const toolCalls = choice.message.tool_calls.map((tc) => ({
+      id: tc.id,
+      name: tc.function.name,
+      args: JSON.parse(tc.function.arguments) as Record<string, unknown>,
+    }));
+    return { content: choice.message.content, toolCalls };
+  }
 
-  return { content: choice.message.content, toolCalls };
+  // Detect malformed tool calls in text (Llama/Groq sometimes outputs these)
+  // Pattern: <function=tool_name>{"arg":"val"}</function>
+  const text = choice.message.content ?? '';
+  const fnMatch = text.match(/<function=(\w+)>([\s\S]*?)<\/function>/);
+  if (fnMatch) {
+    const name = fnMatch[1];
+    let args: Record<string, unknown> = {};
+    try { args = JSON.parse(fnMatch[2]); } catch { /* use empty args */ }
+    const cleanContent = text.replace(/<function=\w+>[\s\S]*?<\/function>/g, '').trim() || null;
+    return {
+      content: cleanContent,
+      toolCalls: [{ id: 'fn_' + Date.now(), name, args }],
+    };
+  }
+
+  return { content: choice.message.content, toolCalls: [] };
 }
 
 // --- Anthropic API support ---
