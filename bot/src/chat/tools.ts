@@ -3,6 +3,7 @@ import type { BotSnapshots } from '../loadSnapshots';
 import type { NameIndex } from './nameIndex';
 import { searchItems } from './nameIndex';
 import { fetchMarketForOutputs } from '../fetchMarketForOutputs';
+import type { MarketBundle } from '../../../src/features/watchlist/useMarketData';
 import { runCraftFlip } from '../../../src/features/queries/runCraftFlip';
 import { findBestDeals } from '../../../src/features/insights/bestDeals';
 import { runVendorFlip } from '../../../src/features/queries/runVendorFlip';
@@ -14,6 +15,27 @@ export interface ToolContext {
   snapshots: BotSnapshots;
   nameIndex: NameIndex;
   cfg: { world: string; dc: string; region: string };
+}
+
+// --- Market data cache (5-min TTL) ---
+const CACHE_TTL_MS = 5 * 60_000;
+const marketCache = new Map<string, { data: MarketBundle; ts: number }>();
+
+async function cachedMarketFetch(
+  ids: number[],
+  cfg: { world: string; dc: string; region: string },
+): Promise<MarketBundle> {
+  const sorted = [...new Set(ids)].sort((a, b) => a - b);
+  const key = sorted.join(',');
+  const cached = marketCache.get(key);
+  if (cached && Date.now() - cached.ts < CACHE_TTL_MS) {
+    console.log(`[chat] market cache HIT (${sorted.length} ids)`);
+    return cached.data;
+  }
+  console.log(`[chat] market cache MISS — fetching ${sorted.length} ids…`);
+  const data = await fetchMarketForOutputs(sorted, cfg);
+  marketCache.set(key, { data, ts: Date.now() });
+  return data;
 }
 
 export const TOOL_DEFINITIONS: ToolDefinition[] = [
@@ -99,7 +121,7 @@ async function priceCheck(args: Record<string, unknown>, ctx: ToolContext): Prom
   if (matches.length === 0) return JSON.stringify({ error: 'No items found matching that name' });
 
   const ids = matches.map((m) => m.id);
-  const market = await fetchMarketForOutputs(ids, ctx.cfg);
+  const market = await cachedMarketFetch(ids, ctx.cfg);
 
   const results = matches.map((m) => {
     const ph = market.phantom[m.id];
@@ -125,7 +147,7 @@ async function craftFlipSearch(args: Record<string, unknown>, ctx: ToolContext):
 
   const snapshot = [...ctx.snapshots.itemsById.values()];
   const craftableIds = snapshot.filter((i) => ctx.snapshots.recipes.has(i.id)).map((i) => i.id);
-  const market = await fetchMarketForOutputs(craftableIds, ctx.cfg);
+  const market = await cachedMarketFetch(craftableIds, ctx.cfg);
 
   const filter: QueryFilter = {
     searchCategories: [], hq: 'either', minDealPct: 0, minVelocity: 0.3,
@@ -147,7 +169,7 @@ async function bestDealsSearch(args: Record<string, unknown>, ctx: ToolContext):
 
   const snapshot = [...ctx.snapshots.itemsById.values()];
   const ids = snapshot.map((i) => i.id);
-  const market = await fetchMarketForOutputs(ids, ctx.cfg);
+  const market = await cachedMarketFetch(ids, ctx.cfg);
 
   const tracked: TrackedItem[] = snapshot.map((i) => ({
     id: i.id, name: i.name, crafter: '' as TrackedItem['crafter'], lvl: 0, cat: 'other' as TrackedItem['cat'],
@@ -167,7 +189,7 @@ async function vendorFlipSearch(args: Record<string, unknown>, ctx: ToolContext)
 
   const snapshot = [...ctx.snapshots.itemsById.values()];
   const vendorIds = [...ctx.snapshots.vendorMap.keys()];
-  const market = await fetchMarketForOutputs(vendorIds, ctx.cfg);
+  const market = await cachedMarketFetch(vendorIds, ctx.cfg);
 
   const filter = { ...defaultVendorFlipFilter(), sort, limit };
   const rows = runVendorFlip(snapshot, ctx.snapshots.vendorMap, market.phantom, filter);
