@@ -160,7 +160,7 @@ export function GatheringPlanner({ rows, catalog }: Props) {
         </thead>
         <tbody>
           {result.rows.map((r, i) => (
-            <tr key={r.id} className="border-t border-border-base hover:bg-bg-card-hi transition-colors">
+            <tr key={r.id} className="border-t border-border-base hover:bg-bg-card-hi active:bg-bg-card-hi transition-colors">
               <td className="px-2 py-1.5 font-mono text-text-low">{i + 1}</td>
               <td className="px-2 py-1.5">
                 <ItemNameLinks id={r.id} name={r.name} />
@@ -171,7 +171,7 @@ export function GatheringPlanner({ rows, catalog }: Props) {
             </tr>
           ))}
           {result.skippedZeroPriceRows.map((r) => (
-            <tr key={`skip-${r.id}`} className="border-t border-border-base text-text-low hover:bg-bg-card-hi transition-colors">
+            <tr key={`skip-${r.id}`} className="border-t border-border-base text-text-low hover:bg-bg-card-hi active:bg-bg-card-hi transition-colors">
               <td className="px-2 py-1.5 font-mono">—</td>
               <td className="px-2 py-1.5 italic">
                 <ItemNameLinks id={r.id} name={r.name} />

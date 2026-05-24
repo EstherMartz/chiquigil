@@ -33,7 +33,7 @@ export function AddItemModal({ lane, onAdd, onClose }: Props) {
 
   return (
     <div
-      className="fixed inset-0 bg-bg-deep/80 flex items-center justify-center p-4 z-50"
+      className="fixed inset-0 bg-bg-deep/80 flex items-center justify-center p-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))] z-50"
       onClick={onClose}
     >
       <div

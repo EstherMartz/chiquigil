@@ -47,7 +47,7 @@ export function RecipeModal({
 
   return (
     <div
-      className="fixed inset-0 bg-bg-deep/80 flex items-center justify-center p-4 z-50"
+      className="fixed inset-0 bg-bg-deep/80 flex items-center justify-center p-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))] z-50"
       onClick={onClose}
     >
       <div
@@ -85,7 +85,7 @@ export function RecipeModal({
             {recipe.ingredients.map((ing) => {
               const unit = dc[ing.itemId]?.minNQ ?? phantom[ing.itemId]?.avgNQ ?? 0;
               return (
-                <tr key={ing.itemId} className="border-b border-border-base hover:bg-bg-card-hi transition-colors">
+                <tr key={ing.itemId} className="border-b border-border-base hover:bg-bg-card-hi active:bg-bg-card-hi transition-colors">
                   <td className="py-2">{ingredientName(ing.itemId)}</td>
                   <td className="py-2 text-right font-mono">{ing.amount}</td>
                   <td className="py-2 text-right font-mono">{fmtGil(unit)}</td>

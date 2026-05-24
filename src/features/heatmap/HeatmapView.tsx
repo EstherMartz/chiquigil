@@ -341,7 +341,7 @@ function HeatmapList({ cells, sort, onSort, visibleCount, onShowMore }: {
           {visible.map((c) => {
             const rev = c.salePrice * c.velocity;
             return (
-              <tr key={c.id} className="border-t border-border-base hover:bg-bg-card-hi transition-colors">
+              <tr key={c.id} className="border-t border-border-base hover:bg-bg-card-hi active:bg-bg-card-hi transition-colors">
                 <td className="px-3 py-2">
                   <div className="flex items-center gap-1.5">
                     <Link

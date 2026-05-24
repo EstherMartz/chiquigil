@@ -453,7 +453,7 @@ function UsedInBlock({ entries, itemNames, phantom }: {
             {visible.map((e) => {
               const name = nameById.get(e.resultId) ?? `Item #${e.resultId}`;
               return (
-                <tr key={e.resultId} className="border-t border-border-base hover:bg-bg-card-hi transition-colors">
+                <tr key={e.resultId} className="border-t border-border-base hover:bg-bg-card-hi active:bg-bg-card-hi transition-colors">
                   <td className="px-3 py-2">
                     <Link to={`/item/${e.resultId}`} className="text-text-cream hover:text-aether hover:underline decoration-1 underline-offset-4">
                       {name}
@@ -666,7 +666,7 @@ function MaterialShoppingBlock({
               const save = r.homeUnit - r.cheapestUnit;
               const isHome = r.cheapestWorld === homeWorld;
               return (
-                <tr key={r.ing.itemId} className="border-t border-border-base hover:bg-bg-card-hi transition-colors">
+                <tr key={r.ing.itemId} className="border-t border-border-base hover:bg-bg-card-hi active:bg-bg-card-hi transition-colors">
                   <td className="px-3 py-2">
                     <ItemNameLinks id={r.ing.itemId} name={r.name} />
                   </td>

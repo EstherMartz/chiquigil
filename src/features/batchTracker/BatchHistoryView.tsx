@@ -30,7 +30,7 @@ export function BatchHistoryView() {
             {/* Card header */}
             <button
               onClick={() => setExpandedId(isExpanded ? null : batch.batchId)}
-              className="w-full text-left px-4 py-3 bg-bg-card hover:bg-bg-card-hi transition-colors flex items-center gap-4 flex-wrap"
+              className="w-full text-left px-4 py-3 bg-bg-card hover:bg-bg-card-hi active:bg-bg-card-hi transition-colors flex items-center gap-4 flex-wrap"
             >
               <span className="font-mono text-[11px] text-text-low">
                 {new Date(batch.createdAt).toLocaleDateString()}

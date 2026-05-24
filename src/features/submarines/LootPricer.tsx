@@ -203,7 +203,7 @@ export function LootPricer() {
             </thead>
             <tbody>
               {lm.visible.map((r) => (
-                <tr key={r.itemId} className="border-t border-border-base hover:bg-bg-card-hi transition-colors">
+                <tr key={r.itemId} className="border-t border-border-base hover:bg-bg-card-hi active:bg-bg-card-hi transition-colors">
                   <td className="px-3 py-1.5">
                     <ItemNameLinks id={r.itemId} name={r.name} sub={r.zones.join(', ')} />
                   </td>

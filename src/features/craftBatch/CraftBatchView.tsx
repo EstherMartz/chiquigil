@@ -236,7 +236,7 @@ export function CraftBatchView() {
               </thead>
               <tbody>
                 {batch.items.map((item, i) => (
-                  <tr key={item.id} className="border-t border-border-base hover:bg-bg-card-hi transition-colors">
+                  <tr key={item.id} className="border-t border-border-base hover:bg-bg-card-hi active:bg-bg-card-hi transition-colors">
                     <td className={`px-3 ${rowY} font-mono text-text-low`}>{i + 1}</td>
                     <td className={`px-3 ${rowY}`}>
                       <ItemNameLinks

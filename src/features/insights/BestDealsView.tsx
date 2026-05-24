@@ -63,7 +63,7 @@ export function BestDealsView() {
             </thead>
             <tbody>
               {lm.visible.map((r) => (
-                <tr key={r.id} className="border-t border-border-base hover:bg-bg-card-hi transition-colors">
+                <tr key={r.id} className="border-t border-border-base hover:bg-bg-card-hi active:bg-bg-card-hi transition-colors">
                   <td className="px-3 py-2.5">
                     <ItemNameLinks id={r.id} name={r.name} sub={r.crafter} />
                   </td>

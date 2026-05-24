@@ -133,7 +133,7 @@ function DetailTable({
             {perIngredient.map((row) => {
               const survey = surveyById.get(row.id);
               return (
-                <tr key={row.id} className="border-t border-border-base align-top hover:bg-bg-card-hi transition-colors">
+                <tr key={row.id} className="border-t border-border-base align-top hover:bg-bg-card-hi active:bg-bg-card-hi transition-colors">
                   <td className="px-3 py-2">
                     <Link to={`/item/${row.id}`} className="text-text-cream hover:text-aether hover:underline decoration-1 underline-offset-4">
                       {nameById.get(row.id) ?? `Item #${row.id}`}

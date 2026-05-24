@@ -56,7 +56,7 @@ export function BatchDetail({ batch }: Props) {
             {batch.items.map((item) => {
               const delta = item.actualPrice !== null ? item.actualPrice - item.estimatedPrice : null;
               return (
-                <tr key={item.id} className="border-t border-border-base hover:bg-bg-card-hi transition-colors">
+                <tr key={item.id} className="border-t border-border-base hover:bg-bg-card-hi active:bg-bg-card-hi transition-colors">
                   <td className="px-3 py-2 text-text-cream">
                     {item.name}{item.hq && <HqStar leading />}
                   </td>

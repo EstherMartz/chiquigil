@@ -115,7 +115,7 @@ export function QuestItemFlipResults({ rows, totalCandidates, sortBy, sortDir, o
           </thead>
           <tbody>
             {visible.map((row, i) => (
-              <tr key={`${row.questId}-${row.itemId}`} className="border-t border-border-base hover:bg-bg-card-hi transition-colors">
+              <tr key={`${row.questId}-${row.itemId}`} className="border-t border-border-base hover:bg-bg-card-hi active:bg-bg-card-hi transition-colors">
                 <td className={`px-3 ${rowY} text-text-low font-mono text-xs`}>{i + 1}</td>
                 <td className={`px-3 ${rowY} font-mono text-right`}>{row.level}</td>
                 <td className={`px-3 ${rowY} text-text-low font-mono text-xs hidden md:table-cell`}>{row.categoryName}</td>

@@ -86,7 +86,7 @@ export function LevePlanner({ rows }: Props) {
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.id} className="border-t border-border-base hover:bg-bg-card-hi transition-colors">
+              <tr key={r.id} className="border-t border-border-base hover:bg-bg-card-hi active:bg-bg-card-hi transition-colors">
                 <td className="px-2 py-1.5">
                   {r.targetItemId != null
                     ? <ItemNameLinks id={r.targetItemId} name={r.targetItemQty != null ? `${r.name} ×${r.targetItemQty}` : r.name} />

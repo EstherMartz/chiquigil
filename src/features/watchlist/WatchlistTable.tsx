@@ -176,7 +176,7 @@ export function WatchlistTable({ rows, onSelect, sparklineMap, sparklineLoading 
         </thead>
         <tbody>
           {lm.visible.map((r) => (
-            <tr key={r.id} className="border-t border-border-base hover:bg-bg-card-hi transition-colors">
+            <tr key={r.id} className="border-t border-border-base hover:bg-bg-card-hi active:bg-bg-card-hi transition-colors">
               <td className={`px-3 ${rowY}`}>
                 <div className="flex items-baseline gap-2">
                   <Link
