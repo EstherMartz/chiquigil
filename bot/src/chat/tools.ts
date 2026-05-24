@@ -36,26 +36,28 @@ export async function saveCacheToDisk(): Promise<void> {
   console.log(`[cache] saved to disk (${entries.length} entries)`);
 }
 
-export async function loadCacheFromDisk(): Promise<boolean> {
+export async function loadCacheFromDisk(): Promise<{ loaded: boolean; fresh: boolean }> {
   try {
     const raw = await readFile(CACHE_FILE, 'utf8');
     const disk = JSON.parse(raw) as DiskCache;
     let loaded = 0;
+    let allFresh = true;
     for (const entry of disk.entries) {
-      if (Date.now() - entry.ts < CACHE_TTL_MS) {
-        marketCache.set(entry.key, { data: entry.data, ts: entry.ts });
-        loaded++;
-      }
+      // Always load — stale data is better than no data
+      marketCache.set(entry.key, { data: entry.data, ts: entry.ts });
+      loaded++;
+      if (Date.now() - entry.ts >= CACHE_TTL_MS) allFresh = false;
     }
     if (loaded > 0) {
-      console.log(`[cache] loaded ${loaded} entries from disk`);
-      return true;
+      const age = disk.entries.length > 0 ? Math.round((Date.now() - disk.entries[0].ts) / 60_000) : 0;
+      console.log(`[cache] loaded ${loaded} entries from disk (${age}min old${allFresh ? '' : ', stale — will refresh in background'})`);
+      return { loaded: true, fresh: allFresh };
     }
-    console.log('[cache] disk cache expired, will fetch fresh');
-    return false;
+    console.log('[cache] disk cache empty');
+    return { loaded: false, fresh: false };
   } catch {
     console.log('[cache] no disk cache found');
-    return false;
+    return { loaded: false, fresh: false };
   }
 }
 
@@ -76,10 +78,25 @@ async function cachedMarketFetch(
   const sorted = [...new Set(ids)].sort((a, b) => a - b);
   const key = sorted.join(',');
   const cached = marketCache.get(key);
+
   if (cached && Date.now() - cached.ts < CACHE_TTL_MS) {
     console.log(`[chat] market cache HIT (${sorted.length} ids)`);
     return cached.data;
   }
+
+  // Stale cache exists — serve it now, refresh in background
+  if (cached) {
+    const age = Math.round((Date.now() - cached.ts) / 60_000);
+    console.log(`[chat] market cache STALE (${age}min old, ${sorted.length} ids) — serving stale, refreshing in background`);
+    fetchMarketForOutputs(sorted, cfg).then((data) => {
+      marketCache.set(key, { data, ts: Date.now() });
+      saveCacheToDisk().catch(() => {});
+      console.log(`[chat] background refresh done (${sorted.length} ids)`);
+    }).catch((e) => console.error('[chat] background refresh failed:', e));
+    return cached.data;
+  }
+
+  // No cache at all — must wait
   console.log(`[chat] market cache MISS — fetching ${sorted.length} ids…`);
   const data = await fetchMarketForOutputs(sorted, cfg);
   marketCache.set(key, { data, ts: Date.now() });
@@ -91,21 +108,36 @@ export function startCacheWarmup(ctx: ToolContext): void {
     console.log('[cache] warming up market data…');
     const start = Date.now();
     try {
-      // Try disk cache first
-      const fromDisk = await loadCacheFromDisk();
-      if (fromDisk) {
-        const elapsed = ((Date.now() - start) / 1000).toFixed(1);
-        console.log(`[cache] warmup done in ${elapsed}s (from disk)`);
-        return;
-      }
+      // Always try disk cache first — even stale data is useful
+      const { loaded, fresh } = await loadCacheFromDisk();
 
       const snapshot = [...ctx.snapshots.itemsById.values()];
       const craftableIds = snapshot.filter((i) => ctx.snapshots.recipes.has(i.id)).map((i) => i.id);
       const vendorIds = [...ctx.snapshots.vendorMap.keys()];
       const allIds = [...new Set([...craftableIds, ...vendorIds])];
+
+      if (loaded && fresh) {
+        const elapsed = ((Date.now() - start) / 1000).toFixed(1);
+        console.log(`[cache] warmup done in ${elapsed}s (fresh disk cache)`);
+        return;
+      }
+
+      if (loaded && !fresh) {
+        // Stale disk cache loaded — refresh in background
+        const elapsed = ((Date.now() - start) / 1000).toFixed(1);
+        console.log(`[cache] warmup done in ${elapsed}s (stale disk cache, refreshing in background…)`);
+        fetchMarketForOutputs(allIds, ctx.cfg).then(async (data) => {
+          const key = [...new Set(allIds)].sort((a, b) => a - b).join(',');
+          marketCache.set(key, { data, ts: Date.now() });
+          await saveCacheToDisk();
+          console.log(`[cache] background refresh complete (${allIds.length} items)`);
+        }).catch((e) => console.error('[cache] background refresh failed:', e));
+        return;
+      }
+
+      // No disk cache — must fetch synchronously
       await cachedMarketFetch(allIds, ctx.cfg);
       await saveCacheToDisk();
-
       const elapsed = ((Date.now() - start) / 1000).toFixed(1);
       console.log(`[cache] warmup done in ${elapsed}s (${allIds.length} items fetched)`);
     } catch (e) {
