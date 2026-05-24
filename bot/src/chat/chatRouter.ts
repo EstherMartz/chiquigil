@@ -119,6 +119,13 @@ export async function handleChatMessage(
       finalContent = 'No pude completar tu consulta — inténtalo de nuevo ✨';
     }
 
+    // Strip any leaked tool-call markup from the response
+    finalContent = finalContent
+      .replace(/<function=\w+>[\s\S]*?<\/function>/g, '')
+      .replace(/Llamando a \w+\.\.\./g, '')
+      .replace(/Qiqirn usa \w+/g, '')
+      .trim() || 'Qiqirn no encontró nada... intenta otra vez ✨';
+
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
     console.log(`[chat] replying (${elapsed}s total)`);
 
