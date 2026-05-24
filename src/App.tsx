@@ -35,7 +35,7 @@ export default function App() {
       {showOnboarding && (
         <OnboardingWizard onComplete={() => setShowOnboarding(false)} />
       )}
-      <main className="flex-1 min-w-0 pt-8 pb-20 px-4">
+      <main className="flex-1 min-w-0 pt-16 md:pt-8 pb-20 px-4">
         <ContentBar />
         <Routes>
             <Route path="/" element={<Navigate to="/trading" replace />} />

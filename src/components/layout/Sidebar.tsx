@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 
 const navItemClass = ({ isActive }: { isActive: boolean }) =>
-  `block px-4 py-1.5 font-mono text-[13px] tracking-widest transition-colors border-l-[3px] ${
+  `block px-4 py-3 md:py-1.5 font-mono text-[13px] tracking-widest transition-colors border-l-[3px] active:bg-bg-card-hi ${
     isActive
       ? 'text-gold border-l-gold'
       : 'text-text-dim hover:text-aether border-l-transparent'
@@ -99,17 +99,19 @@ export function Sidebar() {
     </aside>
   );
 
-  // Mobile top bar + overlay
+  // Mobile top bar + overlay.
+  // Top bar is `fixed` (not sticky) so it leaves the parent flex flow on
+  // mobile — otherwise it would claim a column and squeeze <main>.
   const mobileContent = (
     <>
       {/* Mobile top bar */}
-      <div className="md:hidden sticky top-0 z-30 bg-bg-deep border-b border-border-base px-4 py-2 flex items-center justify-between">
+      <div className="md:hidden fixed top-0 left-0 right-0 z-30 h-12 bg-bg-deep border-b border-border-base px-4 flex items-center justify-between pt-[env(safe-area-inset-top)]">
         <div className="font-mono text-[13px] tracking-widest text-aether uppercase">
           Gilipichi
         </div>
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="text-xl text-text-cream hover:text-aether transition-colors"
+          className="w-11 h-11 flex items-center justify-center text-xl text-text-cream hover:text-aether active:text-aether transition-colors -mr-2"
           aria-label="Toggle menu"
         >
           {mobileOpen ? '✕' : '☰'}
@@ -124,10 +126,22 @@ export function Sidebar() {
         />
       )}
       <aside
-        className={`fixed left-0 top-12 bottom-0 w-[260px] bg-bg-card border-r border-border-base z-50 overflow-y-auto transition-transform md:hidden ${
+        className={`fixed left-0 top-0 bottom-0 w-[260px] bg-bg-card border-r border-border-base z-50 overflow-y-auto transition-transform md:hidden pt-[env(safe-area-inset-top)] ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
+        <div className="h-12 px-4 flex items-center justify-between border-b border-border-base">
+          <span className="font-mono text-[13px] tracking-widest text-aether uppercase">
+            Gilipichi
+          </span>
+          <button
+            onClick={closeMobileMenu}
+            className="w-11 h-11 flex items-center justify-center text-xl text-text-cream hover:text-aether active:text-aether transition-colors -mr-2"
+            aria-label="Close menu"
+          >
+            ✕
+          </button>
+        </div>
         <nav className="py-4 space-y-6">
           {NAV_GROUPS.map((group, idx) => (
             <div key={group.label} className={idx > 0 ? 'border-t border-border-base/50 pt-4' : ''}>
