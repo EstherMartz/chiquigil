@@ -4,7 +4,7 @@ import type { MarketBundle } from '../../src/features/watchlist/useMarketData';
 import { invalidateCache } from './chat/tools';
 
 const BATCH_SIZE = 100;
-const MAX_CONCURRENT = 4;
+const MAX_CONCURRENT = 8;
 
 const config = {
   world: process.env.HOME_WORLD ?? 'Phantom',
@@ -40,41 +40,22 @@ async function fetchBatch(scope: string, batch: number[]): Promise<MarketData> {
 
 async function fetchScopeWithProgress(
   scope: string,
-  ids: number[],
+  batches: number[][],
   label: string,
+  onBatch: () => void,
 ): Promise<MarketData> {
   const out: MarketData = {};
-  const batches: number[][] = [];
-  for (let i = 0; i < ids.length; i += BATCH_SIZE) batches.push(ids.slice(i, i + BATCH_SIZE));
-
-  let completed = 0;
   let cursor = 0;
-  progressBar(0, batches.length, label);
 
   const workers = Array.from({ length: Math.min(MAX_CONCURRENT, batches.length) }, async () => {
     while (cursor < batches.length) {
       const idx = cursor++;
       Object.assign(out, await fetchBatch(scope, batches[idx]));
-      completed++;
-      progressBar(completed, batches.length, label);
+      onBatch();
     }
   });
   await Promise.all(workers);
   return out;
-}
-
-async function fetchWithProgress(ids: number[]): Promise<MarketBundle> {
-  const sorted = Array.from(new Set(ids)).filter((id) => id > 0).sort((a, b) => a - b);
-  if (sorted.length === 0) return { phantom: {}, dc: {}, region: {} };
-
-  const batchCount = Math.ceil(sorted.length / BATCH_SIZE);
-  console.log(`  ${sorted.length} items → ${batchCount} batches × 3 scopes\n`);
-
-  const phantom = await fetchScopeWithProgress(config.world, sorted, 'Phantom ');
-  const dc = await fetchScopeWithProgress(config.dc, sorted, 'Chaos DC');
-  const region = await fetchScopeWithProgress(config.region, sorted, 'Europe  ');
-
-  return { phantom, dc, region };
 }
 
 async function main() {
@@ -85,23 +66,36 @@ async function main() {
   const snapshots = await loadSnapshots(config.snapshotsDir);
   console.log(`  ${snapshots.itemsById.size} items, ${snapshots.recipes.size} recipes, ${snapshots.vendorMap.size} vendor prices\n`);
 
-  // Craftable items
+  // Merge all IDs into one deduplicated set
   const snapshot = [...snapshots.itemsById.values()];
   const craftableIds = snapshot.filter((i) => snapshots.recipes.has(i.id)).map((i) => i.id);
-  console.log(`📦 Craftable items (${craftableIds.length}):`);
-  const craftMarket = await fetchWithProgress(craftableIds);
-
-  // Vendor items
   const vendorIds = [...snapshots.vendorMap.keys()];
-  console.log(`\n🏪 Vendor items (${vendorIds.length}):`);
-  const vendorMarket = await fetchWithProgress(vendorIds);
+  const allIds = [...new Set([...craftableIds, ...vendorIds])].filter((id) => id > 0).sort((a, b) => a - b);
 
-  // Push into the in-memory cache used by the bot
+  const batches: number[][] = [];
+  for (let i = 0; i < allIds.length; i += BATCH_SIZE) batches.push(allIds.slice(i, i + BATCH_SIZE));
+
+  const totalBatches = batches.length * 3; // 3 scopes
+  let completed = 0;
+  const tick = () => { completed++; progressBar(completed, totalBatches, 'Total   '); };
+
+  console.log(`  ${allIds.length} unique items → ${batches.length} batches × 3 scopes (${totalBatches} total)`);
+  console.log(`  ${MAX_CONCURRENT} concurrent workers per scope, all 3 scopes in parallel\n`);
+
+  progressBar(0, totalBatches, 'Total   ');
+
+  // Fetch all 3 scopes in parallel
+  const [phantom, dc, region] = await Promise.all([
+    fetchScopeWithProgress(config.world, batches, 'Phantom', tick),
+    fetchScopeWithProgress(config.dc, batches, 'DC', tick),
+    fetchScopeWithProgress(config.region, batches, 'Europe', tick),
+  ]);
+
   invalidateCache();
 
   const elapsed = ((Date.now() - start) / 1000).toFixed(1);
-  console.log(`\n✅ Cache refreshed in ${elapsed}s\n`);
-  console.log('Note: This pre-fetched data. Restart the bot to pick up the fresh cache via auto-warmup.\n');
+  console.log(`\n✅ Cache refreshed in ${elapsed}s — ${allIds.length} items across 3 scopes`);
+  console.log('   Restart the bot to pick up fresh data via auto-warmup.\n');
 }
 
 main().catch((e) => {

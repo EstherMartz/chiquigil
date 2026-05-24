@@ -50,17 +50,14 @@ export function startCacheWarmup(ctx: ToolContext): void {
     const start = Date.now();
     try {
       const snapshot = [...ctx.snapshots.itemsById.values()];
-
-      // Pre-fetch craftable items (for craft_flip_search)
       const craftableIds = snapshot.filter((i) => ctx.snapshots.recipes.has(i.id)).map((i) => i.id);
-      await cachedMarketFetch(craftableIds, ctx.cfg);
-
-      // Pre-fetch vendor items (for vendor_flip_search)
       const vendorIds = [...ctx.snapshots.vendorMap.keys()];
-      await cachedMarketFetch(vendorIds, ctx.cfg);
+      // Merge + deduplicate — one fetch instead of two
+      const allIds = [...new Set([...craftableIds, ...vendorIds])];
+      await cachedMarketFetch(allIds, ctx.cfg);
 
       const elapsed = ((Date.now() - start) / 1000).toFixed(1);
-      console.log(`[cache] warmup done in ${elapsed}s`);
+      console.log(`[cache] warmup done in ${elapsed}s (${allIds.length} items)`);
     } catch (e) {
       console.error('[cache] warmup failed:', e instanceof Error ? e.message : e);
     }
