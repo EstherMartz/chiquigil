@@ -66,11 +66,8 @@ async function main() {
   const snapshots = await loadSnapshots(config.snapshotsDir);
   console.log(`  ${snapshots.itemsById.size} items, ${snapshots.recipes.size} recipes, ${snapshots.vendorMap.size} vendor prices\n`);
 
-  // Merge all IDs into one deduplicated set
-  const snapshot = [...snapshots.itemsById.values()];
-  const craftableIds = snapshot.filter((i) => snapshots.recipes.has(i.id)).map((i) => i.id);
-  const vendorIds = [...snapshots.vendorMap.keys()];
-  const allIds = [...new Set([...craftableIds, ...vendorIds])].filter((id) => id > 0).sort((a, b) => a - b);
+  // Fetch ALL items so category-filtered queries always have data
+  const allIds = [...snapshots.itemsById.keys()].filter((id) => id > 0).sort((a, b) => a - b);
 
   const batches: number[][] = [];
   for (let i = 0; i < allIds.length; i += BATCH_SIZE) batches.push(allIds.slice(i, i + BATCH_SIZE));

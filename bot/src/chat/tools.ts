@@ -187,10 +187,8 @@ export function startCacheWarmup(ctx: ToolContext): void {
     try {
       const { loaded, fresh } = await loadCacheFromDisk();
 
-      const snapshot = [...ctx.snapshots.itemsById.values()];
-      const craftableIds = snapshot.filter((i) => ctx.snapshots.recipes.has(i.id)).map((i) => i.id);
-      const vendorIds = [...ctx.snapshots.vendorMap.keys()];
-      const allIds = [...new Set([...craftableIds, ...vendorIds])];
+      // Warm ALL tradeable items so category-filtered queries always have data
+      const allIds = [...ctx.snapshots.itemsById.keys()];
 
       if (loaded && fresh) {
         const elapsed = ((Date.now() - start) / 1000).toFixed(1);
@@ -347,6 +345,10 @@ async function craftFlipSearch(args: Record<string, unknown>, ctx: ToolContext):
   };
 
   const rows = runCraftFlip(snapshot, market.phantom, ctx.snapshots.recipes, filter);
+  if (rows.length === 0) {
+    const cat = args.category ? ` in category "${args.category}"` : '';
+    return JSON.stringify({ message: `No profitable crafts found${cat}. Try removing the category filter.`, results: [] });
+  }
   const results = rows.slice(0, limit).map((r) => ({
     name: r.name, materialCost: r.materialCost, salePrice: r.unitPrice,
     profit: r.profit, velocity: r.velocity, gilPerDay: Math.round(r.gilPerDay), hq: r.hq,
@@ -369,6 +371,10 @@ async function bestDealsSearch(args: Record<string, unknown>, ctx: ToolContext):
   }));
 
   const rows = findBestDeals(tracked, market.dc, { minDealPct });
+  if (rows.length === 0) {
+    const cat = args.category ? ` in category "${args.category}"` : '';
+    return JSON.stringify({ message: `No deals found${cat} with at least ${minDealPct}% discount. Try lowering min_deal_pct or removing the category filter.`, results: [] });
+  }
   const results = rows.slice(0, limit).map((r) => ({
     name: r.name, currentPrice: r.currentMin, averagePrice: r.averagePrice, dealPct: r.dealPct,
   }));
@@ -387,6 +393,10 @@ async function vendorFlipSearch(args: Record<string, unknown>, ctx: ToolContext)
 
   const filter = { ...defaultVendorFlipFilter(), sort, limit, searchCategories };
   const rows = runVendorFlip(snapshot, ctx.snapshots.vendorMap, market.phantom, filter);
+  if (rows.length === 0) {
+    const cat = args.category ? ` in category "${args.category}"` : '';
+    return JSON.stringify({ message: `No vendor flips found${cat}. Try removing the category filter.`, results: [] });
+  }
   const results = rows.slice(0, limit).map((r) => ({
     name: r.name, vendorPrice: r.vendorPrice, salePrice: r.salePrice,
     profitPerUnit: r.profitPerUnit, markup: Math.round(r.markup * 100) / 100,
