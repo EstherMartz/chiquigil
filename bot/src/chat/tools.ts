@@ -22,6 +22,11 @@ const CACHE_TTL_MS = 60 * 60_000;
 const WARMUP_INTERVAL_MS = 60 * 60_000; // refresh every hour
 const marketCache = new Map<string, { data: MarketBundle; ts: number }>();
 
+export function invalidateCache(): void {
+  marketCache.clear();
+  console.log('[cache] invalidated');
+}
+
 async function cachedMarketFetch(
   ids: number[],
   cfg: { world: string; dc: string; region: string },
