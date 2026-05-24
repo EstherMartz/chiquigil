@@ -1,3 +1,5 @@
+import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { join, dirname } from 'node:path';
 import type { ToolDefinition } from './openrouter';
 import type { BotSnapshots } from '../loadSnapshots';
 import type { NameIndex } from './nameIndex';
@@ -17,10 +19,50 @@ export interface ToolContext {
   cfg: { world: string; dc: string; region: string };
 }
 
-// --- Market data cache (1-hour TTL, auto-refreshed) ---
+// --- Market data cache (1-hour TTL, auto-refreshed, disk-backed) ---
 const CACHE_TTL_MS = 60 * 60_000;
-const WARMUP_INTERVAL_MS = 60 * 60_000; // refresh every hour
+const WARMUP_INTERVAL_MS = 60 * 60_000;
+const CACHE_FILE = join(dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1')), '../../.cache/market.json');
 const marketCache = new Map<string, { data: MarketBundle; ts: number }>();
+
+interface DiskCache {
+  entries: Array<{ key: string; data: MarketBundle; ts: number }>;
+}
+
+export async function saveCacheToDisk(): Promise<void> {
+  const entries = [...marketCache.entries()].map(([key, v]) => ({ key, data: v.data, ts: v.ts }));
+  await mkdir(dirname(CACHE_FILE), { recursive: true });
+  await writeFile(CACHE_FILE, JSON.stringify({ entries } satisfies DiskCache));
+  console.log(`[cache] saved to disk (${entries.length} entries)`);
+}
+
+export async function loadCacheFromDisk(): Promise<boolean> {
+  try {
+    const raw = await readFile(CACHE_FILE, 'utf8');
+    const disk = JSON.parse(raw) as DiskCache;
+    let loaded = 0;
+    for (const entry of disk.entries) {
+      if (Date.now() - entry.ts < CACHE_TTL_MS) {
+        marketCache.set(entry.key, { data: entry.data, ts: entry.ts });
+        loaded++;
+      }
+    }
+    if (loaded > 0) {
+      console.log(`[cache] loaded ${loaded} entries from disk`);
+      return true;
+    }
+    console.log('[cache] disk cache expired, will fetch fresh');
+    return false;
+  } catch {
+    console.log('[cache] no disk cache found');
+    return false;
+  }
+}
+
+export function pushToCache(ids: number[], data: MarketBundle): void {
+  const key = [...new Set(ids)].sort((a, b) => a - b).join(',');
+  marketCache.set(key, { data, ts: Date.now() });
+}
 
 export function invalidateCache(): void {
   marketCache.clear();
@@ -49,15 +91,23 @@ export function startCacheWarmup(ctx: ToolContext): void {
     console.log('[cache] warming up market data…');
     const start = Date.now();
     try {
+      // Try disk cache first
+      const fromDisk = await loadCacheFromDisk();
+      if (fromDisk) {
+        const elapsed = ((Date.now() - start) / 1000).toFixed(1);
+        console.log(`[cache] warmup done in ${elapsed}s (from disk)`);
+        return;
+      }
+
       const snapshot = [...ctx.snapshots.itemsById.values()];
       const craftableIds = snapshot.filter((i) => ctx.snapshots.recipes.has(i.id)).map((i) => i.id);
       const vendorIds = [...ctx.snapshots.vendorMap.keys()];
-      // Merge + deduplicate — one fetch instead of two
       const allIds = [...new Set([...craftableIds, ...vendorIds])];
       await cachedMarketFetch(allIds, ctx.cfg);
+      await saveCacheToDisk();
 
       const elapsed = ((Date.now() - start) / 1000).toFixed(1);
-      console.log(`[cache] warmup done in ${elapsed}s (${allIds.length} items)`);
+      console.log(`[cache] warmup done in ${elapsed}s (${allIds.length} items fetched)`);
     } catch (e) {
       console.error('[cache] warmup failed:', e instanceof Error ? e.message : e);
     }

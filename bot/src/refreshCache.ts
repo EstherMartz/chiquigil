@@ -1,7 +1,7 @@
 import { loadSnapshots } from './loadSnapshots';
 import { parseMarketResponse, type MarketData } from '../../src/lib/universalis';
 import type { MarketBundle } from '../../src/features/watchlist/useMarketData';
-import { invalidateCache } from './chat/tools';
+import { invalidateCache, pushToCache, saveCacheToDisk } from './chat/tools';
 
 const BATCH_SIZE = 100;
 const MAX_CONCURRENT = 8;
@@ -91,11 +91,15 @@ async function main() {
     fetchScopeWithProgress(config.region, batches, 'Europe', tick),
   ]);
 
+  // Save to disk so the bot picks it up
   invalidateCache();
+  const merged: MarketBundle = { phantom, dc, region };
+  pushToCache(allIds, merged);
+  await saveCacheToDisk();
 
   const elapsed = ((Date.now() - start) / 1000).toFixed(1);
-  console.log(`\n✅ Cache refreshed in ${elapsed}s — ${allIds.length} items across 3 scopes`);
-  console.log('   Restart the bot to pick up fresh data via auto-warmup.\n');
+  console.log(`\n✅ Cache refreshed and saved to disk in ${elapsed}s — ${allIds.length} items across 3 scopes`);
+  console.log('   The bot will load this cache automatically on next startup or warmup cycle.\n');
 }
 
 main().catch((e) => {
