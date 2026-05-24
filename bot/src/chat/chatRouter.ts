@@ -74,13 +74,19 @@ export async function handleChatMessage(
         break;
       }
 
+      const choice = raw.choices[0];
+      if (!choice) {
+        console.log('[chat] empty response from OpenRouter, stopping');
+        break;
+      }
+
       console.log(`[chat] ${parsed.toolCalls.length} tool call(s): ${parsed.toolCalls.map((t) => t.name).join(', ')}`);
 
       // Append assistant message with tool calls
       messages.push({
         role: 'assistant',
         content: parsed.content,
-        tool_calls: raw.choices[0].message.tool_calls,
+        tool_calls: choice.message.tool_calls,
       });
 
       // Execute each tool and append results
