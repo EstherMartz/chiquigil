@@ -1,12 +1,10 @@
 import { useMemo, useState } from 'react';
 import { usePlannerStore } from './plannerStore';
 import { fmt, type LogEntry } from './plannerStats';
-import { LANE_ORDER } from './seedPlanner';
 import { AddItemModal } from './AddItemModal';
 
 export function SalesInsights() {
   const log = usePlannerStore((s) => s.log);
-  const lanes = usePlannerStore((s) => s.lanes);
   const addItem = usePlannerStore((s) => s.addItem);
 
   const [addModal, setAddModal] = useState<{ name: string; price: number } | null>(null);
