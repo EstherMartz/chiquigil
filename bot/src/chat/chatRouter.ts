@@ -65,8 +65,20 @@ export async function handleChatMessage(
     let finalContent: string | null = null;
 
     for (let i = 0; i < MAX_ITERATIONS; i++) {
-      console.log(`[chat] iteration ${i + 1}/${MAX_ITERATIONS} — calling OpenRouter…`);
-      const raw = await callLLM(deps.provider, deps.apiKey, deps.model, messages, TOOL_DEFINITIONS);
+      console.log(`[chat] iteration ${i + 1}/${MAX_ITERATIONS} — calling LLM…`);
+      let raw;
+      try {
+        raw = await callLLM(deps.provider, deps.apiKey, deps.model, messages, TOOL_DEFINITIONS);
+      } catch (e) {
+        const errMsg = e instanceof Error ? e.message : String(e);
+        // Groq tool_use_failed — retry without tools
+        if (errMsg.includes('tool_use_failed') || errMsg.includes('tool call validation failed')) {
+          console.log('[chat] tool call failed, retrying without tools…');
+          raw = await callLLM(deps.provider, deps.apiKey, deps.model, messages, []);
+        } else {
+          throw e;
+        }
+      }
       const parsed = parseOpenRouterResponse(raw);
 
       if (parsed.toolCalls.length === 0) {
