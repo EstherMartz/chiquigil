@@ -1,13 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildHistoryUrl, parseHistoryResponse, dailyBuckets, buildHistoryUrlWithin, computeWeekDelta, dailyMedianBuckets } from './universalisHistory';
-
-describe('buildHistoryUrl', () => {
-  it('builds a Chaos history URL with entriesToReturn', () => {
-    expect(buildHistoryUrl('Chaos', [1, 2])).toBe(
-      'https://universalis.app/api/v2/history/Chaos/1,2?entriesToReturn=50'
-    );
-  });
-});
+import { parseHistoryResponse, dailyBuckets, computeWeekDelta, dailyMedianBuckets } from './universalisHistory';
 
 describe('parseHistoryResponse', () => {
   it('extracts entries per item id', () => {
@@ -52,13 +44,6 @@ describe('dailyBuckets', () => {
     const out = dailyBuckets([oldEntry, recentEntry], 30);
     expect(out).toHaveLength(1);
     expect(out[0].meanPrice).toBe(60);
-  });
-});
-
-describe('buildHistoryUrlWithin', () => {
-  it('builds the URL with entriesWithin and joined IDs', () => {
-    expect(buildHistoryUrlWithin('Phantom', [1, 2, 3], 1209600))
-      .toBe('https://universalis.app/api/v2/history/Phantom/1,2,3?entriesWithin=1209600');
   });
 });
 

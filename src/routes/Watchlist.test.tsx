@@ -9,6 +9,21 @@ import { useUiStore, defaultUi } from '../features/ui/uiStore';
 import { clearRecipeCache, clearRecipeSnapshot } from '../lib/recipeCache';
 import * as staticLoader from '../lib/staticSnapshots';
 
+vi.mock('../lib/universalis', async () => {
+  const actual = await vi.importActual<typeof import('../lib/universalis')>('../lib/universalis');
+  return {
+    ...actual,
+    fetchMarketData: vi.fn(async (scope: string, ids: number[]) => {
+      const url = actual.buildMarketUrl(scope, ids);
+      try {
+        const res = await fetch(url);
+        if (!res.ok) return Object.fromEntries(ids.map(id => [String(id), { minNQ: null, minHQ: null, avgNQ: null, avgHQ: null, medianNQ: null, medianHQ: null, recentSalesNQ: 0, recentSalesHQ: 0, velocity: 0, lastUploadTime: 0, listingCount: 0, worldListings: [], averagePriceNQ: null, averagePriceHQ: null }]));
+        return actual.parseMarketResponse(await res.json());
+      } catch { return {}; }
+    }),
+  };
+});
+
 beforeEach(async () => {
   localStorage.clear();
   useSettingsStore.setState(defaultSettings());

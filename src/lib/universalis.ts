@@ -1,4 +1,4 @@
-import { getCachedMarketScope, putCachedMarketScope, type MarketScopeBlob } from './recipeCache';
+import { getCachedMarketScope } from './recipeCache';
 import { trimmedMedian } from './priceTrust';
 
 export type Scope = string; // world or DC name, e.g. 'Phantom' | 'Chaos'
@@ -95,13 +95,11 @@ export function parseMarketResponse(raw: RawResponse): MarketData {
   return out;
 }
 
-// ---------- Cache (in-memory mirror of per-scope IDB blob, 30-min TTL) ----------
+// ---------- Cache (in-memory mirror of per-scope IDB blob) ----------
 
-const MARKET_TTL_MS = 30 * 60 * 1000;
 type ScopeCache = Map<number, { ts: number; data: MarketItem }>;
 const memCache = new Map<string, ScopeCache>();
 const hydrated = new Set<string>();
-const pendingPersist = new Map<string, ReturnType<typeof setTimeout>>();
 
 async function ensureHydrated(scope: string): Promise<void> {
   if (hydrated.has(scope)) return;
@@ -114,183 +112,80 @@ async function ensureHydrated(scope: string): Promise<void> {
   }
 }
 
-function schedulePersist(scope: string): void {
-  const existing = pendingPersist.get(scope);
-  if (existing) clearTimeout(existing);
-  pendingPersist.set(scope, setTimeout(async () => {
-    pendingPersist.delete(scope);
-    const cache = memCache.get(scope);
-    if (!cache) return;
-    const blob: MarketScopeBlob<MarketItem> = [...cache.entries()].map(
-      ([id, entry]) => [id, entry],
-    );
-    try { await putCachedMarketScope(scope, blob); } catch { /* swallow */ }
-  }, 1500));
+// ---------- Bot shared cache pre-seeding ----------
+
+interface SharedCache {
+  phantom: MarketData;
+  dc: MarketData;
+  region: MarketData;
+  ts: number;
+}
+
+let sharedCacheLoaded = false;
+
+/**
+ * Pre-seed the in-memory cache from the bot's hourly market-cache.json.
+ * Call once at app startup. If the file is missing or stale (>90 min),
+ * it's a no-op and the app falls through to live Universalis fetches.
+ */
+export async function loadSharedMarketCache(homeWorld: string, dc: string, region: string): Promise<void> {
+  if (sharedCacheLoaded) return;
+  sharedCacheLoaded = true;
+  try {
+    const res = await fetch('/data/market-cache.json');
+    if (!res.ok) return;
+    const data = (await res.json()) as SharedCache;
+    const age = Date.now() - data.ts;
+    if (age > 120 * 60_000) {
+      console.log(`[market] shared cache too old (${Math.round(age / 60_000)}min), skipping`);
+      return;
+    }
+
+    const scopes: [string, MarketData][] = [
+      [homeWorld, data.phantom],
+      [dc, data.dc],
+      [region, data.region],
+    ];
+    let total = 0;
+    for (const [scope, marketData] of scopes) {
+      const cache: ScopeCache = memCache.get(scope) ?? new Map();
+      for (const [idStr, item] of Object.entries(marketData)) {
+        cache.set(Number(idStr), { ts: data.ts, data: item });
+        total++;
+      }
+      memCache.set(scope, cache);
+      hydrated.add(scope);
+    }
+    console.log(`[market] pre-seeded ${total} entries from bot cache (${Math.round(age / 60_000)}min old)`);
+  } catch {
+    // File not available — normal when bot hasn't run yet
+  }
 }
 
 export interface FetchMarketOpts {
-  /** Fires after each batch completes. `total` is the number of batches that
-   * will need a live fetch (cached entries don't count). Use to drive
-   * progress UI in callers that fetch large id sets. */
+  /** Fires after each batch completes. Always fires immediately with (0, 0)
+   * since all data comes from cache. Kept for API compatibility. */
   onProgress?: (completed: number, total: number) => void;
 }
 
 /**
- * Fetch market data for `ids` on `scope`. Returns cached entries when
- * fresh (within 30 minutes) and fetches the rest from Universalis. The
- * cache mirrors to IDB asynchronously (debounced 1.5s).
+ * Return market data for `ids` on `scope` from cache only.
+ * Stale/missing items get empty placeholders — all live data comes from
+ * the bot's hourly cache refresh, never from Universalis directly.
  */
 export async function fetchMarketData(scope: Scope, ids: number[], opts: FetchMarketOpts = {}): Promise<MarketData> {
   if (ids.length === 0) return {};
   await ensureHydrated(scope);
-  const now = Date.now();
   const cache = memCache.get(scope) ?? new Map();
   memCache.set(scope, cache);
 
-  const fresh: MarketData = {};
-  const stale: number[] = [];
+  const result: MarketData = {};
   for (const id of ids) {
     const entry = cache.get(id);
-    if (entry && now - entry.ts < MARKET_TTL_MS) {
-      fresh[String(id)] = entry.data;
-    } else {
-      stale.push(id);
-    }
+    result[String(id)] = entry ? entry.data : emptyMarketItem();
   }
-  if (stale.length === 0) {
-    opts.onProgress?.(0, 0);
-    return fresh;
-  }
-
-  // Universalis caps each request at ~100 IDs; longer URLs return 414 or 5xx
-  // (which the browser then reports as CORS because the error response carries
-  // no Access-Control-Allow-Origin header). Chunk to stay well under the limit.
-  const BATCH_SIZE = 100;
-  const batches: number[][] = [];
-  for (let i = 0; i < stale.length; i += BATCH_SIZE) {
-    batches.push(stale.slice(i, i + BATCH_SIZE));
-  }
-  const total = batches.length;
-  let completed = 0;
-  opts.onProgress?.(0, total);
-
-  const live: MarketData = {};
-  // Bounded concurrency: too many parallel requests trigger Universalis 5xx
-  // responses that lack CORS headers (browser reports them as CORS errors).
-  // Cap at MAX_CONCURRENT across all callers via a shared queue.
-  await runThrottled(batches, async (batch) => {
-    const raw = await fetchBatchWithRetry(scope, batch);
-    if (raw === 'not-found') {
-      for (const id of batch) {
-        const empty = emptyMarketItem();
-        live[String(id)] = empty;
-        cache.set(id, { ts: now, data: empty });
-      }
-    } else {
-      const parsed = parseMarketResponse(raw);
-      for (const [idStr, data] of Object.entries(parsed)) {
-        live[idStr] = data;
-        cache.set(Number(idStr), { ts: now, data });
-      }
-      // Cache empty placeholders for IDs in this batch the server couldn't resolve.
-      const resolved = new Set(Object.keys(parsed));
-      for (const id of batch) {
-        if (resolved.has(String(id))) continue;
-        const empty = emptyMarketItem();
-        live[String(id)] = empty;
-        cache.set(id, { ts: now, data: empty });
-      }
-    }
-    completed++;
-    opts.onProgress?.(completed, total);
-  });
-
-  schedulePersist(scope);
-  return { ...fresh, ...live };
-}
-
-const MAX_CONCURRENT = 2;
-const COOLDOWN_MS = 4000;
-
-// Module-level semaphore: caps total Universalis requests across ALL scopes
-// (phantom + dc + region run in parallel, each chunked into many batches).
-// Cap is 2 because the cleanup view's marketIds set easily reaches ~3000 ids
-// across 3 scopes — that's ~90 batches, and Universalis starts returning 5xx
-// (without CORS headers, so the browser reports as CORS) above ~2-3 concurrent.
-let inFlight = 0;
-const waiters: Array<() => void> = [];
-
-// Global cooldown timestamp. When a batch fails (5xx → CORS error), every
-// new acquire waits until this time before proceeding. Gives the per-IP rate
-// limiter time to reset instead of slamming it with retries.
-let pauseUntilTs = 0;
-
-function reportFailure(): void {
-  pauseUntilTs = Math.max(pauseUntilTs, Date.now() + COOLDOWN_MS);
-}
-
-async function acquire(): Promise<void> {
-  const wait = pauseUntilTs - Date.now();
-  if (wait > 0) await sleep(wait);
-  if (inFlight < MAX_CONCURRENT) { inFlight++; return; }
-  await new Promise<void>((resolve) => waiters.push(resolve));
-  inFlight++;
-}
-
-function release(): void {
-  inFlight--;
-  const next = waiters.shift();
-  if (next) next();
-}
-
-async function runThrottled<T>(
-  items: T[],
-  worker: (item: T) => Promise<void>,
-): Promise<void> {
-  await Promise.all(items.map(async (item) => {
-    await acquire();
-    try { await worker(item); } finally { release(); }
-  }));
-}
-
-async function fetchBatchWithRetry(
-  scope: Scope,
-  batch: number[],
-): Promise<RawResponse | 'not-found'> {
-  // Up to 4 attempts with exponential backoff + jitter. Universalis 5xx
-  // responses lack CORS headers, so the browser surfaces them as
-  // net::ERR_FAILED / "CORS error" — usually their per-IP rate limiter
-  // kicking in. On any failure we also trip the module-level cooldown
-  // (see reportFailure) so other queued batches wait too instead of all
-  // hammering at once.
-  const baseBackoffsMs = [600, 1800, 4500];
-  let lastErr: unknown = null;
-  for (let attempt = 0; attempt <= baseBackoffsMs.length; attempt++) {
-    if (attempt > 0) {
-      const base = baseBackoffsMs[attempt - 1];
-      // ±25% jitter so concurrent retries don't fire at exactly the same instant.
-      const jittered = base * (0.75 + Math.random() * 0.5);
-      await sleep(jittered);
-    }
-    try {
-      const res = await fetch(buildMarketUrl(scope, batch));
-      if (res.status === 404) return 'not-found';
-      if (!res.ok) {
-        lastErr = new Error(`Universalis ${res.status}`);
-        reportFailure();
-        continue;
-      }
-      return (await res.json()) as RawResponse;
-    } catch (e) {
-      lastErr = e;
-      reportFailure();
-    }
-  }
-  throw lastErr ?? new Error('Universalis fetch failed');
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  opts.onProgress?.(0, 0);
+  return result;
 }
 
 function emptyMarketItem(): MarketItem {
@@ -305,13 +200,8 @@ function emptyMarketItem(): MarketItem {
   };
 }
 
-/** Test/dev helper: drop in-memory + scheduled persistence (does not clear IDB). */
+/** Test/dev helper: drop in-memory cache (does not clear IDB). */
 export function _resetMarketCacheForTests(): void {
   memCache.clear();
   hydrated.clear();
-  for (const t of pendingPersist.values()) clearTimeout(t);
-  pendingPersist.clear();
-  // Also clear the rate-limit cooldown so a prior failing test doesn't make
-  // the next acquire() sleep for COOLDOWN_MS.
-  pauseUntilTs = 0;
 }

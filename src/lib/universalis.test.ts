@@ -133,113 +133,24 @@ describe('parseMarketResponse', () => {
   });
 });
 
-describe('fetchMarketData', () => {
+describe('fetchMarketData (cache-only)', () => {
   beforeEach(async () => {
     vi.restoreAllMocks();
     _resetMarketCacheForTests();
     await clearMarketCache();
   });
 
-  it('throws when response not OK', { timeout: 15000 }, async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 500 }));
-    await expect(fetchMarketData('Phantom', [1])).rejects.toThrow('Universalis 500');
+  it('short-circuits to empty result for empty id list', async () => {
+    const out = await fetchMarketData('Phantom', []);
+    expect(out).toEqual({});
   });
 
-  it('treats 404 as no-data and returns empty placeholders without throwing', async () => {
-    // Universalis returns 404 when every requested ID is unresolvable.
-    const fetchSpy = vi.fn().mockResolvedValue({ ok: false, status: 404 });
+  it('returns empty placeholders for uncached items (no network call)', async () => {
+    const fetchSpy = vi.fn();
     vi.stubGlobal('fetch', fetchSpy);
     const out = await fetchMarketData('Phantom', [1, 2]);
     expect(out['1'].minNQ).toBeNull();
-    expect(out['1'].listingCount).toBe(0);
     expect(out['2'].minNQ).toBeNull();
-    // Subsequent calls within TTL should not re-fetch (placeholders cached).
-    await fetchMarketData('Phantom', [1, 2]);
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
-  });
-
-  it('parses single-id response (flat shape) correctly', async () => {
-    // Universalis returns the item directly (not nested under `items`) for single-ID requests.
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        itemID: 5057,
-        listings: [{ hq: false, pricePerUnit: 42 }],
-        recentHistory: [],
-        regularSaleVelocity: 1,
-        lastUploadTime: 1,
-      }),
-    }));
-    const out = await fetchMarketData('Phantom', [5057]);
-    expect(out['5057'].minNQ).toBe(42);
-  });
-
-  it('caches empty placeholders for unresolved IDs in a mixed batch', async () => {
-    const fetchSpy = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        items: { '1': { listings: [{ hq: false, pricePerUnit: 99 }], recentHistory: [], regularSaleVelocity: 1, lastUploadTime: 1 } },
-        unresolvedItems: [2],
-      }),
-    });
-    vi.stubGlobal('fetch', fetchSpy);
-    const out = await fetchMarketData('Phantom', [1, 2]);
-    expect(out['1'].minNQ).toBe(99);
-    expect(out['2'].minNQ).toBeNull();
-    // Re-request should not re-fetch the unresolved ID within TTL.
-    await fetchMarketData('Phantom', [2]);
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
-  });
-
-  it('returns parsed data on success', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ items: { '1': { listings: [{ hq: false, pricePerUnit: 99 }], recentHistory: [], regularSaleVelocity: 1, lastUploadTime: 1 } } }),
-    }));
-    const out = await fetchMarketData('Phantom', [1]);
-    expect(out['1'].minNQ).toBe(99);
-  });
-
-  it('short-circuits to empty result for empty id list (no network call)', async () => {
-    const fetchSpy = vi.fn();
-    vi.stubGlobal('fetch', fetchSpy);
-    const out = await fetchMarketData('Phantom', []);
-    expect(out).toEqual({});
     expect(fetchSpy).not.toHaveBeenCalled();
-  });
-
-  it('serves repeated requests from cache within TTL (no extra network calls)', async () => {
-    const fetchSpy = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        items: { '1': { listings: [{ hq: false, pricePerUnit: 99 }], recentHistory: [], regularSaleVelocity: 1, lastUploadTime: 1 } },
-      }),
-    });
-    vi.stubGlobal('fetch', fetchSpy);
-    const a = await fetchMarketData('Phantom', [1]);
-    const b = await fetchMarketData('Phantom', [1]);
-    expect(a['1'].minNQ).toBe(99);
-    expect(b['1'].minNQ).toBe(99);
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
-  });
-
-  it('fetches only the missing subset on partial cache hit', async () => {
-    const fetchSpy = vi.fn().mockImplementation((url: string) => {
-      // Each call returns whatever ids were requested.
-      const matched = url.match(/\/Phantom\/([\d,]+)\?/);
-      const ids = matched ? matched[1].split(',') : [];
-      const items: Record<string, unknown> = {};
-      for (const id of ids) {
-        items[id] = { listings: [{ hq: false, pricePerUnit: Number(id) * 10 }], recentHistory: [], regularSaleVelocity: 1, lastUploadTime: 1 };
-      }
-      return Promise.resolve({ ok: true, json: async () => ({ items }) });
-    });
-    vi.stubGlobal('fetch', fetchSpy);
-
-    await fetchMarketData('Phantom', [1, 2]);          // fetches 1,2
-    await fetchMarketData('Phantom', [2, 3]);          // should only fetch 3
-    expect(fetchSpy).toHaveBeenCalledTimes(2);
-    const secondCallUrl = fetchSpy.mock.calls[1][0] as string;
-    expect(secondCallUrl).toContain('/Phantom/3?');
   });
 });

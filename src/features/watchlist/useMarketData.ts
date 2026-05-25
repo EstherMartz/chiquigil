@@ -10,10 +10,7 @@ export interface MarketBundle {
 
 export interface UseMarketDataOpts {
   enabled?: boolean;
-  /** Fires as Universalis batches complete. Counts are summed across all
-   * scopes (phantom + dc + region), so `total` is up to 3× the per-scope
-   * batch count. Use a stable ref-backed callback to avoid breaking React
-   * Query's cache key. */
+  /** Fires as cache lookups complete. Kept for API compatibility. */
   onProgress?: (completed: number, total: number) => void;
 }
 

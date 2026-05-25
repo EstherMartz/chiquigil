@@ -11,10 +11,6 @@ export interface DailyBucket {
   quantity: number;
 }
 
-export function buildHistoryUrl(scope: string, ids: number[]): string {
-  return `https://universalis.app/api/v2/history/${scope}/${ids.join(',')}?entriesToReturn=50`;
-}
-
 interface RawHistoryItem { entries?: HistoryEntry[] }
 
 export function parseHistoryResponse(raw: { items?: Record<string, RawHistoryItem> }): Map<number, HistoryEntry[]> {
@@ -25,11 +21,10 @@ export function parseHistoryResponse(raw: { items?: Record<string, RawHistoryIte
   return out;
 }
 
-export async function fetchHistoryFor(scope: string, ids: number[]): Promise<Map<number, HistoryEntry[]>> {
+/** History is not cached locally — always returns empty. */
+export async function fetchHistoryFor(_scope: string, ids: number[]): Promise<Map<number, HistoryEntry[]>> {
   if (ids.length === 0) return new Map();
-  const res = await fetch(buildHistoryUrl(scope, ids));
-  if (!res.ok) throw new Error(`Universalis history ${res.status}`);
-  return parseHistoryResponse(await res.json());
+  return new Map();
 }
 
 const DAY_MS = 86_400_000;
@@ -55,19 +50,14 @@ export function dailyBuckets(entries: HistoryEntry[], lookbackDays: number): Dai
     }));
 }
 
-export function buildHistoryUrlWithin(scope: string, ids: number[], withinSeconds: number): string {
-  return `https://universalis.app/api/v2/history/${scope}/${ids.join(',')}?entriesWithin=${withinSeconds}`;
-}
-
+/** History is not cached locally — always returns empty. */
 export async function fetchHistoryWithin(
-  scope: string,
+  _scope: string,
   ids: number[],
-  withinSeconds: number,
+  _withinSeconds: number,
 ): Promise<Map<number, HistoryEntry[]>> {
   if (ids.length === 0) return new Map();
-  const res = await fetch(buildHistoryUrlWithin(scope, ids, withinSeconds));
-  if (!res.ok) throw new Error(`Universalis history ${res.status}`);
-  return parseHistoryResponse(await res.json());
+  return new Map();
 }
 
 function median(values: number[]): number {

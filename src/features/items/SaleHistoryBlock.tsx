@@ -29,7 +29,7 @@ export function SaleHistoryBlock({ itemId, scope, canHq }: Props) {
     <section>
       <SectionHeader label="Sale History" compact />
       {q.isLoading && <Spinner label="Loading 30-day sale history..." />}
-      {q.isError && <StatusBanner kind="error">Universalis history fetch failed: {(q.error as Error).message}</StatusBanner>}
+      {q.isError && <StatusBanner kind="error">History fetch failed: {(q.error as Error).message}</StatusBanner>}
       {q.data && q.data.length === 0 && (
         <div className="border border-border-base bg-bg-card p-6 text-text-low text-sm italic">
           No sales in the last 30 days.
