@@ -2656,13 +2656,16 @@ async function handler(req, res) {
           } else if (commandName === "craftable") {
             const attachmentId = options.find((o) => o.name === "csv")?.value;
             const file = interaction.data.resolved?.attachments?.[attachmentId];
+            const qEmbed = (description, footer) => ({
+              embeds: [{ color: 13936984, description, ...footer ? { footer: { text: footer } } : {} }]
+            });
             if (!file?.url) {
-              response = { content: "\xA1Oye oye! Qiqirn necesita CSV de inventario \u{1F400} Sube sube archivo de Allagan Tools." };
+              response = qEmbed("\xA1Oye oye! Qiqirn necesita CSV de inventario \u{1F400} Sube sube archivo de Allagan Tools.");
             } else {
               try {
                 const csvRes = await fetch(file.url);
                 if (!csvRes.ok) {
-                  response = { content: "\xA1Ay ay! Qiqirn no pudo descargar CSV... servidor raro raro \u{1F400}" };
+                  response = qEmbed("\xA1Ay ay! Qiqirn no pudo descargar CSV... servidor raro raro \u{1F400}");
                 } else {
                   let mbPrice2 = function(itemId) {
                     return mb.phantom[itemId]?.minNQ ?? mb.dc[itemId]?.minNQ ?? null;
@@ -2692,9 +2695,10 @@ async function handler(req, res) {
                   const mb = marketBundle;
                   const top = craftableRows.slice(0, 10);
                   if (top.length === 0) {
-                    response = {
-                      content: "Qiqirn mir\xF3 mir\xF3 inventario mucho mucho... nada nada crafteable ahora \u{1F400} Faltan materiales materiales. \xA1Compra compra ingredientes antes!"
-                    };
+                    response = qEmbed(
+                      "Qiqirn mir\xF3 mir\xF3 inventario mucho mucho... nada nada crafteable ahora \u{1F400}\nFaltan materiales materiales. \xA1Compra compra ingredientes antes!",
+                      "Qiqirn \xB7 max 1 ingrediente faltante"
+                    );
                   } else {
                     let msg = "\u2728 **\xA1Qiqirn revis\xF3 inventario!** Cositas que puedes craftear ahora mismo:\n\n";
                     for (const row of top) {
@@ -2710,18 +2714,17 @@ async function handler(req, res) {
                           if (p != null) materialCost += p * qty;
                         }
                       }
+                      const readyFmt = row.completeness === 1 ? `${row.totalIngredients}/${row.totalIngredients} \u2713` : `${row.totalIngredients - row.missingCount}/${row.totalIngredients}`;
                       if (salePrice != null) {
                         const profit = salePrice - materialCost;
-                        const verdict = profit > 0 ? "\u2705 **CRAFT**" : "\u274C **PASS**";
+                        const verdict = profit > 0 ? "\u2705 **\xA1CRAFTEAR!**" : "\u274C **Pasar pasar**";
                         const profitFmt = `${profit > 0 ? "+" : ""}${profit.toLocaleString()}g`;
-                        const readyFmt = row.completeness === 1 ? `${row.totalIngredients}/${row.totalIngredients} \u2713` : `${row.totalIngredients - row.missingCount}/${row.totalIngredients}`;
                         msg += `${verdict} **${profitFmt}** \u2014 **${row.name}** (${row.classJob} ${row.recipeLevel}) \xB7 ${readyFmt}
 `;
                         msg += `  vende: ${salePrice.toLocaleString()}g`;
                         if (materialCost > 0) msg += ` / gasta: ${materialCost.toLocaleString()}g`;
                         msg += "\n";
                       } else {
-                        const readyFmt = row.completeness === 1 ? `${row.totalIngredients}/${row.totalIngredients} \u2713` : `${row.totalIngredients - row.missingCount}/${row.totalIngredients}`;
                         msg += `\u{1F528} **${row.name}** (${row.classJob} ${row.recipeLevel}) \xB7 ${readyFmt} \xB7 _sin datos de precio_
 `;
                       }
@@ -2730,10 +2733,10 @@ async function handler(req, res) {
                         const parts = missing.map((i) => {
                           const need = i.needed - i.have;
                           const price = i.unitPrice ?? (i.source === "market" ? mbPrice2(i.itemId) : null);
-                          const src = price != null ? ` (${i.source} ${price.toLocaleString()}g)` : i.source === "gather" ? " (gather)" : "";
+                          const src = price != null ? ` (${i.source} ${price.toLocaleString()}g)` : i.source === "gather" ? " (recolectar)" : "";
                           return `${i.name} x${need}${src}`;
                         });
-                        msg += `  Faltan: ${parts.join(", ")}
+                        msg += `  _Faltan: ${parts.join(", ")}_
 `;
                       }
                       msg += "\n";
@@ -2741,11 +2744,12 @@ async function handler(req, res) {
                     if (craftableRows.length > 10) {
                       msg += `_...\xA1y ${craftableRows.length - 10} recetas m\xE1s m\xE1s! Qiqirn tiene mucho mucho que craftear \u2728_`;
                     }
-                    response = { content: msg };
+                    response = qEmbed(msg, `Qiqirn \xB7 ${craftableRows.length} receta${craftableRows.length !== 1 ? "s" : ""} encontrada${craftableRows.length !== 1 ? "s" : ""}`);
                   }
                 }
               } catch (e) {
-                response = { content: `\xA1Error error! Qiqirn no entiende archivo \u{1F400} ${e instanceof Error ? e.message : String(e)}` };
+                response = qEmbed(`\xA1Error error! Qiqirn no entiende archivo \u{1F400}
+${e instanceof Error ? e.message : String(e)}`);
               }
             }
           }
