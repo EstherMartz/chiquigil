@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { fetchMarketForOutputs } from '../src/bot/marketFetch';
-import { writeMarketCache } from '../src/bot/marketCache';
-import { loadSnapshots } from '../src/bot/loadSnapshots';
+import { fetchMarketForOutputs } from '../bot/marketFetch';
+import { writeMarketCache } from '../bot/marketCache';
+import { loadSnapshots } from '../bot/loadSnapshots';
 
 const WORLD = process.env.HOME_WORLD ?? 'Phantom';
 const DC = process.env.HOME_DC ?? 'Chaos';
