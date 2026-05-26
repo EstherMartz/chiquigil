@@ -148,10 +148,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           const host = req.headers['x-forwarded-host'] ?? req.headers.host ?? 'localhost';
           const baseUrl = `${proto}://${host}`;
 
-          const [snapshots, cache, store] = await Promise.all([
+          const [snapshots, cache] = await Promise.all([
             loadSnapshots(baseUrl),
             loadMarketCache(),
-            getCraftStore(),
           ]);
 
           const nameIndex = buildNameIndex(snapshots.namesById);
@@ -167,6 +166,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           let response: Record<string, unknown> = { content: 'Unknown command' };
 
           if (commandName === 'craft') {
+            const store = await getCraftStore();
             const subcommand = options[0]?.name ?? '';
             const subOptions = options[0]?.options ?? [];
 

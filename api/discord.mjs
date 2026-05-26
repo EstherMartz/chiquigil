@@ -2317,10 +2317,9 @@ async function handler(req, res) {
           const proto2 = req.headers["x-forwarded-proto"] ?? "https";
           const host2 = req.headers["x-forwarded-host"] ?? req.headers.host ?? "localhost";
           const baseUrl2 = `${proto2}://${host2}`;
-          const [snapshots, cache, store] = await Promise.all([
+          const [snapshots, cache] = await Promise.all([
             loadSnapshots(baseUrl2),
-            loadMarketCache(),
-            getCraftStore()
+            loadMarketCache()
           ]);
           const nameIndex = buildNameIndex(snapshots.namesById);
           const marketBundle = { phantom: cache.phantom ?? {}, dc: cache.dc ?? {}, region: cache.region ?? {} };
@@ -2332,6 +2331,7 @@ async function handler(req, res) {
           const permissions = BigInt(interaction.member?.permissions ?? "0");
           let response = { content: "Unknown command" };
           if (commandName === "craft") {
+            const store = await getCraftStore();
             const subcommand = options[0]?.name ?? "";
             const subOptions = options[0]?.options ?? [];
             const deps = {
