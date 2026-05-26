@@ -1,4 +1,12 @@
 {
+  "functions": {
+    "api/refresh-cache.ts": {
+      "maxDuration": 300
+    },
+    "api/discord.ts": {
+      "maxDuration": 60
+    }
+  },
   "rewrites": [
     { "source": "/(.*)", "destination": "/" }
   ]
