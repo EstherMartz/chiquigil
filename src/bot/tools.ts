@@ -154,14 +154,20 @@ async function priceCheck(args: Record<string, unknown>, deps: ToolDeps): Promis
 
   const ids = matches.map((m) => m.id);
 
-  // Always fetch live from Universalis for accurate prices
-  const [phantomRes, dcRes] = await Promise.all([
-    fetch(buildMarketUrl(deps.world, ids)).then(r => r.ok ? r.json() : null).catch(() => null),
-    fetch(buildMarketUrl(deps.dc, ids)).then(r => r.ok ? r.json() : null).catch(() => null),
-  ]);
+  // Use the hourly blob cache; fall back to a live Universalis fetch only when
+  // the cache is empty (e.g. first deploy before the cron has run).
+  let phantomData = deps.marketBundle.phantom;
+  let dcData = deps.marketBundle.dc;
 
-  const phantomData = phantomRes ? parseMarketResponse(phantomRes) : {};
-  const dcData = dcRes ? parseMarketResponse(dcRes) : {};
+  const cacheHasData = ids.some((id) => phantomData[String(id)] || dcData[String(id)]);
+  if (!cacheHasData) {
+    const [phantomRes, dcRes] = await Promise.all([
+      fetch(buildMarketUrl(deps.world, ids)).then(r => r.ok ? r.json() : null).catch(() => null),
+      fetch(buildMarketUrl(deps.dc, ids)).then(r => r.ok ? r.json() : null).catch(() => null),
+    ]);
+    phantomData = phantomRes ? parseMarketResponse(phantomRes) : {};
+    dcData = dcRes ? parseMarketResponse(dcRes) : {};
+  }
 
   const results = matches.map((m) => {
     const ph = phantomData[String(m.id)];

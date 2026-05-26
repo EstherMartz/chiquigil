@@ -719,12 +719,17 @@ async function priceCheck(args, deps) {
   const matches = searchItems(deps.nameIndex, itemName, 3);
   if (matches.length === 0) return JSON.stringify({ error: "No items found matching that name" });
   const ids = matches.map((m) => m.id);
-  const [phantomRes, dcRes] = await Promise.all([
-    fetch(buildMarketUrl(deps.world, ids)).then((r) => r.ok ? r.json() : null).catch(() => null),
-    fetch(buildMarketUrl(deps.dc, ids)).then((r) => r.ok ? r.json() : null).catch(() => null)
-  ]);
-  const phantomData = phantomRes ? parseMarketResponse(phantomRes) : {};
-  const dcData = dcRes ? parseMarketResponse(dcRes) : {};
+  let phantomData = deps.marketBundle.phantom;
+  let dcData = deps.marketBundle.dc;
+  const cacheHasData = ids.some((id) => phantomData[String(id)] || dcData[String(id)]);
+  if (!cacheHasData) {
+    const [phantomRes, dcRes] = await Promise.all([
+      fetch(buildMarketUrl(deps.world, ids)).then((r) => r.ok ? r.json() : null).catch(() => null),
+      fetch(buildMarketUrl(deps.dc, ids)).then((r) => r.ok ? r.json() : null).catch(() => null)
+    ]);
+    phantomData = phantomRes ? parseMarketResponse(phantomRes) : {};
+    dcData = dcRes ? parseMarketResponse(dcRes) : {};
+  }
   const results = matches.map((m) => {
     const ph = phantomData[String(m.id)];
     const dc = dcData[String(m.id)];
