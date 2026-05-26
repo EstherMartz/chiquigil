@@ -2198,9 +2198,11 @@ async function loadSnapshots(baseUrl) {
 
 // src/bot/craftStore.ts
 import { createClient } from "@libsql/client";
-async function openCraftStore(url) {
+async function openCraftStore(url, authToken) {
+  const isLocal = url === ":memory:" || url.startsWith("file:");
   const client = createClient({
-    url: url === ":memory:" ? "file::memory:" : url
+    url: url === ":memory:" ? "file::memory:" : url,
+    ...isLocal ? {} : { authToken }
   });
   const SCHEMA = `
     CREATE TABLE IF NOT EXISTS projects (
@@ -2489,7 +2491,10 @@ var CRAFTER_ROLE_ID = process.env.CRAFTER_ROLE_ID || void 0;
 var craftStorePromise = null;
 function getCraftStore() {
   if (!craftStorePromise) {
-    craftStorePromise = openCraftStore(process.env.TURSO_DATABASE_URL);
+    craftStorePromise = openCraftStore(
+      process.env.TURSO_DATABASE_URL,
+      process.env.TURSO_AUTH_TOKEN
+    );
   }
   return craftStorePromise;
 }

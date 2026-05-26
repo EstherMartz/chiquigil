@@ -25,9 +25,11 @@ export interface CraftStore {
   close(): Promise<void>;
 }
 
-export async function openCraftStore(url: string): Promise<CraftStore> {
+export async function openCraftStore(url: string, authToken?: string): Promise<CraftStore> {
+  const isLocal = url === ':memory:' || url.startsWith('file:');
   const client = createClient({
     url: url === ':memory:' ? 'file::memory:' : url,
+    ...(isLocal ? {} : { authToken }),
   });
 
   // Initialize schema

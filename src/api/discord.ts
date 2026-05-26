@@ -41,7 +41,10 @@ let craftStorePromise: Promise<import('../src/bot/craftStore').CraftStore> | nul
 
 function getCraftStore() {
   if (!craftStorePromise) {
-    craftStorePromise = openCraftStore(process.env.TURSO_DATABASE_URL!);
+    craftStorePromise = openCraftStore(
+      process.env.TURSO_DATABASE_URL!,
+      process.env.TURSO_AUTH_TOKEN,
+    );
   }
   return craftStorePromise;
 }
