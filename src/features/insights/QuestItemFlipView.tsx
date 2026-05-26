@@ -14,6 +14,13 @@ import {
 import type { HqMode } from '../queries/types';
 import { QuestItemFlipResults } from '../queries/QuestItemFlipResults';
 import { Spinner } from '../../components/Spinner';
+import { JobIcon, QuestTypeIcon, categoryNameToQuestType, type JobKey } from '../../lib/icons';
+
+const CATEGORY_TO_JOB: ReadonlyMap<string, JobKey> = new Map([
+  ['Carpenter', 'CRP'], ['Blacksmith', 'BSM'], ['Armorer', 'ARM'], ['Goldsmith', 'GSM'],
+  ['Leatherworker', 'LTW'], ['Weaver', 'WVR'], ['Alchemist', 'ALC'], ['Culinarian', 'CUL'],
+  ['Miner', 'MIN'], ['Botanist', 'BTN'], ['Fisher', 'FSH'],
+]);
 
 const SORT_KEYS: ReadonlySet<QuestItemSort> = new Set([
   'level', 'category', 'quest', 'item', 'qty', 'nq', 'hq', 'listings', 'velocity', 'revenue',
@@ -192,18 +199,27 @@ function FilterBar({
       </label>
       <label className="block">
         <span className="font-mono text-[10px] tracking-widest text-text-low">Category</span>
-        <select
-          value={categorySearch}
-          onChange={(e) => onCategoryChange(e.target.value)}
-          className="mt-1 block w-56 bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
-        >
-          <option value="">All categories</option>
-          {categoryOptions.map((opt) => (
-            <option key={opt.name} value={opt.name}>
-              {opt.name} ({opt.count})
-            </option>
-          ))}
-        </select>
+        <span className="mt-1 flex items-center gap-2">
+          {(() => {
+            const job = CATEGORY_TO_JOB.get(categorySearch);
+            if (job) return <JobIcon job={job} />;
+            const type = categoryNameToQuestType(categorySearch);
+            if (type) return <QuestTypeIcon type={type} />;
+            return null;
+          })()}
+          <select
+            value={categorySearch}
+            onChange={(e) => onCategoryChange(e.target.value)}
+            className="block w-56 bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+          >
+            <option value="">All categories</option>
+            {categoryOptions.map((opt) => (
+              <option key={opt.name} value={opt.name}>
+                {opt.name} ({opt.count})
+              </option>
+            ))}
+          </select>
+        </span>
       </label>
       <label className="block">
         <span className="font-mono text-[10px] tracking-widest text-text-low">Min listings</span>
