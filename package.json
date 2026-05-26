@@ -9,7 +9,8 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "test": "vitest",
-    "snapshots": "tsx scripts/bake-snapshots.ts"
+    "snapshots": "tsx scripts/bake-snapshots.ts",
+    "register-commands": "tsx --env-file=.env scripts/register-commands.ts"
   },
   "dependencies": {
     "@libsql/client": "^0.17.3",
