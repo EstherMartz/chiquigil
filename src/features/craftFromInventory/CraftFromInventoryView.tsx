@@ -99,21 +99,20 @@ export function CraftFromInventoryView() {
     return (m.phantom[itemId]?.minNQ ?? m.dc[itemId]?.minNQ) ?? null;
   }
 
-  function getMaterialCost(row: CraftableRow): number | null {
+  function getMaterialCost(row: CraftableRow): number {
     let total = 0;
-    let hasAny = false;
     for (const ing of row.ingredients) {
       if (ing.fulfilled) continue;
       const qty = ing.needed - ing.have;
+      if (ing.source === 'gather') continue;
       if (ing.source === 'vendor' && ing.unitPrice != null) {
         total += ing.unitPrice * qty;
-        hasAny = true;
       } else if (ing.source === 'market') {
         const price = getSalePrice(ing.itemId);
-        if (price != null) { total += price * qty; hasAny = true; }
+        if (price != null) total += price * qty;
       }
     }
-    return hasAny ? total : null;
+    return total;
   }
 
   function handleParse(csv: string) {
@@ -197,7 +196,7 @@ export function CraftFromInventoryView() {
               <tr className="text-text-dim font-mono text-[10px] tracking-widest uppercase bg-bg-card-hi">
                 <th className="text-left px-3 py-2">Item</th>
                 <th className="text-center px-3 py-2">Ready</th>
-                <th className="text-right px-3 py-2">Sell / Spend</th>
+                <th className="text-right px-3 py-2">Verdict</th>
                 <th className="text-left px-3 py-2">Ingredients</th>
               </tr>
             </thead>
@@ -216,21 +215,29 @@ export function CraftFromInventoryView() {
                       {row.totalIngredients - row.missingCount}/{row.totalIngredients}
                     </div>
                   </td>
-                  <td className="px-3 py-2 text-right font-mono text-[11px]">
+                  <td className="px-3 py-2 text-right font-mono whitespace-nowrap">
                     {(() => {
                       const sale = getSalePrice(row.recipeItemId);
+                      if (sale == null) return <span className="text-[10px] text-text-dim">no data</span>;
                       const cost = getMaterialCost(row);
-                      if (sale == null) return <span className="text-text-dim">—</span>;
-                      const profit = cost != null ? sale - cost : null;
+                      const profit = sale - cost;
+                      const isCraft = profit > 0;
                       return (
-                        <div className="space-y-0.5">
-                          <div className="text-gold">{fmtGil(sale)}</div>
-                          {cost != null && <div className="text-text-dim">-{fmtGil(cost)}</div>}
-                          {profit != null && (
-                            <div className={profit >= 0 ? 'text-emerald-400' : 'text-crimson'}>
-                              {profit >= 0 ? '+' : ''}{fmtGil(profit)}
-                            </div>
-                          )}
+                        <div className="space-y-1">
+                          <span className={`inline-block px-1.5 py-px text-[9px] font-bold tracking-widest uppercase border ${
+                            isCraft
+                              ? 'bg-emerald-950 text-emerald-400 border-emerald-700'
+                              : 'bg-crimson/10 text-crimson border-crimson/40'
+                          }`}>
+                            {isCraft ? 'craft' : 'pass'}
+                          </span>
+                          <div className={`text-xs font-bold ${isCraft ? 'text-emerald-400' : 'text-crimson'}`}>
+                            {isCraft ? '+' : ''}{fmtGil(profit)}
+                          </div>
+                          <div className="text-[10px] text-text-dim leading-tight">
+                            sell {fmtGil(sale)}
+                            {cost > 0 && <><br />spend {fmtGil(cost)}</>}
+                          </div>
                         </div>
                       );
                     })()}

@@ -2698,32 +2698,33 @@ async function handler(req, res) {
                   } else {
                     let msg = "**What you can craft right now:**\n\n";
                     for (const row of top) {
-                      const pct = Math.round(row.completeness * 100);
-                      const status = pct === 100 ? `${row.totalIngredients}/${row.totalIngredients} ingredients \u2713` : `${row.totalIngredients - row.missingCount}/${row.totalIngredients} ingredients`;
-                      msg += `\u{1F528} **${row.name}** (${row.classJob} ${row.recipeLevel}) \u2014 ${status}`;
                       const salePrice = mbPrice2(row.recipeItemId);
                       let materialCost = 0;
-                      let hasCost = false;
                       for (const ing of row.ingredients) {
-                        if (ing.fulfilled) continue;
+                        if (ing.fulfilled || ing.source === "gather") continue;
                         const qty = ing.needed - ing.have;
                         if (ing.source === "vendor" && ing.unitPrice != null) {
                           materialCost += ing.unitPrice * qty;
-                          hasCost = true;
                         } else if (ing.source === "market") {
                           const p = mbPrice2(ing.itemId);
-                          if (p != null) {
-                            materialCost += p * qty;
-                            hasCost = true;
-                          }
+                          if (p != null) materialCost += p * qty;
                         }
                       }
                       if (salePrice != null) {
-                        const profit = hasCost ? salePrice - materialCost : null;
-                        const profitStr = profit != null ? ` | profit: ${profit >= 0 ? "+" : ""}${profit.toLocaleString()}g` : "";
-                        msg += ` | sell: ${salePrice.toLocaleString()}g${profitStr}`;
+                        const profit = salePrice - materialCost;
+                        const verdict = profit > 0 ? "\u2705 **CRAFT**" : "\u274C **PASS**";
+                        const profitFmt = `${profit > 0 ? "+" : ""}${profit.toLocaleString()}g`;
+                        const readyFmt = row.completeness === 1 ? `${row.totalIngredients}/${row.totalIngredients} \u2713` : `${row.totalIngredients - row.missingCount}/${row.totalIngredients}`;
+                        msg += `${verdict} **${profitFmt}** \u2014 **${row.name}** (${row.classJob} ${row.recipeLevel}) \xB7 ${readyFmt}
+`;
+                        msg += `  sell: ${salePrice.toLocaleString()}g`;
+                        if (materialCost > 0) msg += ` / spend: ${materialCost.toLocaleString()}g`;
+                        msg += "\n";
+                      } else {
+                        const readyFmt = row.completeness === 1 ? `${row.totalIngredients}/${row.totalIngredients} \u2713` : `${row.totalIngredients - row.missingCount}/${row.totalIngredients}`;
+                        msg += `\u{1F528} **${row.name}** (${row.classJob} ${row.recipeLevel}) \xB7 ${readyFmt} \xB7 _no price data_
+`;
                       }
-                      msg += "\n";
                       const missing = row.ingredients.filter((i) => !i.fulfilled);
                       if (missing.length > 0) {
                         const parts = missing.map((i) => {
@@ -2735,10 +2736,10 @@ async function handler(req, res) {
                         msg += `  Missing: ${parts.join(", ")}
 `;
                       }
+                      msg += "\n";
                     }
                     if (craftableRows.length > 10) {
-                      msg += `
-_...and ${craftableRows.length - 10} more recipes._`;
+                      msg += `_...and ${craftableRows.length - 10} more recipes._`;
                     }
                     response = { content: msg };
                   }

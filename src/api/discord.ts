@@ -295,34 +295,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                   } else {
                     let msg = '**What you can craft right now:**\n\n';
                     for (const row of top) {
-                      const pct = Math.round(row.completeness * 100);
-                      const status = pct === 100
-                        ? `${row.totalIngredients}/${row.totalIngredients} ingredients ✓`
-                        : `${row.totalIngredients - row.missingCount}/${row.totalIngredients} ingredients`;
-                      msg += `🔨 **${row.name}** (${row.classJob} ${row.recipeLevel}) — ${status}`;
-
-                      // Sale price and material cost
+                      // Compute sale price and material cost
                       const salePrice = mbPrice(row.recipeItemId);
                       let materialCost = 0;
-                      let hasCost = false;
                       for (const ing of row.ingredients as any[]) {
-                        if (ing.fulfilled) continue;
+                        if (ing.fulfilled || ing.source === 'gather') continue;
                         const qty = ing.needed - ing.have;
                         if (ing.source === 'vendor' && ing.unitPrice != null) {
-                          materialCost += ing.unitPrice * qty; hasCost = true;
+                          materialCost += ing.unitPrice * qty;
                         } else if (ing.source === 'market') {
                           const p = mbPrice(ing.itemId);
-                          if (p != null) { materialCost += p * qty; hasCost = true; }
+                          if (p != null) materialCost += p * qty;
                         }
                       }
+
+                      // Verdict line: lead with ✅/❌ + profit, then item info
                       if (salePrice != null) {
-                        const profit = hasCost ? salePrice - materialCost : null;
-                        const profitStr = profit != null
-                          ? ` | profit: ${profit >= 0 ? '+' : ''}${profit.toLocaleString()}g`
-                          : '';
-                        msg += ` | sell: ${salePrice.toLocaleString()}g${profitStr}`;
+                        const profit = salePrice - materialCost;
+                        const verdict = profit > 0 ? '✅ **CRAFT**' : '❌ **PASS**';
+                        const profitFmt = `${profit > 0 ? '+' : ''}${profit.toLocaleString()}g`;
+                        const readyFmt = row.completeness === 1
+                          ? `${row.totalIngredients}/${row.totalIngredients} ✓`
+                          : `${row.totalIngredients - row.missingCount}/${row.totalIngredients}`;
+                        msg += `${verdict} **${profitFmt}** — **${row.name}** (${row.classJob} ${row.recipeLevel}) · ${readyFmt}\n`;
+                        msg += `  sell: ${salePrice.toLocaleString()}g`;
+                        if (materialCost > 0) msg += ` / spend: ${materialCost.toLocaleString()}g`;
+                        msg += '\n';
+                      } else {
+                        const readyFmt = row.completeness === 1
+                          ? `${row.totalIngredients}/${row.totalIngredients} ✓`
+                          : `${row.totalIngredients - row.missingCount}/${row.totalIngredients}`;
+                        msg += `🔨 **${row.name}** (${row.classJob} ${row.recipeLevel}) · ${readyFmt} · _no price data_\n`;
                       }
-                      msg += '\n';
 
                       const missing = row.ingredients.filter((i: any) => !i.fulfilled);
                       if (missing.length > 0) {
@@ -334,10 +338,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                         });
                         msg += `  Missing: ${parts.join(', ')}\n`;
                       }
+                      msg += '\n';
                     }
 
                     if (craftableRows.length > 10) {
-                      msg += `\n_...and ${craftableRows.length - 10} more recipes._`;
+                      msg += `_...and ${craftableRows.length - 10} more recipes._`;
                     }
 
                     response = { content: msg };
