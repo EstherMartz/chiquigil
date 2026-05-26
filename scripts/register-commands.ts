@@ -44,6 +44,11 @@ const commands = [
     description: 'Borrar mensajes (admin)',
     options: [{ type: 4, name: 'amount', description: 'Cantidad (1-100)', required: false, min_value: 1, max_value: 100 }],
   },
+  {
+    name: 'craftable',
+    description: 'Qué puedes craftear con tu inventario',
+    options: [{ type: 11, name: 'csv', description: 'Archivo CSV de inventario', required: true }],
+  },
 ];
 
 async function main() {
