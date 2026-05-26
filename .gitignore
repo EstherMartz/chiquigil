@@ -16,3 +16,4 @@ test-results.txt
 test_output.txt
 
 .vercel
+public/data/market-cache.json
