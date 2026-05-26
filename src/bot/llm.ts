@@ -65,11 +65,12 @@ export async function callGroq(
   apiKey: string,
   messages: ChatMessage[],
   tools: ToolDefinition[],
+  toolChoice: 'auto' | 'required' = 'auto',
 ): Promise<GroqResponse> {
   const res = await fetch(GROQ_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({ model: GROQ_MODEL, messages, tools: tools.length > 0 ? tools : undefined, max_tokens: 1024, temperature: 0.7 }),
+    body: JSON.stringify({ model: GROQ_MODEL, messages, tools: tools.length > 0 ? tools : undefined, tool_choice: tools.length > 0 ? toolChoice : undefined, max_tokens: 1024, temperature: 0.4 }),
   });
   if (!res.ok) {
     const text = await res.text().catch(() => '');

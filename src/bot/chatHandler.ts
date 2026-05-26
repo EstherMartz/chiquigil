@@ -48,9 +48,10 @@ export async function handleChat(question: string, deps: ChatHandlerDeps): Promi
   let toolsEverCalled = false;
 
   for (let i = 0; i < MAX_ITERATIONS; i++) {
+    const toolChoice = tools.length > 0 && !toolsEverCalled ? 'required' as const : 'auto' as const;
     let raw;
     try {
-      raw = await callGroq(deps.groqApiKey, messages, tools);
+      raw = await callGroq(deps.groqApiKey, messages, tools, toolChoice);
     } catch (e) {
       const errMsg = e instanceof Error ? e.message : String(e);
       // Groq tool_use_failed — just retry with tools on next iteration
