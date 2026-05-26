@@ -57,8 +57,8 @@ describe('CurrencyFlipResults', () => {
     renderResults();
     const widgetRow = screen.getByText('Widget').closest('tr')!;
     const gizmoRow = screen.getByText('Gizmo HQ').closest('tr')!;
-    expect(within(gizmoRow).queryByLabelText(/High Quality/i)).not.toBeNull();
-    expect(within(widgetRow).queryByLabelText(/High Quality/i)).toBeNull();
+    expect(within(gizmoRow).queryByAltText(/High Quality/i)).not.toBeNull();
+    expect(within(widgetRow).queryByAltText(/High Quality/i)).toBeNull();
   });
 
   it('shows empty state copy when rows is empty', () => {

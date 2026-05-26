@@ -5,6 +5,7 @@ import { fmtGil } from '../../lib/format';
 import { useItemHistory } from './useItemHistory';
 import { Sparkline } from '../../components/Sparkline';
 import { AddToShoppingListButton } from '../shoppingList/AddToShoppingListButton';
+import { JobIcon, isJobKey } from '../../lib/icons';
 
 interface Props {
   item: TrackedItem;
@@ -56,8 +57,9 @@ export function RecipeModal({
       >
         <div className="flex justify-between items-start mb-4 gap-3">
           <div>
-            <div className="font-mono text-[10px] tracking-widest text-aether uppercase">
-              {recipe.classJob} · lvl {recipe.recipeLevel}
+            <div className="font-mono text-[10px] tracking-widest text-aether uppercase inline-flex items-center gap-1">
+              {isJobKey(recipe.classJob) && <JobIcon job={recipe.classJob} />}
+              <span>{recipe.classJob} · lvl {recipe.recipeLevel}</span>
             </div>
             <h3 className="font-display text-xl text-gold">{item.name}</h3>
           </div>

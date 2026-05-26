@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { CurrencySourceCard } from './CurrencySourceCard';
 import type { CurrencyOffer } from './currencyOffers';
@@ -57,8 +57,8 @@ describe('CurrencySourceCard', () => {
     renderCard({ offers: [poeticsOffer, mgpOffer] });
     const poeticsRow = screen.getByRole('link', { name: /^Poetics$/ }).closest('div')!;
     const mgpRow = screen.getByRole('link', { name: /^MGP$/ }).closest('div')!;
-    expect(poeticsRow.querySelector('[aria-label="High Quality"]')).toBeNull();
-    expect(mgpRow.querySelector('[aria-label="High Quality"]')).not.toBeNull();
+    expect(within(poeticsRow).queryByAltText('High Quality')).toBeNull();
+    expect(within(mgpRow).queryByAltText('High Quality')).not.toBeNull();
   });
 
   it('renders profit comparison when homeMarket has a trusted tier', () => {

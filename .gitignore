@@ -12,6 +12,7 @@ coverage
 # Smoke-test / Playwright MCP artifacts
 .playwright-mcp/
 *.png
+!public/icons/**/*.png
 test-results.txt
 test_output.txt
 

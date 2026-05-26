@@ -10,6 +10,7 @@ import { runCurrencyFlip } from '../queries/runCurrencyFlip';
 import { CurrencyFlipResults } from '../queries/CurrencyFlipResults';
 import { defaultCurrencyFlipFilter, type CurrencyFlipFilter, type CurrencyFlipSort } from '../queries/types';
 import { CURRENCIES, getCurrencyById, type CurrencyId } from '../../lib/currencies';
+import { CurrencyIcon } from '../../lib/icons';
 import { CRYSTALS_SEARCH_CATEGORY } from '../queries/commonFilters';
 import { Spinner, SpinGlyph } from '../../components/Spinner';
 import { StatusBanner } from '../../components/StatusBanner';
@@ -141,16 +142,22 @@ function TopStrip({ currencyId, onChangeCurrency, onRun, onRefreshCatalog, busy,
     <div className="flex flex-wrap items-end gap-3 p-3 border border-border-base bg-bg-card justify-between">
       <label className="block">
         <span className="font-mono text-[13px] tracking-widest text-text-low uppercase">Currency</span>
-        <select
-          aria-label="Currency"
-          value={currencyId}
-          onChange={(e) => onChangeCurrency(e.target.value as CurrencyId)}
-          className="mt-1 block bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
-        >
-          {CURRENCIES.map((c) => (
-            <option key={c.id} value={c.id}>{c.label}</option>
-          ))}
-        </select>
+        <span className="mt-1 flex items-center gap-2">
+          {(() => {
+            const c = getCurrencyById(currencyId);
+            return c ? <CurrencyIcon currencyKey={c.itemId} size={20} /> : null;
+          })()}
+          <select
+            aria-label="Currency"
+            value={currencyId}
+            onChange={(e) => onChangeCurrency(e.target.value as CurrencyId)}
+            className="bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+          >
+            {CURRENCIES.map((c) => (
+              <option key={c.id} value={c.id}>{c.label}</option>
+            ))}
+          </select>
+        </span>
       </label>
       <div className="flex gap-2 w-full sm:w-auto sm:ml-auto order-last">
         <button

@@ -4,6 +4,7 @@ import { EmptyState } from '../../components/EmptyState';
 import { useLevePlanStore } from './levePlanStore';
 import type { LeveRow } from './computeLevePlan';
 import type { LeveJobFilter } from './levePlanStore';
+import { JobIcon, isJobKey } from '../../lib/icons';
 
 interface Props {
   rows: LeveRow[];
@@ -44,6 +45,7 @@ export function LevePlanner({ rows }: Props) {
 
         <label className="flex items-center gap-1.5" aria-label="Job filter">
           Job
+          {isJobKey(s.jobFilter) && <JobIcon job={s.jobFilter} />}
           <select
             value={s.jobFilter}
             onChange={(e) => s.setJobFilter(e.target.value as LeveJobFilter)}
@@ -92,7 +94,12 @@ export function LevePlanner({ rows }: Props) {
                     ? <ItemNameLinks id={r.targetItemId} name={r.targetItemQty != null ? `${r.name} ×${r.targetItemQty}` : r.name} />
                     : <span>{r.name}</span>}
                 </td>
-                <td className="px-2 py-1.5 font-mono text-text-low">{r.classJobCode}</td>
+                <td className="px-2 py-1.5 font-mono text-text-low">
+                  <span className="inline-flex items-center gap-1">
+                    {isJobKey(r.classJobCode) && <JobIcon job={r.classJobCode} />}
+                    <span>{r.classJobCode}</span>
+                  </span>
+                </td>
                 <td className="px-2 py-1.5 text-right font-mono">{r.level}</td>
                 <td className="px-2 py-1.5 font-mono text-text-low">{r.city}</td>
                 <td className="px-2 py-1.5 text-right font-mono">{fmtGil(r.grossGil)}</td>

@@ -4,6 +4,13 @@ import { ResultTableScaffold, EmptyResults } from './ResultTableScaffold';
 import { useUiStore, rowPadClass } from '../ui/uiStore';
 import type { QuestItemRow, QuestItemSort, SortDir } from './runQuestItemFlip';
 import type { CsvColumn } from '../../lib/csv';
+import { JobIcon, QuestTypeIcon, categoryNameToQuestType, type JobKey } from '../../lib/icons';
+
+const CATEGORY_TO_JOB: ReadonlyMap<string, JobKey> = new Map([
+  ['Carpenter', 'CRP'], ['Blacksmith', 'BSM'], ['Armorer', 'ARM'], ['Goldsmith', 'GSM'],
+  ['Leatherworker', 'LTW'], ['Weaver', 'WVR'], ['Alchemist', 'ALC'], ['Culinarian', 'CUL'],
+  ['Miner', 'MIN'], ['Botanist', 'BTN'], ['Fisher', 'FSH'],
+]);
 
 interface Props {
   rows: QuestItemRow[];
@@ -118,7 +125,18 @@ export function QuestItemFlipResults({ rows, totalCandidates, sortBy, sortDir, o
               <tr key={`${row.questId}-${row.itemId}`} className="border-t border-border-base hover:bg-bg-card-hi active:bg-bg-card-hi transition-colors">
                 <td className={`px-3 ${rowY} text-text-low font-mono text-xs`}>{i + 1}</td>
                 <td className={`px-3 ${rowY} font-mono text-right`}>{row.level}</td>
-                <td className={`px-3 ${rowY} text-text-low font-mono text-xs hidden md:table-cell`}>{row.categoryName}</td>
+                <td className={`px-3 ${rowY} text-text-low font-mono text-xs hidden md:table-cell`}>
+                  <span className="inline-flex items-center gap-1">
+                    {(() => {
+                      const job = CATEGORY_TO_JOB.get(row.categoryName);
+                      if (job) return <JobIcon job={job} />;
+                      const type = categoryNameToQuestType(row.categoryName);
+                      if (type) return <QuestTypeIcon type={type} />;
+                      return null;
+                    })()}
+                    <span>{row.categoryName}</span>
+                  </span>
+                </td>
                 <td className={`px-3 ${rowY} text-text-low font-mono text-xs hidden md:table-cell`}>{row.questName}</td>
                 <td className={`px-3 ${rowY}`}>
                   <ItemNameLinks id={row.itemId} name={row.itemName} />

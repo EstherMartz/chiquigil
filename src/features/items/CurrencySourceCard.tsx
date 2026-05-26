@@ -4,6 +4,7 @@ import { pickHighestTrustedTier } from '../../lib/priceTrust';
 import { fmtGil } from '../../lib/format';
 import { SectionHeader } from '../../components/SectionHeader';
 import { HqStar } from '../../components/HqStar';
+import { CurrencyIcon } from '../../lib/icons';
 import type { CurrencyOffer } from './currencyOffers';
 
 interface Props {
@@ -54,9 +55,10 @@ export function CurrencySourceCard({
             <div key={offer.currency.id} className="flex items-baseline gap-2 flex-wrap text-sm">
               <Link
                 to={`/currency-flip?currency=${offer.currency.id}`}
-                className="text-aether hover:underline decoration-1 underline-offset-4"
+                className="text-aether hover:underline decoration-1 underline-offset-4 inline-flex items-center gap-1"
               >
-                {offer.currency.shortLabel}
+                <CurrencyIcon currencyKey={offer.currency.itemId} />
+                <span>{offer.currency.shortLabel}</span>
               </Link>
               <span className="text-text-low">→</span>
               <span className="font-mono text-gold">{fmtCost(offer.costPerUnit)} per unit</span>
