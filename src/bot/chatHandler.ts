@@ -2,6 +2,12 @@ import { callGroq, parseResponse, type ChatMessage } from './llm';
 import { TOOL_DEFINITIONS, executeTool, type ToolDeps } from './tools';
 import { SYSTEM_PROMPT } from './systemPrompt';
 
+const MARKET_KEYWORDS = /precio|comprar|vender|vende|craft|craftear|gil|mercado|market|ganancia|rentable|barato|caro|flip|materia|tinte|dye|pocion|poción|comida|arma|armadura|accesorio|mueble|minion|oferta|ganga|npc|vendor|recipe|receta|ingrediente|material|madera|metal|tela|cuero|piedra|lumber|cloth|leather|stone|item|objeto|cuanto|cuánto|cuesta|vale/i;
+
+function needsMarketTools(question: string): boolean {
+  return MARKET_KEYWORDS.test(question);
+}
+
 const MAX_ITERATIONS = 5;
 const CAT_CHANCE = 0.15; // ~1 in 7 responses
 const CAT_GIFS = [
@@ -31,6 +37,8 @@ export async function handleChat(question: string, deps: ChatHandlerDeps): Promi
     ? '\n\n[Nota interna: en esta respuesta, entrelaza de forma natural una mención a Karash Barash, un Lalafell turbio de Ul\'dah que Qiqirn conoce. Puede ser una comparación, un recuerdo, una queja o un rumor — que fluya dentro de la conversación, no pegado al final.]'
     : '';
 
+  const tools = needsMarketTools(question) ? TOOL_DEFINITIONS : [];
+
   const messages: ChatMessage[] = [
     { role: 'system', content: SYSTEM_PROMPT + karashNudge },
     { role: 'user', content: question },
@@ -42,7 +50,7 @@ export async function handleChat(question: string, deps: ChatHandlerDeps): Promi
   for (let i = 0; i < MAX_ITERATIONS; i++) {
     let raw;
     try {
-      raw = await callGroq(deps.groqApiKey, messages, TOOL_DEFINITIONS);
+      raw = await callGroq(deps.groqApiKey, messages, tools);
     } catch (e) {
       const errMsg = e instanceof Error ? e.message : String(e);
       // Groq tool_use_failed — just retry with tools on next iteration
