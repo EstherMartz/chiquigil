@@ -35,21 +35,15 @@ const commands = [
     ],
   },
   {
-    name: 'cleanup',
-    description: 'Analizar inventario CSV',
-    options: [{ type: 11, name: 'csv', description: 'Archivo CSV de inventario', required: true }],
-  },
-  {
-    name: 'purge',
-    description: 'Borrar mensajes (admin)',
-    options: [{ type: 4, name: 'amount', description: 'Cantidad (1-100)', required: false, min_value: 1, max_value: 100 }],
-  },
-  {
     name: 'craftable',
     description: 'Qué puedes craftear con tu inventario',
     options: [{ type: 11, name: 'csv', description: 'Archivo CSV de inventario', required: true }],
   },
 ];
+
+// NOTE: /cleanup and /purge were registered previously but have no handler
+// in src/api/discord.ts, so invoking them just returned "Unknown command".
+// They were removed from this list on 2026-05-26; re-add when handlers land.
 
 async function main() {
   const url = `https://discord.com/api/v10/applications/${APP_ID}/commands`;
