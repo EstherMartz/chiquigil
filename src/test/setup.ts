@@ -1,6 +1,5 @@
 import '@testing-library/jest-dom/vitest';
 import 'fake-indexeddb/auto';
-// @ts-expect-error - node:stream/web is provided at runtime by Node 18+ but not in the project's TS types
 import { CompressionStream, DecompressionStream } from 'node:stream/web';
 
 // jsdom doesn't ship Web Streams compression. Use Node's built-in

@@ -1,12 +1,15 @@
 import type { SnapshotItem } from '../lib/itemSnapshot';
 import type { Recipe } from '../lib/recipes';
+import type { GatheringInfo } from '../lib/gatheringCatalog';
+import type { SpecialShopSnapshot } from '../lib/specialShopSnapshot';
 
 export interface BotSnapshots {
   itemsById: Map<number, SnapshotItem>;
   namesById: Map<number, string>;
   recipes: Map<number, Recipe>;
   vendorMap: Map<number, number>;
-  gatheringCatalog: Map<number, { level: number; timed: boolean }>;
+  specialShop: SpecialShopSnapshot;
+  gatheringCatalog: Map<number, GatheringInfo>;
 }
 
 let cached: BotSnapshots | null = null;
@@ -14,10 +17,11 @@ let cached: BotSnapshots | null = null;
 export async function loadSnapshots(baseUrl: string): Promise<BotSnapshots> {
   if (cached) return cached;
 
-  const [itemsRaw, recipesRaw, vendorRaw, gatherRaw] = await Promise.all([
+  const [itemsRaw, recipesRaw, vendorRaw, specialRaw, gatherRaw] = await Promise.all([
     fetch(`${baseUrl}/data/snapshots/items.json`).then(r => r.json()),
     fetch(`${baseUrl}/data/snapshots/recipes.json`).then(r => r.json()),
     fetch(`${baseUrl}/data/snapshots/vendorShop.json`).then(r => r.json()),
+    fetch(`${baseUrl}/data/snapshots/specialShop.json`).then(r => r.json()),
     fetch(`${baseUrl}/data/snapshots/gathering.json`).then(r => r.json()),
   ]);
 
@@ -38,11 +42,19 @@ export async function loadSnapshots(baseUrl: string): Promise<BotSnapshots> {
     vendorMap.set(id, price);
   }
 
-  const gatheringCatalog = new Map<number, { level: number; timed: boolean }>();
-  for (const [id, info] of (gatherRaw as { entries: [number, { level: number; timed: boolean }][] }).entries) {
+  const specialShop: SpecialShopSnapshot = {
+    byCurrency: new Map(
+      (specialRaw as { byCurrency: [string, any[]][] }).byCurrency.map(
+        ([currency, entries]) => [currency as any, entries] as [any, any]
+      )
+    ),
+  };
+
+  const gatheringCatalog = new Map<number, GatheringInfo>();
+  for (const [id, info] of (gatherRaw as { entries: [number, GatheringInfo][] }).entries) {
     gatheringCatalog.set(id, info);
   }
 
-  cached = { itemsById, namesById, recipes, vendorMap, gatheringCatalog };
+  cached = { itemsById, namesById, recipes, vendorMap, specialShop, gatheringCatalog };
   return cached;
 }
