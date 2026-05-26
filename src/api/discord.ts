@@ -189,7 +189,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               const item = subOptions.find((o) => o.name === 'item')?.value ?? '';
               const qty = parseInt(subOptions.find((o) => o.name === 'qty')?.value ?? '1', 10);
               const name = subOptions.find((o) => o.name === 'name')?.value ?? null;
-              const pingRole = subOptions.find((o) => o.name === 'ping')?.value ?? null;
+              const pingRole = subOptions.find((o) => o.name === 'ping_role')?.value ?? null;
 
               response = await handleCraftNew(
                 { item, qty, name, pingRole },
@@ -210,7 +210,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               response = await handleCraftSetup(guildId, channelId, permissions, deps);
             }
           } else if (commandName === 'oye') {
-            const question = options.find((o) => o.name === 'q')?.value ?? '';
+            const question = options.find((o) => o.name === 'question')?.value ?? '';
 
             const toolDeps: ToolDeps = {
               marketBundle: marketBundle as any,
