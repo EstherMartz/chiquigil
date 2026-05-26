@@ -132,7 +132,8 @@ export async function loadSharedMarketCache(homeWorld: string, dc: string, regio
   if (sharedCacheLoaded) return;
   sharedCacheLoaded = true;
   try {
-    const res = await fetch('/data/market-cache.json');
+    const cacheUrl = (import.meta as any).env?.VITE_CACHE_BLOB_URL || '/data/market-cache.json';
+    const res = await fetch(cacheUrl);
     if (!res.ok) return;
     const data = (await res.json()) as SharedCache;
     const age = Date.now() - data.ts;
