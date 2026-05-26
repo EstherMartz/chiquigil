@@ -3,6 +3,8 @@ import { useItemSnapshot } from '../queries/useItemSnapshot';
 import { useRecipeSnapshot } from '../queries/useRecipeSnapshot';
 import { useVendorShopSnapshot } from '../queries/useVendorShopSnapshot';
 import { useGatheringCatalog } from '../queries/useGatheringCatalog';
+import { useSettingsStore } from '../settings/store';
+import { CRYSTALS_SEARCH_CATEGORY } from '../queries/commonFilters';
 import { AllaganPasteBox } from '../cleanup/AllaganPasteBox';
 import { parseAllaganInventory, type ParseResult } from '../cleanup/parseAllaganInventory';
 import { findCraftableFromInventory } from './findCraftable';
@@ -17,6 +19,7 @@ export function CraftFromInventoryView() {
   const recipes = useRecipeSnapshot();
   const vendors = useVendorShopSnapshot();
   const gathering = useGatheringCatalog();
+  const hideCrystals = useSettingsStore((s) => s.hideCrystals);
 
   const [parsed, setParsed] = useState<ParseResult | null>(null);
   const [parseError, setParseError] = useState<string | null>(null);
@@ -59,14 +62,19 @@ export function CraftFromInventoryView() {
       ? new Set(gathering.data.keys())
       : undefined;
 
+    const excludeIngredientIds = hideCrystals && snapshot.data
+      ? new Set(snapshot.data.items.filter((i) => i.sc === CRYSTALS_SEARCH_CATEGORY).map((i) => i.id))
+      : undefined;
+
     return findCraftableFromInventory(inventory, recipes.data, namesById, {
       maxMissing,
       marketableOnly,
       velocityMap,
       vendorMap,
       gatheringSet,
+      excludeIngredientIds,
     });
-  }, [inventory, recipes.data, namesById, maxMissing, marketableOnly, vendors.data, gathering.data]);
+  }, [inventory, recipes.data, namesById, maxMissing, marketableOnly, vendors.data, gathering.data, hideCrystals, snapshot.data]);
 
   function handleParse(csv: string) {
     setParseError(null);

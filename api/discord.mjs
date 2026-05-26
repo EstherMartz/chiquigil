@@ -8,6 +8,25 @@ var __export = (target, all) => {
     __defProp(target, name, { get: all[name], enumerable: true });
 };
 
+// src/features/queries/commonFilters.ts
+var commonFilters_exports = {};
+__export(commonFilters_exports, {
+  CRYSTALS_SEARCH_CATEGORY: () => CRYSTALS_SEARCH_CATEGORY,
+  passesMarketGate: () => passesMarketGate
+});
+function passesMarketGate(market, gate) {
+  if (market.velocity < gate.minVelocity) return false;
+  if (gate.maxListings != null && market.listingCount > gate.maxListings) return false;
+  return true;
+}
+var CRYSTALS_SEARCH_CATEGORY;
+var init_commonFilters = __esm({
+  "src/features/queries/commonFilters.ts"() {
+    "use strict";
+    CRYSTALS_SEARCH_CATEGORY = 58;
+  }
+});
+
 // src/features/cleanup/parseAllaganInventory.ts
 var parseAllaganInventory_exports = {};
 __export(parseAllaganInventory_exports, {
@@ -162,12 +181,13 @@ __export(findCraftable_exports, {
   findCraftableFromInventory: () => findCraftableFromInventory
 });
 function findCraftableFromInventory(inventory, recipes, namesById, filter) {
-  const { maxMissing, marketableOnly, velocityMap, vendorMap, gatheringSet } = filter;
+  const { maxMissing, marketableOnly, velocityMap, vendorMap, gatheringSet, excludeIngredientIds } = filter;
   const rows = [];
   for (const [itemId, recipe] of recipes) {
     const ingredients = [];
     let missingCount = 0;
     for (const ing of recipe.ingredients) {
+      if (excludeIngredientIds?.has(ing.itemId)) continue;
       const have = inventory.get(ing.itemId) ?? 0;
       const fulfilled = have >= ing.amount;
       if (!fulfilled) missingCount++;
@@ -195,7 +215,7 @@ function findCraftableFromInventory(inventory, recipes, namesById, filter) {
     }
     if (missingCount > maxMissing) continue;
     if (marketableOnly && velocityMap && !velocityMap.has(itemId)) continue;
-    const totalIngredients = recipe.ingredients.length;
+    const totalIngredients = ingredients.length;
     const completeness = totalIngredients > 0 ? (totalIngredients - missingCount) / totalIngredients : 1;
     rows.push({
       recipeItemId: itemId,
@@ -439,14 +459,8 @@ function ingredientCost(ing, recipeMap, dc, flags, phantom, depth) {
   return unitCost(ing.itemId, dc, phantom) * ing.amount;
 }
 
-// src/features/queries/commonFilters.ts
-function passesMarketGate(market, gate) {
-  if (market.velocity < gate.minVelocity) return false;
-  if (gate.maxListings != null && market.listingCount > gate.maxListings) return false;
-  return true;
-}
-
 // src/features/queries/runCraftFlip.ts
+init_commonFilters();
 function narrowForCraftFlip(snapshot, priceMap, filter) {
   const catSet = filter.searchCategories.length ? new Set(filter.searchCategories) : null;
   const out = [];
@@ -537,6 +551,7 @@ function descBy(extract) {
 }
 
 // src/features/queries/runVendorFlip.ts
+init_commonFilters();
 var COMPARATORS = {
   profitPerDay: descBy((r) => r.profitPerDay),
   markup: descBy((r) => r.markup),
@@ -2658,11 +2673,17 @@ async function handler(req, res) {
                     inv.set(e.itemId, (inv.get(e.itemId) ?? 0) + e.qty);
                   }
                   const { findCraftableFromInventory: findCraftableFromInventory2 } = await Promise.resolve().then(() => (init_findCraftable(), findCraftable_exports));
+                  const { CRYSTALS_SEARCH_CATEGORY: CRYSTALS_SEARCH_CATEGORY2 } = await Promise.resolve().then(() => (init_commonFilters(), commonFilters_exports));
                   const gatheringSet = new Set(snapshots.gatheringCatalog.keys());
+                  const excludeIngredientIds = /* @__PURE__ */ new Set();
+                  for (const item of snapshots.itemsById.values()) {
+                    if (item.sc === CRYSTALS_SEARCH_CATEGORY2) excludeIngredientIds.add(item.id);
+                  }
                   const craftableRows = findCraftableFromInventory2(inv, snapshots.recipes, snapshots.namesById, {
                     maxMissing: 1,
                     vendorMap: snapshots.vendorMap,
-                    gatheringSet
+                    gatheringSet,
+                    excludeIngredientIds
                   });
                   const top = craftableRows.slice(0, 10);
                   if (top.length === 0) {

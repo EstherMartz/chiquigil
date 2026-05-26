@@ -69,6 +69,23 @@ describe('findCraftableFromInventory', () => {
     expect(rows[0].ingredients.every(i => i.fulfilled)).toBe(true);
   });
 
+  it('skips excluded ingredients (e.g. crystals) from counts and ingredient list', () => {
+    // Recipe needs 3 ore + 1 fire crystal. Inventory has 3 ore, no crystal.
+    // With crystal excluded, recipe should be 100% complete with 1 ingredient.
+    const inventory = new Map([[10, 3]]);
+    const recipes = new Map([[1, recipe(1, [{ itemId: 10, amount: 3 }, { itemId: 11, amount: 1 }])]]);
+    const rows = findCraftableFromInventory(inventory, recipes, namesById, {
+      maxMissing: 0,
+      excludeIngredientIds: new Set([11, 12]),
+    });
+    expect(rows).toHaveLength(1);
+    expect(rows[0].missingCount).toBe(0);
+    expect(rows[0].totalIngredients).toBe(1);
+    expect(rows[0].completeness).toBe(1);
+    expect(rows[0].ingredients).toHaveLength(1);
+    expect(rows[0].ingredients[0].itemId).toBe(10);
+  });
+
   it('filters marketable only when velocity data is provided', () => {
     const inventory = new Map([[10, 5], [11, 3]]);
     const recipes = new Map([

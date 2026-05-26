@@ -267,11 +267,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
                   // Find craftable recipes
                   const { findCraftableFromInventory } = await import('../features/craftFromInventory/findCraftable');
+                  const { CRYSTALS_SEARCH_CATEGORY } = await import('../features/queries/commonFilters');
                   const gatheringSet = new Set(snapshots.gatheringCatalog.keys());
+                  const excludeIngredientIds = new Set<number>();
+                  for (const item of snapshots.itemsById.values()) {
+                    if (item.sc === CRYSTALS_SEARCH_CATEGORY) excludeIngredientIds.add(item.id);
+                  }
                   const craftableRows = findCraftableFromInventory(inv, snapshots.recipes, snapshots.namesById, {
                     maxMissing: 1,
                     vendorMap: snapshots.vendorMap,
                     gatheringSet,
+                    excludeIngredientIds,
                   });
 
                   // Format top 10

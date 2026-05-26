@@ -29,6 +29,7 @@ export interface CraftableFilter {
   velocityMap?: Map<number, number>;
   vendorMap?: Map<number, number>;
   gatheringSet?: Set<number>;
+  excludeIngredientIds?: Set<number>;
 }
 
 export function findCraftableFromInventory(
@@ -37,7 +38,7 @@ export function findCraftableFromInventory(
   namesById: Map<number, string>,
   filter: CraftableFilter,
 ): CraftableRow[] {
-  const { maxMissing, marketableOnly, velocityMap, vendorMap, gatheringSet } = filter;
+  const { maxMissing, marketableOnly, velocityMap, vendorMap, gatheringSet, excludeIngredientIds } = filter;
   const rows: CraftableRow[] = [];
 
   for (const [itemId, recipe] of recipes) {
@@ -45,6 +46,8 @@ export function findCraftableFromInventory(
     let missingCount = 0;
 
     for (const ing of recipe.ingredients) {
+      if (excludeIngredientIds?.has(ing.itemId)) continue;
+
       const have = inventory.get(ing.itemId) ?? 0;
       const fulfilled = have >= ing.amount;
       if (!fulfilled) missingCount++;
@@ -76,7 +79,7 @@ export function findCraftableFromInventory(
     if (missingCount > maxMissing) continue;
     if (marketableOnly && velocityMap && !velocityMap.has(itemId)) continue;
 
-    const totalIngredients = recipe.ingredients.length;
+    const totalIngredients = ingredients.length;
     const completeness = totalIngredients > 0 ? (totalIngredients - missingCount) / totalIngredients : 1;
 
     rows.push({
