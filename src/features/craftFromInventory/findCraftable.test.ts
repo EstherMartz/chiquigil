@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { findCraftableFromInventory, type CraftableFilter } from './findCraftable';
+import { findCraftableFromInventory } from './findCraftable';
 import type { Recipe } from '../../lib/recipes';
 
 function recipe(itemResultId: number, ingredients: Array<{ itemId: number; amount: number }>, classJob = 'BSM' as const, recipeLevel = 50): Recipe {
