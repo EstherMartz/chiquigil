@@ -1,3 +1,223 @@
+var __defProp = Object.defineProperty;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __esm = (fn, res) => function __init() {
+  return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+};
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+
+// src/features/cleanup/parseAllaganInventory.ts
+var parseAllaganInventory_exports = {};
+__export(parseAllaganInventory_exports, {
+  parseAllaganInventory: () => parseAllaganInventory
+});
+function findColumn(headerCells, aliases) {
+  const normalized = headerCells.map((c) => c.trim().toLowerCase());
+  for (const alias of aliases) {
+    const i = normalized.indexOf(alias);
+    if (i >= 0) return i;
+  }
+  return null;
+}
+function detectColumns(headerCells) {
+  const map = {
+    itemId: findColumn(headerCells, ID_ALIASES),
+    name: findColumn(headerCells, NAME_ALIASES),
+    qty: findColumn(headerCells, QTY_ALIASES),
+    hq: findColumn(headerCells, HQ_ALIASES),
+    location: findColumn(headerCells, LOC_ALIASES)
+  };
+  if (map.itemId == null && map.name == null) return null;
+  return map;
+}
+function parseHq(value) {
+  if (!value) return false;
+  const v = value.trim().toLowerCase();
+  return v === "true" || v === "1" || v === "yes" || v === "hq";
+}
+function normalizeLocation(raw) {
+  if (!raw) return "bag";
+  const v = raw.trim().toLowerCase();
+  if (KEEP_LOCATIONS.has(v)) return v;
+  if (DROP_LOCATIONS.has(v)) return null;
+  for (const keep of KEEP_LOCATIONS) {
+    if (v.includes(keep)) return keep;
+  }
+  for (const drop of DROP_LOCATIONS) {
+    if (v.includes(drop)) return null;
+  }
+  return null;
+}
+function splitCsvLine(line) {
+  const out = [];
+  let cur = "";
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      inQuotes = !inQuotes;
+      continue;
+    }
+    if (ch === "," && !inQuotes) {
+      out.push(cur);
+      cur = "";
+      continue;
+    }
+    cur += ch;
+  }
+  out.push(cur);
+  return out;
+}
+function parseAllaganInventory(csv, namesById) {
+  const lines = csv.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.length > 0);
+  if (lines.length === 0) throw new Error("Couldn't detect column headers (empty input)");
+  const cols = detectColumns(splitCsvLine(lines[0]));
+  if (!cols) {
+    throw new Error("Couldn't detect column headers. Paste should include a header row with at least Item ID or Item Name plus Quantity.");
+  }
+  const idByLowerName = /* @__PURE__ */ new Map();
+  namesById.forEach((name, id) => idByLowerName.set(name.toLowerCase(), id));
+  const byKey = /* @__PURE__ */ new Map();
+  const unrecognizedByKey = /* @__PURE__ */ new Map();
+  for (const line of lines.slice(1)) {
+    const cells = splitCsvLine(line);
+    const idRaw = cols.itemId != null ? cells[cols.itemId] : void 0;
+    const nameRaw = cols.name != null ? cells[cols.name] : void 0;
+    const qtyRaw = cols.qty != null ? cells[cols.qty] : void 0;
+    const hqRaw = cols.hq != null ? cells[cols.hq] : void 0;
+    const locRaw = cols.location != null ? cells[cols.location] : void 0;
+    let itemId = 0;
+    if (idRaw && idRaw.trim()) {
+      const parsed = Number.parseInt(idRaw.trim(), 10);
+      if (Number.isFinite(parsed)) itemId = parsed;
+    }
+    if (itemId === 0 && nameRaw) {
+      itemId = idByLowerName.get(nameRaw.trim().toLowerCase()) ?? 0;
+    }
+    const qty = qtyRaw && qtyRaw.trim() ? Math.max(1, Number.parseInt(qtyRaw.trim(), 10) || 1) : 1;
+    const isHq = parseHq(hqRaw);
+    const location = normalizeLocation(locRaw);
+    if (location == null) continue;
+    const displayName = (itemId > 0 ? namesById.get(itemId) : void 0) ?? nameRaw?.trim() ?? "";
+    if (itemId === 0 || !namesById.has(itemId)) {
+      const ukey = `${displayName.toLowerCase()}|${isHq}`;
+      const uexisting = unrecognizedByKey.get(ukey);
+      if (uexisting) {
+        uexisting.qty += qty;
+        if (!uexisting.locations.includes(location)) uexisting.locations.push(location);
+      } else {
+        unrecognizedByKey.set(ukey, { itemId, name: displayName || "(unknown)", qty, isHq, locations: [location] });
+      }
+      continue;
+    }
+    const key = `${itemId}|${isHq}`;
+    const existing = byKey.get(key);
+    if (existing) {
+      existing.qty += qty;
+      if (!existing.locations.includes(location)) existing.locations.push(location);
+    } else {
+      byKey.set(key, { itemId, name: displayName, qty, isHq, locations: [location] });
+    }
+  }
+  return { entries: [...byKey.values()], unrecognized: [...unrecognizedByKey.values()] };
+}
+var ID_ALIASES, NAME_ALIASES, QTY_ALIASES, HQ_ALIASES, LOC_ALIASES, KEEP_LOCATIONS, DROP_LOCATIONS;
+var init_parseAllaganInventory = __esm({
+  "src/features/cleanup/parseAllaganInventory.ts"() {
+    "use strict";
+    ID_ALIASES = ["item id", "itemid", "id"];
+    NAME_ALIASES = ["item name", "name", "item"];
+    QTY_ALIASES = [
+      "quantity/total quantity available",
+      // Allagan Tools combined header
+      "quantity",
+      "qty",
+      "amount",
+      "count"
+    ];
+    HQ_ALIASES = [
+      "hq",
+      "high quality",
+      "ishq",
+      "type"
+      // Allagan Tools "Type" column carries NQ/HQ values
+    ];
+    LOC_ALIASES = [
+      "inventory location",
+      // Allagan Tools — the actual bag slot
+      "location",
+      "inventory",
+      "source"
+    ];
+    KEEP_LOCATIONS = /* @__PURE__ */ new Set(["bag", "saddlebag", "retainer"]);
+    DROP_LOCATIONS = /* @__PURE__ */ new Set(["armoury", "glamour", "equipped", "other"]);
+  }
+});
+
+// src/features/craftFromInventory/findCraftable.ts
+var findCraftable_exports = {};
+__export(findCraftable_exports, {
+  findCraftableFromInventory: () => findCraftableFromInventory
+});
+function findCraftableFromInventory(inventory, recipes, namesById, filter) {
+  const { maxMissing, marketableOnly, velocityMap, vendorMap, gatheringSet } = filter;
+  const rows = [];
+  for (const [itemId, recipe] of recipes) {
+    const ingredients = [];
+    let missingCount = 0;
+    for (const ing of recipe.ingredients) {
+      const have = inventory.get(ing.itemId) ?? 0;
+      const fulfilled = have >= ing.amount;
+      if (!fulfilled) missingCount++;
+      let source = "unknown";
+      let unitPrice = null;
+      if (!fulfilled) {
+        if (vendorMap?.has(ing.itemId)) {
+          source = "vendor";
+          unitPrice = vendorMap.get(ing.itemId);
+        } else if (gatheringSet?.has(ing.itemId)) {
+          source = "gather";
+        } else {
+          source = "market";
+        }
+      }
+      ingredients.push({
+        itemId: ing.itemId,
+        name: namesById.get(ing.itemId) ?? `Item #${ing.itemId}`,
+        needed: ing.amount,
+        have,
+        fulfilled,
+        source,
+        unitPrice
+      });
+    }
+    if (missingCount > maxMissing) continue;
+    if (marketableOnly && velocityMap && !velocityMap.has(itemId)) continue;
+    const totalIngredients = recipe.ingredients.length;
+    const completeness = totalIngredients > 0 ? (totalIngredients - missingCount) / totalIngredients : 1;
+    rows.push({
+      recipeItemId: itemId,
+      name: namesById.get(itemId) ?? `Item #${itemId}`,
+      classJob: recipe.classJob,
+      recipeLevel: recipe.recipeLevel,
+      amountResult: recipe.amountResult ?? 1,
+      totalIngredients,
+      missingCount,
+      completeness,
+      ingredients
+    });
+  }
+  rows.sort((a, b) => b.completeness - a.completeness || b.recipeLevel - a.recipeLevel);
+  return rows;
+}
+var init_findCraftable = __esm({
+  "src/features/craftFromInventory/findCraftable.ts"() {
+    "use strict";
+  }
+});
+
 // src/api/discord.ts
 import { verifyKey } from "discord-interactions";
 import { waitUntil } from "@vercel/functions";
@@ -2393,6 +2613,66 @@ async function handler(req, res) {
               }
             } catch {
               response = { content: output };
+            }
+          } else if (commandName === "craftable") {
+            const attachmentId = options.find((o) => o.name === "csv")?.value;
+            const file = interaction.data.resolved?.attachments?.[attachmentId];
+            if (!file?.url) {
+              response = { content: "No CSV file found." };
+            } else {
+              try {
+                const csvRes = await fetch(file.url);
+                if (!csvRes.ok) {
+                  response = { content: "Failed to download CSV." };
+                } else {
+                  const csvText = await csvRes.text();
+                  const { parseAllaganInventory: parseAllaganInventory2 } = await Promise.resolve().then(() => (init_parseAllaganInventory(), parseAllaganInventory_exports));
+                  const parsed = parseAllaganInventory2(csvText, snapshots.namesById);
+                  const inv = /* @__PURE__ */ new Map();
+                  for (const e of parsed.entries) {
+                    if (e.itemId === 0) continue;
+                    inv.set(e.itemId, (inv.get(e.itemId) ?? 0) + e.qty);
+                  }
+                  const { findCraftableFromInventory: findCraftableFromInventory2 } = await Promise.resolve().then(() => (init_findCraftable(), findCraftable_exports));
+                  const gatheringSet = new Set(snapshots.gatheringCatalog.keys());
+                  const craftableRows = findCraftableFromInventory2(inv, snapshots.recipes, snapshots.namesById, {
+                    maxMissing: 1,
+                    vendorMap: snapshots.vendorMap,
+                    gatheringSet
+                  });
+                  const top = craftableRows.slice(0, 10);
+                  if (top.length === 0) {
+                    response = {
+                      content: "No hay nada que puedas craftear con tu inventario actual (max 1 ingrediente faltante)."
+                    };
+                  } else {
+                    let msg = "**What you can craft right now:**\n\n";
+                    for (const row of top) {
+                      const pct = Math.round(row.completeness * 100);
+                      const status = pct === 100 ? `${row.totalIngredients}/${row.totalIngredients} ingredients \u2713` : `${row.totalIngredients - row.missingCount}/${row.totalIngredients} ingredients`;
+                      msg += `\u{1F528} **${row.name}** (${row.classJob} ${row.recipeLevel}) \u2014 ${status}
+`;
+                      const missing = row.ingredients.filter((i) => !i.fulfilled);
+                      if (missing.length > 0) {
+                        const parts = missing.map((i) => {
+                          const need = i.needed - i.have;
+                          const src = i.unitPrice != null ? ` (${i.source} ${i.unitPrice}g)` : i.source === "gather" ? " (gather)" : "";
+                          return `${i.name} x${need}${src}`;
+                        });
+                        msg += `  Missing: ${parts.join(", ")}
+`;
+                      }
+                    }
+                    if (craftableRows.length > 10) {
+                      msg += `
+_...and ${craftableRows.length - 10} more recipes._`;
+                    }
+                    response = { content: msg };
+                  }
+                }
+              } catch (e) {
+                response = { content: `Error processing CSV: ${e instanceof Error ? e.message : String(e)}` };
+              }
             }
           }
           await editOriginalResponse(

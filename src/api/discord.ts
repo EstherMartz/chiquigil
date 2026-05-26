@@ -235,6 +235,77 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             } catch {
               response = { content: output };
             }
+          } else if (commandName === 'craftable') {
+            // Get the attachment
+            const attachmentId = options.find((o: any) => o.name === 'csv')?.value;
+            const file = interaction.data.resolved?.attachments?.[attachmentId];
+            if (!file?.url) {
+              response = { content: 'No CSV file found.' };
+            } else {
+              try {
+                // Download CSV from Discord CDN
+                const csvRes = await fetch(file.url);
+                if (!csvRes.ok) {
+                  response = { content: 'Failed to download CSV.' };
+                } else {
+                  const csvText = await csvRes.text();
+
+                  // Parse inventory
+                  const { parseAllaganInventory } = await import('../features/cleanup/parseAllaganInventory');
+                  const parsed = parseAllaganInventory(csvText, snapshots.namesById);
+
+                  // Build inventory map (sum NQ+HQ)
+                  const inv = new Map<number, number>();
+                  for (const e of parsed.entries) {
+                    if (e.itemId === 0) continue;
+                    inv.set(e.itemId, (inv.get(e.itemId) ?? 0) + e.qty);
+                  }
+
+                  // Find craftable recipes
+                  const { findCraftableFromInventory } = await import('../features/craftFromInventory/findCraftable');
+                  const gatheringSet = new Set(snapshots.gatheringCatalog.keys());
+                  const craftableRows = findCraftableFromInventory(inv, snapshots.recipes, snapshots.namesById, {
+                    maxMissing: 1,
+                    vendorMap: snapshots.vendorMap,
+                    gatheringSet,
+                  });
+
+                  // Format top 10
+                  const top = craftableRows.slice(0, 10);
+                  if (top.length === 0) {
+                    response = {
+                      content: 'No hay nada que puedas craftear con tu inventario actual (max 1 ingrediente faltante).',
+                    };
+                  } else {
+                    let msg = '**What you can craft right now:**\n\n';
+                    for (const row of top) {
+                      const pct = Math.round(row.completeness * 100);
+                      const status = pct === 100
+                        ? `${row.totalIngredients}/${row.totalIngredients} ingredients ✓`
+                        : `${row.totalIngredients - row.missingCount}/${row.totalIngredients} ingredients`;
+                      msg += `🔨 **${row.name}** (${row.classJob} ${row.recipeLevel}) — ${status}\n`;
+                      const missing = row.ingredients.filter((i: any) => !i.fulfilled);
+                      if (missing.length > 0) {
+                        const parts = missing.map((i: any) => {
+                          const need = i.needed - i.have;
+                          const src = i.unitPrice != null ? ` (${i.source} ${i.unitPrice}g)` : i.source === 'gather' ? ' (gather)' : '';
+                          return `${i.name} x${need}${src}`;
+                        });
+                        msg += `  Missing: ${parts.join(', ')}\n`;
+                      }
+                    }
+
+                    if (craftableRows.length > 10) {
+                      msg += `\n_...and ${craftableRows.length - 10} more recipes._`;
+                    }
+
+                    response = { content: msg };
+                  }
+                }
+              } catch (e) {
+                response = { content: `Error processing CSV: ${e instanceof Error ? e.message : String(e)}` };
+              }
+            }
           }
 
           // Send final response
