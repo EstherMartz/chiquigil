@@ -16,6 +16,7 @@ import ShoppingList from './routes/ShoppingList';
 import VendorFlip from './routes/VendorFlip';
 import CurrencyFlip from './routes/CurrencyFlip';
 import Cleanup from './routes/Cleanup';
+import CraftFromInventory from './routes/CraftFromInventory';
 import QuestItems from './routes/QuestItems';
 import Heatmap from './routes/Heatmap';
 import CraftBatch from './routes/CraftBatch';
@@ -56,6 +57,7 @@ export default function App() {
             <Route path="/craft-batch" element={<CraftBatch />} />
             <Route path="/batch-history" element={<BatchHistory />} />
             <Route path="/cleanup" element={<Cleanup />} />
+            <Route path="/craft-from-inventory" element={<CraftFromInventory />} />
             <Route path="/quest-items" element={<QuestItems />} />
             <Route path="/heatmap" element={<Heatmap />} />
             <Route path="/item/:id" element={<Item />} />

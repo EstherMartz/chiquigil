@@ -50,6 +50,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'Tools',
     items: [
       { label: 'Cleanup', path: '/cleanup' },
+      { label: 'Craft Inventory', path: '/craft-from-inventory' },
       { label: 'Heatmap', path: '/heatmap' },
       { label: 'History', path: '/batch-history' },
       { label: 'Settings', path: '/settings' },
