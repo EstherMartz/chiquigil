@@ -2664,6 +2664,10 @@ async function handler(req, res) {
                 if (!csvRes.ok) {
                   response = { content: "Failed to download CSV." };
                 } else {
+                  let mbPrice2 = function(itemId) {
+                    return mb.phantom[itemId]?.minNQ ?? mb.dc[itemId]?.minNQ ?? null;
+                  };
+                  var mbPrice = mbPrice2;
                   const csvText = await csvRes.text();
                   const { parseAllaganInventory: parseAllaganInventory2 } = await Promise.resolve().then(() => (init_parseAllaganInventory(), parseAllaganInventory_exports));
                   const parsed = parseAllaganInventory2(csvText, snapshots.namesById);
@@ -2685,6 +2689,7 @@ async function handler(req, res) {
                     gatheringSet,
                     excludeIngredientIds
                   });
+                  const mb = marketBundle;
                   const top = craftableRows.slice(0, 10);
                   if (top.length === 0) {
                     response = {
@@ -2695,13 +2700,36 @@ async function handler(req, res) {
                     for (const row of top) {
                       const pct = Math.round(row.completeness * 100);
                       const status = pct === 100 ? `${row.totalIngredients}/${row.totalIngredients} ingredients \u2713` : `${row.totalIngredients - row.missingCount}/${row.totalIngredients} ingredients`;
-                      msg += `\u{1F528} **${row.name}** (${row.classJob} ${row.recipeLevel}) \u2014 ${status}
-`;
+                      msg += `\u{1F528} **${row.name}** (${row.classJob} ${row.recipeLevel}) \u2014 ${status}`;
+                      const salePrice = mbPrice2(row.recipeItemId);
+                      let materialCost = 0;
+                      let hasCost = false;
+                      for (const ing of row.ingredients) {
+                        if (ing.fulfilled) continue;
+                        const qty = ing.needed - ing.have;
+                        if (ing.source === "vendor" && ing.unitPrice != null) {
+                          materialCost += ing.unitPrice * qty;
+                          hasCost = true;
+                        } else if (ing.source === "market") {
+                          const p = mbPrice2(ing.itemId);
+                          if (p != null) {
+                            materialCost += p * qty;
+                            hasCost = true;
+                          }
+                        }
+                      }
+                      if (salePrice != null) {
+                        const profit = hasCost ? salePrice - materialCost : null;
+                        const profitStr = profit != null ? ` | profit: ${profit >= 0 ? "+" : ""}${profit.toLocaleString()}g` : "";
+                        msg += ` | sell: ${salePrice.toLocaleString()}g${profitStr}`;
+                      }
+                      msg += "\n";
                       const missing = row.ingredients.filter((i) => !i.fulfilled);
                       if (missing.length > 0) {
                         const parts = missing.map((i) => {
                           const need = i.needed - i.have;
-                          const src = i.unitPrice != null ? ` (${i.source} ${i.unitPrice}g)` : i.source === "gather" ? " (gather)" : "";
+                          const price = i.unitPrice ?? (i.source === "market" ? mbPrice2(i.itemId) : null);
+                          const src = price != null ? ` (${i.source} ${price.toLocaleString()}g)` : i.source === "gather" ? " (gather)" : "";
                           return `${i.name} x${need}${src}`;
                         });
                         msg += `  Missing: ${parts.join(", ")}

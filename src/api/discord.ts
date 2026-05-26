@@ -280,6 +280,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     excludeIngredientIds,
                   });
 
+                  // Helper: NQ min price from phantom → dc cascade
+                  const mb = marketBundle as Record<string, Record<string, any>>;
+                  function mbPrice(itemId: number): number | null {
+                    return mb.phantom[itemId]?.minNQ ?? mb.dc[itemId]?.minNQ ?? null;
+                  }
+
                   // Format top 10
                   const top = craftableRows.slice(0, 10);
                   if (top.length === 0) {
@@ -293,12 +299,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                       const status = pct === 100
                         ? `${row.totalIngredients}/${row.totalIngredients} ingredients ✓`
                         : `${row.totalIngredients - row.missingCount}/${row.totalIngredients} ingredients`;
-                      msg += `🔨 **${row.name}** (${row.classJob} ${row.recipeLevel}) — ${status}\n`;
+                      msg += `🔨 **${row.name}** (${row.classJob} ${row.recipeLevel}) — ${status}`;
+
+                      // Sale price and material cost
+                      const salePrice = mbPrice(row.recipeItemId);
+                      let materialCost = 0;
+                      let hasCost = false;
+                      for (const ing of row.ingredients as any[]) {
+                        if (ing.fulfilled) continue;
+                        const qty = ing.needed - ing.have;
+                        if (ing.source === 'vendor' && ing.unitPrice != null) {
+                          materialCost += ing.unitPrice * qty; hasCost = true;
+                        } else if (ing.source === 'market') {
+                          const p = mbPrice(ing.itemId);
+                          if (p != null) { materialCost += p * qty; hasCost = true; }
+                        }
+                      }
+                      if (salePrice != null) {
+                        const profit = hasCost ? salePrice - materialCost : null;
+                        const profitStr = profit != null
+                          ? ` | profit: ${profit >= 0 ? '+' : ''}${profit.toLocaleString()}g`
+                          : '';
+                        msg += ` | sell: ${salePrice.toLocaleString()}g${profitStr}`;
+                      }
+                      msg += '\n';
+
                       const missing = row.ingredients.filter((i: any) => !i.fulfilled);
                       if (missing.length > 0) {
                         const parts = missing.map((i: any) => {
                           const need = i.needed - i.have;
-                          const src = i.unitPrice != null ? ` (${i.source} ${i.unitPrice}g)` : i.source === 'gather' ? ' (gather)' : '';
+                          const price = i.unitPrice ?? (i.source === 'market' ? mbPrice(i.itemId) : null);
+                          const src = price != null ? ` (${i.source} ${price.toLocaleString()}g)` : i.source === 'gather' ? ' (gather)' : '';
                           return `${i.name} x${need}${src}`;
                         });
                         msg += `  Missing: ${parts.join(', ')}\n`;

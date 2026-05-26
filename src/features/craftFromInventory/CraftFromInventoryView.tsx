@@ -4,10 +4,12 @@ import { useRecipeSnapshot } from '../queries/useRecipeSnapshot';
 import { useVendorShopSnapshot } from '../queries/useVendorShopSnapshot';
 import { useGatheringCatalog } from '../queries/useGatheringCatalog';
 import { useSettingsStore } from '../settings/store';
+import { useUserStore } from '../user/userStore';
 import { CRYSTALS_SEARCH_CATEGORY } from '../queries/commonFilters';
 import { AllaganPasteBox } from '../cleanup/AllaganPasteBox';
 import { parseAllaganInventory, type ParseResult } from '../cleanup/parseAllaganInventory';
-import { findCraftableFromInventory } from './findCraftable';
+import { findCraftableFromInventory, type CraftableRow } from './findCraftable';
+import { useMarketData } from '../watchlist/useMarketData';
 import { SectionHeader } from '../../components/SectionHeader';
 import { ItemNameLinks } from '../../components/ItemNameLinks';
 import { Spinner } from '../../components/Spinner';
@@ -20,6 +22,8 @@ export function CraftFromInventoryView() {
   const vendors = useVendorShopSnapshot();
   const gathering = useGatheringCatalog();
   const hideCrystals = useSettingsStore((s) => s.hideCrystals);
+  const world = useUserStore((s) => s.world);
+  const dc = useUserStore((s) => s.dc);
 
   const [parsed, setParsed] = useState<ParseResult | null>(null);
   const [parseError, setParseError] = useState<string | null>(null);
@@ -75,6 +79,42 @@ export function CraftFromInventoryView() {
       excludeIngredientIds,
     });
   }, [inventory, recipes.data, namesById, maxMissing, marketableOnly, vendors.data, gathering.data, hideCrystals, snapshot.data]);
+
+  const marketIds = useMemo(() => {
+    const ids = new Set<number>();
+    for (const row of rows) {
+      ids.add(row.recipeItemId);
+      for (const ing of row.ingredients) {
+        if (!ing.fulfilled && ing.source === 'market') ids.add(ing.itemId);
+      }
+    }
+    return [...ids];
+  }, [rows]);
+
+  const market = useMarketData(marketIds, world, dc, undefined, { enabled: marketIds.length > 0 });
+
+  function getSalePrice(itemId: number): number | null {
+    const m = market.data;
+    if (!m) return null;
+    return (m.phantom[itemId]?.minNQ ?? m.dc[itemId]?.minNQ) ?? null;
+  }
+
+  function getMaterialCost(row: CraftableRow): number | null {
+    let total = 0;
+    let hasAny = false;
+    for (const ing of row.ingredients) {
+      if (ing.fulfilled) continue;
+      const qty = ing.needed - ing.have;
+      if (ing.source === 'vendor' && ing.unitPrice != null) {
+        total += ing.unitPrice * qty;
+        hasAny = true;
+      } else if (ing.source === 'market') {
+        const price = getSalePrice(ing.itemId);
+        if (price != null) { total += price * qty; hasAny = true; }
+      }
+    }
+    return hasAny ? total : null;
+  }
 
   function handleParse(csv: string) {
     setParseError(null);
@@ -157,6 +197,7 @@ export function CraftFromInventoryView() {
               <tr className="text-text-dim font-mono text-[10px] tracking-widest uppercase bg-bg-card-hi">
                 <th className="text-left px-3 py-2">Item</th>
                 <th className="text-center px-3 py-2">Ready</th>
+                <th className="text-right px-3 py-2">Sell / Spend</th>
                 <th className="text-left px-3 py-2">Ingredients</th>
               </tr>
             </thead>
@@ -174,6 +215,25 @@ export function CraftFromInventoryView() {
                     <div className="font-mono text-[10px] text-text-dim">
                       {row.totalIngredients - row.missingCount}/{row.totalIngredients}
                     </div>
+                  </td>
+                  <td className="px-3 py-2 text-right font-mono text-[11px]">
+                    {(() => {
+                      const sale = getSalePrice(row.recipeItemId);
+                      const cost = getMaterialCost(row);
+                      if (sale == null) return <span className="text-text-dim">—</span>;
+                      const profit = cost != null ? sale - cost : null;
+                      return (
+                        <div className="space-y-0.5">
+                          <div className="text-gold">{fmtGil(sale)}</div>
+                          {cost != null && <div className="text-text-dim">-{fmtGil(cost)}</div>}
+                          {profit != null && (
+                            <div className={profit >= 0 ? 'text-emerald-400' : 'text-crimson'}>
+                              {profit >= 0 ? '+' : ''}{fmtGil(profit)}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </td>
                   <td className="px-3 py-2">
                     <div className="flex flex-wrap gap-x-3 gap-y-0.5">
