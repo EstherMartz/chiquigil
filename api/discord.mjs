@@ -2657,12 +2657,12 @@ async function handler(req, res) {
             const attachmentId = options.find((o) => o.name === "csv")?.value;
             const file = interaction.data.resolved?.attachments?.[attachmentId];
             if (!file?.url) {
-              response = { content: "No CSV file found." };
+              response = { content: "\xA1Oye oye! Qiqirn necesita CSV de inventario \u{1F400} Sube sube archivo de Allagan Tools." };
             } else {
               try {
                 const csvRes = await fetch(file.url);
                 if (!csvRes.ok) {
-                  response = { content: "Failed to download CSV." };
+                  response = { content: "\xA1Ay ay! Qiqirn no pudo descargar CSV... servidor raro raro \u{1F400}" };
                 } else {
                   let mbPrice2 = function(itemId) {
                     return mb.phantom[itemId]?.minNQ ?? mb.dc[itemId]?.minNQ ?? null;
@@ -2693,10 +2693,10 @@ async function handler(req, res) {
                   const top = craftableRows.slice(0, 10);
                   if (top.length === 0) {
                     response = {
-                      content: "No hay nada que puedas craftear con tu inventario actual (max 1 ingrediente faltante)."
+                      content: "Qiqirn mir\xF3 mir\xF3 inventario mucho mucho... nada nada crafteable ahora \u{1F400} Faltan materiales materiales. \xA1Compra compra ingredientes antes!"
                     };
                   } else {
-                    let msg = "**What you can craft right now:**\n\n";
+                    let msg = "\u2728 **\xA1Qiqirn revis\xF3 inventario!** Cositas que puedes craftear ahora mismo:\n\n";
                     for (const row of top) {
                       const salePrice = mbPrice2(row.recipeItemId);
                       let materialCost = 0;
@@ -2717,12 +2717,12 @@ async function handler(req, res) {
                         const readyFmt = row.completeness === 1 ? `${row.totalIngredients}/${row.totalIngredients} \u2713` : `${row.totalIngredients - row.missingCount}/${row.totalIngredients}`;
                         msg += `${verdict} **${profitFmt}** \u2014 **${row.name}** (${row.classJob} ${row.recipeLevel}) \xB7 ${readyFmt}
 `;
-                        msg += `  sell: ${salePrice.toLocaleString()}g`;
-                        if (materialCost > 0) msg += ` / spend: ${materialCost.toLocaleString()}g`;
+                        msg += `  vende: ${salePrice.toLocaleString()}g`;
+                        if (materialCost > 0) msg += ` / gasta: ${materialCost.toLocaleString()}g`;
                         msg += "\n";
                       } else {
                         const readyFmt = row.completeness === 1 ? `${row.totalIngredients}/${row.totalIngredients} \u2713` : `${row.totalIngredients - row.missingCount}/${row.totalIngredients}`;
-                        msg += `\u{1F528} **${row.name}** (${row.classJob} ${row.recipeLevel}) \xB7 ${readyFmt} \xB7 _no price data_
+                        msg += `\u{1F528} **${row.name}** (${row.classJob} ${row.recipeLevel}) \xB7 ${readyFmt} \xB7 _sin datos de precio_
 `;
                       }
                       const missing = row.ingredients.filter((i) => !i.fulfilled);
@@ -2733,19 +2733,19 @@ async function handler(req, res) {
                           const src = price != null ? ` (${i.source} ${price.toLocaleString()}g)` : i.source === "gather" ? " (gather)" : "";
                           return `${i.name} x${need}${src}`;
                         });
-                        msg += `  Missing: ${parts.join(", ")}
+                        msg += `  Faltan: ${parts.join(", ")}
 `;
                       }
                       msg += "\n";
                     }
                     if (craftableRows.length > 10) {
-                      msg += `_...and ${craftableRows.length - 10} more recipes._`;
+                      msg += `_...\xA1y ${craftableRows.length - 10} recetas m\xE1s m\xE1s! Qiqirn tiene mucho mucho que craftear \u2728_`;
                     }
                     response = { content: msg };
                   }
                 }
               } catch (e) {
-                response = { content: `Error processing CSV: ${e instanceof Error ? e.message : String(e)}` };
+                response = { content: `\xA1Error error! Qiqirn no entiende archivo \u{1F400} ${e instanceof Error ? e.message : String(e)}` };
               }
             }
           }

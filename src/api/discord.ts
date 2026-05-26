@@ -244,13 +244,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             const attachmentId = options.find((o: any) => o.name === 'csv')?.value;
             const file = interaction.data.resolved?.attachments?.[attachmentId];
             if (!file?.url) {
-              response = { content: 'No CSV file found.' };
+              response = { content: '¡Oye oye! Qiqirn necesita CSV de inventario 🐀 Sube sube archivo de Allagan Tools.' };
             } else {
               try {
                 // Download CSV from Discord CDN
                 const csvRes = await fetch(file.url);
                 if (!csvRes.ok) {
-                  response = { content: 'Failed to download CSV.' };
+                  response = { content: '¡Ay ay! Qiqirn no pudo descargar CSV... servidor raro raro 🐀' };
                 } else {
                   const csvText = await csvRes.text();
 
@@ -290,10 +290,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                   const top = craftableRows.slice(0, 10);
                   if (top.length === 0) {
                     response = {
-                      content: 'No hay nada que puedas craftear con tu inventario actual (max 1 ingrediente faltante).',
+                      content: 'Qiqirn miró miró inventario mucho mucho... nada nada crafteable ahora 🐀 Faltan materiales materiales. ¡Compra compra ingredientes antes!',
                     };
                   } else {
-                    let msg = '**What you can craft right now:**\n\n';
+                    let msg = '✨ **¡Qiqirn revisó inventario!** Cositas que puedes craftear ahora mismo:\n\n';
                     for (const row of top) {
                       // Compute sale price and material cost
                       const salePrice = mbPrice(row.recipeItemId);
@@ -318,14 +318,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                           ? `${row.totalIngredients}/${row.totalIngredients} ✓`
                           : `${row.totalIngredients - row.missingCount}/${row.totalIngredients}`;
                         msg += `${verdict} **${profitFmt}** — **${row.name}** (${row.classJob} ${row.recipeLevel}) · ${readyFmt}\n`;
-                        msg += `  sell: ${salePrice.toLocaleString()}g`;
-                        if (materialCost > 0) msg += ` / spend: ${materialCost.toLocaleString()}g`;
+                        msg += `  vende: ${salePrice.toLocaleString()}g`;
+                        if (materialCost > 0) msg += ` / gasta: ${materialCost.toLocaleString()}g`;
                         msg += '\n';
                       } else {
                         const readyFmt = row.completeness === 1
                           ? `${row.totalIngredients}/${row.totalIngredients} ✓`
                           : `${row.totalIngredients - row.missingCount}/${row.totalIngredients}`;
-                        msg += `🔨 **${row.name}** (${row.classJob} ${row.recipeLevel}) · ${readyFmt} · _no price data_\n`;
+                        msg += `🔨 **${row.name}** (${row.classJob} ${row.recipeLevel}) · ${readyFmt} · _sin datos de precio_\n`;
                       }
 
                       const missing = row.ingredients.filter((i: any) => !i.fulfilled);
@@ -336,20 +336,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                           const src = price != null ? ` (${i.source} ${price.toLocaleString()}g)` : i.source === 'gather' ? ' (gather)' : '';
                           return `${i.name} x${need}${src}`;
                         });
-                        msg += `  Missing: ${parts.join(', ')}\n`;
+                        msg += `  Faltan: ${parts.join(', ')}\n`;
                       }
                       msg += '\n';
                     }
 
                     if (craftableRows.length > 10) {
-                      msg += `_...and ${craftableRows.length - 10} more recipes._`;
+                      msg += `_...¡y ${craftableRows.length - 10} recetas más más! Qiqirn tiene mucho mucho que craftear ✨_`;
                     }
 
                     response = { content: msg };
                   }
                 }
               } catch (e) {
-                response = { content: `Error processing CSV: ${e instanceof Error ? e.message : String(e)}` };
+                response = { content: `¡Error error! Qiqirn no entiende archivo 🐀 ${e instanceof Error ? e.message : String(e)}` };
               }
             }
           }
