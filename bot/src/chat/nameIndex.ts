@@ -43,3 +43,39 @@ export function searchItems(index: NameIndex, query: string, limit = 5): SearchR
   }
   return results;
 }
+
+/**
+ * Fuzzy search: splits the query into words and returns items whose name
+ * contains ALL words (in any order). Falls back to single-word partial
+ * matches if multi-word yields nothing. Useful for free-text modal input.
+ */
+export function fuzzySearchItems(index: NameIndex, query: string, limit = 10): SearchResult[] {
+  const q = query.toLowerCase().trim();
+  if (!q) return [];
+
+  // First try the normal substring search
+  const exact = searchItems(index, q, limit);
+  if (exact.length > 0) return exact;
+
+  // Split into words and match all
+  const words = q.split(/\s+/).filter(Boolean);
+  if (words.length === 0) return [];
+
+  const results: SearchResult[] = [];
+  for (const entry of index._entries) {
+    if (words.every((w) => entry.lower.includes(w))) {
+      results.push({ id: entry.id, name: entry.name });
+      if (results.length >= limit) break;
+    }
+  }
+  if (results.length > 0) return results;
+
+  // Last resort: match ANY word
+  for (const entry of index._entries) {
+    if (words.some((w) => entry.lower.includes(w))) {
+      results.push({ id: entry.id, name: entry.name });
+      if (results.length >= limit) break;
+    }
+  }
+  return results;
+}

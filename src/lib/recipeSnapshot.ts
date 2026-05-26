@@ -30,6 +30,7 @@ const RECIPE_FIELDS = [
   // bake fails with HTTP 400.
   'Ingredient[].row_id',
   'AmountIngredient',
+  'AmountResult',
 ].join(',');
 
 interface RawRow { row_id: number; fields: Record<string, unknown> }

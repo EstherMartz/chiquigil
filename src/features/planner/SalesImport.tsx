@@ -8,17 +8,29 @@ export function SalesImport() {
   const lastImportBatchId = usePlannerStore((s) => s.lastImportBatchId);
   const inputRef = useRef<HTMLInputElement>(null);
   const [result, setResult] = useState<{ imported: number; matched: number; skipped: number } | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [rolledBack, setRolledBack] = useState(false);
 
   function handleFile(file: File) {
+    setError(null);
     const reader = new FileReader();
     reader.onload = () => {
-      const text = reader.result as string;
-      const rows = parseSalesCsv(text);
-      const res = importCsv(rows);
-      setResult(res);
-      setRolledBack(false);
+      try {
+        const text = reader.result as string;
+        const rows = parseSalesCsv(text);
+        if (rows.length === 0) {
+          setError('No valid rows found in CSV');
+          return;
+        }
+        const res = importCsv(rows);
+        setResult(res);
+        setRolledBack(false);
+      } catch (e) {
+        console.error('[csv-import] error:', e);
+        setError(e instanceof Error ? e.message : 'Import failed');
+      }
     };
+    reader.onerror = () => setError('Failed to read file');
     reader.readAsText(file);
   }
 
@@ -78,6 +90,9 @@ export function SalesImport() {
       )}
       {rolledBack && (
         <span className="font-mono text-[11px] text-crimson">Import rolled back</span>
+      )}
+      {error && (
+        <span className="font-mono text-[11px] text-crimson">{error}</span>
       )}
     </div>
   );

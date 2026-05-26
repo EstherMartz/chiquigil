@@ -4,7 +4,7 @@ import { buildRecipeQueryUrl, parseRecipeResponse, fetchRecipeForItem } from './
 describe('buildRecipeQueryUrl', () => {
   it('builds an XIVAPI Recipe-sheet query filtering by ItemResult', () => {
     expect(buildRecipeQueryUrl(49281)).toBe(
-      'https://v2.xivapi.com/api/search?sheets=Recipe&query=ItemResult%3D49281&fields=ItemResult,CraftType.Name,RecipeLevelTable.ClassJobLevel,RecipeLevelTable.Stars,RecipeLevelTable.Difficulty,RecipeLevelTable.Quality,RecipeLevelTable.Durability,DifficultyFactor,QualityFactor,DurabilityFactor,RequiredCraftsmanship,RequiredControl,Ingredient[].row_id,AmountIngredient&limit=1'
+      'https://v2.xivapi.com/api/search?sheets=Recipe&query=ItemResult%3D49281&fields=ItemResult,CraftType.Name,RecipeLevelTable.ClassJobLevel,RecipeLevelTable.Stars,RecipeLevelTable.Difficulty,RecipeLevelTable.Quality,RecipeLevelTable.Durability,DifficultyFactor,QualityFactor,DurabilityFactor,RequiredCraftsmanship,RequiredControl,Ingredient[].row_id,AmountIngredient,AmountResult&limit=1'
     );
   });
 });
@@ -38,6 +38,7 @@ describe('parseRecipeResponse', () => {
       itemResultId: 49281,
       classJob: 'LTW',
       recipeLevel: 100,
+      amountResult: 1,
       ingredients: [
         { itemId: 100, amount: 2 },
         { itemId: 200, amount: 3 },
@@ -150,5 +151,30 @@ describe('fetchRecipeForItem', () => {
   it('throws on non-OK response', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 400 }));
     await expect(fetchRecipeForItem(1)).rejects.toThrow('XIVAPI 400');
+  });
+});
+
+describe('parseRecipeResponse amountResult (yield)', () => {
+  const base = {
+    ItemResult: { value: 5 },
+    CraftType: { fields: { Name: 'Blacksmith' } },
+    RecipeLevelTable: { fields: { ClassJobLevel: 1 } },
+    Ingredient: [{ value: 10 }],
+    AmountIngredient: [1],
+  };
+
+  it('reads AmountResult as the per-craft yield', () => {
+    const raw = { results: [{ fields: { ...base, AmountResult: 3 } }] };
+    expect(parseRecipeResponse(5, raw)?.amountResult).toBe(3);
+  });
+
+  it('defaults to 1 when AmountResult is absent', () => {
+    const raw = { results: [{ fields: { ...base } }] };
+    expect(parseRecipeResponse(5, raw)?.amountResult).toBe(1);
+  });
+
+  it('clamps a zero/invalid AmountResult to 1 (never divides by zero downstream)', () => {
+    const raw = { results: [{ fields: { ...base, AmountResult: 0 } }] };
+    expect(parseRecipeResponse(5, raw)?.amountResult).toBe(1);
   });
 });

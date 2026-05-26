@@ -1,4 +1,4 @@
-import { parseMarketResponse, type MarketData } from '../lib/universalis.js';
+import { parseMarketResponse, type MarketData } from '../lib/universalis';
 
 const BATCH_SIZE = 100;
 const MAX_CONCURRENT = 8;

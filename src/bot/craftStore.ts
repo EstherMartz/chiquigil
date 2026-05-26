@@ -1,5 +1,5 @@
 import { createClient } from '@libsql/client';
-import type { CraftProject, StoredTask, CraftTask, ChannelState } from './craftTypes.js';
+import type { CraftProject, StoredTask, CraftTask, ChannelState } from './craftTypes';
 
 export interface CraftStore {
   createProject(p: {

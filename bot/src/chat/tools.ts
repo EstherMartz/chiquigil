@@ -53,6 +53,7 @@ export interface ToolContext {
 const CACHE_TTL_MS = 60 * 60_000;
 const WARMUP_INTERVAL_MS = 60 * 60_000;
 const CACHE_FILE = join(dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1')), '../../.cache/market.json');
+const SHARED_CACHE_FILE = join(dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1')), '../../../public/data/market-cache.json');
 
 interface GlobalCache {
   phantom: MarketData;
@@ -77,16 +78,27 @@ interface DiskCache {
 
 export async function saveCacheToDisk(): Promise<void> {
   if (!globalCache) return;
-  await mkdir(dirname(CACHE_FILE), { recursive: true });
-  await writeFile(CACHE_FILE, JSON.stringify({
+  const json = JSON.stringify({
     phantom: globalCache.phantom,
     dc: globalCache.dc,
     region: globalCache.region,
     fetchedIds: [...globalCache.fetchedIds],
     ts: globalCache.ts,
-  } satisfies DiskCache));
+  } satisfies DiskCache);
+
+  await mkdir(dirname(CACHE_FILE), { recursive: true });
+  await writeFile(CACHE_FILE, json);
   const itemCount = Object.keys(globalCache.phantom).length;
   console.log(`[cache] saved to disk (${itemCount} items)`);
+
+  // Also write to public/ so the web app can pre-seed its cache from it
+  try {
+    await mkdir(dirname(SHARED_CACHE_FILE), { recursive: true });
+    await writeFile(SHARED_CACHE_FILE, json);
+    console.log(`[cache] shared cache updated for web app`);
+  } catch (e) {
+    console.warn('[cache] failed to write shared cache:', e instanceof Error ? e.message : e);
+  }
 }
 
 export async function loadCacheFromDisk(): Promise<{ loaded: boolean; fresh: boolean }> {
@@ -199,15 +211,19 @@ export function startCacheWarmup(ctx: ToolContext): void {
       if (loaded && !fresh) {
         const elapsed = ((Date.now() - start) / 1000).toFixed(1);
         console.log(`[cache] warmup done in ${elapsed}s (stale disk cache, refreshing in background…)`);
+        const bgStart = Date.now();
+        console.log(`[cache] background refresh: fetching ${allIds.length} items across 3 scopes…`);
         fetchMarketForOutputs(allIds, ctx.cfg).then(async (data) => {
           globalCache = { phantom: data.phantom, dc: data.dc, region: data.region, fetchedIds: new Set(allIds), ts: Date.now() };
           await saveCacheToDisk();
-          console.log(`[cache] background refresh complete (${allIds.length} items)`);
+          const bgElapsed = ((Date.now() - bgStart) / 1000).toFixed(1);
+          console.log(`[cache] background refresh complete (${allIds.length} items in ${bgElapsed}s)`);
         }).catch((e) => console.error('[cache] background refresh failed:', e));
         return;
       }
 
       // No disk cache — fetch synchronously
+      console.log(`[cache] no disk cache — fetching ${allIds.length} items across 3 scopes…`);
       await cachedMarketFetch(allIds, ctx.cfg);
       await saveCacheToDisk();
       const elapsed = ((Date.now() - start) / 1000).toFixed(1);

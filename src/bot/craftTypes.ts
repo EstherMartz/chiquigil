@@ -1,5 +1,5 @@
-import type { CrafterCode } from '../features/items/types.js';
-import type { CurrencyId } from '../lib/currencies.js';
+import type { CrafterCode } from '../features/items/types';
+import type { CurrencyId } from '../lib/currencies';
 
 export type TaskSource = 'craft' | 'market' | 'vendor' | 'currency' | 'gather';
 

@@ -273,6 +273,32 @@ export const usePlannerStore = create<PlannerState>()(
     {
       name: 'gilipichi-planner-v1',
       version: 1,
+      storage: {
+        getItem: (name) => {
+          const v = localStorage.getItem(name);
+          return v ? JSON.parse(v) : null;
+        },
+        setItem: (name, value) => {
+          try {
+            localStorage.setItem(name, JSON.stringify(value));
+          } catch (e) {
+            console.error('[planner] localStorage write failed — trimming old dedup keys');
+            // Trim oldest half of importedSaleKeys to free space
+            const parsed = typeof value === 'string' ? JSON.parse(value) : value;
+            if (parsed?.state?.importedSaleKeys?.length > 100) {
+              parsed.state.importedSaleKeys = parsed.state.importedSaleKeys.slice(
+                Math.floor(parsed.state.importedSaleKeys.length / 2),
+              );
+            }
+            try {
+              localStorage.setItem(name, JSON.stringify(parsed));
+            } catch {
+              console.error('[planner] localStorage still full after trim');
+            }
+          }
+        },
+        removeItem: (name) => localStorage.removeItem(name),
+      },
     },
   ),
 );

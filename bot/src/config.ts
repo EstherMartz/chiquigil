@@ -22,4 +22,7 @@ export const config = {
   groqApiKey: optional('GROQ_API_KEY'),
   chatModel: process.env.CHAT_MODEL ?? 'meta-llama/llama-3.1-70b-instruct',
   chatChannelId: optional('CHAT_CHANNEL_ID'),
+  craftChannelId: optional('CRAFT_CHANNEL_ID'),
+  crafterRoleId: optional('CRAFT_ROLE_ID'),
+  craftDbPath: process.env.CRAFT_DB_PATH ?? 'data/craft.db',
 };

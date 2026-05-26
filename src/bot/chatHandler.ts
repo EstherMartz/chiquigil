@@ -1,6 +1,6 @@
-import { callGroq, parseResponse, type ChatMessage } from './llm.js';
-import { TOOL_DEFINITIONS, executeTool, type ToolDeps } from './tools.js';
-import { SYSTEM_PROMPT } from './systemPrompt.js';
+import { callGroq, parseResponse, type ChatMessage } from './llm';
+import { TOOL_DEFINITIONS, executeTool, type ToolDeps } from './tools';
+import { SYSTEM_PROMPT } from './systemPrompt';
 
 const MAX_ITERATIONS = 5;
 const CAT_CHANCE = 0.15; // ~1 in 7 responses

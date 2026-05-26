@@ -1,4 +1,4 @@
-import { Client, Events, GatewayIntentBits, Partials, type Message } from 'discord.js';
+import { Client, Events, GatewayIntentBits, PermissionFlagsBits, Partials, type Message, type TextChannel } from 'discord.js';
 import { config } from './config';
 import { loadSnapshots } from './loadSnapshots';
 import { handleCsv } from './handleCsv';
@@ -9,6 +9,9 @@ import { registerCommands } from './registerCommands';
 import { handleChatMessage, type ChatDeps } from './chat/chatRouter';
 import { buildNameIndex } from './chat/nameIndex';
 import { startCacheWarmup } from './chat/tools';
+import { openCraftStore } from './craft/store';
+import { handleCraftCommand, handleCraftAutocomplete, ensureCraftChannel, type CraftCommandDeps } from './craft/commands';
+import { handleCraftInteraction, type CraftInteractionDeps } from './craft/interactions';
 
 const TTL_MS = 30 * 60_000;       // 30-min sliding TTL
 const MAX_ENTRIES = 100;
@@ -35,6 +38,33 @@ async function main() {
   sweepTimer.unref?.();
 
   const nameIndex = buildNameIndex(snapshots.namesById);
+
+  // Craft coordinator store
+  const { mkdirSync } = await import('node:fs');
+  const { dirname } = await import('node:path');
+  mkdirSync(dirname(config.craftDbPath), { recursive: true });
+  const craftStore = openCraftStore(config.craftDbPath);
+  console.log(`[craft] store opened at ${config.craftDbPath}`);
+
+  const craftCfg = { world: config.world, dc: config.dc, region: config.region };
+  const craftDeps: CraftCommandDeps = {
+    store: craftStore,
+    snapshots,
+    nameIndex,
+    cfg: craftCfg,
+    craftChannelId: config.craftChannelId,
+    crafterRoleId: config.crafterRoleId,
+    fetchMarket: fetchMarketForOutputs,
+  };
+  const craftInteractionDeps: CraftInteractionDeps = {
+    store: craftStore,
+    snapshots,
+    nameIndex,
+    cfg: craftCfg,
+    craftChannelId: config.craftChannelId,
+    crafterRoleId: config.crafterRoleId,
+    fetchMarket: fetchMarketForOutputs,
+  };
 
   const chatApiKey = config.anthropicApiKey ?? config.groqApiKey ?? config.openrouterApiKey;
   const chatProvider = config.anthropicApiKey ? 'anthropic' as const
@@ -76,6 +106,16 @@ async function main() {
       console.log('Chat disabled (no ANTHROPIC_API_KEY or OPENROUTER_API_KEY)');
     } else if (!config.chatChannelId) {
       console.log('Chat disabled (no CHAT_CHANNEL_ID)');
+    }
+
+    // Ensure craft channel board/prompt survive restarts
+    for (const guildId of config.guildAllowlist) {
+      ensureCraftChannel(craftDeps, guildId, c).catch((e) =>
+        console.error('[craft] startup channel check failed:', e instanceof Error ? e.message : e),
+      );
+    }
+    if (config.craftChannelId) {
+      console.log(`Craft channel: ${config.craftChannelId}`);
     }
   });
 
@@ -134,6 +174,49 @@ async function main() {
   });
 
   client.on(Events.InteractionCreate, async (interaction) => {
+    // Craft coordinator — autocomplete
+    if (interaction.isAutocomplete() && interaction.commandName === 'craft') {
+      await handleCraftAutocomplete(interaction, craftDeps).catch((e) => console.error('[craft] autocomplete error:', e));
+      return;
+    }
+
+    // Craft coordinator — slash command
+    if (interaction.isChatInputCommand() && interaction.commandName === 'craft') {
+      await handleCraftCommand(interaction, craftDeps).catch((e) => console.error('[craft] command error:', e));
+      return;
+    }
+
+    // Craft coordinator — component interactions (claim/progress/unclaim/refresh)
+    if ((interaction.isButton() || interaction.isStringSelectMenu() || interaction.isModalSubmit()) &&
+        'customId' in interaction && (interaction.customId as string).startsWith('cproj:')) {
+      await handleCraftInteraction(interaction, craftInteractionDeps).catch((e) => console.error('[craft] interaction error:', e));
+      return;
+    }
+
+    if (interaction.isChatInputCommand() && interaction.commandName === 'purge') {
+      const member = interaction.member;
+      const perms = member && 'permissions' in member ? member.permissions : null;
+      if (!perms || typeof perms === 'string' || !perms.has(PermissionFlagsBits.ManageMessages)) {
+        await interaction.reply({ content: 'No tienes permisos para usar este comando 🐀', ephemeral: true });
+        return;
+      }
+
+      const amount = interaction.options.getInteger('amount') ?? 100;
+      const channel = interaction.channel as TextChannel;
+
+      await interaction.deferReply({ ephemeral: true });
+      try {
+        const deleted = await channel.bulkDelete(amount, true);
+        console.log(`[purge] ${interaction.user.tag} deleted ${deleted.size} messages in #${channel.name}`);
+        await interaction.editReply(`🧹 Qiqirn barrió ${deleted.size} mensajes — canal limpio limpio ✨`);
+      } catch (e) {
+        const m = e instanceof Error ? e.message : String(e);
+        console.error(`[purge] error: ${m}`);
+        await interaction.editReply(`No pude borrar mensajes: \`${m}\``);
+      }
+      return;
+    }
+
     // Handle /cleanup slash command
     if (interaction.isChatInputCommand() && interaction.commandName === 'cleanup') {
       const attachment = interaction.options.getAttachment('csv', true);
