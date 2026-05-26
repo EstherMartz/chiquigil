@@ -18,6 +18,7 @@ const FIELDS = [
   // See recipeSnapshot.ts: bare `Ingredient` busts XIVAPI's row budget.
   'Ingredient[].row_id',
   'AmountIngredient',
+  'AmountResult',
 ].join(',');
 
 export interface Ingredient {
@@ -39,8 +40,15 @@ export interface Recipe {
   classJob: CrafterCode;
   recipeLevel: number;
   ingredients: Ingredient[];
-  stats?: RecipeStats;
+  /**
+   * Units produced per synthesis (XIVAPI `AmountResult`). Most recipes yield 1,
+   * but many intermediates (ingots, lumber, cloth, reagents) yield 3. Optional
+   * for forward-compat: snapshots baked before this field existed have no value,
+   * so consumers must treat a missing value as 1 (`recipe.amountResult ?? 1`).
+   * (Named `amountResult` rather than `yield` because `yield` is a reserved word.)
+   */
   amountResult?: number;
+  stats?: RecipeStats;
 }
 
 const NAME_TO_CODE: Record<string, CrafterCode> = {
@@ -78,6 +86,7 @@ interface RawResultFields {
   RequiredControl?: number;
   Ingredient?: RawIngredient[];
   AmountIngredient?: number[];
+  AmountResult?: number;
   [k: string]: unknown;
 }
 
@@ -115,7 +124,10 @@ export function parseRecipeResponse(itemId: number, raw: { results?: Array<{ fie
       requiredControl: first.RequiredControl ?? 0,
     };
   }
-  return { itemResultId: itemId, classJob: code, recipeLevel, ingredients, ...(stats ? { stats } : {}) };
+  // AmountResult = units produced per synthesis. Clamp to >=1 so a missing or
+  // zero value can never inflate craft counts (it'd divide-by-zero downstream).
+  const perCraft = typeof first.AmountResult === 'number' && first.AmountResult > 0 ? first.AmountResult : 1;
+  return { itemResultId: itemId, classJob: code, recipeLevel, ingredients, amountResult: perCraft, ...(stats ? { stats } : {}) };
 }
 
 export async function fetchRecipeForItem(itemId: number): Promise<Recipe | null> {

@@ -1,29 +1,29 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { verifyKey } from 'discord-interactions';
 import { waitUntil } from '@vercel/functions';
-import { handleChat } from '../src/bot/chatHandler';
+import { handleChat } from '../src/bot/chatHandler.js';
 import {
   handleCraftNew,
   handleCraftList,
   handleCraftShow,
   handleCraftClose,
   handleCraftSetup,
-} from '../src/bot/craftCommands';
+} from '../src/bot/craftCommands.js';
 import {
   handleCraftButton,
   handleCraftSelect,
   handleCraftRequestButton,
   handleCraftRequestModal,
   handleCraftProgressModal,
-} from '../src/bot/craftInteractions';
-import { loadSnapshots } from '../src/bot/loadSnapshots';
-import { buildNameIndex } from '../src/bot/nameIndex';
-import { openCraftStore } from '../src/bot/craftStore';
-import { fetchMarketForOutputs } from '../src/bot/marketFetch';
-import * as discordApi from '../src/bot/discordApi';
-import type { ToolDeps } from '../src/bot/tools';
-import type { CraftCommandDeps } from '../src/bot/craftCommands';
-import type { CraftInteractionDeps } from '../src/bot/craftInteractions';
+} from '../src/bot/craftInteractions.js';
+import { loadSnapshots } from '../src/bot/loadSnapshots.js';
+import { buildNameIndex } from '../src/bot/nameIndex.js';
+import { openCraftStore } from '../src/bot/craftStore.js';
+import { fetchMarketForOutputs } from '../src/bot/marketFetch.js';
+import * as discordApi from '../src/bot/discordApi.js';
+import type { ToolDeps } from '../src/bot/tools.js';
+import type { CraftCommandDeps } from '../src/bot/craftCommands.js';
+import type { CraftInteractionDeps } from '../src/bot/craftInteractions.js';
 
 const DISCORD_APP_ID = process.env.DISCORD_APP_ID ?? '';
 const DISCORD_PUBLIC_KEY = process.env.DISCORD_PUBLIC_KEY ?? '';
