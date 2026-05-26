@@ -248,12 +248,12 @@ function parseResponse(raw) {
   return { content: choice.message.content, toolCalls: [] };
 }
 var GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
-var MODEL = "meta-llama/llama-4-scout-17b-16e-instruct";
-async function callGroq(apiKey, messages, tools) {
+var GROQ_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct";
+async function callGroq(apiKey, messages, tools, toolChoice = "auto") {
   const res = await fetch(GROQ_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({ model: MODEL, messages, tools: tools.length > 0 ? tools : void 0, max_tokens: 1024, temperature: 0.7 })
+    body: JSON.stringify({ model: GROQ_MODEL, messages, tools: tools.length > 0 ? tools : void 0, tool_choice: tools.length > 0 ? toolChoice : void 0, max_tokens: 1024, temperature: 0.4 })
   });
   if (!res.ok) {
     const text = await res.text().catch(() => "");
@@ -316,6 +316,9 @@ function fuzzySearchItems(index, query, limit = 10) {
   return results;
 }
 
+// src/lib/recipeCache.ts
+import { openDB } from "idb";
+
 // src/lib/priceTrust.ts
 var MIN_RECENT_SALES = 5;
 var MAX_LISTING_RATIO = 5;
@@ -365,6 +368,51 @@ function pickFirstTrustedTier(m, hq, canHq) {
     return toTier(c);
   }
   return null;
+}
+
+// src/lib/universalis.ts
+function buildMarketUrl(scope, ids) {
+  return `https://universalis.app/api/v2/${scope}/${ids.join(",")}?listings=10&entries=15`;
+}
+function minPrice(arr, hq) {
+  const v = arr.filter((l) => l.hq === hq).map((l) => l.pricePerUnit);
+  return v.length ? Math.min(...v) : null;
+}
+function avgPrice(arr, hq) {
+  const v = arr.filter((l) => l.hq === hq).map((l) => l.pricePerUnit);
+  if (!v.length) return null;
+  return Math.round(v.reduce((a, b) => a + b, 0) / v.length);
+}
+function parseMarketResponse(raw) {
+  const out = {};
+  const items = raw.items ?? (typeof raw.itemID === "number" ? { [String(raw.itemID)]: raw } : {});
+  for (const [id, item] of Object.entries(items)) {
+    const listings = item.listings ?? [];
+    const history = item.recentHistory ?? [];
+    const nqHist = history.filter((h) => !h.hq).map((h) => h.pricePerUnit);
+    const hqHist = history.filter((h) => h.hq).map((h) => h.pricePerUnit);
+    out[id] = {
+      minNQ: minPrice(listings, false),
+      minHQ: minPrice(listings, true),
+      avgNQ: avgPrice(history, false),
+      avgHQ: avgPrice(history, true),
+      medianNQ: trimmedMedian(nqHist),
+      medianHQ: trimmedMedian(hqHist),
+      recentSalesNQ: nqHist.length,
+      recentSalesHQ: hqHist.length,
+      velocity: item.regularSaleVelocity ?? 0,
+      lastUploadTime: item.lastUploadTime ?? 0,
+      listingCount: listings.length,
+      worldListings: listings.map((l) => ({
+        world: l.worldName ?? "",
+        price: l.pricePerUnit,
+        hq: l.hq
+      })),
+      averagePriceNQ: item.averagePriceNQ ?? null,
+      averagePriceHQ: item.averagePriceHQ ?? null
+    };
+  }
+  return out;
 }
 
 // src/features/profit/computeProfit.ts
@@ -670,9 +718,16 @@ async function priceCheck(args, deps) {
   const itemName = String(args.item_name ?? "");
   const matches = searchItems(deps.nameIndex, itemName, 3);
   if (matches.length === 0) return JSON.stringify({ error: "No items found matching that name" });
+  const ids = matches.map((m) => m.id);
+  const [phantomRes, dcRes] = await Promise.all([
+    fetch(buildMarketUrl(deps.world, ids)).then((r) => r.ok ? r.json() : null).catch(() => null),
+    fetch(buildMarketUrl(deps.dc, ids)).then((r) => r.ok ? r.json() : null).catch(() => null)
+  ]);
+  const phantomData = phantomRes ? parseMarketResponse(phantomRes) : {};
+  const dcData = dcRes ? parseMarketResponse(dcRes) : {};
   const results = matches.map((m) => {
-    const ph = deps.marketBundle.phantom[m.id];
-    const dc = deps.marketBundle.dc[m.id];
+    const ph = phantomData[String(m.id)];
+    const dc = dcData[String(m.id)];
     return {
       name: m.name,
       id: m.id,
@@ -849,6 +904,10 @@ FORMATO OBLIGATORIO PARA RESULTADOS \u2014 cada item DEBE mostrar la ACCI\xD3N +
 SIEMPRE explica QU\xC9 HACER con el item (comprar de NPC, craftear, comprar barato en MB) y CU\xC1NTO se gana`;
 
 // src/bot/chatHandler.ts
+var MARKET_KEYWORDS = /precio|comprar|vender|vende|craft|craftear|gil|mercado|market|ganancia|rentable|barato|caro|flip|materia|tinte|dye|pocion|poción|comida|arma|armadura|accesorio|mueble|minion|oferta|ganga|npc|vendor|recipe|receta|ingrediente|material|madera|metal|tela|cuero|piedra|lumber|cloth|leather|stone|item|objeto|cuanto|cuánto|cuesta|vale/i;
+function needsMarketTools(question) {
+  return MARKET_KEYWORDS.test(question);
+}
 var MAX_ITERATIONS = 5;
 var CAT_CHANCE = 0.15;
 var CAT_GIFS = [
@@ -863,6 +922,7 @@ function stripLeakedMarkup(text) {
 }
 async function handleChat(question, deps) {
   const karashNudge = Math.random() < 0.01 ? "\n\n[Nota interna: en esta respuesta, entrelaza de forma natural una menci\xF3n a Karash Barash, un Lalafell turbio de Ul'dah que Qiqirn conoce. Puede ser una comparaci\xF3n, un recuerdo, una queja o un rumor \u2014 que fluya dentro de la conversaci\xF3n, no pegado al final.]" : "";
+  const tools = needsMarketTools(question) ? TOOL_DEFINITIONS : [];
   const messages = [
     { role: "system", content: SYSTEM_PROMPT + karashNudge },
     { role: "user", content: question }
@@ -870,9 +930,10 @@ async function handleChat(question, deps) {
   let finalContent = null;
   let toolsEverCalled = false;
   for (let i = 0; i < MAX_ITERATIONS; i++) {
+    const toolChoice = tools.length > 0 && !toolsEverCalled ? "required" : "auto";
     let raw;
     try {
-      raw = await callGroq(deps.groqApiKey, messages, TOOL_DEFINITIONS);
+      raw = await callGroq(deps.groqApiKey, messages, tools, toolChoice);
     } catch (e) {
       const errMsg = e instanceof Error ? e.message : String(e);
       if (errMsg.includes("tool_use_failed") || errMsg.includes("tool call validation failed")) {
@@ -2351,51 +2412,6 @@ async function openCraftStore(url) {
   };
 }
 
-// src/lib/recipeCache.ts
-import { openDB } from "idb";
-
-// src/lib/universalis.ts
-function minPrice(arr, hq) {
-  const v = arr.filter((l) => l.hq === hq).map((l) => l.pricePerUnit);
-  return v.length ? Math.min(...v) : null;
-}
-function avgPrice(arr, hq) {
-  const v = arr.filter((l) => l.hq === hq).map((l) => l.pricePerUnit);
-  if (!v.length) return null;
-  return Math.round(v.reduce((a, b) => a + b, 0) / v.length);
-}
-function parseMarketResponse(raw) {
-  const out = {};
-  const items = raw.items ?? (typeof raw.itemID === "number" ? { [String(raw.itemID)]: raw } : {});
-  for (const [id, item] of Object.entries(items)) {
-    const listings = item.listings ?? [];
-    const history = item.recentHistory ?? [];
-    const nqHist = history.filter((h) => !h.hq).map((h) => h.pricePerUnit);
-    const hqHist = history.filter((h) => h.hq).map((h) => h.pricePerUnit);
-    out[id] = {
-      minNQ: minPrice(listings, false),
-      minHQ: minPrice(listings, true),
-      avgNQ: avgPrice(history, false),
-      avgHQ: avgPrice(history, true),
-      medianNQ: trimmedMedian(nqHist),
-      medianHQ: trimmedMedian(hqHist),
-      recentSalesNQ: nqHist.length,
-      recentSalesHQ: hqHist.length,
-      velocity: item.regularSaleVelocity ?? 0,
-      lastUploadTime: item.lastUploadTime ?? 0,
-      listingCount: listings.length,
-      worldListings: listings.map((l) => ({
-        world: l.worldName ?? "",
-        price: l.pricePerUnit,
-        hq: l.hq
-      })),
-      averagePriceNQ: item.averagePriceNQ ?? null,
-      averagePriceHQ: item.averagePriceHQ ?? null
-    };
-  }
-  return out;
-}
-
 // src/bot/marketFetch.ts
 var BATCH_SIZE = 100;
 var MAX_CONCURRENT = 8;
@@ -2595,22 +2611,25 @@ async function handler(req, res) {
             const toolDeps = {
               marketBundle,
               snapshots,
-              nameIndex
+              nameIndex,
+              world: HOME_WORLD,
+              dc: HOME_DC
             };
+            const chatStart = Date.now();
             const output = await handleChat(question, {
               groqApiKey: GROQ_API_KEY,
               toolDeps
             });
+            const chatElapsed = ((Date.now() - chatStart) / 1e3).toFixed(1);
             try {
               const parsed = JSON.parse(output);
-              response = { content: parsed.content };
-              if (parsed.image) {
-                response.embeds = [
-                  {
-                    image: { url: parsed.image }
-                  }
-                ];
-              }
+              const embed = {
+                color: 13936984,
+                description: parsed.content,
+                footer: { text: `${GROQ_MODEL} \xB7 ${chatElapsed}s` }
+              };
+              if (parsed.image) embed.image = { url: parsed.image };
+              response = { embeds: [embed] };
             } catch {
               response = { content: output };
             }
