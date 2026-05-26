@@ -216,6 +216,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               marketBundle: marketBundle as any,
               snapshots,
               nameIndex,
+              world: HOME_WORLD,
+              dc: HOME_DC,
             };
 
             const chatStart = Date.now();

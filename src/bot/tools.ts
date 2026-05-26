@@ -3,6 +3,7 @@ import type { BotSnapshots } from './loadSnapshots';
 import type { NameIndex } from './nameIndex';
 import { searchItems } from './nameIndex';
 import type { MarketBundle } from './marketFetch';
+import { buildMarketUrl, parseMarketResponse } from '../lib/universalis';
 import { runCraftFlip } from '../features/queries/runCraftFlip';
 import { findBestDeals } from '../features/insights/bestDeals';
 import { runVendorFlip } from '../features/queries/runVendorFlip';
@@ -43,6 +44,8 @@ export interface ToolDeps {
   marketBundle: MarketBundle;
   snapshots: BotSnapshots;
   nameIndex: NameIndex;
+  world: string;
+  dc: string;
 }
 
 export function sanitizeArgs(rawArgs: Record<string, unknown>): Record<string, unknown> {
@@ -149,9 +152,20 @@ async function priceCheck(args: Record<string, unknown>, deps: ToolDeps): Promis
   const matches = searchItems(deps.nameIndex, itemName, 3);
   if (matches.length === 0) return JSON.stringify({ error: 'No items found matching that name' });
 
+  const ids = matches.map((m) => m.id);
+
+  // Always fetch live from Universalis for accurate prices
+  const [phantomRes, dcRes] = await Promise.all([
+    fetch(buildMarketUrl(deps.world, ids)).then(r => r.ok ? r.json() : null).catch(() => null),
+    fetch(buildMarketUrl(deps.dc, ids)).then(r => r.ok ? r.json() : null).catch(() => null),
+  ]);
+
+  const phantomData = phantomRes ? parseMarketResponse(phantomRes) : {};
+  const dcData = dcRes ? parseMarketResponse(dcRes) : {};
+
   const results = matches.map((m) => {
-    const ph = deps.marketBundle.phantom[m.id];
-    const dc = deps.marketBundle.dc[m.id];
+    const ph = phantomData[String(m.id)];
+    const dc = dcData[String(m.id)];
     return {
       name: m.name,
       id: m.id,
