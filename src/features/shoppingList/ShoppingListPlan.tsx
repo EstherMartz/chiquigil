@@ -8,6 +8,8 @@ import type { ShoppingListItem } from './shoppingListStore';
 import { applyShoppingOverrides, NPC_VENDOR_WORLD, type ChosenSource } from './applyShoppingOverrides';
 import { fmtGil } from '../../lib/format';
 import { CopyButton } from '../../components/CopyButton';
+import { CurrencyIcon } from '../../lib/icons';
+import { getCurrencyById } from '../../lib/currencies';
 
 interface Props {
   survey: IngredientSurvey[];
@@ -215,9 +217,13 @@ function SourceCell({
           └─ {survey.currency.costPerUnit < 10 ? survey.currency.costPerUnit.toFixed(2) : Math.round(survey.currency.costPerUnit)}{' '}
           <Link
             to={`/currency-flip?currency=${survey.currency.id}`}
-            className="text-aether hover:underline decoration-1 underline-offset-4"
+            className="text-aether hover:underline decoration-1 underline-offset-4 inline-flex items-center gap-1"
           >
-            {survey.currency.shortLabel}
+            {(() => {
+              const def = getCurrencyById(survey.currency.id);
+              return def ? <CurrencyIcon currencyKey={def.itemId} size={12} /> : null;
+            })()}
+            <span>{survey.currency.shortLabel}</span>
           </Link>
           {' '}avail.
         </div>
