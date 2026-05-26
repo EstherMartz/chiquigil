@@ -2263,11 +2263,36 @@ async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
-  const rawBody = await readBody(req);
+  let rawBody;
+  try {
+    rawBody = await readBody(req);
+  } catch (e) {
+    return res.status(500).json({ error: "Failed to read body", detail: String(e) });
+  }
   const signature = req.headers["x-signature-ed25519"] ?? "";
   const timestamp = req.headers["x-signature-timestamp"] ?? "";
-  if (!verifyKey(rawBody, signature, timestamp, DISCORD_PUBLIC_KEY)) {
-    return res.status(401).json({ error: "Invalid signature" });
+  let isValid;
+  try {
+    const result = verifyKey(rawBody, signature, timestamp, DISCORD_PUBLIC_KEY);
+    isValid = result instanceof Promise ? await result : result;
+  } catch (e) {
+    return res.status(500).json({
+      error: "verifyKey threw",
+      detail: String(e),
+      bodyLen: rawBody.length,
+      hasSig: signature.length > 0,
+      hasTs: timestamp.length > 0,
+      keyLen: DISCORD_PUBLIC_KEY.length
+    });
+  }
+  if (!isValid) {
+    return res.status(401).json({
+      error: "Invalid signature",
+      bodyLen: rawBody.length,
+      hasSig: signature.length > 0,
+      hasTs: timestamp.length > 0,
+      keyLen: DISCORD_PUBLIC_KEY.length
+    });
   }
   const interaction = JSON.parse(rawBody);
   if (interaction.type === 1) {
