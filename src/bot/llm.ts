@@ -59,7 +59,7 @@ export function parseResponse(raw: GroqResponse): ParsedResponse {
 }
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const MODEL = 'meta-llama/llama-4-scout-17b-16e-instruct';
+export const GROQ_MODEL = 'meta-llama/llama-4-scout-17b-16e-instruct';
 
 export async function callGroq(
   apiKey: string,
@@ -69,7 +69,7 @@ export async function callGroq(
   const res = await fetch(GROQ_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({ model: MODEL, messages, tools: tools.length > 0 ? tools : undefined, max_tokens: 1024, temperature: 0.7 }),
+    body: JSON.stringify({ model: GROQ_MODEL, messages, tools: tools.length > 0 ? tools : undefined, max_tokens: 1024, temperature: 0.7 }),
   });
   if (!res.ok) {
     const text = await res.text().catch(() => '');

@@ -2,6 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { verifyKey } from 'discord-interactions';
 import { waitUntil } from '@vercel/functions';
 import { handleChat } from '../bot/chatHandler';
+import { GROQ_MODEL } from '../bot/llm';
 import {
   handleCraftNew,
   handleCraftList,
@@ -217,21 +218,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               nameIndex,
             };
 
+            const chatStart = Date.now();
             const output = await handleChat(question, {
               groqApiKey: GROQ_API_KEY,
               toolDeps,
             });
+            const chatElapsed = ((Date.now() - chatStart) / 1000).toFixed(1);
 
             try {
               const parsed = JSON.parse(output);
-              response = { content: parsed.content };
-              if (parsed.image) {
-                response.embeds = [
-                  {
-                    image: { url: parsed.image },
-                  },
-                ];
-              }
+              const embed: Record<string, unknown> = {
+                color: 0xD4A958,
+                description: parsed.content,
+                footer: { text: `${GROQ_MODEL} · ${chatElapsed}s` },
+              };
+              if (parsed.image) embed.image = { url: parsed.image };
+              response = { embeds: [embed] };
             } catch {
               response = { content: output };
             }
