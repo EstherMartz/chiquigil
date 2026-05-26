@@ -12,6 +12,7 @@ export async function writeMarketCache(cache: SharedCache): Promise<string> {
   const blob = await put('market-cache.json', JSON.stringify(cache), {
     access: 'public',
     addRandomSuffix: false,
+    allowOverwrite: true,
   });
   return blob.url;
 }

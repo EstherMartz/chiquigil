@@ -130,7 +130,8 @@ var import_blob = require("@vercel/blob");
 async function writeMarketCache(cache) {
   const blob = await (0, import_blob.put)("market-cache.json", JSON.stringify(cache), {
     access: "public",
-    addRandomSuffix: false
+    addRandomSuffix: false,
+    allowOverwrite: true
   });
   return blob.url;
 }
