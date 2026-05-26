@@ -18,3 +18,7 @@ test_output.txt
 .vercel
 public/data/market-cache.json
 .env*
+
+# Locally-saved wiki reference pages
+Dictionary of Icons - Gamer Escape's Final Fantasy XIV (FFXIV, FF14) wiki.html
+Dictionary of Icons - Gamer Escape's Final Fantasy XIV (FFXIV, FF14) wiki_files/
