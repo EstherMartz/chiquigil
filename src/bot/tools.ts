@@ -1,14 +1,14 @@
-import type { ToolDefinition } from './llm';
-import type { BotSnapshots } from './loadSnapshots';
-import type { NameIndex } from './nameIndex';
-import { searchItems } from './nameIndex';
-import type { MarketBundle } from './marketFetch';
-import { runCraftFlip } from '../features/queries/runCraftFlip';
-import { findBestDeals } from '../features/insights/bestDeals';
-import { runVendorFlip } from '../features/queries/runVendorFlip';
-import { defaultVendorFlipFilter } from '../features/queries/types';
-import type { QueryFilter } from '../features/queries/types';
-import type { TrackedItem } from '../features/items/types';
+import type { ToolDefinition } from './llm.js';
+import type { BotSnapshots } from './loadSnapshots.js';
+import type { NameIndex } from './nameIndex.js';
+import { searchItems } from './nameIndex.js';
+import type { MarketBundle } from './marketFetch.js';
+import { runCraftFlip } from '../features/queries/runCraftFlip.js';
+import { findBestDeals } from '../features/insights/bestDeals.js';
+import { runVendorFlip } from '../features/queries/runVendorFlip.js';
+import { defaultVendorFlipFilter } from '../features/queries/types.js';
+import type { QueryFilter } from '../features/queries/types.js';
+import type { TrackedItem } from '../features/items/types.js';
 
 // Category keywords the LLM can use → search category IDs
 const CATEGORY_MAP: Record<string, number[]> = {

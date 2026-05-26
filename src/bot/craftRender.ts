@@ -1,5 +1,5 @@
-import type { CraftProject, StoredTask } from './craftTypes';
-import * as S from './craftStrings';
+import type { CraftProject, StoredTask } from './craftTypes.js';
+import * as S from './craftStrings.js';
 
 const JOB_EMOJI: Record<string, string> = {
   CRP: '🪚', BSM: '⚒️', ARM: '🛡️', GSM: '💎', LTW: '🧵',

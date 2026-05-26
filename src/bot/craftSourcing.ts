@@ -1,10 +1,10 @@
-import type { Recipe } from '../lib/recipes';
-import type { SpecialShopSnapshot } from '../lib/specialShopSnapshot';
-import type { GatheringInfo } from '../lib/gatheringCatalog';
-import type { MarketBundle } from '../features/watchlist/useMarketData';
-import { surveyIngredients } from '../features/shoppingList/shoppingListSurvey';
-import { explode, type ExplodeOpts } from './craftExplode';
-import type { Breakdown, CraftTask } from './craftTypes';
+import type { Recipe } from '../lib/recipes.js';
+import type { SpecialShopSnapshot } from '../lib/specialShopSnapshot.js';
+import type { GatheringInfo } from '../lib/gatheringCatalog.js';
+import type { MarketBundle } from '../features/watchlist/useMarketData.js';
+import { surveyIngredients } from '../features/shoppingList/shoppingListSurvey.js';
+import { explode, type ExplodeOpts } from './craftExplode.js';
+import type { Breakdown, CraftTask } from './craftTypes.js';
 
 export interface SourcingDeps {
   recipes: Map<number, Recipe>;

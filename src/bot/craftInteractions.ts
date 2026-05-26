@@ -1,13 +1,13 @@
-import type { NameIndex } from './nameIndex';
-import { searchItems, fuzzySearchItems } from './nameIndex';
-import type { CraftStore } from './craftStore';
-import type { BotSnapshots } from './loadSnapshots';
-import type { MarketBundle } from '../features/watchlist/useMarketData';
-import { buildBreakdown } from './craftSourcing';
-import { buildProjectMessage, buildBoardMessage } from './craftRender';
-import { explode } from './craftExplode';
-import * as discordApi from './discordApi';
-import * as S from './craftStrings';
+import type { NameIndex } from './nameIndex.js';
+import { searchItems, fuzzySearchItems } from './nameIndex.js';
+import type { CraftStore } from './craftStore.js';
+import type { BotSnapshots } from './loadSnapshots.js';
+import type { MarketBundle } from '../features/watchlist/useMarketData.js';
+import { buildBreakdown } from './craftSourcing.js';
+import { buildProjectMessage, buildBoardMessage } from './craftRender.js';
+import { explode } from './craftExplode.js';
+import * as discordApi from './discordApi.js';
+import * as S from './craftStrings.js';
 
 export interface CraftInteractionDeps {
   store: CraftStore;

@@ -1,4 +1,4 @@
-import type { Recipe } from '../lib/recipes';
+import type { Recipe } from '../lib/recipes.js';
 
 export interface ExplodedCraft {
   outputQty: number;

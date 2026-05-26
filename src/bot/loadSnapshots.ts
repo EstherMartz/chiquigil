@@ -1,7 +1,7 @@
-import type { SnapshotItem } from '../lib/itemSnapshot';
-import type { Recipe } from '../lib/recipes';
-import type { GatheringInfo } from '../lib/gatheringCatalog';
-import type { SpecialShopSnapshot } from '../lib/specialShopSnapshot';
+import type { SnapshotItem } from '../lib/itemSnapshot.js';
+import type { Recipe } from '../lib/recipes.js';
+import type { GatheringInfo } from '../lib/gatheringCatalog.js';
+import type { SpecialShopSnapshot } from '../lib/specialShopSnapshot.js';
 
 export interface BotSnapshots {
   itemsById: Map<number, SnapshotItem>;

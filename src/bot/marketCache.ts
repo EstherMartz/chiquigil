@@ -1,5 +1,5 @@
 import { put } from '@vercel/blob';
-import type { MarketData } from '../lib/universalis';
+import type { MarketData } from '../lib/universalis.js';
 
 interface SharedCache {
   phantom: MarketData;
