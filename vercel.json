@@ -1,9 +1,9 @@
 {
   "functions": {
-    "api/refresh-cache.js": {
+    "api/refresh-cache.mjs": {
       "maxDuration": 300
     },
-    "api/discord.js": {
+    "api/discord.mjs": {
       "maxDuration": 60
     }
   },

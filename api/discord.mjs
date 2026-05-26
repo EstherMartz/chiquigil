@@ -1,30 +1,6 @@
-"use strict";
-var __defProp = Object.defineProperty;
-var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
-var __getOwnPropNames = Object.getOwnPropertyNames;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __export = (target, all) => {
-  for (var name in all)
-    __defProp(target, name, { get: all[name], enumerable: true });
-};
-var __copyProps = (to, from, except, desc) => {
-  if (from && typeof from === "object" || typeof from === "function") {
-    for (let key of __getOwnPropNames(from))
-      if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
-  }
-  return to;
-};
-var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
-
 // src/api/discord.ts
-var discord_exports = {};
-__export(discord_exports, {
-  default: () => handler
-});
-module.exports = __toCommonJS(discord_exports);
-var import_discord_interactions = require("discord-interactions");
-var import_functions = require("@vercel/functions");
+import { verifyKey } from "discord-interactions";
+import { waitUntil } from "@vercel/functions";
 
 // src/bot/llm.ts
 function parseResponse(raw) {
@@ -1920,9 +1896,9 @@ async function loadSnapshots(baseUrl) {
 }
 
 // src/bot/craftStore.ts
-var import_client = require("@libsql/client");
+import { createClient } from "@libsql/client";
 async function openCraftStore(url) {
-  const client = (0, import_client.createClient)({
+  const client = createClient({
     url: url === ":memory:" ? "file::memory:" : url
   });
   const SCHEMA = `
@@ -2156,7 +2132,7 @@ async function openCraftStore(url) {
 }
 
 // src/lib/recipeCache.ts
-var import_idb = require("idb");
+import { openDB } from "idb";
 
 // src/lib/universalis.ts
 function minPrice(arr, hq) {
@@ -2272,11 +2248,14 @@ async function loadMarketCache() {
     return { phantom: {}, dc: {}, region: {} };
   }
 }
-function getRawBody(req) {
+var config = { api: { bodyParser: false } };
+function readBody(req) {
   return new Promise((resolve, reject) => {
-    const chunks = [];
-    req.on("data", (chunk) => chunks.push(chunk));
-    req.on("end", () => resolve(Buffer.concat(chunks).toString("utf-8")));
+    let data = "";
+    req.on("data", (chunk) => {
+      data += chunk;
+    });
+    req.on("end", () => resolve(data));
     req.on("error", reject);
   });
 }
@@ -2284,21 +2263,13 @@ async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
-  let rawBody;
-  let interaction;
-  try {
-    rawBody = await getRawBody(req);
-    interaction = JSON.parse(rawBody);
-  } catch {
-    rawBody = JSON.stringify(req.body);
-    interaction = req.body;
-  }
+  const rawBody = await readBody(req);
   const signature = req.headers["x-signature-ed25519"] ?? "";
   const timestamp = req.headers["x-signature-timestamp"] ?? "";
-  if (!(0, import_discord_interactions.verifyKey)(rawBody, signature, timestamp, DISCORD_PUBLIC_KEY)) {
-    console.error("[discord] sig verify failed. key set:", DISCORD_PUBLIC_KEY.length > 0);
+  if (!verifyKey(rawBody, signature, timestamp, DISCORD_PUBLIC_KEY)) {
     return res.status(401).json({ error: "Invalid signature" });
   }
+  const interaction = JSON.parse(rawBody);
   if (interaction.type === 1) {
     return res.status(200).json({ type: 1 });
   }
@@ -2315,7 +2286,7 @@ async function handler(req, res) {
   }
   if (interaction.type === 2) {
     res.status(200).json({ type: 5, data: {} });
-    (0, import_functions.waitUntil)(
+    waitUntil(
       (async () => {
         try {
           const proto2 = req.headers["x-forwarded-proto"] ?? "https";
@@ -2422,7 +2393,7 @@ async function handler(req, res) {
     const customId = interaction.data?.custom_id ?? "";
     if (componentType === 2) {
       res.status(200).json({ type: 6, data: {} });
-      (0, import_functions.waitUntil)(
+      waitUntil(
         (async () => {
           try {
             const [snapshots, cache, store] = await Promise.all([
@@ -2487,7 +2458,7 @@ async function handler(req, res) {
       );
     } else if (componentType === 3) {
       res.status(200).json({ type: 6, data: {} });
-      (0, import_functions.waitUntil)(
+      waitUntil(
         (async () => {
           try {
             const [snapshots, cache, store] = await Promise.all([
@@ -2556,7 +2527,7 @@ async function handler(req, res) {
       }
     }
     res.status(200).json({ type: 5, data: {} });
-    (0, import_functions.waitUntil)(
+    waitUntil(
       (async () => {
         try {
           const [snapshots, cache, store] = await Promise.all([
@@ -2655,3 +2626,7 @@ async function editOriginalResponse(appId, interactionToken, data) {
     console.error("[discord] editOriginal fetch error:", e);
   }
 }
+export {
+  config,
+  handler as default
+};

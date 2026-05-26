@@ -57,11 +57,13 @@ async function loadMarketCache(): Promise<Record<string, Record<string, unknown>
   }
 }
 
-function getRawBody(req: VercelRequest): Promise<string> {
+export const config = { api: { bodyParser: false } };
+
+function readBody(req: VercelRequest): Promise<string> {
   return new Promise((resolve, reject) => {
-    const chunks: Buffer[] = [];
-    req.on('data', (chunk: Buffer) => chunks.push(chunk));
-    req.on('end', () => resolve(Buffer.concat(chunks).toString('utf-8')));
+    let data = '';
+    req.on('data', (chunk: any) => { data += chunk; });
+    req.on('end', () => resolve(data));
     req.on('error', reject);
   });
 }
@@ -71,26 +73,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // Must read raw body BEFORE Vercel consumes it for signature verification.
-  // If body was already parsed by Vercel, fall back to JSON.stringify.
-  let rawBody: string;
-  let interaction: any;
-  try {
-    rawBody = await getRawBody(req);
-    interaction = JSON.parse(rawBody);
-  } catch {
-    // Body already consumed by Vercel's parser — use the parsed body
-    rawBody = JSON.stringify(req.body);
-    interaction = req.body;
-  }
-
+  const rawBody = await readBody(req);
   const signature = req.headers['x-signature-ed25519'] as string ?? '';
   const timestamp = req.headers['x-signature-timestamp'] as string ?? '';
 
   if (!verifyKey(rawBody, signature, timestamp, DISCORD_PUBLIC_KEY)) {
-    console.error('[discord] sig verify failed. key set:', DISCORD_PUBLIC_KEY.length > 0);
     return res.status(401).json({ error: 'Invalid signature' });
   }
+
+  const interaction = JSON.parse(rawBody);
 
   // Handle PING
   if (interaction.type === 1) {
