@@ -40,6 +40,7 @@ export interface Recipe {
   recipeLevel: number;
   ingredients: Ingredient[];
   stats?: RecipeStats;
+  amountResult?: number;
 }
 
 const NAME_TO_CODE: Record<string, CrafterCode> = {
