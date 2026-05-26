@@ -20,6 +20,7 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 // src/api/discord.ts
 var discord_exports = {};
 __export(discord_exports, {
+  config: () => config,
   default: () => handler
 });
 module.exports = __toCommonJS(discord_exports);
@@ -2272,17 +2273,20 @@ async function loadMarketCache() {
     return { phantom: {}, dc: {}, region: {} };
   }
 }
+var config = { api: { bodyParser: false } };
 async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
+  const chunks = [];
+  for await (const chunk of req) chunks.push(typeof chunk === "string" ? Buffer.from(chunk) : chunk);
+  const rawBody = Buffer.concat(chunks).toString("utf-8");
   const signature = req.headers["x-signature-ed25519"];
   const timestamp = req.headers["x-signature-timestamp"];
-  const rawBody = JSON.stringify(req.body);
   if (!(0, import_discord_interactions.verifyKey)(rawBody, signature, timestamp, DISCORD_PUBLIC_KEY)) {
     return res.status(401).json({ error: "Invalid signature" });
   }
-  const interaction = req.body;
+  const interaction = JSON.parse(rawBody);
   if (interaction.type === 1) {
     return res.status(200).json({ type: 1 });
   }
@@ -2639,3 +2643,7 @@ async function editOriginalResponse(appId, interactionToken, data) {
     console.error("[discord] editOriginal fetch error:", e);
   }
 }
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  config
+});
