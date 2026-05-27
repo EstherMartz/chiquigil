@@ -1,5 +1,5 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { useState } from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { Sidebar } from './components/layout/Sidebar';
 import { ContentBar } from './components/layout/ContentBar';
 import { OnboardingWizard } from './features/onboarding/OnboardingWizard';
@@ -28,6 +28,44 @@ import Planner from './routes/Planner';
 import Projects from './routes/Projects';
 import Project from './routes/Project';
 
+const PAGE_TITLES: Record<string, string> = {
+  '/home': 'What Now?',
+  '/watchlist': 'Watchlist',
+  '/crafts': 'Crafts',
+  '/trading': 'Trading',
+  '/gathering': 'Gathering',
+  '/gathering/plan': 'Gathering Plan',
+  '/leves': 'Leves',
+  '/shopping-list': 'Shopping List',
+  '/vendor-flip': 'Vendor Flip',
+  '/currency-flip': 'Currencies',
+  '/gc-seals': 'GC Seals',
+  '/craft-batch': 'Craft Batch',
+  '/batch-history': 'Batch History',
+  '/cleanup': 'Cleanup',
+  '/craft-from-inventory': 'Craft from Inventory',
+  '/quest-items': 'GC Supply',
+  '/heatmap': 'Heatmap',
+  '/settings': 'Settings',
+  '/submarines': 'Submarines',
+  '/planner': 'Plan',
+  '/projects': 'Projects',
+};
+
+function DocumentTitle() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    const base = 'qiqirn.tools';
+    let page = PAGE_TITLES[pathname];
+    if (!page) {
+      if (pathname.startsWith('/item/')) page = 'Item';
+      else if (pathname.startsWith('/projects/')) page = 'Project';
+    }
+    document.title = page ? `${page} — ${base}` : base;
+  }, [pathname]);
+  return null;
+}
+
 export default function App() {
   const [showOnboarding, setShowOnboarding] = useState(
     () => !localStorage.getItem('ffxiv-helper:onboarded'),
@@ -37,6 +75,7 @@ export default function App() {
 
   return (
     <div className="flex min-h-screen">
+      <DocumentTitle />
       <Sidebar />
       {showOnboarding && (
         <OnboardingWizard onComplete={() => setShowOnboarding(false)} />

@@ -64,13 +64,21 @@ export function OnboardingWizard({ onComplete, prefill }: Props) {
       <div className="relative z-10 min-h-full flex items-center justify-center p-4">
       {/* Modal card */}
       <div className="max-w-lg w-full bg-bg-card border border-border-base p-6">
-        {/* Progress pips */}
-        <div className="flex justify-center gap-2 mb-6">
-          {[1, 2, 3].map((s) => (
-            <span
-              key={s}
-              className={`w-2 h-2 rounded-full ${s <= step ? 'bg-gold' : 'bg-border-base'}`}
-            />
+        {/* Progress pips with labels */}
+        <div className="flex justify-center items-start gap-6 mb-6">
+          {[
+            { n: 1, label: 'World' },
+            { n: 2, label: 'Crafters' },
+            { n: 3, label: 'Done' },
+          ].map(({ n, label }) => (
+            <div key={n} className="flex flex-col items-center gap-1.5">
+              <span
+                className={`w-2 h-2 rounded-full ${n <= step ? 'bg-gold' : 'bg-border-base'}`}
+              />
+              <span className={`font-mono text-[9px] tracking-widest uppercase ${n === step ? 'text-gold' : 'text-text-low'}`}>
+                {label}
+              </span>
+            </div>
           ))}
         </div>
 

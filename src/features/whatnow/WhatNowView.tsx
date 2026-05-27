@@ -288,19 +288,19 @@ function OpportunityCard({ label, pick, color }: { label: string; pick: TopPick;
   return (
     <div className="border border-border-base bg-bg-card p-4 space-y-3">
       <div className="font-mono text-[10px] tracking-widest uppercase text-text-low">{label}</div>
+      <div className="space-y-0.5">
+        <div className={`font-display font-semibold text-3xl tabular-nums leading-none ${color}`}>{pick.metric}</div>
+        <div className="font-mono text-[10px] text-text-low">{pick.metricLabel}</div>
+      </div>
       <div className="flex items-center gap-2">
         <Link
           to={pick.link}
           target="_blank"
-          className="font-display text-base text-text-cream hover:text-aether hover:underline decoration-1 underline-offset-4 truncate"
+          className="font-display text-sm text-text-cream hover:text-aether hover:underline decoration-1 underline-offset-4 truncate"
         >
           {pick.name}
         </Link>
         <CopyButton text={pick.name} />
-      </div>
-      <div className="flex items-baseline gap-3">
-        <span className={`font-mono text-lg ${color}`}>{pick.metric}</span>
-        <span className="font-mono text-[10px] text-text-low">{pick.metricLabel}</span>
       </div>
       <div className="font-mono text-[10px] text-text-dim">{pick.secondary}</div>
       <Link
