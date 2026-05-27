@@ -24,11 +24,30 @@ describe('chunkDescription', () => {
   });
 
   it('truncates with the "truncado" marker when total exceeds the cumulative limit', () => {
-    // ~8000 chars of content — over the 5800-char cumulative cap.
+    // ~9000 chars of content — over the cumulative cap.
     const lines = Array.from({ length: 200 }, (_, i) => `Task line padded out to forty characters ${i}`);
     const text = lines.join('\n');
     const chunks = chunkDescription(text);
     const last = chunks[chunks.length - 1];
     expect(last).toMatch(/truncado/i);
+  });
+
+  it('keeps the total across chunks under Discord\'s per-message embed budget', () => {
+    // 80-char × 100 lines = ~8000 chars — over both per-embed and cumulative.
+    // Regression: previously chunkDescription tracked the per-line delta
+    // instead of the running total, so it could emit 2 chunks of ~3900 each
+    // (~7800 total) and Discord rejected the message with
+    // MAX_EMBED_SIZE_EXCEEDED.
+    const lines = Array.from({ length: 100 }, (_, i) =>
+      `Long task line ${i.toString().padStart(3, '0')} padded out so we hit limits faster`,
+    );
+    const text = lines.join('\n');
+    const chunks = chunkDescription(text);
+    const total = chunks.reduce((sum, c) => sum + c.length, 0);
+    // Leave plenty of room for title (~50) + footer.text (~15) within Discord's
+    // 6000-char per-message embed cap.
+    expect(total).toBeLessThanOrEqual(5800);
+    // Each chunk also under the per-embed description limit.
+    for (const c of chunks) expect(c.length).toBeLessThanOrEqual(4000);
   });
 });

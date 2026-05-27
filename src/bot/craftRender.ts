@@ -192,11 +192,12 @@ export function buildProjectMessage(
   return { embeds: builtEmbeds, components };
 }
 
-// Discord caps each embed.description at 4096 chars and the total characters
-// across all embeds in a message at 6000. We aim for ~3900 per chunk with
-// ~5800 cumulative to leave room for title/footer/status text.
+// Discord caps each embed.description at 4096 chars AND the cumulative
+// title+description+footer.text+field text across all embeds at 6000 per
+// message. We aim for ~3900 per chunk and ~5500 cumulative across all
+// description chunks to leave ~500 chars for title + footer text.
 const PER_CHUNK_LIMIT = 3900;
-const TOTAL_LIMIT = 5800;
+const TOTAL_LIMIT = 5500;
 
 export function chunkDescription(text: string): string[] {
   if (text.length <= PER_CHUNK_LIMIT) return [text];
@@ -204,30 +205,48 @@ export function chunkDescription(text: string): string[] {
   const lines = text.split('\n');
   const chunks: string[] = [];
   let current = '';
-  let totalUsed = 0;
+  let pushed = 0; // chars already committed to chunks[]
   let truncated = false;
 
   for (const line of lines) {
     const candidate = current ? `${current}\n${line}` : line;
-    if (candidate.length <= PER_CHUNK_LIMIT && totalUsed + candidate.length - current.length <= TOTAL_LIMIT) {
+    // Allow extension only if it fits the per-embed limit AND the final
+    // cumulative total (already-pushed + this extended chunk) stays under
+    // the per-message cap.
+    if (candidate.length <= PER_CHUNK_LIMIT && pushed + candidate.length <= TOTAL_LIMIT) {
       current = candidate;
       continue;
     }
     if (current) {
       chunks.push(current);
-      totalUsed += current.length;
+      pushed += current.length;
     }
-    // Would the next chunk exceed the total budget?
-    if (totalUsed + line.length > TOTAL_LIMIT) {
+    // Can the next chunk hold this line at all without busting the budget?
+    if (pushed + line.length > TOTAL_LIMIT) {
       truncated = true;
       break;
     }
     current = line;
   }
   if (current && !truncated) chunks.push(current);
-  if (truncated && chunks.length > 0) {
-    const lastIdx = chunks.length - 1;
-    chunks[lastIdx] = chunks[lastIdx] + `\n\n_${S.PROJECT_TRUNCATED}_`;
+  if (truncated) {
+    const marker = `\n\n_${S.PROJECT_TRUNCATED}_`;
+    if (chunks.length === 0) {
+      chunks.push(marker.trimStart());
+    } else {
+      const lastIdx = chunks.length - 1;
+      // Trim from the last chunk if needed so chunk + marker still fits
+      // both the per-embed and cumulative caps.
+      const otherPushed = pushed - chunks[lastIdx].length;
+      const budget = Math.min(
+        PER_CHUNK_LIMIT - marker.length,
+        TOTAL_LIMIT - otherPushed - marker.length,
+      );
+      if (chunks[lastIdx].length > budget) {
+        chunks[lastIdx] = chunks[lastIdx].slice(0, Math.max(0, budget));
+      }
+      chunks[lastIdx] = chunks[lastIdx] + marker;
+    }
   }
   return chunks;
 }

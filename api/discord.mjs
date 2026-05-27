@@ -1513,37 +1513,50 @@ ${description}`;
   return { embeds: builtEmbeds, components };
 }
 var PER_CHUNK_LIMIT = 3900;
-var TOTAL_LIMIT = 5800;
+var TOTAL_LIMIT = 5500;
 function chunkDescription(text) {
   if (text.length <= PER_CHUNK_LIMIT) return [text];
   const lines = text.split("\n");
   const chunks = [];
   let current = "";
-  let totalUsed = 0;
+  let pushed = 0;
   let truncated = false;
   for (const line of lines) {
     const candidate = current ? `${current}
 ${line}` : line;
-    if (candidate.length <= PER_CHUNK_LIMIT && totalUsed + candidate.length - current.length <= TOTAL_LIMIT) {
+    if (candidate.length <= PER_CHUNK_LIMIT && pushed + candidate.length <= TOTAL_LIMIT) {
       current = candidate;
       continue;
     }
     if (current) {
       chunks.push(current);
-      totalUsed += current.length;
+      pushed += current.length;
     }
-    if (totalUsed + line.length > TOTAL_LIMIT) {
+    if (pushed + line.length > TOTAL_LIMIT) {
       truncated = true;
       break;
     }
     current = line;
   }
   if (current && !truncated) chunks.push(current);
-  if (truncated && chunks.length > 0) {
-    const lastIdx = chunks.length - 1;
-    chunks[lastIdx] = chunks[lastIdx] + `
+  if (truncated) {
+    const marker = `
 
 _${PROJECT_TRUNCATED}_`;
+    if (chunks.length === 0) {
+      chunks.push(marker.trimStart());
+    } else {
+      const lastIdx = chunks.length - 1;
+      const otherPushed = pushed - chunks[lastIdx].length;
+      const budget = Math.min(
+        PER_CHUNK_LIMIT - marker.length,
+        TOTAL_LIMIT - otherPushed - marker.length
+      );
+      if (chunks[lastIdx].length > budget) {
+        chunks[lastIdx] = chunks[lastIdx].slice(0, Math.max(0, budget));
+      }
+      chunks[lastIdx] = chunks[lastIdx] + marker;
+    }
   }
   return chunks;
 }
@@ -2785,7 +2798,10 @@ async function handler(req, res) {
     return res.status(200).json({ type: 8, data: { choices: [] } });
   }
   if (interaction.type === 2) {
-    res.status(200).json({ type: 5, data: {} });
+    const cmdName = interaction.data?.name;
+    const subName = interaction.data?.options?.[0]?.name;
+    const isEphemeral = cmdName === "craft" && subName !== "show";
+    res.status(200).json({ type: 5, data: isEphemeral ? { flags: 64 } : {} });
     waitUntil(
       (async () => {
         try {
@@ -3134,7 +3150,7 @@ ${e instanceof Error ? e.message : String(e)}`);
         }
       }
     }
-    res.status(200).json({ type: 5, data: {} });
+    res.status(200).json({ type: 5, data: { flags: 64 } });
     waitUntil(
       (async () => {
         try {

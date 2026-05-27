@@ -179,8 +179,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // For deferred interactions, defer immediately then process in background
   if (interaction.type === 2) {
-    // Slash command
-    res.status(200).json({ type: 5, data: {} });
+    // Slash command — defer ephemerally for /craft sub-commands whose
+    // handlers return flags: 64. The "ephemeral" bit must be set on the
+    // INITIAL deferred response; setting it later via editOriginal is a
+    // no-op, which is why the "Proyecto N creado…" reply was showing up
+    // publicly even though the handler asked for ephemeral.
+    const cmdName = interaction.data?.name;
+    const subName = interaction.data?.options?.[0]?.name;
+    // /craft show is meant to be shared; everything else is a private confirmation.
+    const isEphemeral = cmdName === 'craft' && subName !== 'show';
+    res.status(200).json({ type: 5, data: isEphemeral ? { flags: 64 } : {} });
 
     waitUntil(
       (async () => {
@@ -587,7 +595,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    res.status(200).json({ type: 5, data: {} });
+    // Modal replies are confirmations of the user's own input — keep them
+    // ephemeral so they don't add noise to the channel.
+    res.status(200).json({ type: 5, data: { flags: 64 } });
 
     waitUntil(
       (async () => {
