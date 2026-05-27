@@ -25,6 +25,8 @@ import Item from './routes/Item';
 import Settings from './routes/Settings';
 import Submarines from './routes/Submarines';
 import Planner from './routes/Planner';
+import Projects from './routes/Projects';
+import Project from './routes/Project';
 
 export default function App() {
   const [showOnboarding, setShowOnboarding] = useState(
@@ -66,6 +68,8 @@ export default function App() {
             <Route path="/settings" element={<Settings />} />
             <Route path="/submarines" element={<Submarines />} />
             <Route path="/planner" element={<Planner />} />
+            <Route path="/projects" element={<Projects />} />
+            <Route path="/projects/:id" element={<Project />} />
           </Routes>
       </main>
     </div>

@@ -1,4 +1,5 @@
 import type { Recipe } from '../lib/recipes';
+import type { CompanyCraftRecipe } from '../lib/companyCraftSnapshot';
 import type { SpecialShopSnapshot } from '../lib/specialShopSnapshot';
 import type { GatheringInfo } from '../lib/gatheringCatalog';
 import type { MarketBundle } from '../features/watchlist/useMarketData';
@@ -12,6 +13,7 @@ export interface SourcingDeps {
   vendorMap: Map<number, number>;
   specialShop: SpecialShopSnapshot;
   gatheringCatalog: Map<number, GatheringInfo>;
+  companyCraft: Map<number, CompanyCraftRecipe>;
 }
 
 export interface SourcingOpts extends ExplodeOpts {
@@ -20,34 +22,23 @@ export interface SourcingOpts extends ExplodeOpts {
 }
 
 /**
- * Builds a full Breakdown from a target item + quantity.
- * Market data must be provided (caller fetches it).
+ * Build acquire tasks from a flat leaf-map (Map<itemId, qty>) using the same
+ * sourcing priority (gather → currency → vendor → market) used by the
+ * standard recipe path.
  */
-export function buildBreakdown(
-  targetId: number,
-  targetQty: number,
+function sourceLeaves(
+  leaves: Map<number, number>,
   market: MarketBundle,
   deps: SourcingDeps,
-  opts: SourcingOpts = {},
-): Breakdown {
-  const cheapVendorThreshold = opts.cheapVendorThreshold ?? 100;
-
-  // Step 1: recursive explosion
-  const { crafts: craftMap, leaves } = explode(targetId, targetQty, deps.recipes, opts);
-
-  // Step 2: survey leaves for sourcing
-  const dcPrices = market.dc;
-  const survey = surveyIngredients(leaves, dcPrices, deps.vendorMap, deps.specialShop);
-
-  // Step 3: build acquire tasks from survey
+  cheapVendorThreshold: number,
+): CraftTask[] {
+  const survey = surveyIngredients(leaves, market.dc, deps.vendorMap, deps.specialShop);
   const acquire: CraftTask[] = [];
   for (const s of survey) {
     const name = deps.namesById.get(s.id) ?? `Item #${s.id}`;
     const gatherInfo = deps.gatheringCatalog.get(s.id);
     const vendorPrice = deps.vendorMap.get(s.id);
 
-    // Priority: gather (if gatherable and no trivially cheap vendor/currency)
-    //           → currency → vendor → market
     if (gatherInfo && !(vendorPrice != null && vendorPrice <= cheapVendorThreshold) && !s.currency) {
       acquire.push({
         itemId: s.id,
@@ -82,19 +73,59 @@ export function buildBreakdown(
       });
     }
   }
+  return acquire;
+}
 
-  // Step 4: build craft tasks from explosion
-  const crafts: CraftTask[] = [];
-  for (const [itemId, info] of craftMap) {
-    const name = deps.namesById.get(itemId) ?? `Item #${itemId}`;
-    crafts.push({
-      itemId,
-      itemName: name,
-      qtyNeeded: info.outputQty,
-      source: 'craft',
-      meta: { job: info.job as CraftTask['meta']['job'] },
-    });
+/**
+ * Builds a full Breakdown from a target item + quantity. Falls back to the
+ * companyCraft snapshot when no standard recipe exists (e.g. submarine parts,
+ * FC workshop furniture); recipes always win the tie if both exist.
+ */
+export function buildBreakdown(
+  targetId: number,
+  targetQty: number,
+  market: MarketBundle,
+  deps: SourcingDeps,
+  opts: SourcingOpts = {},
+): Breakdown {
+  const cheapVendorThreshold = opts.cheapVendorThreshold ?? 100;
+
+  // Path A — standard recipe: recursive explosion + per-leaf survey.
+  if (deps.recipes.get(targetId)) {
+    const { crafts: craftMap, leaves } = explode(targetId, targetQty, deps.recipes, opts);
+    const acquire = sourceLeaves(leaves, market, deps, cheapVendorThreshold);
+    const crafts: CraftTask[] = [];
+    for (const [itemId, info] of craftMap) {
+      const name = deps.namesById.get(itemId) ?? `Item #${itemId}`;
+      crafts.push({
+        itemId,
+        itemName: name,
+        qtyNeeded: info.outputQty,
+        source: 'craft',
+        meta: { job: info.job as CraftTask['meta']['job'] },
+      });
+    }
+    return { crafts, acquire };
   }
 
-  return { crafts, acquire };
+  // Path B — CompanyCraft fallback: one synthetic workshop task + flat acquire leaves.
+  const cc = deps.companyCraft.get(targetId);
+  if (cc) {
+    const leaves = new Map<number, number>();
+    for (const ing of cc.ingredients) {
+      leaves.set(ing.itemId, (leaves.get(ing.itemId) ?? 0) + ing.qty * targetQty);
+    }
+    const acquire = sourceLeaves(leaves, market, deps, cheapVendorThreshold);
+    const workshopTask: CraftTask = {
+      itemId: cc.resultItemId,
+      itemName: deps.namesById.get(cc.resultItemId) ?? cc.resultName,
+      qtyNeeded: targetQty,
+      source: 'workshop',
+      meta: {},
+    };
+    return { crafts: [workshopTask], acquire };
+  }
+
+  // Neither path matches.
+  return { crafts: [], acquire: [] };
 }

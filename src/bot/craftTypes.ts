@@ -1,7 +1,7 @@
 import type { CrafterCode } from '../features/items/types';
 import type { CurrencyId } from '../lib/currencies';
 
-export type TaskSource = 'craft' | 'market' | 'vendor' | 'currency' | 'gather';
+export type TaskSource = 'craft' | 'workshop' | 'market' | 'vendor' | 'currency' | 'gather';
 
 export interface CraftTaskMeta {
   job?: CrafterCode;

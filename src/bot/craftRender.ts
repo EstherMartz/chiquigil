@@ -7,7 +7,7 @@ const JOB_EMOJI: Record<string, string> = {
 };
 
 const SOURCE_EMOJI: Record<string, string> = {
-  craft: '🔨', market: '🪙', vendor: '🏪', currency: '💠', gather: '⛏',
+  craft: '🔨', workshop: '🛠', market: '🪙', vendor: '🏪', currency: '💠', gather: '⛏',
 };
 
 function fmtPrice(n: number): string {
@@ -47,6 +47,8 @@ function groupBySection(tasks: StoredTask[]): Map<string, StoredTask[]> {
       const job = t.meta?.job ?? 'ANY';
       const jobName = S.JOB_NAME[job] ?? job;
       key = `${S.SECTION_CRAFT} — ${JOB_EMOJI[job] ?? '🔨'} ${jobName}`;
+    } else if (t.source === 'workshop') {
+      key = S.SECTION_WORKSHOP;
     } else if (t.source === 'market') {
       key = S.SECTION_MARKET;
     } else if (t.source === 'vendor') {

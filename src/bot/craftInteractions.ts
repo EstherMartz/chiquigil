@@ -395,7 +395,7 @@ async function createCraftProjectFromModal(
   const itemName = deps.snapshots.namesById.get(itemId) ?? `Item #${itemId}`;
   const projectName = label ?? `${qty}× ${itemName}`;
 
-  const { recipes, namesById, vendorMap, specialShop, gatheringCatalog } = deps.snapshots;
+  const { recipes, namesById, vendorMap, specialShop, gatheringCatalog, companyCraft } = deps.snapshots;
   const preExplode = explode(itemId, qty, recipes, { craftIntermediates: true });
   const allLeafIds = [...preExplode.leaves.keys()];
 
@@ -404,7 +404,7 @@ async function createCraftProjectFromModal(
     itemId,
     qty,
     market,
-    { recipes, namesById, vendorMap, specialShop, gatheringCatalog },
+    { recipes, namesById, vendorMap, specialShop, gatheringCatalog, companyCraft },
     { craftIntermediates: true },
   );
 
@@ -508,7 +508,7 @@ async function handleRequestPick(
   const itemName = deps.snapshots.namesById.get(itemId) ?? `Item #${itemId}`;
   const projectName = label ?? `${qty}× ${itemName}`;
 
-  const { recipes, namesById, vendorMap, specialShop, gatheringCatalog } = deps.snapshots;
+  const { recipes, namesById, vendorMap, specialShop, gatheringCatalog, companyCraft } = deps.snapshots;
   const preExplode = explode(itemId, qty, recipes, { craftIntermediates: true });
   const allLeafIds = [...preExplode.leaves.keys()];
 
@@ -517,7 +517,7 @@ async function handleRequestPick(
     itemId,
     qty,
     market,
-    { recipes, namesById, vendorMap, specialShop, gatheringCatalog },
+    { recipes, namesById, vendorMap, specialShop, gatheringCatalog, companyCraft },
     { craftIntermediates: true },
   );
 
