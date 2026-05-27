@@ -4,11 +4,11 @@ import type { CraftStore } from './craftStore';
 import type { BotSnapshots } from './loadSnapshots';
 import type { MarketBundle } from '../features/watchlist/useMarketData';
 import { buildBreakdown } from './craftSourcing';
-import { buildProjectMessage, buildBoardMessage } from './craftRender';
+import { buildProjectMessage, buildBoardMessage, collectPhases, findNextIncompletePhase } from './craftRender';
 import { explode } from './craftExplode';
 import * as discordApi from './discordApi';
 import * as S from './craftStrings';
-import type { CraftTask } from './craftTypes';
+import type { CraftProject, CraftTask, StoredTask } from './craftTypes';
 
 function initialDisplayPhase(tasks: CraftTask[]): { partKey: string; phaseIndex: number } | null {
   for (const t of tasks) {
@@ -17,6 +17,28 @@ function initialDisplayPhase(tasks: CraftTask[]): { partKey: string; phaseIndex:
     }
   }
   return null;
+}
+
+/**
+ * If the project's currently-displayed phase is fully done, persist a switch to
+ * the next incomplete phase and return the updated project snapshot. No-op for
+ * non-phase projects and for phases that still have outstanding tasks.
+ */
+async function maybeAdvancePhase(
+  project: CraftProject,
+  tasks: StoredTask[],
+  store: CraftInteractionDeps['store'],
+): Promise<CraftProject> {
+  if (project.displayPartKey == null || project.displayPhaseIndex == null) return project;
+  const phases = collectPhases(tasks);
+  const current = phases.find(
+    (p) => p.partKey === project.displayPartKey && p.phaseIndex === project.displayPhaseIndex,
+  );
+  if (!current || current.done < current.total) return project;
+  const next = findNextIncompletePhase(phases, project.displayPartKey, project.displayPhaseIndex);
+  if (!next) return project;
+  await store.setProjectDisplayPhase(project.id, next.partKey, next.phaseIndex);
+  return { ...project, displayPartKey: next.partKey, displayPhaseIndex: next.phaseIndex };
 }
 
 export interface CraftInteractionDeps {
@@ -159,7 +181,9 @@ export async function handleCraftButton(
       const project = await deps.store.getProject(parsed.projectId);
       if (project) {
         const updatedTasks = await deps.store.getTasks(parsed.projectId);
-        const { embeds, components } = buildProjectMessage(project, updatedTasks);
+        // Auto-advance to the next incomplete phase if the current one's now done.
+        const advanced = await maybeAdvancePhase(project, updatedTasks, deps.store);
+        const { embeds, components } = buildProjectMessage(advanced, updatedTasks);
         try {
           await discordApi.editMessage(deps.botToken, channelId, messageId, { embeds, components });
         } catch {
@@ -684,11 +708,13 @@ export async function handleCraftProgressModal(
     }
   }
 
-  // Refresh the announcement embed
+  // Refresh the announcement embed (with auto-advance if the current phase
+  // just finished).
   if (project.messageId) {
     try {
       const tasks = await deps.store.getTasks(parsed.projectId);
-      const { embeds, components } = buildProjectMessage(project, tasks);
+      const advanced = await maybeAdvancePhase(project, tasks, deps.store);
+      const { embeds, components } = buildProjectMessage(advanced, tasks);
       await discordApi.editMessage(deps.botToken, project.channelId, project.messageId, { embeds, components });
     } catch {
       // best effort

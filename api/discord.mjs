@@ -1403,12 +1403,19 @@ function groupBySection(tasks) {
 function collectPhases(tasks) {
   const map = /* @__PURE__ */ new Map();
   const partOrder = /* @__PURE__ */ new Map();
+  const phasesPerPart = /* @__PURE__ */ new Map();
   let nextPartOrder = 0;
   for (const t of tasks) {
     const pk = t.meta?.partKey;
     const pi = t.meta?.phaseIndex;
     if (pk == null || pi == null) continue;
     if (!partOrder.has(pk)) partOrder.set(pk, nextPartOrder++);
+    let phaseSet = phasesPerPart.get(pk);
+    if (!phaseSet) {
+      phaseSet = /* @__PURE__ */ new Set();
+      phasesPerPart.set(pk, phaseSet);
+    }
+    phaseSet.add(pi);
     const key = `${pk}#${pi}`;
     const existing = map.get(key);
     if (existing) {
@@ -1418,7 +1425,6 @@ function collectPhases(tasks) {
       map.set(key, {
         partKey: pk,
         phaseIndex: pi,
-        label: `${pk} \xB7 Fase ${pi + 1}`,
         total: 1,
         done: t.status === "done" ? 1 : 0
       });
@@ -1429,7 +1435,22 @@ function collectPhases(tasks) {
     const bo = partOrder.get(b.partKey);
     if (ao !== bo) return ao - bo;
     return a.phaseIndex - b.phaseIndex;
-  });
+  }).map((p) => ({
+    ...p,
+    label: `${p.partKey} \xB7 Fase ${p.phaseIndex + 1} de ${phasesPerPart.get(p.partKey).size}`
+  }));
+}
+function findNextIncompletePhase(phases, currentPartKey, currentPhaseIndex) {
+  const idx = phases.findIndex(
+    (p) => p.partKey === currentPartKey && p.phaseIndex === currentPhaseIndex
+  );
+  if (idx === -1) return null;
+  for (let i = idx + 1; i < phases.length; i++) {
+    if (phases[i].done < phases[i].total) {
+      return { partKey: phases[i].partKey, phaseIndex: phases[i].phaseIndex };
+    }
+  }
+  return null;
 }
 function filterToPhase(tasks, partKey, phaseIndex) {
   return tasks.filter((t) => {
@@ -1951,6 +1972,18 @@ function initialDisplayPhase2(tasks) {
   }
   return null;
 }
+async function maybeAdvancePhase(project, tasks, store) {
+  if (project.displayPartKey == null || project.displayPhaseIndex == null) return project;
+  const phases = collectPhases(tasks);
+  const current = phases.find(
+    (p) => p.partKey === project.displayPartKey && p.phaseIndex === project.displayPhaseIndex
+  );
+  if (!current || current.done < current.total) return project;
+  const next = findNextIncompletePhase(phases, project.displayPartKey, project.displayPhaseIndex);
+  if (!next) return project;
+  await store.setProjectDisplayPhase(project.id, next.partKey, next.phaseIndex);
+  return { ...project, displayPartKey: next.partKey, displayPhaseIndex: next.phaseIndex };
+}
 function parseCustomId(customId) {
   const parts = customId.split(":");
   if (parts.length < 3 || parts[0] !== "cproj") return null;
@@ -2041,7 +2074,8 @@ async function handleCraftButton(customId, userId, guildId, messageId, channelId
       const project = await deps.store.getProject(parsed.projectId);
       if (project) {
         const updatedTasks = await deps.store.getTasks(parsed.projectId);
-        const { embeds, components } = buildProjectMessage(project, updatedTasks);
+        const advanced = await maybeAdvancePhase(project, updatedTasks, deps.store);
+        const { embeds, components } = buildProjectMessage(advanced, updatedTasks);
         try {
           await editMessage(deps.botToken, channelId, messageId, { embeds, components });
         } catch {
@@ -2420,7 +2454,8 @@ async function handleCraftProgressModal(customId, fields, userId, guildId, _mess
   if (project.messageId) {
     try {
       const tasks = await deps.store.getTasks(parsed.projectId);
-      const { embeds, components } = buildProjectMessage(project, tasks);
+      const advanced = await maybeAdvancePhase(project, tasks, deps.store);
+      const { embeds, components } = buildProjectMessage(advanced, tasks);
       await editMessage(deps.botToken, project.channelId, project.messageId, { embeds, components });
     } catch {
     }

@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { chunkDescription, buildProjectMessage } from './craftRender';
+import {
+  chunkDescription,
+  buildProjectMessage,
+  collectPhases,
+  findNextIncompletePhase,
+} from './craftRender';
 import type { CraftProject, StoredTask } from './craftTypes';
 
 function project(over: Partial<CraftProject> = {}): CraftProject {
@@ -140,5 +145,53 @@ describe('buildProjectMessage (phase navigation)', () => {
     const todo = select.options.find((o: any) => o.value === 'Wall#1');
     expect(done.label).toMatch(/✓/);
     expect(todo.label).not.toMatch(/✓/);
+  });
+
+  it('labels phases with a "de N" counter so users know where they are', () => {
+    const tasks = [
+      task({ id: 1, meta: { partKey: 'Wall', phaseIndex: 0 } }),
+      task({ id: 2, meta: { partKey: 'Wall', phaseIndex: 1 } }),
+      task({ id: 3, meta: { partKey: 'Wall', phaseIndex: 2 } }),
+      task({ id: 4, meta: { partKey: 'Door', phaseIndex: 0 } }),
+    ];
+    const phases = collectPhases(tasks);
+    expect(phases.find((p) => p.partKey === 'Wall' && p.phaseIndex === 0)?.label).toBe('Wall · Fase 1 de 3');
+    expect(phases.find((p) => p.partKey === 'Wall' && p.phaseIndex === 2)?.label).toBe('Wall · Fase 3 de 3');
+    expect(phases.find((p) => p.partKey === 'Door' && p.phaseIndex === 0)?.label).toBe('Door · Fase 1 de 1');
+  });
+});
+
+describe('findNextIncompletePhase', () => {
+  it('returns the first incomplete phase after the current one', () => {
+    const tasks = [
+      // Wall · 1 — fully done
+      task({ id: 1, status: 'done', meta: { partKey: 'Wall', phaseIndex: 0 } }),
+      // Wall · 2 — partially done (still incomplete)
+      task({ id: 2, status: 'done', meta: { partKey: 'Wall', phaseIndex: 1 } }),
+      task({ id: 3, status: 'open', meta: { partKey: 'Wall', phaseIndex: 1 } }),
+      // Door · 1 — open
+      task({ id: 4, status: 'open', meta: { partKey: 'Door', phaseIndex: 0 } }),
+    ];
+    const phases = collectPhases(tasks);
+    expect(findNextIncompletePhase(phases, 'Wall', 0)).toEqual({ partKey: 'Wall', phaseIndex: 1 });
+  });
+
+  it('skips already-done phases when finding the next', () => {
+    const tasks = [
+      task({ id: 1, status: 'done', meta: { partKey: 'Wall', phaseIndex: 0 } }),
+      task({ id: 2, status: 'done', meta: { partKey: 'Wall', phaseIndex: 1 } }),  // done
+      task({ id: 3, status: 'open', meta: { partKey: 'Door', phaseIndex: 0 } }),
+    ];
+    const phases = collectPhases(tasks);
+    expect(findNextIncompletePhase(phases, 'Wall', 0)).toEqual({ partKey: 'Door', phaseIndex: 0 });
+  });
+
+  it('returns null when every phase after the current is done', () => {
+    const tasks = [
+      task({ id: 1, status: 'open', meta: { partKey: 'Wall', phaseIndex: 0 } }),
+      task({ id: 2, status: 'done', meta: { partKey: 'Wall', phaseIndex: 1 } }),
+    ];
+    const phases = collectPhases(tasks);
+    expect(findNextIncompletePhase(phases, 'Wall', 0)).toBeNull();
   });
 });

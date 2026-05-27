@@ -66,18 +66,20 @@ function groupBySection(tasks: StoredTask[]): Map<string, StoredTask[]> {
   return map;
 }
 
-interface PhaseInfo {
+export interface PhaseInfo {
   partKey: string;
   phaseIndex: number;
+  /** Human label including counter, e.g. "Wall · Fase 1 de 3". */
   label: string;
   total: number;
   done: number;
 }
 
 /** Derive all (part, phase) combos that have at least one task. */
-function collectPhases(tasks: StoredTask[]): PhaseInfo[] {
-  const map = new Map<string, PhaseInfo>();
+export function collectPhases(tasks: StoredTask[]): PhaseInfo[] {
+  const map = new Map<string, Omit<PhaseInfo, 'label'>>();
   const partOrder = new Map<string, number>();
+  const phasesPerPart = new Map<string, Set<number>>();
   let nextPartOrder = 0;
 
   for (const t of tasks) {
@@ -85,6 +87,9 @@ function collectPhases(tasks: StoredTask[]): PhaseInfo[] {
     const pi = t.meta?.phaseIndex;
     if (pk == null || pi == null) continue;
     if (!partOrder.has(pk)) partOrder.set(pk, nextPartOrder++);
+    let phaseSet = phasesPerPart.get(pk);
+    if (!phaseSet) { phaseSet = new Set(); phasesPerPart.set(pk, phaseSet); }
+    phaseSet.add(pi);
     const key = `${pk}#${pi}`;
     const existing = map.get(key);
     if (existing) {
@@ -94,18 +99,44 @@ function collectPhases(tasks: StoredTask[]): PhaseInfo[] {
       map.set(key, {
         partKey: pk,
         phaseIndex: pi,
-        label: `${pk} · Fase ${pi + 1}`,
         total: 1,
         done: t.status === 'done' ? 1 : 0,
       });
     }
   }
-  return [...map.values()].sort((a, b) => {
-    const ao = partOrder.get(a.partKey)!;
-    const bo = partOrder.get(b.partKey)!;
-    if (ao !== bo) return ao - bo;
-    return a.phaseIndex - b.phaseIndex;
-  });
+  return [...map.values()]
+    .sort((a, b) => {
+      const ao = partOrder.get(a.partKey)!;
+      const bo = partOrder.get(b.partKey)!;
+      if (ao !== bo) return ao - bo;
+      return a.phaseIndex - b.phaseIndex;
+    })
+    .map((p) => ({
+      ...p,
+      label: `${p.partKey} · Fase ${p.phaseIndex + 1} de ${phasesPerPart.get(p.partKey)!.size}`,
+    }));
+}
+
+/**
+ * Returns the first incomplete phase after the given (partKey, phaseIndex), or
+ * null if there's nothing else to advance to. Used by the auto-advance handler
+ * in craftInteractions.ts.
+ */
+export function findNextIncompletePhase(
+  phases: PhaseInfo[],
+  currentPartKey: string,
+  currentPhaseIndex: number,
+): { partKey: string; phaseIndex: number } | null {
+  const idx = phases.findIndex(
+    (p) => p.partKey === currentPartKey && p.phaseIndex === currentPhaseIndex,
+  );
+  if (idx === -1) return null;
+  for (let i = idx + 1; i < phases.length; i++) {
+    if (phases[i].done < phases[i].total) {
+      return { partKey: phases[i].partKey, phaseIndex: phases[i].phaseIndex };
+    }
+  }
+  return null;
 }
 
 /** Filter to workshop tasks (always visible) + the currently-displayed phase's tasks. */
