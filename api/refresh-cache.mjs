@@ -114,12 +114,13 @@ async function writeMarketCache(cache) {
 var cached = null;
 async function loadSnapshots(baseUrl) {
   if (cached) return cached;
-  const [itemsRaw, recipesRaw, vendorRaw, specialRaw, gatherRaw] = await Promise.all([
+  const [itemsRaw, recipesRaw, vendorRaw, specialRaw, gatherRaw, companyCraftRaw] = await Promise.all([
     fetch(`${baseUrl}/data/snapshots/items.json`).then((r) => r.json()),
     fetch(`${baseUrl}/data/snapshots/recipes.json`).then((r) => r.json()),
     fetch(`${baseUrl}/data/snapshots/vendorShop.json`).then((r) => r.json()),
     fetch(`${baseUrl}/data/snapshots/specialShop.json`).then((r) => r.json()),
-    fetch(`${baseUrl}/data/snapshots/gathering.json`).then((r) => r.json())
+    fetch(`${baseUrl}/data/snapshots/gathering.json`).then((r) => r.json()),
+    fetch(`${baseUrl}/data/snapshots/companyCraft.json`).then((r) => r.json())
   ]);
   const itemsById = /* @__PURE__ */ new Map();
   const namesById = /* @__PURE__ */ new Map();
@@ -146,7 +147,11 @@ async function loadSnapshots(baseUrl) {
   for (const [id, info] of gatherRaw.entries) {
     gatheringCatalog.set(id, info);
   }
-  cached = { itemsById, namesById, recipes, vendorMap, specialShop, gatheringCatalog };
+  const companyCraft = /* @__PURE__ */ new Map();
+  for (const [id, recipe] of companyCraftRaw.entries) {
+    companyCraft.set(id, recipe);
+  }
+  cached = { itemsById, namesById, recipes, vendorMap, specialShop, gatheringCatalog, companyCraft };
   return cached;
 }
 
