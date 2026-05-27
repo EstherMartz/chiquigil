@@ -58,7 +58,7 @@ export default function GcSeals() {
   const ready = snapshot.data != null && candidateIds.length > 0;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 space-y-4">
+    <div className="max-w-[100rem] mx-auto px-4 space-y-4">
       <div>
         <h2 className="font-display text-lg text-gold tracking-wide">GC Seals</h2>
         <p className="font-mono text-[11px] text-text-low max-w-prose">
@@ -114,11 +114,11 @@ export default function GcSeals() {
           disabled={!ready || mutation.isPending}
           className="font-mono text-[10px] tracking-widest uppercase bg-gold text-bg-deep px-4 py-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
         >
-          {ready ? (mutation.isPending ? <>Running…<SpinGlyph /></> : 'Run query') : 'Loading data…'}
+          {ready ? (mutation.isPending ? <>Runningâ€¦<SpinGlyph /></> : 'Run query') : 'Loading dataâ€¦'}
         </button>
       </div>
 
-      {mutation.isPending && <Spinner label="Fetching gear market data…" />}
+      {mutation.isPending && <Spinner label="Fetching gear market dataâ€¦" />}
       {mutation.isError && (
         <StatusBanner kind="error">Query failed: {(mutation.error as Error).message}</StatusBanner>
       )}
@@ -130,7 +130,7 @@ export default function GcSeals() {
 
       {!mutation.data && !mutation.isPending && (
         <EmptyState
-          icon="❖"
+          icon="â–"
           message="Find equippable gear to buy cheaply and trade in for Grand Company seals."
           action={ready ? { label: 'Run Query', onClick: () => mutation.mutate() } : undefined}
         />
@@ -149,7 +149,7 @@ export default function GcSeals() {
                   <div className="flex-1 min-w-0">
                     <ItemNameLinks id={row.id} name={row.name} />
                     <div className="font-mono text-[10px] text-text-low mt-0.5">
-                      i{row.ilvl} · {row.world}
+                      i{row.ilvl} Â· {row.world}
                     </div>
                   </div>
                 </div>

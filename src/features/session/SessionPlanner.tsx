@@ -178,7 +178,7 @@ export default function SessionPlanner() {
   const resolvingRecipes = scan.data != null && recipes.isLoading;
 
   return (
-    <div className="max-w-7xl mx-auto px-4">
+    <div className="max-w-[100rem] mx-auto px-4">
       <SessionMasthead
         dataUpdatedAt={scan.data?.completedAt ?? null}
         onRefresh={refresh}
@@ -208,20 +208,20 @@ export default function SessionPlanner() {
 
       {snapshot.isLoading && (
         <div className="mt-6">
-          <Spinner label={`Loading item catalog (~30s, one-time)… ${snapshot.progress.toLocaleString()} items`} />
+          <Spinner label={`Loading item catalog (~30s, one-time)â€¦ ${snapshot.progress.toLocaleString()} items`} />
         </div>
       )}
       {snapshot.isError && (
         <div className="mt-6"><StatusBanner kind="error">XIVAPI item catalog failed: {(snapshot.error as Error).message}</StatusBanner></div>
       )}
       {scanning && (
-        <div className="mt-6"><Spinner label={`Scanning ${allIds.length.toLocaleString()} items on ${settings.world}…`} /></div>
+        <div className="mt-6"><Spinner label={`Scanning ${allIds.length.toLocaleString()} items on ${settings.world}â€¦`} /></div>
       )}
       {scan.isError && (
         <div className="mt-6"><StatusBanner kind="error">Universalis scan failed: {(scan.error as Error).message}</StatusBanner></div>
       )}
       {resolvingRecipes && (
-        <div className="mt-6"><Spinner label={`Resolving ${scan.data!.narrowedIds.length} recipes…`} /></div>
+        <div className="mt-6"><Spinner label={`Resolving ${scan.data!.narrowedIds.length} recipesâ€¦`} /></div>
       )}
       {recipes.isError && (
         <div className="mt-6"><StatusBanner kind="error">XIVAPI recipe fetch failed.</StatusBanner></div>
@@ -235,7 +235,7 @@ export default function SessionPlanner() {
           className="font-mono text-[10px] tracking-[0.4em] uppercase text-text-low hover:text-aether border-b-2 border-border-base pb-2 mb-4 w-full text-left flex justify-between items-center transition-colors"
         >
           <span>The Editor's Bench</span>
-          <span>{benchOpen ? '— hide' : '+ show'}</span>
+          <span>{benchOpen ? 'â€” hide' : '+ show'}</span>
         </button>
         {benchOpen && (
           <div className="space-y-4">

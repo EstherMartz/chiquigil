@@ -217,24 +217,46 @@ export function WhatNowView() {
     },
   });
 
+  const showHero = !run.data && !run.isPending && !run.isError;
+
   return (
     <div className="space-y-6">
-      <div className="flex items-end gap-3">
-        <button
-          type="button"
-          onClick={() => { run.reset(); run.mutate(); }}
-          disabled={run.isPending || notReady}
-          title={notReady ? 'Loading catalogs…' : undefined}
-          className="font-mono text-[10px] tracking-widest uppercase bg-gold text-bg-deep px-5 py-2.5 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
-        >
-          {run.isPending ? <>Scanning…<span aria-hidden className="ml-1 inline-block animate-spin">❖</span></> : 'What should I do?'}
-        </button>
-        {scanTime != null && run.data && (
-          <span className="font-mono text-[10px] text-text-low">{(scanTime / 1000).toFixed(1)}s · {candidateIds.length.toLocaleString()} items checked</span>
-        )}
-      </div>
+      {showHero ? (
+        <div className="border border-border-base bg-bg-card p-8 md:p-12 flex flex-col items-center text-center gap-5">
+          <div className="text-gold text-4xl" aria-hidden>◆</div>
+          <div className="space-y-2 max-w-md">
+            <h3 className="font-display text-2xl text-text-cream tracking-wide">Find your best move right now</h3>
+            <p className="font-mono text-[11px] text-text-low leading-relaxed">
+              One scan across {candidateIds.length > 0 ? `${candidateIds.length.toLocaleString()} ` : ''}market items on {world}. We surface the single best pick from each gil-making strategy — crafting, vendor flips, currencies, GC supply, and gathering.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => { run.reset(); run.mutate(); }}
+            disabled={notReady}
+            title={notReady ? 'Loading catalogs…' : undefined}
+            className="font-mono text-xs tracking-widest uppercase bg-gold text-bg-deep px-6 py-3 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+          >
+            {notReady ? 'Loading catalogs…' : 'Run scan →'}
+          </button>
+        </div>
+      ) : (
+        <div className="flex items-end gap-3">
+          <button
+            type="button"
+            onClick={() => { run.reset(); run.mutate(); }}
+            disabled={run.isPending || notReady}
+            title={notReady ? 'Loading catalogs…' : undefined}
+            className="font-mono text-[10px] tracking-widest uppercase bg-gold text-bg-deep px-5 py-2.5 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+          >
+            {run.isPending ? <>Scanning…<span aria-hidden className="ml-1 inline-block animate-spin">❖</span></> : 'Rescan'}
+          </button>
+          {scanTime != null && run.data && (
+            <span className="font-mono text-[10px] text-text-low">{(scanTime / 1000).toFixed(1)}s · {candidateIds.length.toLocaleString()} items checked</span>
+          )}
+        </div>
+      )}
 
-      {notReady && <span className="font-mono text-[10px] text-text-low">Loading catalogs…</span>}
       {run.isPending && (
         progress
           ? <ProgressBar current={progress.current} total={progress.total} label={`Scanning ${world} market…`} />

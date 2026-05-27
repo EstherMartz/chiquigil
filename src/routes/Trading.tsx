@@ -20,7 +20,7 @@ export default function Trading() {
   const presetParam = params.get('preset') ?? undefined;
   const [tab, setTab] = useState<Tab>(presetParam ? 'queries' : 'dcFlip');
   return (
-    <div className="max-w-7xl mx-auto px-4 space-y-4">
+    <div className="max-w-[100rem] mx-auto px-4 space-y-4">
       <SectionHeader label="Trading" />
       <nav className="flex border-b border-border-base">
         {TABS.map((t) => (

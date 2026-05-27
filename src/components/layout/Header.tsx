@@ -10,7 +10,7 @@ const navClass = ({ isActive }: { isActive: boolean }) =>
 export function Header() {
   return (
     <header className="border-b border-border-base mb-7 pb-5">
-      <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+      <div className="max-w-[100rem] mx-auto px-4 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
         <div>
           <div className="font-mono text-[11px] tracking-widest text-aether uppercase mb-1">
             Mone a fer dinerets

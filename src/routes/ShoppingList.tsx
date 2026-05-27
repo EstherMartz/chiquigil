@@ -38,7 +38,7 @@ export default function ShoppingList() {
   const market = useMarketData(priceIds, world, dc, 'Europe');
 
   const [planRequested, setPlanRequested] = useState(false);
-  // Re-arm when the list changes — user must click Plan again.
+  // Re-arm when the list changes â€” user must click Plan again.
   useEffect(() => { setPlanRequested(false); }, [itemIds.length]);
 
   const survey = useMemo(() => {
@@ -78,11 +78,11 @@ export default function ShoppingList() {
   }, [snapshot.data]);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 space-y-4">
+    <div className="max-w-[100rem] mx-auto px-4 space-y-4">
       <div>
         <h2 className="font-display text-lg text-gold tracking-wide">Shopping List</h2>
         <p className="font-mono text-[11px] text-text-low max-w-prose">
-          Plan a crafting session across multiple items — aggregates ingredients region-wide and finds the cheapest source per material.
+          Plan a crafting session across multiple items â€” aggregates ingredients region-wide and finds the cheapest source per material.
         </p>
       </div>
 
@@ -92,7 +92,7 @@ export default function ShoppingList() {
       />
 
       {planRequested && (market.isLoading || recipes.isLoading) && (
-        <Spinner label="Fetching prices + recipes…" />
+        <Spinner label="Fetching prices + recipesâ€¦" />
       )}
       {planRequested && market.isError && (
         <StatusBanner kind="error">Universalis fetch failed: {(market.error as Error).message}</StatusBanner>

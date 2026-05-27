@@ -16,7 +16,7 @@ export default function Submarines() {
   const { submarineRank, submarineSlots, setSubmarineRank, setSubmarineSlots } = useSettingsStore();
 
   return (
-    <div className="max-w-7xl mx-auto px-4 space-y-4">
+    <div className="max-w-[100rem] mx-auto px-4 space-y-4">
       <div className="flex items-start justify-between flex-wrap gap-3">
         <SectionHeader label="Submarines" />
         <div className="flex items-end gap-3">

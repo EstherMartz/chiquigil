@@ -53,15 +53,17 @@ export function OnboardingWizard({ onComplete, prefill }: Props) {
     .join(' · ');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]">
+    <div className="fixed inset-0 z-50 overflow-y-auto pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/60"
+        className="fixed inset-0 bg-black/60"
         onClick={step === 3 ? () => handleFinish(false) : undefined}
       />
 
+      {/* Centering wrapper — min-h-full + flex lets the card center when small and scroll the page when tall */}
+      <div className="relative z-10 min-h-full flex items-center justify-center p-4">
       {/* Modal card */}
-      <div className="relative z-10 max-w-lg w-full bg-bg-card border border-border-base p-6 max-h-[90vh] overflow-y-auto">
+      <div className="max-w-lg w-full bg-bg-card border border-border-base p-6">
         {/* Progress pips */}
         <div className="flex justify-center gap-2 mb-6">
           {[1, 2, 3].map((s) => (
@@ -166,6 +168,7 @@ export function OnboardingWizard({ onComplete, prefill }: Props) {
             </div>
           </div>
         )}
+      </div>
       </div>
     </div>
   );

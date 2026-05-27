@@ -13,3 +13,8 @@ body {
     radial-gradient(circle at 15% -10%, rgba(110,197,206,0.06), transparent 50%),
     radial-gradient(circle at 90% 110%, rgba(212,169,88,0.05), transparent 55%);
 }
+
+/* Hide native number-input spinners app-wide — they clip cell borders and don't fit the design language. */
+input[type='number'] { appearance: textfield; -moz-appearance: textfield; }
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button { appearance: none; -webkit-appearance: none; margin: 0; }
