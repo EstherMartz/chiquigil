@@ -111,48 +111,9 @@ async function writeMarketCache(cache) {
 }
 
 // src/bot/loadSnapshots.ts
-var cached = null;
-async function loadSnapshots(baseUrl) {
-  if (cached) return cached;
-  const [itemsRaw, recipesRaw, vendorRaw, specialRaw, gatherRaw, companyCraftRaw] = await Promise.all([
-    fetch(`${baseUrl}/data/snapshots/items.json`).then((r) => r.json()),
-    fetch(`${baseUrl}/data/snapshots/recipes.json`).then((r) => r.json()),
-    fetch(`${baseUrl}/data/snapshots/vendorShop.json`).then((r) => r.json()),
-    fetch(`${baseUrl}/data/snapshots/specialShop.json`).then((r) => r.json()),
-    fetch(`${baseUrl}/data/snapshots/gathering.json`).then((r) => r.json()),
-    fetch(`${baseUrl}/data/snapshots/companyCraft.json`).then((r) => r.json())
-  ]);
-  const itemsById = /* @__PURE__ */ new Map();
-  const namesById = /* @__PURE__ */ new Map();
-  for (const item of itemsRaw.items) {
-    itemsById.set(item.id, item);
-    namesById.set(item.id, item.name);
-  }
-  const recipes = /* @__PURE__ */ new Map();
-  for (const [id, recipe] of recipesRaw.entries) {
-    recipes.set(id, recipe);
-  }
-  const vendorMap = /* @__PURE__ */ new Map();
-  for (const [id, price] of vendorRaw.entries) {
-    vendorMap.set(id, price);
-  }
-  const specialShop = {
-    byCurrency: new Map(
-      specialRaw.byCurrency.map(
-        ([currency, entries]) => [currency, entries]
-      )
-    )
-  };
-  const gatheringCatalog = /* @__PURE__ */ new Map();
-  for (const [id, info] of gatherRaw.entries) {
-    gatheringCatalog.set(id, info);
-  }
-  const companyCraft = /* @__PURE__ */ new Map();
-  for (const [id, recipe] of companyCraftRaw.entries) {
-    companyCraft.set(id, recipe);
-  }
-  cached = { itemsById, namesById, recipes, vendorMap, specialShop, gatheringCatalog, companyCraft };
-  return cached;
+async function loadItemIds(baseUrl) {
+  const raw = await fetch(`${baseUrl}/data/snapshots/items.json`).then((r) => r.json());
+  return raw.items.map((i) => i.id);
 }
 
 // src/api/refresh-cache.ts
@@ -168,8 +129,7 @@ async function handler(req, res) {
     const proto = req.headers["x-forwarded-proto"] ?? "https";
     const host = req.headers["x-forwarded-host"] ?? req.headers.host ?? "localhost";
     const baseUrl = `${proto}://${host}`;
-    const snapshots = await loadSnapshots(baseUrl);
-    const ids = [...snapshots.itemsById.keys()];
+    const ids = await loadItemIds(baseUrl);
     console.log(`[refresh] fetching ${ids.length} items across 3 scopes...`);
     const bundle = await fetchMarketForOutputs(ids, WORLD, DC, REGION);
     const cache = { phantom: bundle.phantom, dc: bundle.dc, region: bundle.region, ts: Date.now() };

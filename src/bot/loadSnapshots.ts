@@ -16,6 +16,17 @@ export interface BotSnapshots {
 
 let cached: BotSnapshots | null = null;
 
+/**
+ * Lightweight loader for callers that only need the item-id set (e.g. the
+ * cron-driven /api/refresh-cache, which iterates all items but doesn't touch
+ * recipes/vendor/special/gathering/companyCraft). Avoids paying the cold-start
+ * cost of five extra snapshot fetches when a function only has 300s budget.
+ */
+export async function loadItemIds(baseUrl: string): Promise<number[]> {
+  const raw = await fetch(`${baseUrl}/data/snapshots/items.json`).then((r) => r.json()) as { items: { id: number }[] };
+  return raw.items.map((i) => i.id);
+}
+
 export async function loadSnapshots(baseUrl: string): Promise<BotSnapshots> {
   if (cached) return cached;
 

@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { fetchMarketForOutputs } from '../bot/marketFetch';
 import { writeMarketCache } from '../bot/marketCache';
-import { loadSnapshots } from '../bot/loadSnapshots';
+import { loadItemIds } from '../bot/loadSnapshots';
 
 const WORLD = process.env.HOME_WORLD ?? 'Phantom';
 const DC = process.env.HOME_DC ?? 'Chaos';
@@ -18,8 +18,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const host = req.headers['x-forwarded-host'] ?? req.headers.host ?? 'localhost';
     const baseUrl = `${proto}://${host}`;
 
-    const snapshots = await loadSnapshots(baseUrl);
-    const ids = [...snapshots.itemsById.keys()];
+    const ids = await loadItemIds(baseUrl);
 
     console.log(`[refresh] fetching ${ids.length} items across 3 scopes...`);
     const bundle = await fetchMarketForOutputs(ids, WORLD, DC, REGION);
