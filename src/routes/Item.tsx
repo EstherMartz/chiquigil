@@ -14,6 +14,7 @@ import { SaleHistoryBlock } from '../features/items/SaleHistoryBlock';
 import { VendorSourceCard } from '../features/items/VendorSourceCard';
 import { CurrencySourceCard } from '../features/items/CurrencySourceCard';
 import { CrossWorldListingsBlock } from '../features/items/CrossWorldListingsBlock';
+import { VerdictCard } from '../features/items/VerdictCard';
 import { findItemCurrencyOffers } from '../features/items/currencyOffers';
 import { AddToWatchlistButton } from '../features/items/AddToWatchlistButton';
 import { AddToShoppingListButton } from '../features/shoppingList/AddToShoppingListButton';
@@ -40,6 +41,13 @@ const SOURCE_LABEL: Record<IngredientSource, string> = {
   gather: 'Gather',
   craft: 'Craft',
   other: '—',
+};
+
+const SOURCE_CHIP_CLASS: Record<IngredientSource, string> = {
+  vendor: 'text-jade border-jade/40',
+  gather: 'text-aether border-aether/40',
+  craft:  'text-gold border-gold/40',
+  other:  'text-text-low border-border-base',
 };
 
 export default function Item() {
@@ -117,6 +125,17 @@ export default function Item() {
   const dcMarket = market.data?.dc[itemId];
   const regionMarket = market.data?.region[itemId];
 
+  const recipeMaterialCost = useMemo(() => {
+    if (!recipe || !phantomMarket) return 0;
+    let total = 0;
+    for (const ing of recipe.ingredients) {
+      const m = market.data?.phantom[ing.itemId];
+      const px = m?.minNQ ?? m?.minHQ ?? 0;
+      total += px * ing.amount;
+    }
+    return total;
+  }, [recipe, phantomMarket, market.data]);
+
   return (
     <div className="max-w-5xl mx-auto px-4 space-y-6">
       <HeaderBlock
@@ -134,6 +153,18 @@ export default function Item() {
       )}
       {market.isError && (
         <StatusBanner kind="error">Universalis fetch failed: {(market.error as Error).message}</StatusBanner>
+      )}
+
+      {!market.isLoading && (
+        <VerdictCard
+          phantom={phantomMarket}
+          region={regionMarket}
+          recipe={recipe ?? undefined}
+          vendorPrice={vendorPrice || undefined}
+          materialCost={recipeMaterialCost}
+          homeWorld={world}
+          canHq={canHq}
+        />
       )}
 
       <PricesBlock
@@ -372,8 +403,14 @@ function RecipeBlock({ recipe, itemNames, phantom, garlandIngredients }: {
                   </td>
                   <td className="py-2 text-right font-mono">{ing.amount}</td>
                   <td className="py-2 text-right font-mono">{fmtGil(unit)}</td>
-                  <td className="py-2 text-right font-mono text-text-low hidden sm:table-cell">
-                    {source ? SOURCE_LABEL[source] : '—'}
+                  <td className="py-2 text-right hidden sm:table-cell">
+                    {source ? (
+                      <span className={`font-mono text-[10px] tracking-widest uppercase border ${SOURCE_CHIP_CLASS[source]} px-2 py-0.5 rounded-sm`}>
+                        {SOURCE_LABEL[source]}
+                      </span>
+                    ) : (
+                      <span className="text-text-low font-mono">—</span>
+                    )}
                   </td>
                 </tr>
               );
