@@ -5,9 +5,13 @@
     },
     "api/discord.mjs": {
       "maxDuration": 60
+    },
+    "api/projects.mjs": {
+      "maxDuration": 30
     }
   },
   "rewrites": [
+    { "source": "/api/projects/:id", "destination": "/api/projects" },
     { "source": "/(.*)", "destination": "/" }
   ]
 }
