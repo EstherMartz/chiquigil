@@ -51,6 +51,14 @@ async function openCraftStore(url, authToken) {
     await client.execute("ALTER TABLE projects ADD COLUMN thread_id TEXT");
   } catch {
   }
+  try {
+    await client.execute("ALTER TABLE projects ADD COLUMN display_part_key TEXT");
+  } catch {
+  }
+  try {
+    await client.execute("ALTER TABLE projects ADD COLUMN display_phase_index INTEGER");
+  } catch {
+  }
   function rowToProject(row) {
     return {
       id: Number(row.id),
@@ -63,7 +71,9 @@ async function openCraftStore(url, authToken) {
       createdBy: String(row.created_by),
       threadId: row.thread_id ? String(row.thread_id) : null,
       status: String(row.status),
-      createdAt: Number(row.created_at)
+      createdAt: Number(row.created_at),
+      displayPartKey: row.display_part_key ? String(row.display_part_key) : null,
+      displayPhaseIndex: row.display_phase_index != null ? Number(row.display_phase_index) : null
     };
   }
   function rowToTask(row) {
@@ -87,8 +97,8 @@ async function openCraftStore(url, authToken) {
       const createdAt = Date.now();
       const result = await client.execute({
         sql: `
-          INSERT INTO projects (guild_id, channel_id, name, target_item_id, target_qty, created_by, created_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?)
+          INSERT INTO projects (guild_id, channel_id, name, target_item_id, target_qty, created_by, created_at, display_part_key, display_phase_index)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
         args: [
           p.guildId,
@@ -97,7 +107,9 @@ async function openCraftStore(url, authToken) {
           p.targetItemId,
           p.targetQty,
           p.createdBy,
-          createdAt
+          createdAt,
+          p.displayPartKey ?? null,
+          p.displayPhaseIndex ?? null
         ]
       });
       return Number(result.lastInsertRowid);
@@ -189,6 +201,12 @@ async function openCraftStore(url, authToken) {
       await client.execute({
         sql: "UPDATE projects SET thread_id = ? WHERE id = ?",
         args: [threadId, projectId]
+      });
+    },
+    async setProjectDisplayPhase(projectId, partKey, phaseIndex) {
+      await client.execute({
+        sql: "UPDATE projects SET display_part_key = ?, display_phase_index = ? WHERE id = ?",
+        args: [partKey, phaseIndex, projectId]
       });
     },
     async closeProject(projectId) {

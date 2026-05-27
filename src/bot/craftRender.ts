@@ -55,32 +55,70 @@ function sectionKeyFor(t: StoredTask): string {
   return S.SECTION_GATHER;
 }
 
-interface GroupedTasks {
-  /** Sections for tasks without a partKey (always includes workshop assembly). */
-  topSections: Map<string, StoredTask[]>;
-  /** Per-part: ordered map of partKey → section → tasks. */
-  parts: Map<string, Map<string, StoredTask[]>>;
-}
-
-function groupTasks(tasks: StoredTask[]): GroupedTasks {
-  const topSections = new Map<string, StoredTask[]>();
-  const parts = new Map<string, Map<string, StoredTask[]>>();
+function groupBySection(tasks: StoredTask[]): Map<string, StoredTask[]> {
+  const map = new Map<string, StoredTask[]>();
   for (const t of tasks) {
     const sec = sectionKeyFor(t);
-    const partKey = t.meta?.partKey;
-    if (!partKey) {
-      let arr = topSections.get(sec);
-      if (!arr) { arr = []; topSections.set(sec, arr); }
-      arr.push(t);
-      continue;
-    }
-    let partMap = parts.get(partKey);
-    if (!partMap) { partMap = new Map(); parts.set(partKey, partMap); }
-    let arr = partMap.get(sec);
-    if (!arr) { arr = []; partMap.set(sec, arr); }
+    let arr = map.get(sec);
+    if (!arr) { arr = []; map.set(sec, arr); }
     arr.push(t);
   }
-  return { topSections, parts };
+  return map;
+}
+
+interface PhaseInfo {
+  partKey: string;
+  phaseIndex: number;
+  label: string;
+  total: number;
+  done: number;
+}
+
+/** Derive all (part, phase) combos that have at least one task. */
+function collectPhases(tasks: StoredTask[]): PhaseInfo[] {
+  const map = new Map<string, PhaseInfo>();
+  const partOrder = new Map<string, number>();
+  let nextPartOrder = 0;
+
+  for (const t of tasks) {
+    const pk = t.meta?.partKey;
+    const pi = t.meta?.phaseIndex;
+    if (pk == null || pi == null) continue;
+    if (!partOrder.has(pk)) partOrder.set(pk, nextPartOrder++);
+    const key = `${pk}#${pi}`;
+    const existing = map.get(key);
+    if (existing) {
+      existing.total++;
+      if (t.status === 'done') existing.done++;
+    } else {
+      map.set(key, {
+        partKey: pk,
+        phaseIndex: pi,
+        label: `${pk} · Fase ${pi + 1}`,
+        total: 1,
+        done: t.status === 'done' ? 1 : 0,
+      });
+    }
+  }
+  return [...map.values()].sort((a, b) => {
+    const ao = partOrder.get(a.partKey)!;
+    const bo = partOrder.get(b.partKey)!;
+    if (ao !== bo) return ao - bo;
+    return a.phaseIndex - b.phaseIndex;
+  });
+}
+
+/** Filter to workshop tasks (always visible) + the currently-displayed phase's tasks. */
+function filterToPhase(
+  tasks: StoredTask[],
+  partKey: string,
+  phaseIndex: number,
+): StoredTask[] {
+  return tasks.filter((t) => {
+    // Untagged tasks (workshop assembly) stay visible at all times.
+    if (t.meta?.partKey == null || t.meta?.phaseIndex == null) return true;
+    return t.meta.partKey === partKey && t.meta.phaseIndex === phaseIndex;
+  });
 }
 
 export function buildProjectMessage(
@@ -94,21 +132,31 @@ export function buildProjectMessage(
     ? S.PROJECT_STATUS_CLOSED
     : `${S.PROJECT_STATUS_OPEN} · ${doneTasks}/${totalTasks} ${S.PROJECT_DONE_SUFFIX}`;
 
-  const { topSections, parts } = groupTasks(tasks);
+  // Phase navigation: only fires for CompanyCraft projects that have multiple
+  // (part, phase) combinations. Other projects (standard recipes, single-phase
+  // workshops) render every task and skip the phase select.
+  const phases = collectPhases(tasks);
+  const hasPhaseNav = phases.length > 1;
+  const activePartKey = hasPhaseNav ? (project.displayPartKey ?? phases[0].partKey) : null;
+  const activePhaseIndex = hasPhaseNav
+    ? (project.displayPhaseIndex ?? phases[0].phaseIndex)
+    : null;
+  const visibleTasks = hasPhaseNav && activePartKey != null && activePhaseIndex != null
+    ? filterToPhase(tasks, activePartKey, activePhaseIndex)
+    : tasks;
+  const activePhaseLabel = hasPhaseNav
+    ? phases.find((p) => p.partKey === activePartKey && p.phaseIndex === activePhaseIndex)?.label
+    : null;
+
+  const sections = groupBySection(visibleTasks);
   let description = '';
-  for (const [header, sectionTasks] of topSections) {
+  if (activePhaseLabel) {
+    description += `\n📍 **${activePhaseLabel}**\n`;
+  }
+  for (const [header, sectionTasks] of sections) {
     description += `\n**${header}**\n`;
     for (const t of sectionTasks) {
       description += taskLine(t) + '\n';
-    }
-  }
-  for (const [partKey, sectionMap] of parts) {
-    description += `\n━━━ **${partKey.toUpperCase()}** ━━━\n`;
-    for (const [header, sectionTasks] of sectionMap) {
-      description += `\n**${header}**\n`;
-      for (const t of sectionTasks) {
-        description += taskLine(t) + '\n';
-      }
     }
   }
 
@@ -122,9 +170,6 @@ export function buildProjectMessage(
   const timestamp = new Date(project.createdAt).toISOString();
   const chunks = chunkDescription(fullDescription);
 
-  // Multi-embed when one description chunk would exceed Discord's per-embed
-  // limit. All embeds share the project's color; only the first carries the
-  // title, only the last carries footer+timestamp.
   const builtEmbeds = chunks.map((chunk, i) => {
     const e: Record<string, unknown> = { color, description: chunk };
     if (i === 0) e.title = title;
@@ -137,9 +182,30 @@ export function buildProjectMessage(
 
   const components: object[] = [];
 
-  // Only show interactive components for open projects
   if (!isClosed) {
-    const claimable = tasks.filter((t) => t.status === 'open').slice(0, 25);
+    // Phase select sits ABOVE the claim dropdown so it's the first thing the
+    // user sees when navigating a big workshop project.
+    if (hasPhaseNav) {
+      const phaseSelect = {
+        type: 3,
+        custom_id: `cproj:${project.id}:phase`,
+        placeholder: S.PHASE_SELECT_PLACEHOLDER,
+        options: phases.slice(0, 25).map((p) => {
+          const isDone = p.total > 0 && p.done === p.total;
+          const checkmark = isDone ? ' ✓' : '';
+          return {
+            label: `${p.label}${checkmark}`.slice(0, 100),
+            description: `${p.done}/${p.total} ${S.PROJECT_DONE_SUFFIX}`.slice(0, 100),
+            value: `${p.partKey}#${p.phaseIndex}`,
+            default: p.partKey === activePartKey && p.phaseIndex === activePhaseIndex,
+          };
+        }),
+      };
+      components.push({ type: 1, components: [phaseSelect] });
+    }
+
+    // Claim dropdown only sees tasks for the currently-displayed phase.
+    const claimable = visibleTasks.filter((t) => t.status === 'open').slice(0, 25);
     if (claimable.length > 0) {
       const selectComponent = {
         type: 3,

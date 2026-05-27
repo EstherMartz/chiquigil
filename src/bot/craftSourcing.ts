@@ -109,38 +109,13 @@ export function buildBreakdown(
   }
 
   // Path B — CompanyCraft fallback: one synthetic workshop task for the final
-  // assembly + per-ingredient explosion. Ingredients shared across multiple
-  // parts (e.g. Natron needed by Hull AND Stern AND Bow) are summed into a
-  // single task instead of duplicating, which keeps both the Discord embed
-  // and the web /projects view readable.
+  // assembly + per-(part, phase) explosion. Each CompanyCraftProcess in the
+  // game is a separate "submit materials" step, so we emit a distinct task
+  // bundle for each phase. The embed renders one phase at a time (see
+  // craftRender.ts) so the wall of materials becomes navigable.
   const cc = deps.companyCraft.get(targetId);
   if (cc) {
     const craftIntermediates = opts.craftIntermediates ?? true;
-    const allCrafts = new Map<number, ExplodedCraft>();
-    const allLeaves = new Map<number, number>();
-
-    for (const part of cc.parts) {
-      for (const ing of part.ingredients) {
-        const qty = ing.qty * targetQty;
-        if (craftIntermediates && deps.recipes.has(ing.itemId)) {
-          const result = explode(ing.itemId, qty, deps.recipes, opts);
-          for (const [id, c] of result.crafts) {
-            const existing = allCrafts.get(id);
-            if (existing) {
-              existing.outputQty += c.outputQty;
-              existing.craftCount += c.craftCount;
-            } else {
-              allCrafts.set(id, { ...c });
-            }
-          }
-          for (const [id, q] of result.leaves) {
-            allLeaves.set(id, (allLeaves.get(id) ?? 0) + q);
-          }
-        } else {
-          allLeaves.set(ing.itemId, (allLeaves.get(ing.itemId) ?? 0) + qty);
-        }
-      }
-    }
 
     const crafts: CraftTask[] = [{
       itemId: cc.resultItemId,
@@ -149,15 +124,50 @@ export function buildBreakdown(
       source: 'workshop',
       meta: {},
     }];
-    const acquire = sourceLeaves(allLeaves, market, deps, cheapVendorThreshold);
-    for (const [itemId, info] of allCrafts) {
-      crafts.push({
-        itemId,
-        itemName: deps.namesById.get(itemId) ?? `Item #${itemId}`,
-        qtyNeeded: info.outputQty,
-        source: 'craft',
-        meta: { job: info.job as CraftTask['meta']['job'] },
-      });
+    const acquire: CraftTask[] = [];
+
+    for (const part of cc.parts) {
+      const partKey = part.name || undefined;
+      for (let phaseIndex = 0; phaseIndex < part.phases.length; phaseIndex++) {
+        const phase = part.phases[phaseIndex];
+        const phaseCrafts = new Map<number, ExplodedCraft>();
+        const phaseLeaves = new Map<number, number>();
+
+        for (const ing of phase.ingredients) {
+          const qty = ing.qty * targetQty;
+          if (craftIntermediates && deps.recipes.has(ing.itemId)) {
+            const result = explode(ing.itemId, qty, deps.recipes, opts);
+            for (const [id, c] of result.crafts) {
+              const existing = phaseCrafts.get(id);
+              if (existing) {
+                existing.outputQty += c.outputQty;
+                existing.craftCount += c.craftCount;
+              } else {
+                phaseCrafts.set(id, { ...c });
+              }
+            }
+            for (const [id, q] of result.leaves) {
+              phaseLeaves.set(id, (phaseLeaves.get(id) ?? 0) + q);
+            }
+          } else {
+            phaseLeaves.set(ing.itemId, (phaseLeaves.get(ing.itemId) ?? 0) + qty);
+          }
+        }
+
+        const phaseTag = { ...(partKey ? { partKey } : {}), phaseIndex };
+        for (const t of sourceLeaves(phaseLeaves, market, deps, cheapVendorThreshold)) {
+          acquire.push({ ...t, meta: { ...t.meta, ...phaseTag } });
+        }
+        for (const [itemId, info] of phaseCrafts) {
+          crafts.push({
+            itemId,
+            itemName: deps.namesById.get(itemId) ?? `Item #${itemId}`,
+            qtyNeeded: info.outputQty,
+            source: 'craft',
+            meta: { job: info.job as CraftTask['meta']['job'], ...phaseTag },
+          });
+        }
+      }
     }
     return { crafts, acquire };
   }

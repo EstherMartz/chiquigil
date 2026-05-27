@@ -8,6 +8,16 @@ import { buildProjectMessage, buildBoardMessage } from './craftRender';
 import { explode } from './craftExplode';
 import * as discordApi from './discordApi';
 import * as S from './craftStrings';
+import type { CraftTask } from './craftTypes';
+
+function initialDisplayPhase(tasks: CraftTask[]): { partKey: string; phaseIndex: number } | null {
+  for (const t of tasks) {
+    if (t.meta?.partKey != null && t.meta?.phaseIndex != null) {
+      return { partKey: t.meta.partKey, phaseIndex: t.meta.phaseIndex };
+    }
+  }
+  return null;
+}
 
 export interface CraftInteractionDeps {
   store: CraftStore;
@@ -239,9 +249,38 @@ export async function handleCraftSelect(
     return handleRequestPick(customId, values, userId, guildId, channelId, deps);
   }
 
-  // Handle claim selection
   const parsed = parseCustomId(customId);
-  if (!parsed || parsed.action !== 'claim') {
+  if (!parsed) {
+    return { type: 4, data: { content: 'Invalid select', flags: 64 } };
+  }
+
+  // Phase navigation — updates the project's display state and re-renders.
+  if (parsed.action === 'phase') {
+    const raw = values[0] ?? '';
+    const hashIdx = raw.lastIndexOf('#');
+    if (hashIdx <= 0) {
+      return { type: 4, data: { content: 'Invalid phase selection', flags: 64 } };
+    }
+    const partKey = raw.slice(0, hashIdx);
+    const phaseIndex = parseInt(raw.slice(hashIdx + 1), 10);
+    if (!partKey || isNaN(phaseIndex)) {
+      return { type: 4, data: { content: 'Invalid phase selection', flags: 64 } };
+    }
+    await deps.store.setProjectDisplayPhase(parsed.projectId, partKey, phaseIndex);
+    const project = await deps.store.getProject(parsed.projectId);
+    if (project) {
+      const tasks = await deps.store.getTasks(parsed.projectId);
+      const { embeds, components } = buildProjectMessage(project, tasks);
+      try {
+        await discordApi.editMessage(deps.botToken, channelId, messageId, { embeds, components });
+      } catch {
+        // best effort
+      }
+    }
+    return { type: 6 }; // DEFERRED_UPDATE_MESSAGE
+  }
+
+  if (parsed.action !== 'claim') {
     return { type: 4, data: { content: 'Invalid select', flags: 64 } };
   }
 
@@ -415,6 +454,8 @@ async function createCraftProjectFromModal(
 
   const targetChannelId = deps.craftChannelId ?? channelId;
 
+  const initial = initialDisplayPhase(allTasks);
+
   // Create project
   const projectId = await deps.store.createProject({
     guildId,
@@ -423,6 +464,8 @@ async function createCraftProjectFromModal(
     targetItemId: itemId,
     targetQty: qty,
     createdBy: userId,
+    displayPartKey: initial?.partKey ?? null,
+    displayPhaseIndex: initial?.phaseIndex ?? null,
   });
   await deps.store.addTasks(projectId, allTasks);
 
@@ -528,6 +571,8 @@ async function handleRequestPick(
 
   const targetChannelId = deps.craftChannelId ?? channelId;
 
+  const initial = initialDisplayPhase(allTasks);
+
   // Create project
   const projectId = await deps.store.createProject({
     guildId,
@@ -536,6 +581,8 @@ async function handleRequestPick(
     targetItemId: itemId,
     targetQty: qty,
     createdBy: userId,
+    displayPartKey: initial?.partKey ?? null,
+    displayPhaseIndex: initial?.phaseIndex ?? null,
   });
   await deps.store.addTasks(projectId, allTasks);
 

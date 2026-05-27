@@ -24,10 +24,12 @@ describe('buildBreakdown (workshop fallback)', () => {
       resultName: 'Tatanora Hull',
       parts: [{
         name: 'Hull',
-        ingredients: [
-          { itemId: 5106, qty: 6 },
-          { itemId: 5107, qty: 10 },
-        ],
+        phases: [{
+          ingredients: [
+            { itemId: 5106, qty: 6 },
+            { itemId: 5107, qty: 10 },
+          ],
+        }],
       }],
     };
     const deps = emptyDeps({
@@ -45,15 +47,18 @@ describe('buildBreakdown (workshop fallback)', () => {
     });
     const acquireIds = out.acquire.map((t) => t.itemId).sort();
     expect(acquireIds).toEqual([5106, 5107]);
-    // Single-part item: tasks should NOT carry a partKey.
-    expect(out.acquire.every((t) => t.meta.partKey === undefined)).toBe(true);
+    // All acquire tasks carry the phase tag (partKey + phaseIndex).
+    expect(out.acquire.every((t) => t.meta.partKey === 'Hull' && t.meta.phaseIndex === 0)).toBe(true);
   });
 
   it('multiplies workshop ingredients by targetQty', () => {
     const cc: CompanyCraftRecipe = {
       resultItemId: 100,
       resultName: 'Submarine Panel',
-      parts: [{ name: 'Hull', ingredients: [{ itemId: 50, qty: 3 }] }],
+      parts: [{
+        name: 'Hull',
+        phases: [{ ingredients: [{ itemId: 50, qty: 3 }] }],
+      }],
     };
     const deps = emptyDeps({
       companyCraft: new Map([[100, cc]]),
@@ -69,7 +74,14 @@ describe('buildBreakdown (workshop fallback)', () => {
       recipes: new Map(),       // populated below
       companyCraft: new Map([[
         7,
-        { resultItemId: 7, resultName: 'X', parts: [{ name: 'Body', ingredients: [{ itemId: 99, qty: 1 }] }] } as CompanyCraftRecipe,
+        {
+          resultItemId: 7,
+          resultName: 'X',
+          parts: [{
+            name: 'Body',
+            phases: [{ ingredients: [{ itemId: 99, qty: 1 }] }],
+          }],
+        } as CompanyCraftRecipe,
       ]]),
       namesById: new Map([[7, 'X']]),
     });
@@ -104,7 +116,10 @@ describe('buildBreakdown (workshop fallback)', () => {
     const cc: CompanyCraftRecipe = {
       resultItemId: 200,
       resultName: 'Stone Wall',
-      parts: [{ name: 'Wall', ingredients: [{ itemId: 100, qty: 2 }] }], // 2× Ingot
+      parts: [{
+        name: 'Wall',
+        phases: [{ ingredients: [{ itemId: 100, qty: 2 }] }], // 2× Ingot
+      }],
     };
     const deps = emptyDeps({
       companyCraft: new Map([[200, cc]]),
@@ -143,7 +158,10 @@ describe('buildBreakdown (workshop fallback)', () => {
     const cc: CompanyCraftRecipe = {
       resultItemId: 200,
       resultName: 'Stone Wall',
-      parts: [{ name: 'Wall', ingredients: [{ itemId: 100, qty: 2 }] }],
+      parts: [{
+        name: 'Wall',
+        phases: [{ ingredients: [{ itemId: 100, qty: 2 }] }],
+      }],
     };
     const deps = emptyDeps({
       companyCraft: new Map([[200, cc]]),
@@ -158,33 +176,51 @@ describe('buildBreakdown (workshop fallback)', () => {
     expect(out.acquire[0]).toMatchObject({ itemId: 100, qtyNeeded: 2 });
   });
 
-  it('sums identical ingredients across multiple parts into a single task', () => {
-    // House with Wall + Door, both needing the same item — should aggregate
-    // into one 14× task instead of two 6× and 8× tasks. This prevents the
-    // duplicate-rows problem that surfaced when each part produced its own
-    // independent bucket.
+  it('tags every task with its (partKey, phaseIndex) and keeps phases separate', () => {
+    // House with two parts and Wall has two phases. The same ingredient (Natron)
+    // appearing in two different phases stays as TWO separate tasks — one tagged
+    // for Wall phase 0, another tagged for Wall phase 1 — because each phase is a
+    // separate "submit materials" step in-game.
     const cc: CompanyCraftRecipe = {
       resultItemId: 500,
-      resultName: 'Tatanora',
+      resultName: 'Walls',
       parts: [
-        { name: 'Wall', ingredients: [{ itemId: 10, qty: 6 }, { itemId: 20, qty: 4 }] },
-        { name: 'Door', ingredients: [{ itemId: 10, qty: 8 }] },
+        {
+          name: 'Wall',
+          phases: [
+            { ingredients: [{ itemId: 10, qty: 6 }] },
+            { ingredients: [{ itemId: 10, qty: 8 }] },
+          ],
+        },
+        {
+          name: 'Door',
+          phases: [
+            { ingredients: [{ itemId: 20, qty: 4 }] },
+          ],
+        },
       ],
     };
     const deps = emptyDeps({
       companyCraft: new Map([[500, cc]]),
-      namesById: new Map([[500, 'Tatanora'], [10, 'Natron'], [20, 'Cotton Yarn']]),
+      namesById: new Map([[500, 'Walls'], [10, 'Natron'], [20, 'Cotton Yarn']]),
     });
     const out = buildBreakdown(500, 1, emptyMarket, deps);
 
-    // Workshop task at the top + ONE Natron task (summed) + ONE Cotton task.
-    expect(out.crafts).toHaveLength(1);
-    expect(out.crafts[0].source).toBe('workshop');
-    const natron = out.acquire.find((t) => t.itemId === 10);
-    const cotton = out.acquire.find((t) => t.itemId === 20);
-    expect(natron?.qtyNeeded).toBe(14); // 6 + 8 summed across Wall + Door
-    expect(cotton?.qtyNeeded).toBe(4);
-    // No partKey survives aggregation.
-    expect(out.acquire.every((t) => t.meta.partKey === undefined)).toBe(true);
+    // Workshop assembly: untagged.
+    const workshop = out.crafts.find((t) => t.source === 'workshop');
+    expect(workshop?.meta.partKey).toBeUndefined();
+    expect(workshop?.meta.phaseIndex).toBeUndefined();
+
+    // Three acquire tasks: Wall-0 Natron, Wall-1 Natron, Door-0 Cotton Yarn.
+    expect(out.acquire).toHaveLength(3);
+    const tagged = out.acquire.map((t) => ({
+      itemId: t.itemId,
+      qty: t.qtyNeeded,
+      partKey: t.meta.partKey,
+      phaseIndex: t.meta.phaseIndex,
+    }));
+    expect(tagged).toContainEqual({ itemId: 10, qty: 6, partKey: 'Wall', phaseIndex: 0 });
+    expect(tagged).toContainEqual({ itemId: 10, qty: 8, partKey: 'Wall', phaseIndex: 1 });
+    expect(tagged).toContainEqual({ itemId: 20, qty: 4, partKey: 'Door', phaseIndex: 0 });
   });
 });

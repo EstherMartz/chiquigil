@@ -1,9 +1,10 @@
 /**
  * One-shot paginated fetch of XIVAPI v2's CompanyCraftSequence sheet.
  * Each row produces one synthetic recipe whose ingredients are grouped by
- * CompanyCraftPart (e.g. Hull/Stern/Bow/Bridge for submarines) so the bot
- * can split a workshop project into per-part task buckets. Single-part
- * items (wheel stands, FC walls) collapse to one bucket.
+ * CompanyCraftPart × CompanyCraftProcess — i.e. each part's phases are kept
+ * separate so the bot can render projects phase-by-phase. Items shared
+ * across phases stay distinct entries (Wall-Phase 1's Natron is not the
+ * same submission as Wall-Phase 2's Natron in the game).
  */
 import { fetchXivapiPage, nextCursor } from './xivapiRetry';
 
@@ -23,10 +24,16 @@ const FIELDS = [
   'CompanyCraftPart[].CompanyCraftProcess[].SetsRequired',
 ].join(',');
 
+export interface CompanyCraftRecipePhase {
+  /** Ingredients for a single CompanyCraftProcess within a part. */
+  ingredients: Array<{ itemId: number; qty: number }>;
+}
+
 export interface CompanyCraftRecipePart {
   /** Display name (e.g. "Hull", "Stern"). Empty when XIVAPI has no Type. */
   name: string;
-  ingredients: Array<{ itemId: number; qty: number }>;
+  /** One entry per process — phases are submitted sequentially in-game. */
+  phases: CompanyCraftRecipePhase[];
 }
 
 export interface CompanyCraftRecipe {
@@ -75,12 +82,13 @@ export function parseCompanyCraftRow(
     const typeField = (partFields as any).CompanyCraftType;
     const typeName = String(typeField?.fields?.Name ?? typeField?.Name ?? '');
 
-    const partTotals = new Map<number, number>();
+    const phases: CompanyCraftRecipePhase[] = [];
     for (const process of readArrayField(partFields, 'CompanyCraftProcess')) {
       const procFields = (process as any).fields ?? process;
       const supplies = readArrayField(procFields, 'SupplyItem');
       const setQty = readArrayField(procFields, 'SetQuantity');
       const setsReq = readArrayField(procFields, 'SetsRequired');
+      const phaseTotals = new Map<number, number>();
       for (let i = 0; i < supplies.length; i++) {
         const sup = supplies[i];
         const supFields = (sup as any).fields ?? sup;
@@ -88,15 +96,16 @@ export function parseCompanyCraftRow(
         if (itemId <= 0) continue;
         const qty = Number(setQty[i] ?? 0) * Number(setsReq[i] ?? 0);
         if (qty <= 0) continue;
-        partTotals.set(itemId, (partTotals.get(itemId) ?? 0) + qty);
+        phaseTotals.set(itemId, (phaseTotals.get(itemId) ?? 0) + qty);
       }
+      if (phaseTotals.size === 0) continue;
+      phases.push({
+        ingredients: [...phaseTotals.entries()].map(([itemId, qty]) => ({ itemId, qty })),
+      });
     }
-    if (partTotals.size === 0) continue;
+    if (phases.length === 0) continue;
 
-    parts.push({
-      name: typeName,
-      ingredients: [...partTotals.entries()].map(([itemId, qty]) => ({ itemId, qty })),
-    });
+    parts.push({ name: typeName, phases });
   }
   if (parts.length === 0) return null;
 

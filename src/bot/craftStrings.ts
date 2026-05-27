@@ -32,6 +32,7 @@ export const UNCLAIMED = 'sin asignar';
 
 // ── Components ──
 export const SELECT_PLACEHOLDER = 'Reclamar tarea…';
+export const PHASE_SELECT_PLACEHOLDER = 'Cambiar de fase…';
 export const BTN_LOG_PROGRESS = 'Registrar progreso';
 export const BTN_MARK_DONE = 'Marcar las mías como hechas';
 export const BTN_UNCLAIM = 'Soltar tarea';
