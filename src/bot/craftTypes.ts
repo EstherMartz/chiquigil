@@ -12,6 +12,8 @@ export interface CraftTaskMeta {
   costPerUnit?: number;
   gatherLevel?: number;
   timed?: boolean;
+  /** CompanyCraft part name (e.g. "Hull", "Stern") — undefined for single-part workshops and standard recipes. */
+  partKey?: string;
 }
 
 export interface CraftTask {

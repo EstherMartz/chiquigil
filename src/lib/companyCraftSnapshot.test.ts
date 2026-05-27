@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { parseCompanyCraftRow, type CompanyCraftRecipe } from './companyCraftSnapshot';
 
 describe('parseCompanyCraftRow', () => {
-  it('flattens part→process→supplyItem into one ingredient bucket', () => {
+  it('groups part→process→supplyItem under a single part with the type name', () => {
     const row = {
       row_id: 17,
       fields: {
@@ -10,6 +10,7 @@ describe('parseCompanyCraftRow', () => {
         CompanyCraftPart: [
           {
             fields: {
+              CompanyCraftType: { fields: { Name: 'Hull' } },
               CompanyCraftProcess: [
                 {
                   fields: {
@@ -35,15 +36,49 @@ describe('parseCompanyCraftRow', () => {
     const expected: CompanyCraftRecipe = {
       resultItemId: 31600,
       resultName: 'Tatanora Hull',
-      ingredients: [
-        { itemId: 5106, qty: 6 },   // 3 × 2
-        { itemId: 5107, qty: 10 },  // 5 × 2
-      ],
+      parts: [{
+        name: 'Hull',
+        ingredients: [
+          { itemId: 5106, qty: 6 },   // 3 × 2
+          { itemId: 5107, qty: 10 },  // 5 × 2
+        ],
+      }],
     };
     expect(result).toEqual(expected);
   });
 
-  it('sums duplicate ingredients across phases', () => {
+  it('keeps multiple parts separate (e.g. submarine Hull + Stern)', () => {
+    const row = {
+      row_id: 42,
+      fields: {
+        ResultItem: { value: 200 },
+        CompanyCraftPart: [
+          {
+            fields: {
+              CompanyCraftType: { fields: { Name: 'Hull' } },
+              CompanyCraftProcess: [
+                { fields: { SupplyItem: [{ fields: { Item: { value: 10 } } }], SetQuantity: [2], SetsRequired: [3] } },
+              ],
+            },
+          },
+          {
+            fields: {
+              CompanyCraftType: { fields: { Name: 'Stern' } },
+              CompanyCraftProcess: [
+                { fields: { SupplyItem: [{ fields: { Item: { value: 20 } } }], SetQuantity: [4], SetsRequired: [1] } },
+              ],
+            },
+          },
+        ],
+      },
+    };
+    const result = parseCompanyCraftRow(row, new Map([[200, 'Sub']]));
+    expect(result?.parts).toHaveLength(2);
+    expect(result?.parts[0]).toEqual({ name: 'Hull', ingredients: [{ itemId: 10, qty: 6 }] });
+    expect(result?.parts[1]).toEqual({ name: 'Stern', ingredients: [{ itemId: 20, qty: 4 }] });
+  });
+
+  it('sums duplicate ingredients across processes within the same part', () => {
     const row = {
       row_id: 1,
       fields: {
@@ -51,6 +86,7 @@ describe('parseCompanyCraftRow', () => {
         CompanyCraftPart: [
           {
             fields: {
+              CompanyCraftType: { fields: { Name: 'Wheel Stand' } },
               CompanyCraftProcess: [
                 { fields: { SupplyItem: [{ fields: { Item: { value: 50 } } }], SetQuantity: [4], SetsRequired: [3] } },
                 { fields: { SupplyItem: [{ fields: { Item: { value: 50 } } }], SetQuantity: [2], SetsRequired: [1] } },
@@ -61,7 +97,31 @@ describe('parseCompanyCraftRow', () => {
       },
     };
     const result = parseCompanyCraftRow(row, new Map([[100, 'X'], [50, 'Ore']]));
-    expect(result?.ingredients).toEqual([{ itemId: 50, qty: 14 }]); // 4·3 + 2·1
+    expect(result?.parts).toHaveLength(1);
+    expect(result?.parts[0].ingredients).toEqual([{ itemId: 50, qty: 14 }]); // 4·3 + 2·1
+  });
+
+  it('skips empty parts (no supplies) but keeps populated siblings', () => {
+    const row = {
+      row_id: 7,
+      fields: {
+        ResultItem: { value: 300 },
+        CompanyCraftPart: [
+          { fields: { CompanyCraftType: { fields: { Name: '' } }, CompanyCraftProcess: [] } },
+          {
+            fields: {
+              CompanyCraftType: { fields: { Name: 'Bridge' } },
+              CompanyCraftProcess: [
+                { fields: { SupplyItem: [{ fields: { Item: { value: 99 } } }], SetQuantity: [1], SetsRequired: [1] } },
+              ],
+            },
+          },
+        ],
+      },
+    };
+    const result = parseCompanyCraftRow(row, new Map([[300, 'Thing']]));
+    expect(result?.parts).toHaveLength(1);
+    expect(result?.parts[0].name).toBe('Bridge');
   });
 
   it('returns null when ResultItem is missing or zero', () => {

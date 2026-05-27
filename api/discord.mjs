@@ -1204,29 +1204,7 @@ function buildBreakdown(targetId, targetQty, market, deps, opts = {}) {
   const cc = deps.companyCraft.get(targetId);
   if (cc) {
     const craftIntermediates = opts.craftIntermediates ?? true;
-    const allCrafts = /* @__PURE__ */ new Map();
-    const allLeaves = /* @__PURE__ */ new Map();
-    for (const ing of cc.ingredients) {
-      const qty = ing.qty * targetQty;
-      if (craftIntermediates && deps.recipes.has(ing.itemId)) {
-        const result = explode(ing.itemId, qty, deps.recipes, opts);
-        for (const [id, c] of result.crafts) {
-          const existing = allCrafts.get(id);
-          if (existing) {
-            existing.outputQty += c.outputQty;
-            existing.craftCount += c.craftCount;
-          } else {
-            allCrafts.set(id, { ...c });
-          }
-        }
-        for (const [id, q] of result.leaves) {
-          allLeaves.set(id, (allLeaves.get(id) ?? 0) + q);
-        }
-      } else {
-        allLeaves.set(ing.itemId, (allLeaves.get(ing.itemId) ?? 0) + qty);
-      }
-    }
-    const acquire = sourceLeaves(allLeaves, market, deps, cheapVendorThreshold);
+    const multiPart = cc.parts.length > 1;
     const crafts = [{
       itemId: cc.resultItemId,
       itemName: deps.namesById.get(cc.resultItemId) ?? cc.resultName,
@@ -1234,15 +1212,47 @@ function buildBreakdown(targetId, targetQty, market, deps, opts = {}) {
       source: "workshop",
       meta: {}
     }];
-    for (const [itemId, info] of allCrafts) {
-      const name = deps.namesById.get(itemId) ?? `Item #${itemId}`;
-      crafts.push({
-        itemId,
-        itemName: name,
-        qtyNeeded: info.outputQty,
-        source: "craft",
-        meta: { job: info.job }
-      });
+    const acquire = [];
+    for (const part of cc.parts) {
+      const partKey = multiPart ? part.name || void 0 : void 0;
+      const partCrafts = /* @__PURE__ */ new Map();
+      const partLeaves = /* @__PURE__ */ new Map();
+      for (const ing of part.ingredients) {
+        const qty = ing.qty * targetQty;
+        if (craftIntermediates && deps.recipes.has(ing.itemId)) {
+          const result = explode(ing.itemId, qty, deps.recipes, opts);
+          for (const [id, c] of result.crafts) {
+            const existing = partCrafts.get(id);
+            if (existing) {
+              existing.outputQty += c.outputQty;
+              existing.craftCount += c.craftCount;
+            } else {
+              partCrafts.set(id, { ...c });
+            }
+          }
+          for (const [id, q] of result.leaves) {
+            partLeaves.set(id, (partLeaves.get(id) ?? 0) + q);
+          }
+        } else {
+          partLeaves.set(ing.itemId, (partLeaves.get(ing.itemId) ?? 0) + qty);
+        }
+      }
+      for (const t of sourceLeaves(partLeaves, market, deps, cheapVendorThreshold)) {
+        acquire.push({ ...t, meta: { ...t.meta, ...partKey ? { partKey } : {} } });
+      }
+      for (const [itemId, info] of partCrafts) {
+        const name = deps.namesById.get(itemId) ?? `Item #${itemId}`;
+        crafts.push({
+          itemId,
+          itemName: name,
+          qtyNeeded: info.outputQty,
+          source: "craft",
+          meta: {
+            job: info.job,
+            ...partKey ? { partKey } : {}
+          }
+        });
+      }
     }
     return { crafts, acquire };
   }
@@ -1365,47 +1375,73 @@ function taskLine(t) {
   const itemLink = `[**${t.itemName}**](${ITEMS_BASE_URL}/item/${t.itemId})`;
   return `${done} ${t.qtyNeeded}\xD7 ${itemLink} \u2014 ${assignee} ${progress}${detail}`;
 }
-function groupBySection(tasks) {
-  const groups = /* @__PURE__ */ new Map();
+function sectionKeyFor(t) {
+  if (t.source === "craft") {
+    const job = t.meta?.job ?? "ANY";
+    const jobName = JOB_NAME[job] ?? job;
+    return `${SECTION_CRAFT} \u2014 ${JOB_EMOJI[job] ?? "\u{1F528}"} ${jobName}`;
+  }
+  if (t.source === "workshop") return SECTION_WORKSHOP;
+  if (t.source === "market") return SECTION_MARKET;
+  if (t.source === "vendor") return SECTION_VENDOR;
+  if (t.source === "currency") return SECTION_CURRENCY;
+  return SECTION_GATHER;
+}
+function groupTasks(tasks) {
+  const topSections = /* @__PURE__ */ new Map();
+  const parts = /* @__PURE__ */ new Map();
   for (const t of tasks) {
-    let key;
-    if (t.source === "craft") {
-      const job = t.meta?.job ?? "ANY";
-      const jobName = JOB_NAME[job] ?? job;
-      key = `${SECTION_CRAFT} \u2014 ${JOB_EMOJI[job] ?? "\u{1F528}"} ${jobName}`;
-    } else if (t.source === "workshop") {
-      key = SECTION_WORKSHOP;
-    } else if (t.source === "market") {
-      key = SECTION_MARKET;
-    } else if (t.source === "vendor") {
-      key = SECTION_VENDOR;
-    } else if (t.source === "currency") {
-      key = SECTION_CURRENCY;
-    } else {
-      key = SECTION_GATHER;
+    const sec = sectionKeyFor(t);
+    const partKey = t.meta?.partKey;
+    if (!partKey) {
+      let arr2 = topSections.get(sec);
+      if (!arr2) {
+        arr2 = [];
+        topSections.set(sec, arr2);
+      }
+      arr2.push(t);
+      continue;
     }
-    let arr = groups.get(key);
+    let partMap = parts.get(partKey);
+    if (!partMap) {
+      partMap = /* @__PURE__ */ new Map();
+      parts.set(partKey, partMap);
+    }
+    let arr = partMap.get(sec);
     if (!arr) {
       arr = [];
-      groups.set(key, arr);
+      partMap.set(sec, arr);
     }
     arr.push(t);
   }
-  return groups;
+  return { topSections, parts };
 }
 function buildProjectMessage(project, tasks) {
   const totalTasks = tasks.length;
   const doneTasks = tasks.filter((t) => t.status === "done").length;
   const isClosed = project.status === "closed";
   const statusTag = isClosed ? PROJECT_STATUS_CLOSED : `${PROJECT_STATUS_OPEN} \xB7 ${doneTasks}/${totalTasks} ${PROJECT_DONE_SUFFIX}`;
-  const sections = groupBySection(tasks);
+  const { topSections, parts } = groupTasks(tasks);
   let description = "";
-  for (const [header, sectionTasks] of sections) {
+  for (const [header, sectionTasks] of topSections) {
     description += `
 **${header}**
 `;
     for (const t of sectionTasks) {
       description += taskLine(t) + "\n";
+    }
+  }
+  for (const [partKey, sectionMap] of parts) {
+    description += `
+\u2501\u2501\u2501 **${partKey.toUpperCase()}** \u2501\u2501\u2501
+`;
+    for (const [header, sectionTasks] of sectionMap) {
+      description += `
+**${header}**
+`;
+      for (const t of sectionTasks) {
+        description += taskLine(t) + "\n";
+      }
     }
   }
   if (description.length > 4e3) {

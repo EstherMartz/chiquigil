@@ -1,8 +1,9 @@
 /**
  * One-shot paginated fetch of XIVAPI v2's CompanyCraftSequence sheet.
- * Each row produces one synthetic recipe with all phases aggregated into a
- * single ingredient bucket (per the unified-crafting-planner spec). Used by
- * the bot to make /craft new <workshop-item> work without a real recipe row.
+ * Each row produces one synthetic recipe whose ingredients are grouped by
+ * CompanyCraftPart (e.g. Hull/Stern/Bow/Bridge for submarines) so the bot
+ * can split a workshop project into per-part task buckets. Single-part
+ * items (wheel stands, FC walls) collapse to one bucket.
  */
 import { fetchXivapiPage, nextCursor } from './xivapiRetry';
 
@@ -16,15 +17,22 @@ const PAGE_SIZE = 25;
 // Deep field selector. Each level uses `[].sub` for array nesting.
 const FIELDS = [
   'ResultItem.row_id',
+  'CompanyCraftPart[].CompanyCraftType.Name',
   'CompanyCraftPart[].CompanyCraftProcess[].SupplyItem[].Item.row_id',
   'CompanyCraftPart[].CompanyCraftProcess[].SetQuantity',
   'CompanyCraftPart[].CompanyCraftProcess[].SetsRequired',
 ].join(',');
 
+export interface CompanyCraftRecipePart {
+  /** Display name (e.g. "Hull", "Stern"). Empty when XIVAPI has no Type. */
+  name: string;
+  ingredients: Array<{ itemId: number; qty: number }>;
+}
+
 export interface CompanyCraftRecipe {
   resultItemId: number;
   resultName: string;
-  ingredients: Array<{ itemId: number; qty: number }>;
+  parts: CompanyCraftRecipePart[];
 }
 
 export type CompanyCraftMap = Map<number, CompanyCraftRecipe>;
@@ -61,9 +69,13 @@ export function parseCompanyCraftRow(
   const resultItemId = (f.ResultItem as { value?: number } | undefined)?.value ?? 0;
   if (resultItemId <= 0) return null;
 
-  const totals = new Map<number, number>();
+  const parts: CompanyCraftRecipePart[] = [];
   for (const part of readArrayField(f, 'CompanyCraftPart')) {
     const partFields = (part as any).fields ?? part;
+    const typeField = (partFields as any).CompanyCraftType;
+    const typeName = String(typeField?.fields?.Name ?? typeField?.Name ?? '');
+
+    const partTotals = new Map<number, number>();
     for (const process of readArrayField(partFields, 'CompanyCraftProcess')) {
       const procFields = (process as any).fields ?? process;
       const supplies = readArrayField(procFields, 'SupplyItem');
@@ -76,16 +88,22 @@ export function parseCompanyCraftRow(
         if (itemId <= 0) continue;
         const qty = Number(setQty[i] ?? 0) * Number(setsReq[i] ?? 0);
         if (qty <= 0) continue;
-        totals.set(itemId, (totals.get(itemId) ?? 0) + qty);
+        partTotals.set(itemId, (partTotals.get(itemId) ?? 0) + qty);
       }
     }
+    if (partTotals.size === 0) continue;
+
+    parts.push({
+      name: typeName,
+      ingredients: [...partTotals.entries()].map(([itemId, qty]) => ({ itemId, qty })),
+    });
   }
-  if (totals.size === 0) return null;
+  if (parts.length === 0) return null;
 
   return {
     resultItemId,
     resultName: namesById.get(resultItemId) ?? `Item #${resultItemId}`,
-    ingredients: [...totals.entries()].map(([itemId, qty]) => ({ itemId, qty })),
+    parts,
   };
 }
 

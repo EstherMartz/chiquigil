@@ -42,30 +42,45 @@ function taskLine(t: StoredTask): string {
   return `${done} ${t.qtyNeeded}× ${itemLink} — ${assignee} ${progress}${detail}`;
 }
 
-function groupBySection(tasks: StoredTask[]): Map<string, StoredTask[]> {
-  const groups = new Map<string, StoredTask[]>();
+function sectionKeyFor(t: StoredTask): string {
+  if (t.source === 'craft') {
+    const job = t.meta?.job ?? 'ANY';
+    const jobName = S.JOB_NAME[job] ?? job;
+    return `${S.SECTION_CRAFT} — ${JOB_EMOJI[job] ?? '🔨'} ${jobName}`;
+  }
+  if (t.source === 'workshop') return S.SECTION_WORKSHOP;
+  if (t.source === 'market') return S.SECTION_MARKET;
+  if (t.source === 'vendor') return S.SECTION_VENDOR;
+  if (t.source === 'currency') return S.SECTION_CURRENCY;
+  return S.SECTION_GATHER;
+}
+
+interface GroupedTasks {
+  /** Sections for tasks without a partKey (always includes workshop assembly). */
+  topSections: Map<string, StoredTask[]>;
+  /** Per-part: ordered map of partKey → section → tasks. */
+  parts: Map<string, Map<string, StoredTask[]>>;
+}
+
+function groupTasks(tasks: StoredTask[]): GroupedTasks {
+  const topSections = new Map<string, StoredTask[]>();
+  const parts = new Map<string, Map<string, StoredTask[]>>();
   for (const t of tasks) {
-    let key: string;
-    if (t.source === 'craft') {
-      const job = t.meta?.job ?? 'ANY';
-      const jobName = S.JOB_NAME[job] ?? job;
-      key = `${S.SECTION_CRAFT} — ${JOB_EMOJI[job] ?? '🔨'} ${jobName}`;
-    } else if (t.source === 'workshop') {
-      key = S.SECTION_WORKSHOP;
-    } else if (t.source === 'market') {
-      key = S.SECTION_MARKET;
-    } else if (t.source === 'vendor') {
-      key = S.SECTION_VENDOR;
-    } else if (t.source === 'currency') {
-      key = S.SECTION_CURRENCY;
-    } else {
-      key = S.SECTION_GATHER;
+    const sec = sectionKeyFor(t);
+    const partKey = t.meta?.partKey;
+    if (!partKey) {
+      let arr = topSections.get(sec);
+      if (!arr) { arr = []; topSections.set(sec, arr); }
+      arr.push(t);
+      continue;
     }
-    let arr = groups.get(key);
-    if (!arr) { arr = []; groups.set(key, arr); }
+    let partMap = parts.get(partKey);
+    if (!partMap) { partMap = new Map(); parts.set(partKey, partMap); }
+    let arr = partMap.get(sec);
+    if (!arr) { arr = []; partMap.set(sec, arr); }
     arr.push(t);
   }
-  return groups;
+  return { topSections, parts };
 }
 
 export function buildProjectMessage(
@@ -79,12 +94,21 @@ export function buildProjectMessage(
     ? S.PROJECT_STATUS_CLOSED
     : `${S.PROJECT_STATUS_OPEN} · ${doneTasks}/${totalTasks} ${S.PROJECT_DONE_SUFFIX}`;
 
-  const sections = groupBySection(tasks);
+  const { topSections, parts } = groupTasks(tasks);
   let description = '';
-  for (const [header, sectionTasks] of sections) {
+  for (const [header, sectionTasks] of topSections) {
     description += `\n**${header}**\n`;
     for (const t of sectionTasks) {
       description += taskLine(t) + '\n';
+    }
+  }
+  for (const [partKey, sectionMap] of parts) {
+    description += `\n━━━ **${partKey.toUpperCase()}** ━━━\n`;
+    for (const [header, sectionTasks] of sectionMap) {
+      description += `\n**${header}**\n`;
+      for (const t of sectionTasks) {
+        description += taskLine(t) + '\n';
+      }
     }
   }
 

@@ -108,37 +108,15 @@ export function buildBreakdown(
     return { crafts, acquire };
   }
 
-  // Path B — CompanyCraft fallback: synthetic workshop task + per-ingredient
-  // explosion so craftable sub-ingredients (e.g. ingots) surface their own
-  // gatherable leaves instead of getting flattened into "buy on the market".
+  // Path B — CompanyCraft fallback: one synthetic workshop task for the final
+  // assembly + per-part explosion so a sub's Hull/Stern/Bow/Bridge produce
+  // independent craft/acquire bundles. Single-part items (wheels, walls) emit
+  // no partKey, so rendering stays flat.
   const cc = deps.companyCraft.get(targetId);
   if (cc) {
     const craftIntermediates = opts.craftIntermediates ?? true;
-    const allCrafts = new Map<number, ExplodedCraft>();
-    const allLeaves = new Map<number, number>();
+    const multiPart = cc.parts.length > 1;
 
-    for (const ing of cc.ingredients) {
-      const qty = ing.qty * targetQty;
-      if (craftIntermediates && deps.recipes.has(ing.itemId)) {
-        const result = explode(ing.itemId, qty, deps.recipes, opts);
-        for (const [id, c] of result.crafts) {
-          const existing = allCrafts.get(id);
-          if (existing) {
-            existing.outputQty += c.outputQty;
-            existing.craftCount += c.craftCount;
-          } else {
-            allCrafts.set(id, { ...c });
-          }
-        }
-        for (const [id, q] of result.leaves) {
-          allLeaves.set(id, (allLeaves.get(id) ?? 0) + q);
-        }
-      } else {
-        allLeaves.set(ing.itemId, (allLeaves.get(ing.itemId) ?? 0) + qty);
-      }
-    }
-
-    const acquire = sourceLeaves(allLeaves, market, deps, cheapVendorThreshold);
     const crafts: CraftTask[] = [{
       itemId: cc.resultItemId,
       itemName: deps.namesById.get(cc.resultItemId) ?? cc.resultName,
@@ -146,16 +124,52 @@ export function buildBreakdown(
       source: 'workshop',
       meta: {},
     }];
-    for (const [itemId, info] of allCrafts) {
-      const name = deps.namesById.get(itemId) ?? `Item #${itemId}`;
-      crafts.push({
-        itemId,
-        itemName: name,
-        qtyNeeded: info.outputQty,
-        source: 'craft',
-        meta: { job: info.job as CraftTask['meta']['job'] },
-      });
+    const acquire: CraftTask[] = [];
+
+    for (const part of cc.parts) {
+      const partKey = multiPart ? part.name || undefined : undefined;
+      const partCrafts = new Map<number, ExplodedCraft>();
+      const partLeaves = new Map<number, number>();
+
+      for (const ing of part.ingredients) {
+        const qty = ing.qty * targetQty;
+        if (craftIntermediates && deps.recipes.has(ing.itemId)) {
+          const result = explode(ing.itemId, qty, deps.recipes, opts);
+          for (const [id, c] of result.crafts) {
+            const existing = partCrafts.get(id);
+            if (existing) {
+              existing.outputQty += c.outputQty;
+              existing.craftCount += c.craftCount;
+            } else {
+              partCrafts.set(id, { ...c });
+            }
+          }
+          for (const [id, q] of result.leaves) {
+            partLeaves.set(id, (partLeaves.get(id) ?? 0) + q);
+          }
+        } else {
+          partLeaves.set(ing.itemId, (partLeaves.get(ing.itemId) ?? 0) + qty);
+        }
+      }
+
+      for (const t of sourceLeaves(partLeaves, market, deps, cheapVendorThreshold)) {
+        acquire.push({ ...t, meta: { ...t.meta, ...(partKey ? { partKey } : {}) } });
+      }
+      for (const [itemId, info] of partCrafts) {
+        const name = deps.namesById.get(itemId) ?? `Item #${itemId}`;
+        crafts.push({
+          itemId,
+          itemName: name,
+          qtyNeeded: info.outputQty,
+          source: 'craft',
+          meta: {
+            job: info.job as CraftTask['meta']['job'],
+            ...(partKey ? { partKey } : {}),
+          },
+        });
+      }
     }
+
     return { crafts, acquire };
   }
 
