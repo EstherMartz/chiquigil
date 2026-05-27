@@ -269,6 +269,45 @@ function computeTaskCounts(tasks) {
   }
   return { byStatus, bySource };
 }
+var nameCache = /* @__PURE__ */ new Map();
+async function fetchDisplayName(guildId, userId, botToken) {
+  const cacheKey = `${guildId}:${userId}`;
+  const cached = nameCache.get(cacheKey);
+  if (cached) return cached;
+  try {
+    const r = await fetch(`https://discord.com/api/v10/guilds/${guildId}/members/${userId}`, {
+      headers: { Authorization: `Bot ${botToken}` }
+    });
+    if (r.ok) {
+      const m = await r.json();
+      const name = m.nick ?? m.user?.global_name ?? m.user?.username ?? userId;
+      nameCache.set(cacheKey, name);
+      return name;
+    }
+  } catch {
+  }
+  try {
+    const r = await fetch(`https://discord.com/api/v10/users/${userId}`, {
+      headers: { Authorization: `Bot ${botToken}` }
+    });
+    if (r.ok) {
+      const u = await r.json();
+      const name = u.global_name ?? u.username ?? userId;
+      nameCache.set(cacheKey, name);
+      return name;
+    }
+  } catch {
+  }
+  nameCache.set(cacheKey, userId);
+  return userId;
+}
+async function resolveNames(guildId, userIds) {
+  const token = process.env.DISCORD_BOT_TOKEN;
+  const unique = [...new Set(userIds)].filter(Boolean);
+  if (!token || unique.length === 0) return Object.fromEntries(unique.map((id) => [id, id]));
+  const entries = await Promise.all(unique.map(async (id) => [id, await fetchDisplayName(guildId, id, token)]));
+  return Object.fromEntries(entries);
+}
 async function handler(req, res) {
   if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
   res.setHeader("Cache-Control", "no-store");
@@ -282,6 +321,8 @@ async function handler(req, res) {
       return res.status(404).json({ error: "Not found" });
     }
     const tasks = await store.getTasks(id);
+    const userIds = [project.createdBy, ...tasks.map((t) => t.assigneeId).filter((id2) => id2 != null)];
+    const userNames2 = await resolveNames(project.guildId, userIds);
     return res.status(200).json({
       project: {
         id: project.id,
@@ -293,7 +334,8 @@ async function handler(req, res) {
         status: project.status,
         createdAt: project.createdAt
       },
-      tasks
+      tasks,
+      userNames: userNames2
     });
   }
   const guildId = req.query?.guild ?? "";
@@ -302,8 +344,11 @@ async function handler(req, res) {
   const statusFilter = req.query?.status ?? "open";
   let projects = await store.listOpenProjects(guildId);
   if (statusFilter === "closed") projects = [];
+  const userIdSet = /* @__PURE__ */ new Set();
   const summaries = await Promise.all(projects.map(async (p) => {
     const tasks = await store.getTasks(p.id);
+    userIdSet.add(p.createdBy);
+    for (const t of tasks) if (t.assigneeId) userIdSet.add(t.assigneeId);
     return {
       id: p.id,
       name: p.name,
@@ -316,7 +361,8 @@ async function handler(req, res) {
       taskCounts: computeTaskCounts(tasks)
     };
   }));
-  return res.status(200).json({ projects: summaries });
+  const userNames = await resolveNames(guildId, userIdSet);
+  return res.status(200).json({ projects: summaries, userNames });
 }
 var config = { api: { bodyParser: false } };
 export {

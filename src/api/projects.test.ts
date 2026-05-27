@@ -28,6 +28,7 @@ beforeEach(async () => {
   store = await openCraftStore(':memory:');
   process.env.GUILD_ALLOWLIST = 'G1';
   process.env.TURSO_DATABASE_URL = ':memory:';
+  delete process.env.DISCORD_BOT_TOKEN; // skip Discord name lookups under test
   (globalThis as any).__testCraftStore = store;
 });
 

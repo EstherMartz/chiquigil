@@ -18,4 +18,10 @@ export interface ProjectSummary {
 export interface ProjectDetailResponse {
   project: Omit<ProjectSummary, 'taskCounts'>;
   tasks: StoredTask[];
+  userNames: Record<string, string>;
+}
+
+export interface ProjectsListResponse {
+  projects: ProjectSummary[];
+  userNames: Record<string, string>;
 }

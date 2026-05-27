@@ -23,8 +23,9 @@ function groupTasks(tasks: StoredTask[]): Map<TaskSource, StoredTask[]> {
   return out;
 }
 
-function TaskRow({ t }: { t: StoredTask }) {
+function TaskRow({ t, userNames }: { t: StoredTask; userNames: Record<string, string> }) {
   const pct = t.qtyNeeded > 0 ? Math.round((t.qtyDone / t.qtyNeeded) * 100) : 0;
+  const assigneeLabel = t.assigneeId ? userNames[t.assigneeId] ?? t.assigneeId : 'unclaimed';
   return (
     <li className="flex items-center justify-between gap-3 py-1.5 border-b border-border-base/20 last:border-0">
       <div className="flex-1 min-w-0">
@@ -35,7 +36,7 @@ function TaskRow({ t }: { t: StoredTask }) {
         {t.qtyDone}/{t.qtyNeeded} ({pct}%)
       </div>
       <div className="font-mono text-xs text-text-low w-36 text-right truncate">
-        {t.assigneeId ? `@${t.assigneeId}` : 'unclaimed'}
+        {t.assigneeId ? `@${assigneeLabel}` : 'unclaimed'}
       </div>
       <div className="font-mono text-xs w-16 text-right">{t.status}</div>
     </li>
@@ -60,8 +61,9 @@ export function ProjectDetail({ projectId }: { projectId: number }) {
     );
   }
 
-  const { project, tasks } = q.data;
+  const { project, tasks, userNames } = q.data;
   const groups = groupTasks(tasks);
+  const creatorLabel = userNames[project.createdBy] ?? project.createdBy;
 
   return (
     <div className="max-w-7xl mx-auto px-4 space-y-4">
@@ -72,7 +74,7 @@ export function ProjectDetail({ projectId }: { projectId: number }) {
           Item #{project.targetItemId}
         </Link>{' '}
         × {project.targetQty}
-        {' · '}Created by @{project.createdBy}
+        {' · '}Created by @{creatorLabel}
       </div>
       <div className="text-xs text-text-low italic">View only — edit in Discord with /craft.</div>
 
@@ -86,7 +88,7 @@ export function ProjectDetail({ projectId }: { projectId: number }) {
             </h3>
             <ul>
               {list.map((t) => (
-                <TaskRow key={t.id} t={t} />
+                <TaskRow key={t.id} t={t} userNames={userNames} />
               ))}
             </ul>
           </section>

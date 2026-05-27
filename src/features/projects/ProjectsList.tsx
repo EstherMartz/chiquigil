@@ -21,6 +21,8 @@ function progressLabel(s: ProjectSummary): string {
 
 export function ProjectsList() {
   const q = useProjects();
+  const projects = q.data?.projects;
+  const userNames = q.data?.userNames ?? {};
 
   return (
     <div className="max-w-7xl mx-auto px-4 space-y-4">
@@ -32,11 +34,11 @@ export function ProjectsList() {
         </div>
       )}
       {q.isError && <StatusBanner kind="error">Couldn't load projects — Discord bot may be down.</StatusBanner>}
-      {q.data && q.data.length === 0 && (
+      {projects && projects.length === 0 && (
         <EmptyState icon="📋" message="No open projects. Start one with /craft new in Discord." />
       )}
 
-      {q.data && q.data.length > 0 && (
+      {projects && projects.length > 0 && (
         <div className="border border-border-base rounded">
           <table className="w-full text-sm">
             <thead className="text-[10px] font-mono text-text-low border-b border-border-base">
@@ -50,7 +52,7 @@ export function ProjectsList() {
               </tr>
             </thead>
             <tbody>
-              {q.data.map((p) => (
+              {projects.map((p) => (
                 <tr key={p.id} className="border-b border-border-base/30 last:border-0 hover:bg-bg-elev">
                   <td className="p-2 font-mono text-text-low">#{p.id}</td>
                   <td className="p-2">
@@ -65,7 +67,7 @@ export function ProjectsList() {
                   </td>
                   <td className="p-2 text-text-low text-xs">{sourceMixSummary(p)}</td>
                   <td className="p-2 font-mono text-xs">{progressLabel(p)}</td>
-                  <td className="p-2 font-mono text-xs text-text-low">{p.createdBy}</td>
+                  <td className="p-2 font-mono text-xs text-text-low">{userNames[p.createdBy] ?? p.createdBy}</td>
                 </tr>
               ))}
             </tbody>

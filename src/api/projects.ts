@@ -34,6 +34,57 @@ function computeTaskCounts(tasks: StoredTask[]) {
   return { byStatus, bySource };
 }
 
+// User-name resolution. Cached per function instance — Discord member/user
+// data changes rarely and the cache evaporates on cold start anyway.
+const nameCache = new Map<string, string>();
+
+async function fetchDisplayName(guildId: string, userId: string, botToken: string): Promise<string> {
+  const cacheKey = `${guildId}:${userId}`;
+  const cached = nameCache.get(cacheKey);
+  if (cached) return cached;
+
+  // Try guild member first — gives us the per-server nickname when set.
+  try {
+    const r = await fetch(`https://discord.com/api/v10/guilds/${guildId}/members/${userId}`, {
+      headers: { Authorization: `Bot ${botToken}` },
+    });
+    if (r.ok) {
+      const m = (await r.json()) as { nick?: string | null; user?: { global_name?: string | null; username?: string | null } };
+      const name = m.nick ?? m.user?.global_name ?? m.user?.username ?? userId;
+      nameCache.set(cacheKey, name);
+      return name;
+    }
+  } catch {
+    // fall through to /users
+  }
+
+  // Fallback: global user record (works even if the user left the guild).
+  try {
+    const r = await fetch(`https://discord.com/api/v10/users/${userId}`, {
+      headers: { Authorization: `Bot ${botToken}` },
+    });
+    if (r.ok) {
+      const u = (await r.json()) as { global_name?: string | null; username?: string | null };
+      const name = u.global_name ?? u.username ?? userId;
+      nameCache.set(cacheKey, name);
+      return name;
+    }
+  } catch {
+    // give up
+  }
+
+  nameCache.set(cacheKey, userId);
+  return userId;
+}
+
+async function resolveNames(guildId: string, userIds: Iterable<string>): Promise<Record<string, string>> {
+  const token = process.env.DISCORD_BOT_TOKEN;
+  const unique = [...new Set(userIds)].filter(Boolean);
+  if (!token || unique.length === 0) return Object.fromEntries(unique.map((id) => [id, id]));
+  const entries = await Promise.all(unique.map(async (id) => [id, await fetchDisplayName(guildId, id, token)] as const));
+  return Object.fromEntries(entries);
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -52,6 +103,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(404).json({ error: 'Not found' });
     }
     const tasks = await store.getTasks(id);
+    const userIds = [project.createdBy, ...tasks.map((t) => t.assigneeId).filter((id): id is string => id != null)];
+    const userNames = await resolveNames(project.guildId, userIds);
     return res.status(200).json({
       project: {
         id: project.id,
@@ -64,6 +117,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         createdAt: project.createdAt,
       },
       tasks,
+      userNames,
     });
   }
 
@@ -75,8 +129,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   let projects = await store.listOpenProjects(guildId);
   if (statusFilter === 'closed') projects = [];
 
+  const userIdSet = new Set<string>();
   const summaries = await Promise.all(projects.map(async (p) => {
     const tasks = await store.getTasks(p.id);
+    userIdSet.add(p.createdBy);
+    for (const t of tasks) if (t.assigneeId) userIdSet.add(t.assigneeId);
     return {
       id: p.id,
       name: p.name,
@@ -89,7 +146,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       taskCounts: computeTaskCounts(tasks),
     };
   }));
-  return res.status(200).json({ projects: summaries });
+  const userNames = await resolveNames(guildId, userIdSet);
+  return res.status(200).json({ projects: summaries, userNames });
 }
 
 export const config = { api: { bodyParser: false } };
