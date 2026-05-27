@@ -73,7 +73,7 @@ export function Sidebar() {
           Mone a fer dinerets
         </div>
         <h1 className="font-display font-semibold text-xl tracking-wide leading-tight">
-          <span className="text-gold italic">Gilipichi</span>
+          <span className="text-gold italic">qiqirn.tools</span>
         </h1>
       </div>
 
@@ -109,7 +109,7 @@ export function Sidebar() {
       {/* Mobile top bar */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-30 h-12 bg-bg-deep border-b border-border-base px-4 flex items-center justify-between pt-[env(safe-area-inset-top)]">
         <div className="font-mono text-[13px] tracking-widest text-aether uppercase">
-          Gilipichi
+          qiqirn.tools
         </div>
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
@@ -134,7 +134,7 @@ export function Sidebar() {
       >
         <div className="h-12 px-4 flex items-center justify-between border-b border-border-base">
           <span className="font-mono text-[13px] tracking-widest text-aether uppercase">
-            Gilipichi
+            qiqirn.tools
           </span>
           <button
             onClick={closeMobileMenu}

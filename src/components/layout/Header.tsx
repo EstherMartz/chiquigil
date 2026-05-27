@@ -16,7 +16,7 @@ export function Header() {
             Mone a fer dinerets
           </div>
           <h1 className="font-display font-semibold text-3xl tracking-wide leading-tight">
-            <span className="text-gold italic">Gilipichi</span>
+            <span className="text-gold italic">qiqirn.tools</span>
           </h1>
         </div>
         <div className="flex flex-col sm:flex-row sm:items-end gap-3 sm:gap-4 min-w-0">

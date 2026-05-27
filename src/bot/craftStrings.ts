@@ -21,7 +21,7 @@ export const REQUEST_BUTTON = 'Pedir un crafteo';
 
 // ── Section headers ──
 export const SECTION_CRAFT = 'CRAFTEAR';     // "CRAFTEAR — ⚗️ ALC"
-export const SECTION_WORKSHOP = '🛠 TALLER DE LA CL';   // "Taller de la Compañía Libre"
+export const SECTION_WORKSHOP = '🛠 TALLER DE LA GUILD';
 export const SECTION_MARKET = '🪙 COMPRAR — Mercado';
 export const SECTION_VENDOR = '🏪 COMPRAR — Vendedor PNJ';
 export const SECTION_CURRENCY = '💠 COMPRAR — Divisa';

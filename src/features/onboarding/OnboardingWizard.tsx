@@ -131,7 +131,7 @@ export function OnboardingWizard({ onComplete, prefill }: Props) {
                 You're all set, {world}!
               </h2>
               <p className="font-mono text-[10px] text-text-low mt-1">
-                Gilipichi will now show you real market data for your world. Start with What Now? for an instant overview of your best gil-making opportunity right now.
+                qiqirn.tools will now show you real market data for your world. Start with What Now? for an instant overview of your best gil-making opportunity right now.
               </p>
             </div>
 

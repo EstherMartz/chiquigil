@@ -33,7 +33,7 @@ export const DAILY_TASKS: DailyTask[] = [
   { id: 'd3', label: 'One gathering pass (high-velocity mats)' },
   { id: 'd4', label: 'One content run (Occult Crescent / Cosmic)' },
   { id: 'd5', label: 'Check spiritbond fodder' },
-  { id: 'd6', label: 'Refresh Gilipichi market data' },
+  { id: 'd6', label: 'Refresh qiqirn.tools market data' },
 ];
 
 export function newItemId(): string {
