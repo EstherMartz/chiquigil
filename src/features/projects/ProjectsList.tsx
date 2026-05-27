@@ -14,9 +14,25 @@ function sourceMixSummary(s: ProjectSummary): string {
   return parts.join(' · ');
 }
 
-function progressLabel(s: ProjectSummary): string {
-  const total = s.taskCounts.byStatus.open + s.taskCounts.byStatus.claimed + s.taskCounts.byStatus.done;
-  return `${s.taskCounts.byStatus.done} / ${total} done`;
+function ProjectProgress({ s }: { s: ProjectSummary }) {
+  const done = s.taskCounts.byStatus.done;
+  const total = s.taskCounts.byStatus.open + s.taskCounts.byStatus.claimed + done;
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+  const isComplete = total > 0 && done === total;
+  const fillClass = isComplete ? 'bg-jade' : pct > 0 ? 'bg-gold' : 'bg-text-low/20';
+  return (
+    <div className="space-y-1 w-32">
+      <div className="h-1.5 rounded-full bg-bg-elev overflow-hidden">
+        <div
+          className={`h-full ${fillClass} transition-[width] duration-300`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <div className="font-mono text-[10px] text-text-low">
+        {done} / {total} · {pct}%
+      </div>
+    </div>
+  );
 }
 
 export function ProjectsList() {
@@ -66,7 +82,7 @@ export function ProjectsList() {
                     </Link>{' '}× {p.targetQty}
                   </td>
                   <td className="p-2 text-text-low text-xs">{sourceMixSummary(p)}</td>
-                  <td className="p-2 font-mono text-xs">{progressLabel(p)}</td>
+                  <td className="p-2"><ProjectProgress s={p} /></td>
                   <td className="p-2 font-mono text-xs text-text-low">{userNames[p.createdBy] ?? p.createdBy}</td>
                 </tr>
               ))}

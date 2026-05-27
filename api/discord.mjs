@@ -1444,20 +1444,22 @@ function buildProjectMessage(project, tasks) {
       }
     }
   }
-  if (description.length > 4e3) {
-    description = description.slice(0, 3950) + `
-
-_${PROJECT_TRUNCATED}_`;
-  }
   const title = isClosed ? `\u2705 [Cerrado] ${project.name}` : `\u{1F6E0}  ${project.name}`;
-  const embed = {
-    color: isClosed ? 6710886 : 13936984,
-    title,
-    description: `\`[${statusTag}]\`
-${description}`,
-    footer: { text: `Proyecto #${project.id}` },
-    timestamp: new Date(project.createdAt).toISOString()
-  };
+  const fullDescription = `\`[${statusTag}]\`
+${description}`;
+  const color = isClosed ? 6710886 : 13936984;
+  const footer = { text: `Proyecto #${project.id}` };
+  const timestamp = new Date(project.createdAt).toISOString();
+  const chunks = chunkDescription(fullDescription);
+  const builtEmbeds = chunks.map((chunk, i) => {
+    const e = { color, description: chunk };
+    if (i === 0) e.title = title;
+    if (i === chunks.length - 1) {
+      e.footer = footer;
+      e.timestamp = timestamp;
+    }
+    return e;
+  });
   const components = [];
   if (!isClosed) {
     const claimable = tasks.filter((t) => t.status === "open").slice(0, 25);
@@ -1508,7 +1510,42 @@ ${description}`,
     };
     components.push(buttons);
   }
-  return { embeds: [embed], components };
+  return { embeds: builtEmbeds, components };
+}
+var PER_CHUNK_LIMIT = 3900;
+var TOTAL_LIMIT = 5800;
+function chunkDescription(text) {
+  if (text.length <= PER_CHUNK_LIMIT) return [text];
+  const lines = text.split("\n");
+  const chunks = [];
+  let current = "";
+  let totalUsed = 0;
+  let truncated = false;
+  for (const line of lines) {
+    const candidate = current ? `${current}
+${line}` : line;
+    if (candidate.length <= PER_CHUNK_LIMIT && totalUsed + candidate.length - current.length <= TOTAL_LIMIT) {
+      current = candidate;
+      continue;
+    }
+    if (current) {
+      chunks.push(current);
+      totalUsed += current.length;
+    }
+    if (totalUsed + line.length > TOTAL_LIMIT) {
+      truncated = true;
+      break;
+    }
+    current = line;
+  }
+  if (current && !truncated) chunks.push(current);
+  if (truncated && chunks.length > 0) {
+    const lastIdx = chunks.length - 1;
+    chunks[lastIdx] = chunks[lastIdx] + `
+
+_${PROJECT_TRUNCATED}_`;
+  }
+  return chunks;
 }
 function buildBoardMessage(openProjects) {
   let description;

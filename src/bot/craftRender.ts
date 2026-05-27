@@ -112,21 +112,28 @@ export function buildProjectMessage(
     }
   }
 
-  if (description.length > 4000) {
-    description = description.slice(0, 3950) + `\n\n_${S.PROJECT_TRUNCATED}_`;
-  }
-
   const title = isClosed
     ? `✅ [Cerrado] ${project.name}`
     : `🛠  ${project.name}`;
 
-  const embed = {
-    color: isClosed ? 0x666666 : 0xD4A958,
-    title: title,
-    description: `\`[${statusTag}]\`\n${description}`,
-    footer: { text: `Proyecto #${project.id}` },
-    timestamp: new Date(project.createdAt).toISOString(),
-  };
+  const fullDescription = `\`[${statusTag}]\`\n${description}`;
+  const color = isClosed ? 0x666666 : 0xD4A958;
+  const footer = { text: `Proyecto #${project.id}` };
+  const timestamp = new Date(project.createdAt).toISOString();
+  const chunks = chunkDescription(fullDescription);
+
+  // Multi-embed when one description chunk would exceed Discord's per-embed
+  // limit. All embeds share the project's color; only the first carries the
+  // title, only the last carries footer+timestamp.
+  const builtEmbeds = chunks.map((chunk, i) => {
+    const e: Record<string, unknown> = { color, description: chunk };
+    if (i === 0) e.title = title;
+    if (i === chunks.length - 1) {
+      e.footer = footer;
+      e.timestamp = timestamp;
+    }
+    return e;
+  });
 
   const components: object[] = [];
 
@@ -182,7 +189,47 @@ export function buildProjectMessage(
     components.push(buttons);
   }
 
-  return { embeds: [embed], components };
+  return { embeds: builtEmbeds, components };
+}
+
+// Discord caps each embed.description at 4096 chars and the total characters
+// across all embeds in a message at 6000. We aim for ~3900 per chunk with
+// ~5800 cumulative to leave room for title/footer/status text.
+const PER_CHUNK_LIMIT = 3900;
+const TOTAL_LIMIT = 5800;
+
+export function chunkDescription(text: string): string[] {
+  if (text.length <= PER_CHUNK_LIMIT) return [text];
+
+  const lines = text.split('\n');
+  const chunks: string[] = [];
+  let current = '';
+  let totalUsed = 0;
+  let truncated = false;
+
+  for (const line of lines) {
+    const candidate = current ? `${current}\n${line}` : line;
+    if (candidate.length <= PER_CHUNK_LIMIT && totalUsed + candidate.length - current.length <= TOTAL_LIMIT) {
+      current = candidate;
+      continue;
+    }
+    if (current) {
+      chunks.push(current);
+      totalUsed += current.length;
+    }
+    // Would the next chunk exceed the total budget?
+    if (totalUsed + line.length > TOTAL_LIMIT) {
+      truncated = true;
+      break;
+    }
+    current = line;
+  }
+  if (current && !truncated) chunks.push(current);
+  if (truncated && chunks.length > 0) {
+    const lastIdx = chunks.length - 1;
+    chunks[lastIdx] = chunks[lastIdx] + `\n\n_${S.PROJECT_TRUNCATED}_`;
+  }
+  return chunks;
 }
 
 /** Pinned roll-up board listing all open projects with progress. */
