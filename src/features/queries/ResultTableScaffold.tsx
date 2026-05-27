@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { LoadMoreFooter } from '../../components/LoadMoreFooter';
 import { useLoadMore } from '../../lib/useLoadMore';
 import { ExportCsvButton } from '../../components/ExportCsvButton';
+import { useUiStore } from '../ui/uiStore';
 import type { CsvColumn } from '../../lib/csv';
 
 interface Props<T extends { id: number }> {
@@ -36,16 +37,19 @@ export function ResultTableScaffold<T extends { id: number }>({
     : 'border border-border-base bg-bg-card overflow-x-auto';
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="font-mono text-[10px] text-text-low">
           {rows.length} matches from {totalCandidates} candidates
           {skippedChunks > 0 && (
             <span className="text-crimson"> · {skippedChunks} batch(es) skipped (Universalis error)</span>
           )}
         </div>
-        {csvColumns && csvFilename && (
-          <ExportCsvButton rows={rows} columns={csvColumns} filename={csvFilename} />
-        )}
+        <div className="flex items-center gap-2">
+          <InlineDensityToggle />
+          {csvColumns && csvFilename && (
+            <ExportCsvButton rows={rows} columns={csvColumns} filename={csvFilename} />
+          )}
+        </div>
       </div>
       {renderMobile && (
         <div className="md:hidden border border-border-base bg-bg-card divide-y divide-border-base">
@@ -76,6 +80,33 @@ export function EmptyResults({ children }: { children: ReactNode }) {
   return (
     <div className="border border-border-base bg-bg-card p-8 text-center text-text-low text-sm italic">
       {children}
+    </div>
+  );
+}
+
+/** Compact density toggle for result-table toolbars. Reads/writes the shared UI store. */
+function InlineDensityToggle() {
+  const density = useUiStore((s) => s.density);
+  const setDensity = useUiStore((s) => s.setDensity);
+  const opts: { id: 'compact' | 'comfortable'; label: string; title: string }[] = [
+    { id: 'compact', label: 'Compact', title: 'Denser rows' },
+    { id: 'comfortable', label: 'Comfy', title: 'Roomier rows' },
+  ];
+  return (
+    <div className="inline-flex border border-border-base" role="group" aria-label="Row density">
+      {opts.map((o) => (
+        <button
+          key={o.id}
+          type="button"
+          onClick={() => setDensity(o.id)}
+          title={o.title}
+          className={`font-mono text-[10px] tracking-widest uppercase px-2.5 py-1 border-r border-border-base last:border-r-0 transition-colors ${
+            density === o.id ? 'bg-bg-card-hi text-gold' : 'text-text-dim hover:text-aether'
+          }`}
+        >
+          {o.label}
+        </button>
+      ))}
     </div>
   );
 }

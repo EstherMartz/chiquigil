@@ -34,7 +34,7 @@ const getCols = (showSparkline: boolean): { key: SortKey | null; label: string; 
   { key: 'averagePrice', label: 'Average', hint: '7-day average sale price from Universalis history.', align: 'right', hideOnMobile: true },
   { key: 'dealPct', label: 'Disc.', hint: 'How far below the 7-day average the current cheapest listing is.', align: 'right' },
   { key: 'velocity', label: 'Velocity', hint: 'Sales per day on the selected scope (home world or DC).', align: 'right', hideOnMobile: true },
-  { key: 'gilFlow', label: 'Gil / day', hint: 'Current price × velocity. Daily gil flow if you cleared every sale at this price.', align: 'right' },
+  { key: 'gilFlow', label: 'Gil/day', hint: 'Current price × velocity. Daily gil flow if you cleared every sale at this price.', align: 'right' },
 ];
 
 const DEFAULT_DIR: Record<SortKey, SortDir> = {

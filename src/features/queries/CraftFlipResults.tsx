@@ -99,9 +99,9 @@ export function CraftFlipResults({ rows, totalCandidates, skippedChunks, sparkli
                   Velocity
                 </InfoTooltip>
               </th>
-              <th className="text-right px-3 py-2">
+              <th className="text-right px-3 py-2 whitespace-nowrap">
                 <InfoTooltip label="Profit × velocity. Expected daily gil from crafting this item at current prices.">
-                  Gil / day
+                  Gil/day
                 </InfoTooltip>
               </th>
             </tr>

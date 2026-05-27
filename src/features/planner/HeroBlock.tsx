@@ -86,7 +86,15 @@ export function HeroBlock() {
       </div>
 
       <div className="mt-5">
-        <div className="h-3 rounded-full bg-bg-card-hi border border-border-base overflow-hidden">
+        <div className="flex items-baseline justify-between mb-2 font-mono">
+          <span className="font-display font-semibold text-2xl text-gold tabular-nums leading-none">
+            {stats.pct.toFixed(1)}%
+          </span>
+          <span className="text-[11px] text-text-low">
+            target <span className="text-gold">{targetAbbr}</span>
+          </span>
+        </div>
+        <div className="h-4 rounded-full bg-bg-card-hi border border-border-base overflow-hidden">
           <div
             className="h-full rounded-full transition-[width] duration-700 ease-out"
             style={{
@@ -95,10 +103,6 @@ export function HeroBlock() {
               boxShadow: '0 0 18px rgba(212,169,88,0.35)',
             }}
           />
-        </div>
-        <div className="flex justify-between mt-2 font-mono text-[11px] text-text-low">
-          <span>{stats.pct.toFixed(1)}%</span>
-          <span>target <span className="text-gold">{targetAbbr}</span></span>
         </div>
       </div>
 

@@ -14,7 +14,7 @@ interface Props {
 
 const SORTS: { id: QuerySort; label: string }[] = [
   { id: 'discount',  label: 'Discount %' },
-  { id: 'gilFlow',   label: 'Gil / day' },
+  { id: 'gilFlow',   label: 'Gil/day' },
   { id: 'velocity',  label: 'Velocity' },
   { id: 'unitPrice', label: 'Unit price' },
 ];
@@ -134,7 +134,7 @@ export function QueryBuilder({ value, onChange, onRun, busy }: Props) {
           </button>
           <button
             onClick={handleCopyLink}
-            className="font-mono text-[10px] tracking-widest uppercase border border-border-base text-text-low px-3 py-2 hover:border-aether hover:text-aether transition-colors whitespace-nowrap"
+            className="font-mono text-[10px] tracking-widest uppercase border border-border-hi text-text-cream px-3 py-2 hover:border-aether hover:text-aether transition-colors whitespace-nowrap"
             title="Copy a shareable link to the current query"
           >
             {copied ? '✓ Copied' : 'Copy link'}

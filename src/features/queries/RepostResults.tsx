@@ -79,9 +79,9 @@ export function RepostResults({ rows, totalCandidates, skippedChunks }: Props) {
                   Vel
                 </InfoTooltip>
               </th>
-              <th className="text-right px-3 py-2">
+              <th className="text-right px-3 py-2 whitespace-nowrap">
                 <InfoTooltip label="Profit × velocity. Expected daily gil if the gap keeps reappearing.">
-                  Gil / day
+                  Gil/day
                 </InfoTooltip>
               </th>
             </tr>
