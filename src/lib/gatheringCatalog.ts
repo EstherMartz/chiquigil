@@ -20,6 +20,13 @@ import { fetchXivapiPage, nextCursor } from './xivapiRetry';
 const BASE = (import.meta.env?.VITE_XIVAPI_BASE as string | undefined) ?? 'https://v2.xivapi.com';
 const PAGE_SIZE = 500;
 
+// GatheringPointBase has 8 `Item` link slots per row. XIVAPI v2 expands each
+// link's referenced row into the response, so even a moderate page of bases
+// can blow past the 20k-row response budget. Lower its initial cap aggressively.
+const SHEET_PAGE_SIZE: Record<string, number> = {
+  GatheringPointBase: 100,
+};
+
 export interface GatheringInfo {
   level: number;
   timed: boolean;
@@ -61,8 +68,10 @@ interface GatheringPointTransientFields {
 async function fetchSheet<F>(sheet: string, fields: string | null): Promise<RawRow<F>[]> {
   const out: RawRow<F>[] = [];
   let after = 0;
-  let pageSize = PAGE_SIZE;
-  const MIN_PAGE = 25;
+  let pageSize = SHEET_PAGE_SIZE[sheet] ?? PAGE_SIZE;
+  // Floor must accommodate sheets whose link-expansion budget is tight even at
+  // small page sizes. limit=5 keeps us under the 20k-row cap for any sheet.
+  const MIN_PAGE = 5;
   while (true) {
     const params = new URLSearchParams({ limit: String(pageSize) });
     if (fields) params.set('fields', fields);
@@ -71,12 +80,14 @@ async function fetchSheet<F>(sheet: string, fields: string | null): Promise<RawR
     const res = await fetchXivapiPage(url);
     if (!res.ok) {
       // Some v2 sheet/field combinations (e.g. GatheringPointBase + Item array)
-      // 400 at limit=500 but succeed at smaller pages. Halve and retry the
-      // same cursor before giving up.
+      // 400 at the requested page but succeed at smaller pages — XIVAPI v2's
+      // 20k-row response budget is per-request, and link expansion multiplies
+      // fast. Halve and retry the same cursor before giving up.
       if (res.status === 400 && pageSize > MIN_PAGE) {
+        const prev = pageSize;
         pageSize = Math.max(MIN_PAGE, Math.floor(pageSize / 2));
         // eslint-disable-next-line no-console
-        console.warn(`[gatheringCatalog] ${sheet} 400 at limit=${pageSize * 2}, retrying at limit=${pageSize}`);
+        console.warn(`[gatheringCatalog] ${sheet} 400 at limit=${prev}, retrying at limit=${pageSize}`);
         continue;
       }
       throw new Error(`XIVAPI ${sheet} ${res.status}`);
@@ -148,6 +159,13 @@ export async function buildGatheringCatalog(opts: BuildOpts = {}): Promise<Gathe
   // syntaxes against a single row, then use whichever shape actually carries
   // data for the full paginated fetch.
   const baseFields = await probeFieldsSyntax('GatheringPointBase', [
+    // Leaf-value forms first — these don't trigger XIVAPI v2's link
+    // expansion, so they stay well under the 20k-row response budget at
+    // higher page sizes than the link-expanding shorthand below.
+    'Item[].value',
+    'Item.value',
+    'Item[0].value,Item[1].value,Item[2].value,Item[3].value,Item[4].value,Item[5].value,Item[6].value,Item[7].value',
+    // Expansion shorthand fallbacks — these work but force expansion.
     'Item',
     'Item[0],Item[1],Item[2],Item[3],Item[4],Item[5],Item[6],Item[7]',
     'Item.0,Item.1,Item.2,Item.3,Item.4,Item.5,Item.6,Item.7',
@@ -199,23 +217,28 @@ export async function buildGatheringCatalog(opts: BuildOpts = {}): Promise<Gathe
   }
 
   // baseRowId → set of gatheringItemRowIds. Cast a wide net: collect any field
-  // whose key starts with "Item" and whose value looks like a link or array of
-  // links. Handles every plausible v2 shape: `Item: [...]`, `Item[N]: {value}`,
-  // `Item0: {value}`, etc.
+  // whose key starts with "Item" and whose value looks like a link, array of
+  // links, or raw numbers. Handles every plausible v2 shape:
+  //   `Item: [{value: N}, ...]`            link expansion
+  //   `Item: [N, ...]`                     `Item[].value` leaf form
+  //   `Item[N]: {value: M}` / `Item0: ...` indexed shorthand
   const baseItems = new Map<number, Set<number>>();
+  const collect = (raw: unknown, set: Set<number>) => {
+    if (raw == null) return;
+    if (typeof raw === 'number') {
+      if (raw > 0 && raw < 1_000_000) set.add(raw);
+    } else if (Array.isArray(raw)) {
+      for (const slot of raw) collect(slot, set);
+    } else if (typeof raw === 'object') {
+      const v = (raw as Link<number>).value ?? 0;
+      if (v > 0 && v < 1_000_000) set.add(v);
+    }
+  };
   for (const b of bases) {
     const set = new Set<number>();
     for (const [key, raw] of Object.entries(b.fields)) {
       if (!/^Item(\b|[\[0-9])/.test(key)) continue;
-      if (Array.isArray(raw)) {
-        for (const slot of raw) {
-          const v = (slot as Link<number> | undefined)?.value ?? 0;
-          if (v > 0 && v < 1_000_000) set.add(v);
-        }
-      } else if (raw && typeof raw === 'object') {
-        const v = (raw as Link<number>).value ?? 0;
-        if (v > 0 && v < 1_000_000) set.add(v);
-      }
+      collect(raw, set);
     }
     if (set.size > 0) baseItems.set(b.row_id, set);
   }
