@@ -77,4 +77,29 @@ describe('craftStore', () => {
     expect(open).toHaveLength(1);
     expect(open[0].name).toBe('Open');
   });
+
+  it('persists displayPartKey + displayPhaseIndex through create and update', async () => {
+    const pid = await store.createProject({
+      guildId: 'g1', channelId: 'c1', name: 'House', targetItemId: 9, targetQty: 1, createdBy: 'u1',
+      displayPartKey: 'Wall', displayPhaseIndex: 0,
+    });
+    let project = await store.getProject(pid);
+    expect(project?.displayPartKey).toBe('Wall');
+    expect(project?.displayPhaseIndex).toBe(0);
+
+    // User clicks the phase dropdown — switches to Door · Fase 2 (index 1).
+    await store.setProjectDisplayPhase(pid, 'Door', 1);
+    project = await store.getProject(pid);
+    expect(project?.displayPartKey).toBe('Door');
+    expect(project?.displayPhaseIndex).toBe(1);
+  });
+
+  it('defaults displayPartKey/displayPhaseIndex to null when not provided', async () => {
+    const pid = await store.createProject({
+      guildId: 'g1', channelId: 'c1', name: 'Plain', targetItemId: 1, targetQty: 1, createdBy: 'u1',
+    });
+    const project = await store.getProject(pid);
+    expect(project?.displayPartKey).toBeNull();
+    expect(project?.displayPhaseIndex).toBeNull();
+  });
 });

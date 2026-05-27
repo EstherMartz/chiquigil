@@ -38,10 +38,12 @@ describe('parseCompanyCraftRow', () => {
       resultName: 'Tatanora Hull',
       parts: [{
         name: 'Hull',
-        ingredients: [
-          { itemId: 5106, qty: 6 },   // 3 × 2
-          { itemId: 5107, qty: 10 },  // 5 × 2
-        ],
+        phases: [{
+          ingredients: [
+            { itemId: 5106, qty: 6 },   // 3 × 2
+            { itemId: 5107, qty: 10 },  // 5 × 2
+          ],
+        }],
       }],
     };
     expect(result).toEqual(expected);
@@ -74,11 +76,17 @@ describe('parseCompanyCraftRow', () => {
     };
     const result = parseCompanyCraftRow(row, new Map([[200, 'Sub']]));
     expect(result?.parts).toHaveLength(2);
-    expect(result?.parts[0]).toEqual({ name: 'Hull', ingredients: [{ itemId: 10, qty: 6 }] });
-    expect(result?.parts[1]).toEqual({ name: 'Stern', ingredients: [{ itemId: 20, qty: 4 }] });
+    expect(result?.parts[0]).toEqual({
+      name: 'Hull',
+      phases: [{ ingredients: [{ itemId: 10, qty: 6 }] }],
+    });
+    expect(result?.parts[1]).toEqual({
+      name: 'Stern',
+      phases: [{ ingredients: [{ itemId: 20, qty: 4 }] }],
+    });
   });
 
-  it('sums duplicate ingredients across processes within the same part', () => {
+  it('keeps phases within a part separate (each process is its own entry)', () => {
     const row = {
       row_id: 1,
       fields: {
@@ -98,7 +106,10 @@ describe('parseCompanyCraftRow', () => {
     };
     const result = parseCompanyCraftRow(row, new Map([[100, 'X'], [50, 'Ore']]));
     expect(result?.parts).toHaveLength(1);
-    expect(result?.parts[0].ingredients).toEqual([{ itemId: 50, qty: 14 }]); // 4·3 + 2·1
+    // Two separate processes → two separate phases.
+    expect(result?.parts[0].phases).toHaveLength(2);
+    expect(result?.parts[0].phases[0].ingredients).toEqual([{ itemId: 50, qty: 12 }]); // 4·3
+    expect(result?.parts[0].phases[1].ingredients).toEqual([{ itemId: 50, qty: 2 }]);  // 2·1
   });
 
   it('skips empty parts (no supplies) but keeps populated siblings', () => {

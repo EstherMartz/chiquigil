@@ -1204,30 +1204,6 @@ function buildBreakdown(targetId, targetQty, market, deps, opts = {}) {
   const cc = deps.companyCraft.get(targetId);
   if (cc) {
     const craftIntermediates = opts.craftIntermediates ?? true;
-    const allCrafts = /* @__PURE__ */ new Map();
-    const allLeaves = /* @__PURE__ */ new Map();
-    for (const part of cc.parts) {
-      for (const ing of part.ingredients) {
-        const qty = ing.qty * targetQty;
-        if (craftIntermediates && deps.recipes.has(ing.itemId)) {
-          const result = explode(ing.itemId, qty, deps.recipes, opts);
-          for (const [id, c] of result.crafts) {
-            const existing = allCrafts.get(id);
-            if (existing) {
-              existing.outputQty += c.outputQty;
-              existing.craftCount += c.craftCount;
-            } else {
-              allCrafts.set(id, { ...c });
-            }
-          }
-          for (const [id, q] of result.leaves) {
-            allLeaves.set(id, (allLeaves.get(id) ?? 0) + q);
-          }
-        } else {
-          allLeaves.set(ing.itemId, (allLeaves.get(ing.itemId) ?? 0) + qty);
-        }
-      }
-    }
     const crafts = [{
       itemId: cc.resultItemId,
       itemName: deps.namesById.get(cc.resultItemId) ?? cc.resultName,
@@ -1235,15 +1211,47 @@ function buildBreakdown(targetId, targetQty, market, deps, opts = {}) {
       source: "workshop",
       meta: {}
     }];
-    const acquire = sourceLeaves(allLeaves, market, deps, cheapVendorThreshold);
-    for (const [itemId, info] of allCrafts) {
-      crafts.push({
-        itemId,
-        itemName: deps.namesById.get(itemId) ?? `Item #${itemId}`,
-        qtyNeeded: info.outputQty,
-        source: "craft",
-        meta: { job: info.job }
-      });
+    const acquire = [];
+    for (const part of cc.parts) {
+      const partKey = part.name || void 0;
+      for (let phaseIndex = 0; phaseIndex < part.phases.length; phaseIndex++) {
+        const phase = part.phases[phaseIndex];
+        const phaseCrafts = /* @__PURE__ */ new Map();
+        const phaseLeaves = /* @__PURE__ */ new Map();
+        for (const ing of phase.ingredients) {
+          const qty = ing.qty * targetQty;
+          if (craftIntermediates && deps.recipes.has(ing.itemId)) {
+            const result = explode(ing.itemId, qty, deps.recipes, opts);
+            for (const [id, c] of result.crafts) {
+              const existing = phaseCrafts.get(id);
+              if (existing) {
+                existing.outputQty += c.outputQty;
+                existing.craftCount += c.craftCount;
+              } else {
+                phaseCrafts.set(id, { ...c });
+              }
+            }
+            for (const [id, q] of result.leaves) {
+              phaseLeaves.set(id, (phaseLeaves.get(id) ?? 0) + q);
+            }
+          } else {
+            phaseLeaves.set(ing.itemId, (phaseLeaves.get(ing.itemId) ?? 0) + qty);
+          }
+        }
+        const phaseTag = { ...partKey ? { partKey } : {}, phaseIndex };
+        for (const t of sourceLeaves(phaseLeaves, market, deps, cheapVendorThreshold)) {
+          acquire.push({ ...t, meta: { ...t.meta, ...phaseTag } });
+        }
+        for (const [itemId, info] of phaseCrafts) {
+          crafts.push({
+            itemId,
+            itemName: deps.namesById.get(itemId) ?? `Item #${itemId}`,
+            qtyNeeded: info.outputQty,
+            source: "craft",
+            meta: { job: info.job, ...phaseTag }
+          });
+        }
+      }
     }
     return { crafts, acquire };
   }
@@ -1271,6 +1279,7 @@ var SECTION_CURRENCY = "\u{1F4A0} COMPRAR \u2014 Divisa";
 var SECTION_GATHER = "\u26CF RECOLECTAR";
 var UNCLAIMED = "sin asignar";
 var SELECT_PLACEHOLDER = "Reclamar tarea\u2026";
+var PHASE_SELECT_PLACEHOLDER = "Cambiar de fase\u2026";
 var BTN_LOG_PROGRESS = "Registrar progreso";
 var BTN_MARK_DONE = "Marcar las m\xEDas como hechas";
 var BTN_UNCLAIM = "Soltar tarea";
@@ -1378,61 +1387,80 @@ function sectionKeyFor(t) {
   if (t.source === "currency") return SECTION_CURRENCY;
   return SECTION_GATHER;
 }
-function groupTasks(tasks) {
-  const topSections = /* @__PURE__ */ new Map();
-  const parts = /* @__PURE__ */ new Map();
+function groupBySection(tasks) {
+  const map = /* @__PURE__ */ new Map();
   for (const t of tasks) {
     const sec = sectionKeyFor(t);
-    const partKey = t.meta?.partKey;
-    if (!partKey) {
-      let arr2 = topSections.get(sec);
-      if (!arr2) {
-        arr2 = [];
-        topSections.set(sec, arr2);
-      }
-      arr2.push(t);
-      continue;
-    }
-    let partMap = parts.get(partKey);
-    if (!partMap) {
-      partMap = /* @__PURE__ */ new Map();
-      parts.set(partKey, partMap);
-    }
-    let arr = partMap.get(sec);
+    let arr = map.get(sec);
     if (!arr) {
       arr = [];
-      partMap.set(sec, arr);
+      map.set(sec, arr);
     }
     arr.push(t);
   }
-  return { topSections, parts };
+  return map;
+}
+function collectPhases(tasks) {
+  const map = /* @__PURE__ */ new Map();
+  const partOrder = /* @__PURE__ */ new Map();
+  let nextPartOrder = 0;
+  for (const t of tasks) {
+    const pk = t.meta?.partKey;
+    const pi = t.meta?.phaseIndex;
+    if (pk == null || pi == null) continue;
+    if (!partOrder.has(pk)) partOrder.set(pk, nextPartOrder++);
+    const key = `${pk}#${pi}`;
+    const existing = map.get(key);
+    if (existing) {
+      existing.total++;
+      if (t.status === "done") existing.done++;
+    } else {
+      map.set(key, {
+        partKey: pk,
+        phaseIndex: pi,
+        label: `${pk} \xB7 Fase ${pi + 1}`,
+        total: 1,
+        done: t.status === "done" ? 1 : 0
+      });
+    }
+  }
+  return [...map.values()].sort((a, b) => {
+    const ao = partOrder.get(a.partKey);
+    const bo = partOrder.get(b.partKey);
+    if (ao !== bo) return ao - bo;
+    return a.phaseIndex - b.phaseIndex;
+  });
+}
+function filterToPhase(tasks, partKey, phaseIndex) {
+  return tasks.filter((t) => {
+    if (t.meta?.partKey == null || t.meta?.phaseIndex == null) return true;
+    return t.meta.partKey === partKey && t.meta.phaseIndex === phaseIndex;
+  });
 }
 function buildProjectMessage(project, tasks) {
   const totalTasks = tasks.length;
   const doneTasks = tasks.filter((t) => t.status === "done").length;
   const isClosed = project.status === "closed";
   const statusTag = isClosed ? PROJECT_STATUS_CLOSED : `${PROJECT_STATUS_OPEN} \xB7 ${doneTasks}/${totalTasks} ${PROJECT_DONE_SUFFIX}`;
-  const { topSections, parts } = groupTasks(tasks);
+  const phases = collectPhases(tasks);
+  const hasPhaseNav = phases.length > 1;
+  const activePartKey = hasPhaseNav ? project.displayPartKey ?? phases[0].partKey : null;
+  const activePhaseIndex = hasPhaseNav ? project.displayPhaseIndex ?? phases[0].phaseIndex : null;
+  const visibleTasks = hasPhaseNav && activePartKey != null && activePhaseIndex != null ? filterToPhase(tasks, activePartKey, activePhaseIndex) : tasks;
+  const activePhaseLabel = hasPhaseNav ? phases.find((p) => p.partKey === activePartKey && p.phaseIndex === activePhaseIndex)?.label : null;
+  const sections = groupBySection(visibleTasks);
   let description = "";
-  for (const [header, sectionTasks] of topSections) {
+  if (activePhaseLabel) {
+    description += `
+\u{1F4CD} **${activePhaseLabel}**
+`;
+  }
+  for (const [header, sectionTasks] of sections) {
     description += `
 **${header}**
 `;
     for (const t of sectionTasks) {
       description += taskLine(t) + "\n";
-    }
-  }
-  for (const [partKey, sectionMap] of parts) {
-    description += `
-\u2501\u2501\u2501 **${partKey.toUpperCase()}** \u2501\u2501\u2501
-`;
-    for (const [header, sectionTasks] of sectionMap) {
-      description += `
-**${header}**
-`;
-      for (const t of sectionTasks) {
-        description += taskLine(t) + "\n";
-      }
     }
   }
   const title = isClosed ? `\u2705 [Cerrado] ${project.name}` : `\u{1F6E0}  ${project.name}`;
@@ -1453,7 +1481,25 @@ ${description}`;
   });
   const components = [];
   if (!isClosed) {
-    const claimable = tasks.filter((t) => t.status === "open").slice(0, 25);
+    if (hasPhaseNav) {
+      const phaseSelect = {
+        type: 3,
+        custom_id: `cproj:${project.id}:phase`,
+        placeholder: PHASE_SELECT_PLACEHOLDER,
+        options: phases.slice(0, 25).map((p) => {
+          const isDone = p.total > 0 && p.done === p.total;
+          const checkmark = isDone ? " \u2713" : "";
+          return {
+            label: `${p.label}${checkmark}`.slice(0, 100),
+            description: `${p.done}/${p.total} ${PROJECT_DONE_SUFFIX}`.slice(0, 100),
+            value: `${p.partKey}#${p.phaseIndex}`,
+            default: p.partKey === activePartKey && p.phaseIndex === activePhaseIndex
+          };
+        })
+      };
+      components.push({ type: 1, components: [phaseSelect] });
+    }
+    const claimable = visibleTasks.filter((t) => t.status === "open").slice(0, 25);
     if (claimable.length > 0) {
       const selectComponent = {
         type: 3,
@@ -1627,6 +1673,14 @@ async function createThread(botToken, channelId, messageId, name) {
 }
 
 // src/bot/craftCommands.ts
+function initialDisplayPhase(tasks) {
+  for (const t of tasks) {
+    if (t.meta?.partKey != null && t.meta?.phaseIndex != null) {
+      return { partKey: t.meta.partKey, phaseIndex: t.meta.phaseIndex };
+    }
+  }
+  return null;
+}
 async function handleCraftNew(opts, guildId, channelId, userId, deps) {
   const matches = searchItems(deps.nameIndex, opts.item, 1);
   if (matches.length === 0) {
@@ -1654,13 +1708,16 @@ async function handleCraftNew(opts, guildId, channelId, userId, deps) {
     return { content: NO_RECIPE(itemName), flags: 64 };
   }
   const targetChannelId = deps.craftChannelId ?? channelId;
+  const initial = initialDisplayPhase(allTasks);
   const projectId = await deps.store.createProject({
     guildId,
     channelId: targetChannelId,
     name: projectName,
     targetItemId: itemId,
     targetQty: opts.qty,
-    createdBy: userId
+    createdBy: userId,
+    displayPartKey: initial?.partKey ?? null,
+    displayPhaseIndex: initial?.phaseIndex ?? null
   });
   await deps.store.addTasks(projectId, allTasks);
   const project = await deps.store.getProject(projectId);
@@ -1886,6 +1943,14 @@ async function refreshBoard(deps, guildId) {
 }
 
 // src/bot/craftInteractions.ts
+function initialDisplayPhase2(tasks) {
+  for (const t of tasks) {
+    if (t.meta?.partKey != null && t.meta?.phaseIndex != null) {
+      return { partKey: t.meta.partKey, phaseIndex: t.meta.phaseIndex };
+    }
+  }
+  return null;
+}
 function parseCustomId(customId) {
   const parts = customId.split(":");
   if (parts.length < 3 || parts[0] !== "cproj") return null;
@@ -2035,7 +2100,33 @@ async function handleCraftSelect(customId, values, userId, guildId, messageId, c
     return handleRequestPick(customId, values, userId, guildId, channelId, deps);
   }
   const parsed = parseCustomId(customId);
-  if (!parsed || parsed.action !== "claim") {
+  if (!parsed) {
+    return { type: 4, data: { content: "Invalid select", flags: 64 } };
+  }
+  if (parsed.action === "phase") {
+    const raw = values[0] ?? "";
+    const hashIdx = raw.lastIndexOf("#");
+    if (hashIdx <= 0) {
+      return { type: 4, data: { content: "Invalid phase selection", flags: 64 } };
+    }
+    const partKey = raw.slice(0, hashIdx);
+    const phaseIndex = parseInt(raw.slice(hashIdx + 1), 10);
+    if (!partKey || isNaN(phaseIndex)) {
+      return { type: 4, data: { content: "Invalid phase selection", flags: 64 } };
+    }
+    await deps.store.setProjectDisplayPhase(parsed.projectId, partKey, phaseIndex);
+    const project2 = await deps.store.getProject(parsed.projectId);
+    if (project2) {
+      const tasks = await deps.store.getTasks(parsed.projectId);
+      const { embeds, components } = buildProjectMessage(project2, tasks);
+      try {
+        await editMessage(deps.botToken, channelId, messageId, { embeds, components });
+      } catch {
+      }
+    }
+    return { type: 6 };
+  }
+  if (parsed.action !== "claim") {
     return { type: 4, data: { content: "Invalid select", flags: 64 } };
   }
   const taskId = parseInt(values[0], 10);
@@ -2166,13 +2257,16 @@ async function createCraftProjectFromModal(_itemQuery, itemId, qty, label, userI
     return { type: 4, data: { content: NO_RECIPE(itemName), flags: 64 } };
   }
   const targetChannelId = deps.craftChannelId ?? channelId;
+  const initial = initialDisplayPhase2(allTasks);
   const projectId = await deps.store.createProject({
     guildId,
     channelId: targetChannelId,
     name: projectName,
     targetItemId: itemId,
     targetQty: qty,
-    createdBy: userId
+    createdBy: userId,
+    displayPartKey: initial?.partKey ?? null,
+    displayPhaseIndex: initial?.phaseIndex ?? null
   });
   await deps.store.addTasks(projectId, allTasks);
   const project = await deps.store.getProject(projectId);
@@ -2245,13 +2339,16 @@ async function handleRequestPick(customId, values, userId, guildId, channelId, d
     return { type: 7, data: { content: NO_RECIPE(itemName), components: [] } };
   }
   const targetChannelId = deps.craftChannelId ?? channelId;
+  const initial = initialDisplayPhase2(allTasks);
   const projectId = await deps.store.createProject({
     guildId,
     channelId: targetChannelId,
     name: projectName,
     targetItemId: itemId,
     targetQty: qty,
-    createdBy: userId
+    createdBy: userId,
+    displayPartKey: initial?.partKey ?? null,
+    displayPhaseIndex: initial?.phaseIndex ?? null
   });
   await deps.store.addTasks(projectId, allTasks);
   const project = await deps.store.getProject(projectId);
@@ -2430,6 +2527,14 @@ async function openCraftStore(url, authToken) {
     await client.execute("ALTER TABLE projects ADD COLUMN thread_id TEXT");
   } catch {
   }
+  try {
+    await client.execute("ALTER TABLE projects ADD COLUMN display_part_key TEXT");
+  } catch {
+  }
+  try {
+    await client.execute("ALTER TABLE projects ADD COLUMN display_phase_index INTEGER");
+  } catch {
+  }
   function rowToProject(row) {
     return {
       id: Number(row.id),
@@ -2442,7 +2547,9 @@ async function openCraftStore(url, authToken) {
       createdBy: String(row.created_by),
       threadId: row.thread_id ? String(row.thread_id) : null,
       status: String(row.status),
-      createdAt: Number(row.created_at)
+      createdAt: Number(row.created_at),
+      displayPartKey: row.display_part_key ? String(row.display_part_key) : null,
+      displayPhaseIndex: row.display_phase_index != null ? Number(row.display_phase_index) : null
     };
   }
   function rowToTask(row) {
@@ -2466,8 +2573,8 @@ async function openCraftStore(url, authToken) {
       const createdAt = Date.now();
       const result = await client.execute({
         sql: `
-          INSERT INTO projects (guild_id, channel_id, name, target_item_id, target_qty, created_by, created_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?)
+          INSERT INTO projects (guild_id, channel_id, name, target_item_id, target_qty, created_by, created_at, display_part_key, display_phase_index)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
         args: [
           p.guildId,
@@ -2476,7 +2583,9 @@ async function openCraftStore(url, authToken) {
           p.targetItemId,
           p.targetQty,
           p.createdBy,
-          createdAt
+          createdAt,
+          p.displayPartKey ?? null,
+          p.displayPhaseIndex ?? null
         ]
       });
       return Number(result.lastInsertRowid);
@@ -2568,6 +2677,12 @@ async function openCraftStore(url, authToken) {
       await client.execute({
         sql: "UPDATE projects SET thread_id = ? WHERE id = ?",
         args: [threadId, projectId]
+      });
+    },
+    async setProjectDisplayPhase(projectId, partKey, phaseIndex) {
+      await client.execute({
+        sql: "UPDATE projects SET display_part_key = ?, display_phase_index = ? WHERE id = ?",
+        args: [partKey, phaseIndex, projectId]
       });
     },
     async closeProject(projectId) {

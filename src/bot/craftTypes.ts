@@ -12,8 +12,10 @@ export interface CraftTaskMeta {
   costPerUnit?: number;
   gatherLevel?: number;
   timed?: boolean;
-  /** CompanyCraft part name (e.g. "Hull", "Stern") — undefined for single-part workshops and standard recipes. */
+  /** CompanyCraft part name (e.g. "Hull", "Stern") — undefined for standard recipes. */
   partKey?: string;
+  /** Zero-indexed phase within the part (0-N-1). Undefined for non-CompanyCraft tasks and workshop assembly. */
+  phaseIndex?: number;
 }
 
 export interface CraftTask {
@@ -41,6 +43,9 @@ export interface CraftProject {
   threadId: string | null;
   status: 'open' | 'closed';
   createdAt: number;
+  /** Phase-navigation: which (part, phase) the project's embed is currently displaying. */
+  displayPartKey: string | null;
+  displayPhaseIndex: number | null;
 }
 
 export interface ChannelState {

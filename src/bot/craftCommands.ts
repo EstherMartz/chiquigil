@@ -8,6 +8,16 @@ import { buildProjectMessage, buildBoardMessage, buildRequestPrompt } from './cr
 import { explode } from './craftExplode';
 import * as discordApi from './discordApi';
 import * as S from './craftStrings';
+import type { CraftTask } from './craftTypes';
+
+function initialDisplayPhase(tasks: CraftTask[]): { partKey: string; phaseIndex: number } | null {
+  for (const t of tasks) {
+    if (t.meta?.partKey != null && t.meta?.phaseIndex != null) {
+      return { partKey: t.meta.partKey, phaseIndex: t.meta.phaseIndex };
+    }
+  }
+  return null;
+}
 
 export interface CraftCommandDeps {
   store: CraftStore;
@@ -78,6 +88,10 @@ export async function handleCraftNew(
   // Determine target channel for the announcement
   const targetChannelId = deps.craftChannelId ?? channelId;
 
+  // For CompanyCraft projects with multiple phases, default the embed to show
+  // the first phase (Wall · Fase 1 etc.); standard recipes leave these null.
+  const initial = initialDisplayPhase(allTasks);
+
   // Persist
   const projectId = await deps.store.createProject({
     guildId,
@@ -86,6 +100,8 @@ export async function handleCraftNew(
     targetItemId: itemId,
     targetQty: opts.qty,
     createdBy: userId,
+    displayPartKey: initial?.partKey ?? null,
+    displayPhaseIndex: initial?.phaseIndex ?? null,
   });
   await deps.store.addTasks(projectId, allTasks);
 

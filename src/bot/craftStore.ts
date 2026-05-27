@@ -9,6 +9,8 @@ export interface CraftStore {
     targetItemId: number;
     targetQty: number;
     createdBy: string;
+    displayPartKey?: string | null;
+    displayPhaseIndex?: number | null;
   }): Promise<number>;
   addTasks(projectId: number, tasks: CraftTask[]): Promise<void>;
   getProject(id: number): Promise<CraftProject | null>;
@@ -19,6 +21,7 @@ export interface CraftStore {
   unclaimTask(taskId: number, userId: string): Promise<boolean>;
   setProjectMessageId(projectId: number, messageId: string): Promise<void>;
   setProjectThreadId(projectId: number, threadId: string): Promise<void>;
+  setProjectDisplayPhase(projectId: number, partKey: string, phaseIndex: number): Promise<void>;
   closeProject(projectId: number): Promise<void>;
   getChannelState(guildId: string, channelId: string): Promise<ChannelState | null>;
   upsertChannelState(state: ChannelState): Promise<void>;
@@ -87,6 +90,18 @@ export async function openCraftStore(url: string, authToken?: string): Promise<C
     // already exists
   }
 
+  // Migration: per-project display state for phase navigation (V2 CompanyCraft UX).
+  try {
+    await client.execute('ALTER TABLE projects ADD COLUMN display_part_key TEXT');
+  } catch {
+    // already exists
+  }
+  try {
+    await client.execute('ALTER TABLE projects ADD COLUMN display_phase_index INTEGER');
+  } catch {
+    // already exists
+  }
+
   function rowToProject(row: Record<string, any>): CraftProject {
     return {
       id: Number(row.id),
@@ -100,6 +115,8 @@ export async function openCraftStore(url: string, authToken?: string): Promise<C
       threadId: row.thread_id ? String(row.thread_id) : null,
       status: String(row.status) as 'open' | 'closed',
       createdAt: Number(row.created_at),
+      displayPartKey: row.display_part_key ? String(row.display_part_key) : null,
+      displayPhaseIndex: row.display_phase_index != null ? Number(row.display_phase_index) : null,
     };
   }
 
@@ -125,8 +142,8 @@ export async function openCraftStore(url: string, authToken?: string): Promise<C
       const createdAt = Date.now();
       const result = await client.execute({
         sql: `
-          INSERT INTO projects (guild_id, channel_id, name, target_item_id, target_qty, created_by, created_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?)
+          INSERT INTO projects (guild_id, channel_id, name, target_item_id, target_qty, created_by, created_at, display_part_key, display_phase_index)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
         args: [
           p.guildId,
@@ -136,6 +153,8 @@ export async function openCraftStore(url: string, authToken?: string): Promise<C
           p.targetQty,
           p.createdBy,
           createdAt,
+          p.displayPartKey ?? null,
+          p.displayPhaseIndex ?? null,
         ],
       });
       return Number(result.lastInsertRowid);
@@ -237,6 +256,13 @@ export async function openCraftStore(url: string, authToken?: string): Promise<C
       await client.execute({
         sql: 'UPDATE projects SET thread_id = ? WHERE id = ?',
         args: [threadId, projectId],
+      });
+    },
+
+    async setProjectDisplayPhase(projectId, partKey, phaseIndex) {
+      await client.execute({
+        sql: 'UPDATE projects SET display_part_key = ?, display_phase_index = ? WHERE id = ?',
+        args: [partKey, phaseIndex, projectId],
       });
     },
 
