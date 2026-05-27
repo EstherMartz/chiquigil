@@ -1204,7 +1204,30 @@ function buildBreakdown(targetId, targetQty, market, deps, opts = {}) {
   const cc = deps.companyCraft.get(targetId);
   if (cc) {
     const craftIntermediates = opts.craftIntermediates ?? true;
-    const multiPart = cc.parts.length > 1;
+    const allCrafts = /* @__PURE__ */ new Map();
+    const allLeaves = /* @__PURE__ */ new Map();
+    for (const part of cc.parts) {
+      for (const ing of part.ingredients) {
+        const qty = ing.qty * targetQty;
+        if (craftIntermediates && deps.recipes.has(ing.itemId)) {
+          const result = explode(ing.itemId, qty, deps.recipes, opts);
+          for (const [id, c] of result.crafts) {
+            const existing = allCrafts.get(id);
+            if (existing) {
+              existing.outputQty += c.outputQty;
+              existing.craftCount += c.craftCount;
+            } else {
+              allCrafts.set(id, { ...c });
+            }
+          }
+          for (const [id, q] of result.leaves) {
+            allLeaves.set(id, (allLeaves.get(id) ?? 0) + q);
+          }
+        } else {
+          allLeaves.set(ing.itemId, (allLeaves.get(ing.itemId) ?? 0) + qty);
+        }
+      }
+    }
     const crafts = [{
       itemId: cc.resultItemId,
       itemName: deps.namesById.get(cc.resultItemId) ?? cc.resultName,
@@ -1212,47 +1235,15 @@ function buildBreakdown(targetId, targetQty, market, deps, opts = {}) {
       source: "workshop",
       meta: {}
     }];
-    const acquire = [];
-    for (const part of cc.parts) {
-      const partKey = multiPart ? part.name || void 0 : void 0;
-      const partCrafts = /* @__PURE__ */ new Map();
-      const partLeaves = /* @__PURE__ */ new Map();
-      for (const ing of part.ingredients) {
-        const qty = ing.qty * targetQty;
-        if (craftIntermediates && deps.recipes.has(ing.itemId)) {
-          const result = explode(ing.itemId, qty, deps.recipes, opts);
-          for (const [id, c] of result.crafts) {
-            const existing = partCrafts.get(id);
-            if (existing) {
-              existing.outputQty += c.outputQty;
-              existing.craftCount += c.craftCount;
-            } else {
-              partCrafts.set(id, { ...c });
-            }
-          }
-          for (const [id, q] of result.leaves) {
-            partLeaves.set(id, (partLeaves.get(id) ?? 0) + q);
-          }
-        } else {
-          partLeaves.set(ing.itemId, (partLeaves.get(ing.itemId) ?? 0) + qty);
-        }
-      }
-      for (const t of sourceLeaves(partLeaves, market, deps, cheapVendorThreshold)) {
-        acquire.push({ ...t, meta: { ...t.meta, ...partKey ? { partKey } : {} } });
-      }
-      for (const [itemId, info] of partCrafts) {
-        const name = deps.namesById.get(itemId) ?? `Item #${itemId}`;
-        crafts.push({
-          itemId,
-          itemName: name,
-          qtyNeeded: info.outputQty,
-          source: "craft",
-          meta: {
-            job: info.job,
-            ...partKey ? { partKey } : {}
-          }
-        });
-      }
+    const acquire = sourceLeaves(allLeaves, market, deps, cheapVendorThreshold);
+    for (const [itemId, info] of allCrafts) {
+      crafts.push({
+        itemId,
+        itemName: deps.namesById.get(itemId) ?? `Item #${itemId}`,
+        qtyNeeded: info.outputQty,
+        source: "craft",
+        meta: { job: info.job }
+      });
     }
     return { crafts, acquire };
   }

@@ -158,32 +158,33 @@ describe('buildBreakdown (workshop fallback)', () => {
     expect(out.acquire[0]).toMatchObject({ itemId: 100, qtyNeeded: 2 });
   });
 
-  it('tags craft + acquire tasks with meta.partKey when CompanyCraft has multiple parts', () => {
-    // Sub with Hull + Stern. Each part has unique ingredients so we can tell them apart.
+  it('sums identical ingredients across multiple parts into a single task', () => {
+    // House with Wall + Door, both needing the same item — should aggregate
+    // into one 14× task instead of two 6× and 8× tasks. This prevents the
+    // duplicate-rows problem that surfaced when each part produced its own
+    // independent bucket.
     const cc: CompanyCraftRecipe = {
       resultItemId: 500,
       resultName: 'Tatanora',
       parts: [
-        { name: 'Hull', ingredients: [{ itemId: 10, qty: 6 }] },
-        { name: 'Stern', ingredients: [{ itemId: 20, qty: 4 }] },
+        { name: 'Wall', ingredients: [{ itemId: 10, qty: 6 }, { itemId: 20, qty: 4 }] },
+        { name: 'Door', ingredients: [{ itemId: 10, qty: 8 }] },
       ],
     };
     const deps = emptyDeps({
       companyCraft: new Map([[500, cc]]),
-      namesById: new Map([[500, 'Tatanora'], [10, 'Mythril Ore'], [20, 'Cotton Yarn']]),
-      gatheringCatalog: new Map([[10, { level: 50, timed: false } as any]]),
+      namesById: new Map([[500, 'Tatanora'], [10, 'Natron'], [20, 'Cotton Yarn']]),
     });
     const out = buildBreakdown(500, 1, emptyMarket, deps);
 
-    // Workshop task: still ONE total, no partKey.
-    const workshop = out.crafts.find((t) => t.source === 'workshop');
-    expect(workshop).toBeDefined();
-    expect(workshop?.meta.partKey).toBeUndefined();
-
-    // Each acquire task carries its part's name.
-    const ore = out.acquire.find((t) => t.itemId === 10);
-    const yarn = out.acquire.find((t) => t.itemId === 20);
-    expect(ore?.meta.partKey).toBe('Hull');
-    expect(yarn?.meta.partKey).toBe('Stern');
+    // Workshop task at the top + ONE Natron task (summed) + ONE Cotton task.
+    expect(out.crafts).toHaveLength(1);
+    expect(out.crafts[0].source).toBe('workshop');
+    const natron = out.acquire.find((t) => t.itemId === 10);
+    const cotton = out.acquire.find((t) => t.itemId === 20);
+    expect(natron?.qtyNeeded).toBe(14); // 6 + 8 summed across Wall + Door
+    expect(cotton?.qtyNeeded).toBe(4);
+    // No partKey survives aggregation.
+    expect(out.acquire.every((t) => t.meta.partKey === undefined)).toBe(true);
   });
 });
