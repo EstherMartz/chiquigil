@@ -168,6 +168,61 @@ export async function handleCraftList(guildId: string, deps: CraftCommandDeps): 
 }
 
 /**
+ * Handle /craft claim — claim a task by autocomplete value (the task ID).
+ * Escape hatch for projects with more than 25 open tasks where the select menu
+ * can't reach every task. Mirrors the side-effects of the select-menu claim
+ * path: edit announcement, post thread note, refresh board.
+ */
+export async function handleCraftClaim(
+  projectId: number,
+  taskIdRaw: string,
+  guildId: string,
+  userId: string,
+  deps: CraftCommandDeps,
+): Promise<CommandResponse> {
+  const project = await deps.store.getProject(projectId);
+  if (!project || project.guildId !== guildId) {
+    return { content: S.PROJECT_NOT_FOUND(projectId), flags: 64 };
+  }
+  const taskId = Number(taskIdRaw);
+  if (!Number.isInteger(taskId) || taskId <= 0) {
+    return { content: 'Selecciona una tarea del menú de autocompletar.', flags: 64 };
+  }
+
+  const claimed = await deps.store.claimTask(taskId, userId);
+  if (!claimed) {
+    return { content: S.TASK_ALREADY_TAKEN, flags: 64 };
+  }
+
+  const tasks = await deps.store.getTasks(projectId);
+  const task = tasks.find((t) => t.id === taskId);
+  const { embeds, components } = buildProjectMessage(project, tasks);
+
+  if (project.messageId) {
+    try {
+      await discordApi.editMessage(deps.botToken, project.channelId, project.messageId, { embeds, components });
+    } catch {
+      // best effort — message may have been deleted
+    }
+  }
+  if (task && project.threadId) {
+    try {
+      await discordApi.sendToChannel(deps.botToken, project.threadId, {
+        content: S.THREAD_CLAIMED(userId, task.qtyNeeded, task.itemName),
+      });
+    } catch {
+      // thread may be archived
+    }
+  }
+  await refreshBoard(deps, guildId);
+
+  return {
+    content: `✅ Reclamaste **${task?.itemName ?? 'la tarea'}**.`,
+    flags: 64,
+  };
+}
+
+/**
  * Handle /craft show — show a specific project
  */
 export async function handleCraftShow(projectId: number, guildId: string, deps: CraftCommandDeps): Promise<CommandResponse> {

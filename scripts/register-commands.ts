@@ -30,6 +30,14 @@ const commands = [
       },
       { type: 1, name: 'list', description: 'Ver proyectos abiertos' },
       { type: 1, name: 'show', description: 'Ver proyecto', options: [{ type: 4, name: 'id', description: 'ID del proyecto', required: true }] },
+      {
+        type: 1, name: 'claim',
+        description: 'Reclamar una tarea por nombre (cuando no aparece en el menú)',
+        options: [
+          { type: 4, name: 'id', description: 'ID del proyecto', required: true },
+          { type: 3, name: 'item', description: 'Item a reclamar', required: true, autocomplete: true },
+        ],
+      },
       { type: 1, name: 'close', description: 'Cerrar proyecto', options: [{ type: 4, name: 'id', description: 'ID del proyecto', required: true }] },
       { type: 1, name: 'setup', description: 'Configurar canal de craft (admin)' },
     ],

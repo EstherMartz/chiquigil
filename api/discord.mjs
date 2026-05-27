@@ -1293,7 +1293,7 @@ var NO_OPEN_PROJECTS = "No hay proyectos abiertos \u{1F400}";
 var PROJECT_NOT_FOUND = (id) => `Proyecto #${id} no encontrado.`;
 var ITEM_NOT_FOUND = (q) => `No encontr\xE9 el objeto "${q}" \u2014 intenta con el nombre en ingl\xE9s.`;
 var NO_RECIPE = (name) => `No pude descomponer **${name}** \u2014 \xBFtiene receta?`;
-var CHANNEL_NOT_FOUND = "No pude encontrar el canal de crafteo.";
+var CHANNEL_NOT_FOUND = "No pude publicar el proyecto en el canal \u2014 revisa los logs (puede ser permisos del bot o payload rechazado).";
 var PROJECT_CREATED = (id, channelId, taskCount) => `\u2705 Proyecto **#${id}** creado en <#${channelId}> con ${taskCount} tareas.`;
 var PROJECT_CLOSED = (id) => `\u{1F512} Proyecto #${id} cerrado.`;
 var PROJECTS_BASE_URL = process.env.PROJECTS_BASE_URL ?? "https://qiqirn.tools";
@@ -1606,7 +1606,11 @@ function headers(botToken) {
 }
 async function sendToChannel(botToken, channelId, payload) {
   const res = await fetch(`${BASE}/channels/${channelId}/messages`, { method: "POST", headers: headers(botToken), body: JSON.stringify(payload) });
-  if (!res.ok) return null;
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    console.error(`[discord] sendToChannel ${channelId} \u2192 ${res.status}:`, detail.slice(0, 800));
+    return null;
+  }
   return res.json();
 }
 async function editMessage(botToken, channelId, messageId, payload) {
@@ -1712,6 +1716,42 @@ async function handleCraftList(guildId, deps) {
     description: lines.join("\n")
   };
   return { embeds: [embed], flags: 64 };
+}
+async function handleCraftClaim(projectId, taskIdRaw, guildId, userId, deps) {
+  const project = await deps.store.getProject(projectId);
+  if (!project || project.guildId !== guildId) {
+    return { content: PROJECT_NOT_FOUND(projectId), flags: 64 };
+  }
+  const taskId = Number(taskIdRaw);
+  if (!Number.isInteger(taskId) || taskId <= 0) {
+    return { content: "Selecciona una tarea del men\xFA de autocompletar.", flags: 64 };
+  }
+  const claimed = await deps.store.claimTask(taskId, userId);
+  if (!claimed) {
+    return { content: TASK_ALREADY_TAKEN, flags: 64 };
+  }
+  const tasks = await deps.store.getTasks(projectId);
+  const task = tasks.find((t) => t.id === taskId);
+  const { embeds, components } = buildProjectMessage(project, tasks);
+  if (project.messageId) {
+    try {
+      await editMessage(deps.botToken, project.channelId, project.messageId, { embeds, components });
+    } catch {
+    }
+  }
+  if (task && project.threadId) {
+    try {
+      await sendToChannel(deps.botToken, project.threadId, {
+        content: THREAD_CLAIMED(userId, task.qtyNeeded, task.itemName)
+      });
+    } catch {
+    }
+  }
+  await refreshBoard(deps, guildId);
+  return {
+    content: `\u2705 Reclamaste **${task?.itemName ?? "la tarea"}**.`,
+    flags: 64
+  };
 }
 async function handleCraftShow(projectId, guildId, deps) {
   const project = await deps.store.getProject(projectId);
@@ -2707,17 +2747,37 @@ async function handler(req, res) {
   if (interaction.type === 4) {
     try {
       const commandName = interaction.data?.name;
-      const focused = findFocusedOption(interaction.data?.options ?? []);
+      const sub = interaction.data?.options?.[0];
+      const subOpts = sub?.options ?? [];
+      const focused = subOpts.find((o) => o?.focused);
       if (commandName === "craft" && focused?.name === "item") {
-        const query = String(focused.value ?? "").trim();
-        const snapshots = await loadSnapshots(baseUrl);
-        const nameIndex = buildNameIndex(snapshots.namesById);
-        const matches = query ? fuzzySearchItems(nameIndex, query, 25) : [];
-        const choices = matches.slice(0, 25).map((m) => ({
-          name: m.name.slice(0, 100),
-          value: m.name.slice(0, 100)
-        }));
-        return res.status(200).json({ type: 8, data: { choices } });
+        if (sub?.name === "new") {
+          const query = String(focused.value ?? "").trim();
+          const snapshots = await loadSnapshots(baseUrl);
+          const nameIndex = buildNameIndex(snapshots.namesById);
+          const matches = query ? fuzzySearchItems(nameIndex, query, 25) : [];
+          const choices = matches.slice(0, 25).map((m) => ({
+            name: m.name.slice(0, 100),
+            value: m.name.slice(0, 100)
+          }));
+          return res.status(200).json({ type: 8, data: { choices } });
+        }
+        if (sub?.name === "claim") {
+          const projectId = Number(subOpts.find((o) => o.name === "id")?.value);
+          if (!Number.isInteger(projectId) || projectId <= 0) {
+            return res.status(200).json({ type: 8, data: { choices: [] } });
+          }
+          const store = await getCraftStore();
+          const tasks = await store.getTasks(projectId);
+          const open = tasks.filter((t) => t.status === "open");
+          const q = String(focused.value ?? "").trim().toLowerCase();
+          const matches = q ? open.filter((t) => t.itemName.toLowerCase().includes(q)) : open;
+          const choices = matches.slice(0, 25).map((t) => ({
+            name: `${t.qtyNeeded}\xD7 ${t.itemName} (${t.qtyDone}/${t.qtyNeeded})`.slice(0, 100),
+            value: String(t.id)
+          }));
+          return res.status(200).json({ type: 8, data: { choices } });
+        }
       }
     } catch (e) {
       console.error("[discord] autocomplete error:", e);
@@ -2781,6 +2841,10 @@ async function handler(req, res) {
             } else if (subcommand === "show") {
               const projectId = parseInt(subOptions.find((o) => o.name === "id")?.value ?? "0", 10);
               response = await handleCraftShow(projectId, guildId, deps);
+            } else if (subcommand === "claim") {
+              const projectId = parseInt(subOptions.find((o) => o.name === "id")?.value ?? "0", 10);
+              const taskIdRaw = String(subOptions.find((o) => o.name === "item")?.value ?? "");
+              response = await handleCraftClaim(projectId, taskIdRaw, guildId, userId, deps);
             } else if (subcommand === "close") {
               const projectId = parseInt(subOptions.find((o) => o.name === "id")?.value ?? "0", 10);
               response = await handleCraftClose(projectId, guildId, userId, permissions, deps);
@@ -3148,16 +3212,6 @@ ${e instanceof Error ? e.message : String(e)}`);
   } else {
     return res.status(400).json({ error: "Unsupported interaction type" });
   }
-}
-function findFocusedOption(options) {
-  for (const opt of options) {
-    if (opt?.focused) return { name: opt.name, value: opt.value };
-    if (Array.isArray(opt?.options)) {
-      const nested = findFocusedOption(opt.options);
-      if (nested) return nested;
-    }
-  }
-  return null;
 }
 async function editOriginalResponse(appId, interactionToken, data) {
   const BASE2 = "https://discord.com/api/v10";

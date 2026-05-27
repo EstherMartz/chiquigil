@@ -12,7 +12,11 @@ export async function editOriginal(appId: string, interactionToken: string, cont
 
 export async function sendToChannel(botToken: string, channelId: string, payload: Record<string, unknown>): Promise<Record<string, unknown> | null> {
   const res = await fetch(`${BASE}/channels/${channelId}/messages`, { method: 'POST', headers: headers(botToken), body: JSON.stringify(payload) });
-  if (!res.ok) return null;
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '');
+    console.error(`[discord] sendToChannel ${channelId} → ${res.status}:`, detail.slice(0, 800));
+    return null;
+  }
   return res.json() as Promise<Record<string, unknown>>;
 }
 

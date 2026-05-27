@@ -9,6 +9,7 @@ import {
   handleCraftShow,
   handleCraftClose,
   handleCraftSetup,
+  handleCraftClaim,
 } from '../bot/craftCommands';
 import {
   handleCraftButton,
@@ -37,7 +38,7 @@ const REGION = process.env.REGION ?? 'Europe';
 const CRAFT_CHANNEL_ID = process.env.CRAFT_CHANNEL_ID || undefined;
 const CRAFTER_ROLE_ID = process.env.CRAFTER_ROLE_ID || undefined;
 
-let craftStorePromise: Promise<import('../src/bot/craftStore').CraftStore> | null = null;
+let craftStorePromise: Promise<import('../bot/craftStore').CraftStore> | null = null;
 
 function getCraftStore() {
   if (!craftStorePromise) {
@@ -137,18 +138,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (interaction.type === 4) {
     try {
       const commandName = interaction.data?.name;
-      const focused = findFocusedOption(interaction.data?.options ?? []);
+      const sub = interaction.data?.options?.[0];
+      const subOpts: any[] = (sub as any)?.options ?? [];
+      const focused = subOpts.find((o: any) => o?.focused);
 
       if (commandName === 'craft' && focused?.name === 'item') {
-        const query = String(focused.value ?? '').trim();
-        const snapshots = await loadSnapshots(baseUrl);
-        const nameIndex = buildNameIndex(snapshots.namesById);
-        const matches = query ? fuzzySearchItems(nameIndex, query, 25) : [];
-        const choices = matches.slice(0, 25).map((m) => ({
-          name: m.name.slice(0, 100),
-          value: m.name.slice(0, 100),
-        }));
-        return res.status(200).json({ type: 8, data: { choices } });
+        if (sub?.name === 'new') {
+          const query = String(focused.value ?? '').trim();
+          const snapshots = await loadSnapshots(baseUrl);
+          const nameIndex = buildNameIndex(snapshots.namesById);
+          const matches = query ? fuzzySearchItems(nameIndex, query, 25) : [];
+          const choices = matches.slice(0, 25).map((m) => ({
+            name: m.name.slice(0, 100),
+            value: m.name.slice(0, 100),
+          }));
+          return res.status(200).json({ type: 8, data: { choices } });
+        }
+        if (sub?.name === 'claim') {
+          const projectId = Number(subOpts.find((o: any) => o.name === 'id')?.value);
+          if (!Number.isInteger(projectId) || projectId <= 0) {
+            return res.status(200).json({ type: 8, data: { choices: [] } });
+          }
+          const store = await getCraftStore();
+          const tasks = await store.getTasks(projectId);
+          const open = tasks.filter((t) => t.status === 'open');
+          const q = String(focused.value ?? '').trim().toLowerCase();
+          const matches = q ? open.filter((t) => t.itemName.toLowerCase().includes(q)) : open;
+          const choices = matches.slice(0, 25).map((t) => ({
+            name: `${t.qtyNeeded}× ${t.itemName} (${t.qtyDone}/${t.qtyNeeded})`.slice(0, 100),
+            value: String(t.id),
+          }));
+          return res.status(200).json({ type: 8, data: { choices } });
+        }
       }
     } catch (e) {
       console.error('[discord] autocomplete error:', e);
@@ -224,6 +245,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             } else if (subcommand === 'show') {
               const projectId = parseInt(subOptions.find((o) => o.name === 'id')?.value ?? '0', 10);
               response = await handleCraftShow(projectId, guildId, deps);
+            } else if (subcommand === 'claim') {
+              const projectId = parseInt(subOptions.find((o) => o.name === 'id')?.value ?? '0', 10);
+              const taskIdRaw = String(subOptions.find((o) => o.name === 'item')?.value ?? '');
+              response = await handleCraftClaim(projectId, taskIdRaw, guildId, userId, deps);
             } else if (subcommand === 'close') {
               const projectId = parseInt(subOptions.find((o) => o.name === 'id')?.value ?? '0', 10);
               response = await handleCraftClose(projectId, guildId, userId, permissions, deps);

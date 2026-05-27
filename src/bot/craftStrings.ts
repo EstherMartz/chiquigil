@@ -51,7 +51,7 @@ export const PROJECT_NOT_FOUND = (id: number) => `Proyecto #${id} no encontrado.
 export const NO_PERMISSION = 'No tienes permisos para hacer eso.';
 export const ITEM_NOT_FOUND = (q: string) => `No encontré el objeto "${q}" — intenta con el nombre en inglés.`;
 export const NO_RECIPE = (name: string) => `No pude descomponer **${name}** — ¿tiene receta?`;
-export const CHANNEL_NOT_FOUND = 'No pude encontrar el canal de crafteo.';
+export const CHANNEL_NOT_FOUND = 'No pude publicar el proyecto en el canal — revisa los logs (puede ser permisos del bot o payload rechazado).';
 export const PROJECT_CREATED = (id: number, channelId: string, taskCount: number) =>
   `✅ Proyecto **#${id}** creado en <#${channelId}> con ${taskCount} tareas.`;
 export const PROJECT_CLOSED = (id: number) => `🔒 Proyecto #${id} cerrado.`;
