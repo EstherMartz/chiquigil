@@ -135,7 +135,7 @@ describe('Trading route', () => {
     render(withProviders(<Trading />));
     fireEvent.click(screen.getByRole('button', { name: /^queries$/i }));
     fireEvent.click(await screen.findByRole('button', { name: /reposts \(camp\)/i }));
-    fireEvent.click(await screen.findByRole('button', { name: /run query/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /run scan/i }));
 
     await waitFor(
       () => expect(screen.getByText(/Pixie Cotton/)).toBeInTheDocument(),

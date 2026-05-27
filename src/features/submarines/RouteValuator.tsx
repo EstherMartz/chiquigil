@@ -113,7 +113,7 @@ export function RouteValuator() {
           <select
             value={zone ?? ''}
             onChange={(e) => setZone(e.target.value || null)}
-            className="mt-1 block w-44 bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+            className="mt-1 block w-44 bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
           >
             <option value="">All zones</option>
             {ZONES.map((z) => (

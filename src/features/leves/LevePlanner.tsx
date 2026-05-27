@@ -115,7 +115,7 @@ export function LevePlanner({ rows }: Props) {
           </tbody>
         </table>
       ) : (
-        <EmptyState icon="❖" message="Click Run Query to populate this plan." />
+        <EmptyState icon="◆" message="Click Run scan to populate this plan." />
       )}
     </section>
   );

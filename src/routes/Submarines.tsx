@@ -28,7 +28,7 @@ export default function Submarines() {
               max={125}
               value={submarineRank}
               onChange={(e) => setSubmarineRank(Math.max(1, Math.min(125, Number(e.target.value) || 1)))}
-              className="mt-1 block w-20 bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+              className="mt-1 block w-20 bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
             />
           </label>
           <label className="block">
@@ -39,7 +39,7 @@ export default function Submarines() {
               max={5}
               value={submarineSlots}
               onChange={(e) => setSubmarineSlots(Math.max(1, Math.min(5, Number(e.target.value) || 1)))}
-              className="mt-1 block w-20 bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+              className="mt-1 block w-20 bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
             />
           </label>
         </div>

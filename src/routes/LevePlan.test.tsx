@@ -32,12 +32,12 @@ describe('LevePlan route', () => {
     render(withProviders(<LevePlan />));
     const h2 = screen.getByRole('heading', { level: 2 });
     expect(h2.textContent).toMatch(/leve/i);
-    expect(screen.getByRole('button', { name: /run query/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /run scan/i })).toBeInTheDocument();
   });
 
   it('fires the Run mutation on click', () => {
     render(withProviders(<LevePlan />));
-    fireEvent.click(screen.getByRole('button', { name: /run query/i }));
+    fireEvent.click(screen.getByRole('button', { name: /run scan/i }));
     expect(runMock).toHaveBeenCalledTimes(1);
   });
 });

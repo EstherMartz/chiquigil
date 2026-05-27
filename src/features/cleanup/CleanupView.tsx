@@ -59,7 +59,7 @@ export function CleanupView() {
     return [...ids];
   }, [parsed]);
 
-  // GC supply item IDs â€” used to narrow the craft search to only recipes
+  // GC supply item IDs — used to narrow the craft search to only recipes
   // whose output is a GC supply turn-in item (daily demand from players).
   const gcSupplyIds = useMemo<Set<number>>(() => {
     const ids = new Set<number>();
@@ -161,7 +161,7 @@ export function CleanupView() {
   }
 
   const summary = parsed
-    ? `Parsed ${parsed.entries.length + parsed.unrecognized.length} rows Â· ${parsed.entries.length} recognized`
+    ? `Parsed ${parsed.entries.length + parsed.unrecognized.length} rows · ${parsed.entries.length} recognized`
     : null;
 
   const showProgress = parsed && (!inventoryReady || !craftReady);
@@ -179,13 +179,13 @@ export function CleanupView() {
         <CleanupProgressBar
           stages={[
             {
-              label: 'Pricing your inventoryâ€¦',
+              label: 'Pricing your inventory…',
               done: invProgress.done,
               total: invProgress.total,
               status: inventoryReady ? 'done' : 'active',
             },
             {
-              label: 'Scoring GC supply craftsâ€¦',
+              label: 'Scoring GC supply crafts…',
               done: craftProgress.done,
               total: craftProgress.total,
               status:

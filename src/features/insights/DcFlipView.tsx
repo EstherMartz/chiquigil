@@ -131,7 +131,7 @@ export function DcFlipView() {
               type="number" inputMode="decimal" min={0} step={1000}
               value={minSpread}
               onChange={(e) => setMinSpread(Math.max(0, Number(e.target.value) || 0))}
-              className="mt-1 block w-32 bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+              className="mt-1 block w-32 bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
             />
           </label>
           <label className="block">
@@ -140,7 +140,7 @@ export function DcFlipView() {
               type="number" inputMode="decimal" min={0} step={0.5}
               value={minVelocity}
               onChange={(e) => setMinVelocity(Math.max(0, Number(e.target.value) || 0))}
-              className="mt-1 block w-32 bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+              className="mt-1 block w-32 bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
             />
           </label>
         </div>

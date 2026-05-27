@@ -35,7 +35,7 @@ export function BestDealsView() {
             type="number" min={0} max={99}
             value={minDealPct}
             onChange={(e) => setMinDealPct(Math.max(0, Math.min(99, Number(e.target.value) || 0)))}
-            className="mt-1 block w-32 bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+            className="mt-1 block w-32 bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
           />
         </label>
         <span className="font-mono text-[10px] text-text-low">

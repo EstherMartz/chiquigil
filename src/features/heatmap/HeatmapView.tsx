@@ -173,7 +173,7 @@ export function HeatmapView() {
             <select
               value={group}
               onChange={(e) => setGroup(e.target.value as ItemSearchCategoryEntry['group'])}
-              className="mt-1 block bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+              className="mt-1 block bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
             >
               {GROUPS.map((g) => (
                 <option key={g} value={g}>{g}</option>
@@ -225,7 +225,7 @@ export function HeatmapView() {
             <input
               type="number" inputMode="decimal" min={0} step={0.5} value={postFilter.minVelocity}
               onChange={(e) => setPostFilter({ ...postFilter, minVelocity: Math.max(0, Number(e.target.value) || 0) })}
-              className="mt-1 block w-24 bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+              className="mt-1 block w-24 bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
             />
           </label>
           <label className="block">
@@ -233,7 +233,7 @@ export function HeatmapView() {
             <input
               type="number" inputMode="decimal" min={-100} max={100} step={5} value={postFilter.minMargin}
               onChange={(e) => setPostFilter({ ...postFilter, minMargin: Number(e.target.value) || -100 })}
-              className="mt-1 block w-24 bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+              className="mt-1 block w-24 bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
             />
           </label>
         </div>

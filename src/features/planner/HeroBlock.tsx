@@ -113,12 +113,12 @@ export function HeroBlock() {
           value={amt}
           onChange={(e) => setAmt(e.target.value)}
           placeholder="e.g. 4,025,000"
-          className="w-40 bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+          className="w-40 bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
         />
         <select
           value={itemId}
           onChange={(e) => setItemId(e.target.value)}
-          className="bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+          className="bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
         >
           <option value="">— untagged —</option>
           {LANE_ORDER.flatMap((lane) =>

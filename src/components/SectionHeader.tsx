@@ -16,10 +16,12 @@ interface Props {
  * used across the app so every section reads as part of the same ledger.
  */
 export function SectionHeader({ label, trailing, sigil = '❖', compact }: Props) {
+  const headingSize = compact ? 'text-[10px]' : 'text-[14px]';
+  const sigilSize = compact ? 'text-[12px]' : 'text-[16px]';
   return (
-    <div className={`flex items-baseline justify-between gap-3 ${compact ? 'mb-2' : 'mb-3 pb-2 border-b border-border-base'}`}>
-      <h2 className="font-mono text-[10px] tracking-[0.3em] uppercase text-gold flex items-center gap-2">
-        <span aria-hidden className="text-aether text-[12px] leading-none">{sigil}</span>
+    <div className={`flex items-baseline justify-between gap-3 ${compact ? 'mb-2' : 'mb-4 pb-2 border-b border-border-base'}`}>
+      <h2 className={`font-mono ${headingSize} tracking-[0.3em] uppercase text-gold flex items-center gap-2`}>
+        <span aria-hidden className={`text-aether ${sigilSize} leading-none`}>{sigil}</span>
         {label}
       </h2>
       {trailing && (

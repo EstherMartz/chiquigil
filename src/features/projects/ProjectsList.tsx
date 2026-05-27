@@ -11,7 +11,7 @@ function sourceMixSummary(s: ProjectSummary): string {
   for (const [key, count] of Object.entries(s.taskCounts.bySource)) {
     if (count > 0) parts.push(`${count} ${key}`);
   }
-  return parts.join(' Â· ');
+  return parts.join(' · ');
 }
 
 function progressLabel(s: ProjectSummary): string {
@@ -30,12 +30,12 @@ export function ProjectsList() {
 
       {q.isLoading && (
         <div className="font-mono text-[10px] text-text-low flex items-center gap-2">
-          <Spinner /> Loadingâ€¦
+          <Spinner /> Loading…
         </div>
       )}
-      {q.isError && <StatusBanner kind="error">Couldn't load projects â€” Discord bot may be down.</StatusBanner>}
+      {q.isError && <StatusBanner kind="error">Couldn't load projects — Discord bot may be down.</StatusBanner>}
       {projects && projects.length === 0 && (
-        <EmptyState icon="ðŸ“‹" message="No open projects. Start one with /craft new in Discord." />
+        <EmptyState icon="📋" message="No open projects. Start one with /craft new in Discord." />
       )}
 
       {projects && projects.length > 0 && (
@@ -63,7 +63,7 @@ export function ProjectsList() {
                   <td className="p-2">
                     <Link to={`/item/${p.targetItemId}`} className="hover:underline">
                       Item #{p.targetItemId}
-                    </Link>{' '}Ã— {p.targetQty}
+                    </Link>{' '}× {p.targetQty}
                   </td>
                   <td className="p-2 text-text-low text-xs">{sourceMixSummary(p)}</td>
                   <td className="p-2 font-mono text-xs">{progressLabel(p)}</td>

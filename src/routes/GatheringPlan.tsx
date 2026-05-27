@@ -23,11 +23,11 @@ export default function GatheringPlan() {
           disabled={!q.ready || q.isPending}
           className="font-mono text-[10px] tracking-widest uppercase px-3 py-2 border border-gold text-gold disabled:border-border-base disabled:text-text-low"
         >
-          {q.ready ? (q.isPending ? 'Runningâ€¦' : 'Run query') : 'Loading dataâ€¦'}
+          {q.ready ? (q.isPending ? 'Running…' : 'Run scan') : 'Loading data…'}
         </button>
       </div>
 
-      {q.isPending && <Spinner label="Fetching gathering market dataâ€¦" />}
+      {q.isPending && <Spinner label="Fetching gathering market data…" />}
       {q.isError && <StatusBanner kind="error">Query failed: {(q.error as Error).message}</StatusBanner>}
       {q.skipped > 0 && (
         <StatusBanner kind="error">{q.skipped} batch(es) skipped (Universalis error)</StatusBanner>
@@ -37,7 +37,7 @@ export default function GatheringPlan() {
 
       <div>
         <Link to="/gathering" className="font-mono text-[10px] tracking-widest uppercase text-text-dim hover:text-aether">
-          â† Browse all gatherables
+          ← Browse all gatherables
         </Link>
       </div>
     </div>

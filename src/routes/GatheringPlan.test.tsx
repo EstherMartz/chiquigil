@@ -77,12 +77,12 @@ describe('GatheringPlan route', () => {
     const headings = await screen.findAllByRole('heading', { name: /plan a session/i });
     const pageHeading = headings.find((h) => h.tagName.toLowerCase() === 'h2');
     expect(pageHeading).toBeDefined();
-    expect(await screen.findByRole('button', { name: /run query/i })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /run scan/i })).toBeInTheDocument();
     const backLink = screen.getByRole('link', { name: /browse all gatherables/i });
     expect(backLink).toHaveAttribute('href', '/gathering');
   });
 
-  it('clicking Run query populates the plan table', async () => {
+  it('clicking Run scan populates the plan table', async () => {
     await putCachedItems(snapshotItems);
     await putCachedGatheringCatalog([
       [5544, { level: 50, timed: false, hidden: false }],
@@ -92,7 +92,7 @@ describe('GatheringPlan route', () => {
 
     render(withProviders(<GatheringPlan />));
 
-    const runBtn = await screen.findByRole('button', { name: /run query/i });
+    const runBtn = await screen.findByRole('button', { name: /run scan/i });
     await waitFor(() => expect(runBtn).not.toBeDisabled());
     fireEvent.click(runBtn);
 
@@ -101,7 +101,7 @@ describe('GatheringPlan route', () => {
     expect(screen.getByRole('button', { name: /copy gbr clipboard string/i })).not.toBeDisabled();
   });
 
-  it('disables Run query until snapshot and catalog are ready', () => {
+  it('disables Run scan until snapshot and catalog are ready', () => {
     // No seeded caches; fetch fails so they never resolve.
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('no network')));
     render(withProviders(<GatheringPlan />));

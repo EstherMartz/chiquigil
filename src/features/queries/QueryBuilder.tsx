@@ -58,7 +58,7 @@ export function QueryBuilder({ value, onChange, onRun, busy }: Props) {
           <select
             value={value.hq}
             onChange={(e) => patch({ hq: e.target.value as HqMode })}
-            className="mt-1 block w-full bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+            className="mt-1 block w-full bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
           >
             <option value="hq">HQ</option>
             <option value="nq">NQ</option>
@@ -71,7 +71,7 @@ export function QueryBuilder({ value, onChange, onRun, busy }: Props) {
           <input
             type="number" inputMode="decimal" min={0} max={99} value={value.minDealPct}
             onChange={(e) => patch({ minDealPct: Math.min(99, intInput(e)) })}
-            className="mt-1 block w-full bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+            className="mt-1 block w-full bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
           />
         </label>
 
@@ -80,7 +80,7 @@ export function QueryBuilder({ value, onChange, onRun, busy }: Props) {
           <input
             type="number" inputMode="decimal" min={0} step={0.5} value={value.minVelocity}
             onChange={(e) => patch({ minVelocity: intInput(e) })}
-            className="mt-1 block w-full bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+            className="mt-1 block w-full bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
           />
         </label>
 
@@ -89,7 +89,7 @@ export function QueryBuilder({ value, onChange, onRun, busy }: Props) {
           <select
             value={value.sort}
             onChange={(e) => patch({ sort: e.target.value as QuerySort })}
-            className="mt-1 block w-full bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+            className="mt-1 block w-full bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
           >
             {SORTS.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
           </select>
@@ -101,7 +101,7 @@ export function QueryBuilder({ value, onChange, onRun, busy }: Props) {
             type="number" inputMode="decimal" min={0} step={1000}
             value={value.minPrice ?? ''}
             onChange={(e) => patch({ minPrice: nullableIntInput(e) })}
-            className="mt-1 block w-full bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+            className="mt-1 block w-full bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
           />
         </label>
 
@@ -111,7 +111,7 @@ export function QueryBuilder({ value, onChange, onRun, busy }: Props) {
             type="number" inputMode="decimal" min={0} step={1000}
             value={value.maxPrice ?? ''}
             onChange={(e) => patch({ maxPrice: nullableIntInput(e) })}
-            className="mt-1 block w-full bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+            className="mt-1 block w-full bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
           />
         </label>
 
@@ -120,7 +120,7 @@ export function QueryBuilder({ value, onChange, onRun, busy }: Props) {
           <input
             type="number" inputMode="decimal" min={1} max={1000} value={value.limit}
             onChange={(e) => patch({ limit: Math.max(1, Math.min(1000, intInput(e) || 100)) })}
-            className="mt-1 block w-full bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+            className="mt-1 block w-full bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
           />
         </label>
 
@@ -130,7 +130,7 @@ export function QueryBuilder({ value, onChange, onRun, busy }: Props) {
             disabled={busy}
             className={`${btnPrimary} w-full`}
           >
-            {busy ? 'Running…' : 'Run query'}
+            {busy ? 'Running…' : 'Run scan'}
           </button>
           <button
             onClick={handleCopyLink}
@@ -146,7 +146,7 @@ export function QueryBuilder({ value, onChange, onRun, busy }: Props) {
           <select
             value={value.scope}
             onChange={(e) => patch({ scope: e.target.value as QueryScope })}
-            className="mt-1 block w-full bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+            className="mt-1 block w-full bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
           >
             <option value="home">Home world</option>
             <option value="dc">DC</option>
@@ -159,7 +159,7 @@ export function QueryBuilder({ value, onChange, onRun, busy }: Props) {
             type="number" inputMode="decimal" min={0} step={1}
             value={value.maxListings ?? ''}
             onChange={(e) => patch({ maxListings: nullableIntInput(e) })}
-            className="mt-1 block w-full bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+            className="mt-1 block w-full bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
           />
         </label>
 
@@ -169,7 +169,7 @@ export function QueryBuilder({ value, onChange, onRun, busy }: Props) {
             type="number" inputMode="decimal" min={0} step={1000}
             value={value.minGap ?? ''}
             onChange={(e) => patch({ minGap: nullableIntInput(e) })}
-            className="mt-1 block w-full bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+            className="mt-1 block w-full bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
             title="Absolute gil floor for repost gap"
           />
         </label>
@@ -179,7 +179,7 @@ export function QueryBuilder({ value, onChange, onRun, busy }: Props) {
           <select
             value={value.mode}
             onChange={(e) => patch({ mode: e.target.value as QueryMode })}
-            className="mt-1 block w-full bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+            className="mt-1 block w-full bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
           >
             <option value="standard">Standard</option>
             <option value="craft">Craft-flip</option>

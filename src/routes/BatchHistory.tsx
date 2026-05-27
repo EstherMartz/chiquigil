@@ -6,7 +6,7 @@ export default function BatchHistory() {
       <div>
         <h2 className="font-display text-lg text-gold tracking-wide">Batch History</h2>
         <p className="font-mono text-[11px] text-text-low max-w-prose">
-          Track craft batch outcomes â€” compare estimated profits against actual sales.
+          Track craft batch outcomes — compare estimated profits against actual sales.
         </p>
       </div>
       <BatchHistoryView />

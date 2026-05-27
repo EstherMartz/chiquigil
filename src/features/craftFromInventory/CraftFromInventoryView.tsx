@@ -52,7 +52,7 @@ export function CraftFromInventoryView() {
     // Build velocity map from market cache for marketable filter
     let velocityMap: Map<number, number> | undefined;
     if (marketableOnly) {
-      // We'll compute this from cached market data asynchronously â€” for now
+      // We'll compute this from cached market data asynchronously — for now
       // use a simple check: any item in the recipe snapshot is considered marketable
       // unless we have velocity data showing otherwise.
       velocityMap = undefined; // Will be enhanced when cache is available
@@ -184,7 +184,7 @@ export function CraftFromInventoryView() {
 
       {parsed && rows.length === 0 && (
         <EmptyState
-          icon="ðŸ“­"
+          icon="📭"
           message="No craftable recipes found with current filters."
         />
       )}

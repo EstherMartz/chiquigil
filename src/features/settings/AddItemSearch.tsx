@@ -29,12 +29,12 @@ export function AddItemSearch() {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search XIVAPI… (min 2 chars)"
-          className="col-span-3 sm:col-span-1 bg-bg-card border border-border-base px-3 py-2 font-mono text-sm focus:outline-none focus:border-aether"
+          className="col-span-3 sm:col-span-1 bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors focus:outline-none focus:border-aether"
         />
         <select
           value={pendingCrafter}
           onChange={(e) => setPendingCrafter(e.target.value as CrafterCode)}
-          className="bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+          className="bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
           title="Tag added items with this crafter"
         >
           {CRAFTERS.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -42,7 +42,7 @@ export function AddItemSearch() {
         <select
           value={pendingCat}
           onChange={(e) => setPendingCat(e.target.value as ItemCategory)}
-          className="bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+          className="bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
           title="Tag added items with this category"
         >
           {CATS.map((c) => <option key={c} value={c}>{c}</option>)}

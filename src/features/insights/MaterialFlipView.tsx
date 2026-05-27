@@ -243,7 +243,7 @@ function FilterBar({ value, onChange, onRun, busy, notReady }: {
         <input
           type="number" min={0} step={0.5} value={value.minVelocity}
           onChange={(e) => onChange({ ...value, minVelocity: Math.max(0, Number(e.target.value) || 0) })}
-          className="mt-1 block w-28 bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+          className="mt-1 block w-28 bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
         />
       </label>
       <label className="block">
@@ -251,7 +251,7 @@ function FilterBar({ value, onChange, onRun, busy, notReady }: {
         <input
           type="number" min={0} step={1} value={value.maxListings ?? 0}
           onChange={(e) => onChange({ ...value, maxListings: Math.max(0, Number(e.target.value) || 0) })}
-          className="mt-1 block w-28 bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+          className="mt-1 block w-28 bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
         />
       </label>
       <label className="block">
@@ -259,7 +259,7 @@ function FilterBar({ value, onChange, onRun, busy, notReady }: {
         <input
           type="number" min={0} step={500} value={value.minSavings}
           onChange={(e) => onChange({ ...value, minSavings: Math.max(0, Number(e.target.value) || 0) })}
-          className="mt-1 block w-32 bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+          className="mt-1 block w-32 bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
         />
       </label>
       <label className="flex items-center gap-2">

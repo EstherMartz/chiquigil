@@ -114,11 +114,11 @@ export default function GcSeals() {
           disabled={!ready || mutation.isPending}
           className="font-mono text-[10px] tracking-widest uppercase bg-gold text-bg-deep px-4 py-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
         >
-          {ready ? (mutation.isPending ? <>Runningâ€¦<SpinGlyph /></> : 'Run query') : 'Loading dataâ€¦'}
+          {ready ? (mutation.isPending ? <>Running…<SpinGlyph /></> : 'Run scan') : 'Loading data…'}
         </button>
       </div>
 
-      {mutation.isPending && <Spinner label="Fetching gear market dataâ€¦" />}
+      {mutation.isPending && <Spinner label="Fetching gear market data…" />}
       {mutation.isError && (
         <StatusBanner kind="error">Query failed: {(mutation.error as Error).message}</StatusBanner>
       )}
@@ -130,9 +130,9 @@ export default function GcSeals() {
 
       {!mutation.data && !mutation.isPending && (
         <EmptyState
-          icon="â–"
+          icon="❖"
           message="Find equippable gear to buy cheaply and trade in for Grand Company seals."
-          action={ready ? { label: 'Run Query', onClick: () => mutation.mutate() } : undefined}
+          action={ready ? { label: 'Run scan', onClick: () => mutation.mutate() } : undefined}
         />
       )}
 
@@ -149,7 +149,7 @@ export default function GcSeals() {
                   <div className="flex-1 min-w-0">
                     <ItemNameLinks id={row.id} name={row.name} />
                     <div className="font-mono text-[10px] text-text-low mt-0.5">
-                      i{row.ilvl} Â· {row.world}
+                      i{row.ilvl} · {row.world}
                     </div>
                   </div>
                 </div>

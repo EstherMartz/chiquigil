@@ -194,7 +194,7 @@ function FilterBar({
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder="Maple, Linseed…"
-          className="mt-1 block w-48 bg-bg-card border border-border-base px-3 py-2 font-mono text-sm placeholder:text-text-low"
+          className="mt-1 block w-48 bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors placeholder:text-text-low"
         />
       </label>
       <label className="block">
@@ -210,7 +210,7 @@ function FilterBar({
           <select
             value={categorySearch}
             onChange={(e) => onCategoryChange(e.target.value)}
-            className="block w-56 bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+            className="block w-56 bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
           >
             <option value="">All categories</option>
             {categoryOptions.map((opt) => (
@@ -226,7 +226,7 @@ function FilterBar({
         <input
           type="number" min={0} step={1} value={minListings}
           onChange={(e) => onMinListingsChange(Math.max(0, Number(e.target.value) || 0))}
-          className="mt-1 block w-24 bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+          className="mt-1 block w-24 bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
         />
       </label>
       <div className="flex flex-col gap-1">
@@ -250,7 +250,7 @@ function FilterBar({
         <select
           value={sortBy}
           onChange={(e) => onSortByChange(e.target.value as QuestItemSort)}
-          className="mt-1 block bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+          className="mt-1 block bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
         >
           <option value="revenue">Revenue</option>
           <option value="velocity">Sales/day</option>

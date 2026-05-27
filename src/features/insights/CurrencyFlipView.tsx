@@ -151,7 +151,7 @@ function TopStrip({ currencyId, onChangeCurrency, onRun, onRefreshCatalog, busy,
             aria-label="Currency"
             value={currencyId}
             onChange={(e) => onChangeCurrency(e.target.value as CurrencyId)}
-            className="bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+            className="bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
           >
             {CURRENCIES.map((c) => (
               <option key={c.id} value={c.id}>{c.label}</option>
@@ -192,7 +192,7 @@ function FilterBar({ value, onChange }: {
         <input
           type="number" inputMode="decimal" min={0} step={100} value={value.minGilPerUnit}
           onChange={(e) => onChange({ ...value, minGilPerUnit: Math.max(0, Number(e.target.value) || 0) })}
-          className="mt-1 block w-28 bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+          className="mt-1 block w-28 bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
         />
       </label>
       <label className="block">
@@ -200,7 +200,7 @@ function FilterBar({ value, onChange }: {
         <input
           type="number" inputMode="decimal" min={0} step={0.1} value={value.minVelocity}
           onChange={(e) => onChange({ ...value, minVelocity: Math.max(0, Number(e.target.value) || 0) })}
-          className="mt-1 block w-28 bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+          className="mt-1 block w-28 bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
         />
       </label>
       <label className="block">
@@ -212,7 +212,7 @@ function FilterBar({ value, onChange }: {
             onChange({ ...value, maxListings: Number.isFinite(n) && n > 0 ? n : null });
           }}
           placeholder="∞"
-          className="mt-1 block w-28 bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+          className="mt-1 block w-28 bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
         />
       </label>
       <div className="flex flex-col gap-1">
@@ -236,7 +236,7 @@ function FilterBar({ value, onChange }: {
         <select
           value={value.sort}
           onChange={(e) => onChange({ ...value, sort: e.target.value as CurrencyFlipSort })}
-          className="mt-1 block bg-bg-card border border-border-base px-3 py-2 font-mono text-sm"
+          className="mt-1 block bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
         >
           <option value="gilPerUnit">Gil/unit</option>
           <option value="salePrice">Sale price</option>

@@ -12,12 +12,12 @@ export default function Gathering() {
             to="/gathering/plan"
             className="text-gold hover:text-gold-hi transition-colors"
           >
-            Plan a session â†’
+            Plan a session →
           </Link>
         }
       />
       <p className="font-mono text-[11px] text-text-low max-w-prose -mt-2">
-        Raw materials you can gather while doing other things. Sells as-is â€” no recipe required.
+        Raw materials you can gather while doing other things. Sells as-is — no recipe required.
       </p>
       <QueriesView category="gathering" />
     </div>

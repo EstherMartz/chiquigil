@@ -29,7 +29,7 @@ function TaskRow({ t, userNames }: { t: StoredTask; userNames: Record<string, st
   return (
     <li className="flex items-center justify-between gap-3 py-1.5 border-b border-border-base/20 last:border-0">
       <div className="flex-1 min-w-0">
-        <span className="font-mono text-xs text-text-low mr-2">{t.qtyNeeded}Ã—</span>
+        <span className="font-mono text-xs text-text-low mr-2">{t.qtyNeeded}×</span>
         <Link to={`/item/${t.itemId}`} className="hover:underline">{t.itemName}</Link>
       </div>
       <div className="font-mono text-xs text-text-low w-24 text-right">
@@ -49,14 +49,14 @@ export function ProjectDetail({ projectId }: { projectId: number }) {
   if (q.isLoading) {
     return (
       <div className="max-w-[100rem] mx-auto px-4 py-6 font-mono text-[10px] text-text-low flex items-center gap-2">
-        <Spinner /> Loadingâ€¦
+        <Spinner /> Loading…
       </div>
     );
   }
   if (q.isError || !q.data) {
     return (
       <div className="max-w-[100rem] mx-auto px-4 py-6">
-        <StatusBanner kind="error">Couldn't load project â€” try again or check Discord.</StatusBanner>
+        <StatusBanner kind="error">Couldn't load project — try again or check Discord.</StatusBanner>
       </div>
     );
   }
@@ -73,10 +73,10 @@ export function ProjectDetail({ projectId }: { projectId: number }) {
         <Link to={`/item/${project.targetItemId}`} className="hover:underline">
           Item #{project.targetItemId}
         </Link>{' '}
-        Ã— {project.targetQty}
-        {' Â· '}Created by @{creatorLabel}
+        × {project.targetQty}
+        {' · '}Created by @{creatorLabel}
       </div>
-      <div className="text-xs text-text-low italic">View only â€” edit in Discord with /craft.</div>
+      <div className="text-xs text-text-low italic">View only — edit in Discord with /craft.</div>
 
       {SOURCE_ORDER.map((source) => {
         const list = groups.get(source) ?? [];
@@ -84,7 +84,7 @@ export function ProjectDetail({ projectId }: { projectId: number }) {
         return (
           <section key={source} className="border border-border-base rounded p-3">
             <h3 className="font-mono text-[10px] tracking-widest text-text-low mb-2 uppercase">
-              {SOURCE_LABEL[source]} Â· {list.length}
+              {SOURCE_LABEL[source]} · {list.length}
             </h3>
             <ul>
               {list.map((t) => (

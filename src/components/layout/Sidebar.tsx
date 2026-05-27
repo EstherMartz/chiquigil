@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 
 const navItemClass = ({ isActive }: { isActive: boolean }) =>
-  `block px-4 py-3 md:py-1.5 font-mono text-[13px] tracking-widest transition-colors border-l-[3px] active:bg-bg-card-hi ${
+  `block px-4 py-3 md:py-1.5 font-mono text-[13px] tracking-widest transition-colors border-l-[3px] ${
     isActive
-      ? 'text-gold border-l-gold'
-      : 'text-text-dim hover:text-aether border-l-transparent'
+      ? 'text-gold border-l-gold bg-bg-card-hi/60'
+      : 'text-text-dim border-l-transparent hover:text-text-cream hover:bg-bg-card-hi/30 active:bg-bg-card-hi'
   }`;
 
 interface NavGroup {

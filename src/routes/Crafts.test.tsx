@@ -141,7 +141,7 @@ describe('Crafts route', () => {
 
     render(withProviders(<Crafts />));
     fireEvent.click(await screen.findByRole('button', { name: /undersupply/i }));
-    fireEvent.click(await screen.findByRole('button', { name: /run query/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /run scan/i }));
 
     await waitFor(
       // Item renders in both mobile card list and desktop table.

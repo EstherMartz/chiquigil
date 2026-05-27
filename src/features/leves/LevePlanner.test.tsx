@@ -61,7 +61,7 @@ describe('LevePlanner', () => {
 
   it('shows an empty-state message when rows is empty', () => {
     render(withProviders(<LevePlanner rows={[]} />));
-    expect(screen.getByText(/run query/i)).toBeInTheDocument();
+    expect(screen.getByText(/run scan/i)).toBeInTheDocument();
   });
 
   it('renders the DoH target item name as an ItemNameLinks link', () => {
