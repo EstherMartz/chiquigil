@@ -101,7 +101,7 @@ export async function handleCraftNew(
   const roleId = opts.pingRole ?? deps.crafterRoleId;
   let content = '';
   if (roleId) content = `<@&${roleId}> `;
-  content += S.NEW_PROJECT_CONTENT;
+  content += S.NEW_PROJECT_CONTENT(projectId);
 
   // Send announcement message
   const announcementMsg = await discordApi.sendToChannel(deps.botToken, targetChannelId, {

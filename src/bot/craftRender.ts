@@ -1,6 +1,8 @@
 import type { CraftProject, StoredTask } from './craftTypes';
 import * as S from './craftStrings';
 
+const ITEMS_BASE_URL = process.env.PROJECTS_BASE_URL ?? 'https://qiqirn.tools';
+
 const JOB_EMOJI: Record<string, string> = {
   CRP: '🪚', BSM: '⚒️', ARM: '🛡️', GSM: '💎', LTW: '🧵',
   WVR: '🧶', ALC: '⚗️', CUL: '🍳', ANY: '🔨',
@@ -36,7 +38,8 @@ function taskLine(t: StoredTask): string {
     if (t.meta.timed) detail += ' ⏰';
   }
 
-  return `${done} ${t.qtyNeeded}× **${t.itemName}** — ${assignee} ${progress}${detail}`;
+  const itemLink = `[**${t.itemName}**](${ITEMS_BASE_URL}/item/${t.itemId})`;
+  return `${done} ${t.qtyNeeded}× ${itemLink} — ${assignee} ${progress}${detail}`;
 }
 
 function groupBySection(tasks: StoredTask[]): Map<string, StoredTask[]> {

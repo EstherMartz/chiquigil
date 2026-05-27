@@ -55,7 +55,9 @@ export const CHANNEL_NOT_FOUND = 'No pude encontrar el canal de crafteo.';
 export const PROJECT_CREATED = (id: number, channelId: string, taskCount: number) =>
   `✅ Proyecto **#${id}** creado en <#${channelId}> con ${taskCount} tareas.`;
 export const PROJECT_CLOSED = (id: number) => `🔒 Proyecto #${id} cerrado.`;
-export const NEW_PROJECT_CONTENT = '🛠 Nuevo proyecto de crafteo:';
+const PROJECTS_BASE_URL = process.env.PROJECTS_BASE_URL ?? 'https://qiqirn.tools';
+export const NEW_PROJECT_CONTENT = (projectId: number) =>
+  `🛠 Nuevo proyecto de crafteo:\n📋 ${PROJECTS_BASE_URL}/projects/${projectId}`;
 export const SETUP_DONE = (channelId: string) =>
   `✅ Canal de crafteo configurado en <#${channelId}> — board y prompt pinneados.`;
 export const SETUP_ADMIN_ONLY = 'Solo admins pueden ejecutar /craft setup.';

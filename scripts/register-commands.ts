@@ -24,7 +24,7 @@ const commands = [
           { type: 3, name: 'item', description: 'Item a craftear', required: true, autocomplete: true },
           { type: 4, name: 'qty', description: 'Cantidad', required: true, min_value: 1 },
           { type: 3, name: 'name', description: 'Nombre del proyecto', required: false },
-          { type: 5, name: 'intermediates', description: 'Incluir intermedios', required: false },
+          { type: 5, name: 'intermediates', description: 'Incluir intermedios (por defecto: sí)', required: false },
           { type: 8, name: 'ping_role', description: 'Rol a mencionar', required: false },
         ],
       },

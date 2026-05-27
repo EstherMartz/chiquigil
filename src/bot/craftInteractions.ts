@@ -438,7 +438,7 @@ async function createCraftProjectFromModal(
   const roleId = deps.crafterRoleId;
   let content = '';
   if (roleId) content = `<@&${roleId}> `;
-  content += S.NEW_PROJECT_CONTENT;
+  content += S.NEW_PROJECT_CONTENT(projectId);
 
   // Send announcement message
   const announcementMsg = await discordApi.sendToChannel(deps.botToken, targetChannelId, {
@@ -551,7 +551,7 @@ async function handleRequestPick(
   const roleId = deps.crafterRoleId;
   let content = '';
   if (roleId) content = `<@&${roleId}> `;
-  content += S.NEW_PROJECT_CONTENT;
+  content += S.NEW_PROJECT_CONTENT(projectId);
 
   // Send announcement message
   const announcementMsg = await discordApi.sendToChannel(deps.botToken, targetChannelId, {

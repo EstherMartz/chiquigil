@@ -1203,19 +1203,48 @@ function buildBreakdown(targetId, targetQty, market, deps, opts = {}) {
   }
   const cc = deps.companyCraft.get(targetId);
   if (cc) {
-    const leaves = /* @__PURE__ */ new Map();
+    const craftIntermediates = opts.craftIntermediates ?? true;
+    const allCrafts = /* @__PURE__ */ new Map();
+    const allLeaves = /* @__PURE__ */ new Map();
     for (const ing of cc.ingredients) {
-      leaves.set(ing.itemId, (leaves.get(ing.itemId) ?? 0) + ing.qty * targetQty);
+      const qty = ing.qty * targetQty;
+      if (craftIntermediates && deps.recipes.has(ing.itemId)) {
+        const result = explode(ing.itemId, qty, deps.recipes, opts);
+        for (const [id, c] of result.crafts) {
+          const existing = allCrafts.get(id);
+          if (existing) {
+            existing.outputQty += c.outputQty;
+            existing.craftCount += c.craftCount;
+          } else {
+            allCrafts.set(id, { ...c });
+          }
+        }
+        for (const [id, q] of result.leaves) {
+          allLeaves.set(id, (allLeaves.get(id) ?? 0) + q);
+        }
+      } else {
+        allLeaves.set(ing.itemId, (allLeaves.get(ing.itemId) ?? 0) + qty);
+      }
     }
-    const acquire = sourceLeaves(leaves, market, deps, cheapVendorThreshold);
-    const workshopTask = {
+    const acquire = sourceLeaves(allLeaves, market, deps, cheapVendorThreshold);
+    const crafts = [{
       itemId: cc.resultItemId,
       itemName: deps.namesById.get(cc.resultItemId) ?? cc.resultName,
       qtyNeeded: targetQty,
       source: "workshop",
       meta: {}
-    };
-    return { crafts: [workshopTask], acquire };
+    }];
+    for (const [itemId, info] of allCrafts) {
+      const name = deps.namesById.get(itemId) ?? `Item #${itemId}`;
+      crafts.push({
+        itemId,
+        itemName: name,
+        qtyNeeded: info.outputQty,
+        source: "craft",
+        meta: { job: info.job }
+      });
+    }
+    return { crafts, acquire };
   }
   return { crafts: [], acquire: [] };
 }
@@ -1257,7 +1286,9 @@ var NO_RECIPE = (name) => `No pude descomponer **${name}** \u2014 \xBFtiene rece
 var CHANNEL_NOT_FOUND = "No pude encontrar el canal de crafteo.";
 var PROJECT_CREATED = (id, channelId, taskCount) => `\u2705 Proyecto **#${id}** creado en <#${channelId}> con ${taskCount} tareas.`;
 var PROJECT_CLOSED = (id) => `\u{1F512} Proyecto #${id} cerrado.`;
-var NEW_PROJECT_CONTENT = "\u{1F6E0} Nuevo proyecto de crafteo:";
+var PROJECTS_BASE_URL = process.env.PROJECTS_BASE_URL ?? "https://qiqirn.tools";
+var NEW_PROJECT_CONTENT = (projectId) => `\u{1F6E0} Nuevo proyecto de crafteo:
+\u{1F4CB} ${PROJECTS_BASE_URL}/projects/${projectId}`;
 var SETUP_DONE = (channelId) => `\u2705 Canal de crafteo configurado en <#${channelId}> \u2014 board y prompt pinneados.`;
 var SETUP_ADMIN_ONLY = "Solo admins pueden ejecutar /craft setup.";
 var CLOSE_ADMIN_ONLY = "Solo el creador o un admin puede cerrar un proyecto.";
@@ -1288,6 +1319,7 @@ var JOB_NAME = {
 };
 
 // src/bot/craftRender.ts
+var ITEMS_BASE_URL = process.env.PROJECTS_BASE_URL ?? "https://qiqirn.tools";
 var JOB_EMOJI = {
   CRP: "\u{1FA9A}",
   BSM: "\u2692\uFE0F",
@@ -1330,7 +1362,8 @@ function taskLine(t) {
     detail = ` \xB7 Nv${t.meta.gatherLevel}`;
     if (t.meta.timed) detail += " \u23F0";
   }
-  return `${done} ${t.qtyNeeded}\xD7 **${t.itemName}** \u2014 ${assignee} ${progress}${detail}`;
+  const itemLink = `[**${t.itemName}**](${ITEMS_BASE_URL}/item/${t.itemId})`;
+  return `${done} ${t.qtyNeeded}\xD7 ${itemLink} \u2014 ${assignee} ${progress}${detail}`;
 }
 function groupBySection(tasks) {
   const groups = /* @__PURE__ */ new Map();
@@ -1558,7 +1591,7 @@ async function handleCraftNew(opts, guildId, channelId, userId, deps) {
   const roleId = opts.pingRole ?? deps.crafterRoleId;
   let content = "";
   if (roleId) content = `<@&${roleId}> `;
-  content += NEW_PROJECT_CONTENT;
+  content += NEW_PROJECT_CONTENT(projectId);
   const announcementMsg = await sendToChannel(deps.botToken, targetChannelId, {
     content,
     embeds,
@@ -2034,7 +2067,7 @@ async function createCraftProjectFromModal(_itemQuery, itemId, qty, label, userI
   const roleId = deps.crafterRoleId;
   let content = "";
   if (roleId) content = `<@&${roleId}> `;
-  content += NEW_PROJECT_CONTENT;
+  content += NEW_PROJECT_CONTENT(projectId);
   const announcementMsg = await sendToChannel(deps.botToken, targetChannelId, {
     content,
     embeds,
@@ -2113,7 +2146,7 @@ async function handleRequestPick(customId, values, userId, guildId, channelId, d
   const roleId = deps.crafterRoleId;
   let content = "";
   if (roleId) content = `<@&${roleId}> `;
-  content += NEW_PROJECT_CONTENT;
+  content += NEW_PROJECT_CONTENT(projectId);
   const announcementMsg = await sendToChannel(deps.botToken, targetChannelId, {
     content,
     embeds,
@@ -2599,6 +2632,23 @@ async function handler(req, res) {
   const host = req.headers["x-forwarded-host"] ?? req.headers.host ?? "localhost";
   const baseUrl = `${proto}://${host}`;
   if (interaction.type === 4) {
+    try {
+      const commandName = interaction.data?.name;
+      const focused = findFocusedOption(interaction.data?.options ?? []);
+      if (commandName === "craft" && focused?.name === "item") {
+        const query = String(focused.value ?? "").trim();
+        const snapshots = await loadSnapshots(baseUrl);
+        const nameIndex = buildNameIndex(snapshots.namesById);
+        const matches = query ? fuzzySearchItems(nameIndex, query, 25) : [];
+        const choices = matches.slice(0, 25).map((m) => ({
+          name: m.name.slice(0, 100),
+          value: m.name.slice(0, 100)
+        }));
+        return res.status(200).json({ type: 8, data: { choices } });
+      }
+    } catch (e) {
+      console.error("[discord] autocomplete error:", e);
+    }
     return res.status(200).json({ type: 8, data: { choices: [] } });
   }
   if (interaction.type === 2) {
@@ -2644,8 +2694,10 @@ async function handler(req, res) {
               const qty = parseInt(subOptions.find((o) => o.name === "qty")?.value ?? "1", 10);
               const name = subOptions.find((o) => o.name === "name")?.value ?? null;
               const pingRole = subOptions.find((o) => o.name === "ping_role")?.value ?? null;
+              const intermediatesRaw = subOptions.find((o) => o.name === "intermediates")?.value;
+              const intermediates = typeof intermediatesRaw === "boolean" ? intermediatesRaw : true;
               response = await handleCraftNew(
-                { item, qty, name, pingRole },
+                { item, qty, name, intermediates, pingRole },
                 guildId,
                 channelId,
                 userId,
@@ -3023,6 +3075,16 @@ ${e instanceof Error ? e.message : String(e)}`);
   } else {
     return res.status(400).json({ error: "Unsupported interaction type" });
   }
+}
+function findFocusedOption(options) {
+  for (const opt of options) {
+    if (opt?.focused) return { name: opt.name, value: opt.value };
+    if (Array.isArray(opt?.options)) {
+      const nested = findFocusedOption(opt.options);
+      if (nested) return nested;
+    }
+  }
+  return null;
 }
 async function editOriginalResponse(appId, interactionToken, data) {
   const BASE2 = "https://discord.com/api/v10";

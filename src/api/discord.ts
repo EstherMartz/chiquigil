@@ -18,7 +18,7 @@ import {
   handleCraftProgressModal,
 } from '../bot/craftInteractions';
 import { loadSnapshots } from '../bot/loadSnapshots';
-import { buildNameIndex } from '../bot/nameIndex';
+import { buildNameIndex, fuzzySearchItems } from '../bot/nameIndex';
 import { openCraftStore } from '../bot/craftStore';
 import { fetchMarketForOutputs } from '../bot/marketFetch';
 import * as discordApi from '../bot/discordApi';
@@ -133,10 +133,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const host = req.headers['x-forwarded-host'] ?? req.headers.host ?? 'localhost';
   const baseUrl = `${proto}://${host}`;
 
-  // Handle autocomplete (synchronous response required)
+  // Handle autocomplete (synchronous response required, 3s deadline)
   if (interaction.type === 4) {
-    // Autocomplete interactions require synchronous response
-    // For now, return empty choices as placeholder
+    try {
+      const commandName = interaction.data?.name;
+      const focused = findFocusedOption(interaction.data?.options ?? []);
+
+      if (commandName === 'craft' && focused?.name === 'item') {
+        const query = String(focused.value ?? '').trim();
+        const snapshots = await loadSnapshots(baseUrl);
+        const nameIndex = buildNameIndex(snapshots.namesById);
+        const matches = query ? fuzzySearchItems(nameIndex, query, 25) : [];
+        const choices = matches.slice(0, 25).map((m) => ({
+          name: m.name.slice(0, 100),
+          value: m.name.slice(0, 100),
+        }));
+        return res.status(200).json({ type: 8, data: { choices } });
+      }
+    } catch (e) {
+      console.error('[discord] autocomplete error:', e);
+    }
     return res.status(200).json({ type: 8, data: { choices: [] } });
   }
 
@@ -193,9 +209,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               const qty = parseInt(subOptions.find((o) => o.name === 'qty')?.value ?? '1', 10);
               const name = subOptions.find((o) => o.name === 'name')?.value ?? null;
               const pingRole = subOptions.find((o) => o.name === 'ping_role')?.value ?? null;
+              const intermediatesRaw = subOptions.find((o) => o.name === 'intermediates')?.value;
+              const intermediates = typeof intermediatesRaw === 'boolean' ? intermediatesRaw : true;
 
               response = await handleCraftNew(
-                { item, qty, name, pingRole },
+                { item, qty, name, intermediates, pingRole },
                 guildId,
                 channelId,
                 userId,
@@ -632,6 +650,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   } else {
     return res.status(400).json({ error: 'Unsupported interaction type' });
   }
+}
+
+function findFocusedOption(options: any[]): { name: string; value: unknown } | null {
+  for (const opt of options) {
+    if (opt?.focused) return { name: opt.name, value: opt.value };
+    if (Array.isArray(opt?.options)) {
+      const nested = findFocusedOption(opt.options);
+      if (nested) return nested;
+    }
+  }
+  return null;
 }
 
 async function editOriginalResponse(

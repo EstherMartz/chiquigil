@@ -4,7 +4,7 @@ import type { SpecialShopSnapshot } from '../lib/specialShopSnapshot';
 import type { GatheringInfo } from '../lib/gatheringCatalog';
 import type { MarketBundle } from '../features/watchlist/useMarketData';
 import { surveyIngredients } from '../features/shoppingList/shoppingListSurvey';
-import { explode, type ExplodeOpts } from './craftExplode';
+import { explode, type ExplodeOpts, type ExplodedCraft } from './craftExplode';
 import type { Breakdown, CraftTask } from './craftTypes';
 
 export interface SourcingDeps {
@@ -108,22 +108,55 @@ export function buildBreakdown(
     return { crafts, acquire };
   }
 
-  // Path B — CompanyCraft fallback: one synthetic workshop task + flat acquire leaves.
+  // Path B — CompanyCraft fallback: synthetic workshop task + per-ingredient
+  // explosion so craftable sub-ingredients (e.g. ingots) surface their own
+  // gatherable leaves instead of getting flattened into "buy on the market".
   const cc = deps.companyCraft.get(targetId);
   if (cc) {
-    const leaves = new Map<number, number>();
+    const craftIntermediates = opts.craftIntermediates ?? true;
+    const allCrafts = new Map<number, ExplodedCraft>();
+    const allLeaves = new Map<number, number>();
+
     for (const ing of cc.ingredients) {
-      leaves.set(ing.itemId, (leaves.get(ing.itemId) ?? 0) + ing.qty * targetQty);
+      const qty = ing.qty * targetQty;
+      if (craftIntermediates && deps.recipes.has(ing.itemId)) {
+        const result = explode(ing.itemId, qty, deps.recipes, opts);
+        for (const [id, c] of result.crafts) {
+          const existing = allCrafts.get(id);
+          if (existing) {
+            existing.outputQty += c.outputQty;
+            existing.craftCount += c.craftCount;
+          } else {
+            allCrafts.set(id, { ...c });
+          }
+        }
+        for (const [id, q] of result.leaves) {
+          allLeaves.set(id, (allLeaves.get(id) ?? 0) + q);
+        }
+      } else {
+        allLeaves.set(ing.itemId, (allLeaves.get(ing.itemId) ?? 0) + qty);
+      }
     }
-    const acquire = sourceLeaves(leaves, market, deps, cheapVendorThreshold);
-    const workshopTask: CraftTask = {
+
+    const acquire = sourceLeaves(allLeaves, market, deps, cheapVendorThreshold);
+    const crafts: CraftTask[] = [{
       itemId: cc.resultItemId,
       itemName: deps.namesById.get(cc.resultItemId) ?? cc.resultName,
       qtyNeeded: targetQty,
       source: 'workshop',
       meta: {},
-    };
-    return { crafts: [workshopTask], acquire };
+    }];
+    for (const [itemId, info] of allCrafts) {
+      const name = deps.namesById.get(itemId) ?? `Item #${itemId}`;
+      crafts.push({
+        itemId,
+        itemName: name,
+        qtyNeeded: info.outputQty,
+        source: 'craft',
+        meta: { job: info.job as CraftTask['meta']['job'] },
+      });
+    }
+    return { crafts, acquire };
   }
 
   // Neither path matches.

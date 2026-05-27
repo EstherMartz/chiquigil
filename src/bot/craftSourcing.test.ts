@@ -91,4 +91,65 @@ describe('buildBreakdown (workshop fallback)', () => {
     expect(out.crafts).toEqual([]);
     expect(out.acquire).toEqual([]);
   });
+
+  it('explodes craftable workshop ingredients so their gatherable leaves surface', () => {
+    // Wall (workshop) needs 2× Ingot. Ingot has a recipe → 1× Ore + 1× Coal.
+    // Ore is gatherable. With craftIntermediates default (true), the Ingot
+    // should appear as a CRAFTEAR step and the Ore should show in RECOLECTAR.
+    const cc: CompanyCraftRecipe = {
+      resultItemId: 200,
+      resultName: 'Stone Wall',
+      ingredients: [{ itemId: 100, qty: 2 }], // 2× Ingot
+    };
+    const deps = emptyDeps({
+      companyCraft: new Map([[200, cc]]),
+      namesById: new Map([
+        [200, 'Stone Wall'],
+        [100, 'Ingot'],
+        [10, 'Ore'],
+        [11, 'Coal'],
+      ]),
+      recipes: new Map([[
+        100,
+        {
+          itemResultId: 100,
+          ingredients: [{ itemId: 10, amount: 1 }, { itemId: 11, amount: 1 }],
+          classJob: 'BSM',
+          amountResult: 1,
+        } as any,
+      ]]),
+      gatheringCatalog: new Map([[10, { level: 50, timed: false } as any]]),
+    });
+    const out = buildBreakdown(200, 1, emptyMarket, deps);
+
+    // Workshop task plus one CRAFTEAR step (Ingot).
+    expect(out.crafts).toHaveLength(2);
+    expect(out.crafts[0].source).toBe('workshop');
+    expect(out.crafts[1]).toMatchObject({ itemId: 100, source: 'craft', qtyNeeded: 2 });
+
+    // Leaves: Ore (gather) + Coal (market — no gathering catalog entry).
+    const ore = out.acquire.find((t) => t.itemId === 10);
+    const coal = out.acquire.find((t) => t.itemId === 11);
+    expect(ore?.source).toBe('gather');
+    expect(coal?.source).toBe('market');
+  });
+
+  it('keeps workshop ingredients as flat leaves when craftIntermediates is false', () => {
+    const cc: CompanyCraftRecipe = {
+      resultItemId: 200,
+      resultName: 'Stone Wall',
+      ingredients: [{ itemId: 100, qty: 2 }],
+    };
+    const deps = emptyDeps({
+      companyCraft: new Map([[200, cc]]),
+      namesById: new Map([[200, 'Stone Wall'], [100, 'Ingot']]),
+      recipes: new Map([[
+        100,
+        { itemResultId: 100, ingredients: [], classJob: 'BSM', amountResult: 1 } as any,
+      ]]),
+    });
+    const out = buildBreakdown(200, 1, emptyMarket, deps, { craftIntermediates: false });
+    expect(out.crafts).toHaveLength(1); // only the workshop task
+    expect(out.acquire[0]).toMatchObject({ itemId: 100, qtyNeeded: 2 });
+  });
 });
