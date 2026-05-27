@@ -16,6 +16,44 @@ import { InfoTooltip } from '../../components/InfoTooltip';
 import { colorFromDelta } from '../../features/sparklines/sparklineColor';
 import { formatSparklineTooltip } from '../../features/sparklines/sparklineTooltip';
 
+type AlertKind = 'crashed' | 'spike' | 'stale' | null;
+
+// Detect alert state from price movement + freshness. Thresholds are chosen
+// to surface real movement (>20% week-over-week) without being noisy.
+function detectAlert(row: WatchlistRow): AlertKind {
+  if (row.delta != null) {
+    if (row.delta <= -20) return 'crashed';
+    if (row.delta >= 20) return 'spike';
+  }
+  if (row.staleDays != null && row.staleDays > 7) return 'stale';
+  return null;
+}
+
+const ALERT_LABEL: Record<Exclude<AlertKind, null>, string> = {
+  crashed: 'crashed',
+  spike: 'spike',
+  stale: 'stale',
+};
+
+const ALERT_CLASS: Record<Exclude<AlertKind, null>, string> = {
+  crashed: 'text-crimson border-crimson/40',
+  spike: 'text-jade border-jade/40',
+  stale: 'text-gold border-gold/40',
+};
+
+// 4-tier profit color ramp, mirroring the design's watchlist proposal:
+//   ≥ 50k → jade (strong play)
+//   ≥  5k → gold (solid)
+//   ≥   0 → cream (neutral)
+//    < 0 → crimson (bleeding)
+function profitTone(profit: number | null): { text: string; bar: string } {
+  if (profit == null) return { text: 'text-text-low', bar: 'bg-border-base' };
+  if (profit >= 50000) return { text: 'text-jade', bar: 'bg-jade' };
+  if (profit >= 5000) return { text: 'text-gold', bar: 'bg-gold' };
+  if (profit >= 0) return { text: 'text-text-cream', bar: 'bg-text-low' };
+  return { text: 'text-crimson', bar: 'bg-crimson' };
+}
+
 const COLS_BASE: { key: SortKey | null; label: string; align?: 'right'; hideOnMobile?: boolean }[] = [
   { key: 'name', label: 'Item' },
   { key: 'crafter', label: 'Craft' },
@@ -87,67 +125,84 @@ export function WatchlistTable({ rows, onSelect, sparklineMap, sparklineLoading 
     );
   }
 
+  const alertsFiring = rows.filter((r) => detectAlert(r) != null).length;
+
   return (
     <div className="border border-border-base bg-bg-card">
-      <div className="flex justify-between items-center px-3 py-2 border-b border-border-base">
-        <div className="text-text-low font-mono text-[11px]">
-          {lm.shown} of {lm.total}
+      <div className="flex justify-between items-center gap-3 px-3 py-2 border-b border-border-base">
+        <div className="flex items-center gap-3 font-mono text-[11px]">
+          <span className="text-text-low">{lm.shown} of {lm.total}</span>
+          {alertsFiring > 0 && (
+            <span className="inline-flex items-center gap-1.5 border border-crimson/40 text-crimson px-2 py-0.5 rounded-sm text-[10px] tracking-widest uppercase">
+              <span aria-hidden className="inline-block w-1.5 h-1.5 rounded-full bg-crimson" />
+              {alertsFiring} alert{alertsFiring === 1 ? '' : 's'} firing
+            </span>
+          )}
         </div>
         <ExportCsvButton rows={rows} columns={WATCHLIST_CSV_COLUMNS} filename={`watchlist-${new Date().toISOString().slice(0, 10)}.csv`} />
       </div>
 
       {/* Mobile card list */}
       <div className="md:hidden divide-y divide-border-base">
-        {lm.visible.map((r) => (
-          <div key={r.id} className="p-3 active:bg-bg-card-hi transition-colors">
-            <div className="flex items-baseline gap-2">
-              <Link
-                to={`/item/${r.id}`}
-                className="text-text-cream hover:text-aether hover:underline decoration-1 underline-offset-4 flex-1 min-w-0 break-words"
-              >
-                {r.name}
-              </Link>
-              <CopyButton text={r.name} />
-              <button
-                onClick={() => onSelect(r.id)}
-                className="font-mono text-text-low hover:text-aether active:text-aether transition-colors shrink-0 px-2 py-2 -mr-2"
-                aria-label="Open per-item settings"
-              >
-                ⚙
-              </button>
-            </div>
-            <div className="font-mono text-[11px] text-text-low mt-1 flex items-center gap-2 flex-wrap">
-              <CraftTag crafter={r.crafter} status={r.craftStatus} />
-              <span>Lv {r.lvl}</span>
-              <span>·</span>
-              <span>{r.cat}{r.subcat ? ` · ${r.subcat}` : ''}</span>
-              {r.staleDays != null && r.staleDays > 3 && (
-                <span className="text-crimson">{r.staleDays.toFixed(0)}d stale</span>
-              )}
-            </div>
-            <div className="grid grid-cols-3 gap-2 mt-2 font-mono text-[12px]">
-              <MobileMetric label="Sale">
-                {r.craftable === false
-                  ? <span className="text-text-low text-[10px] tracking-widest uppercase">sale-only</span>
-                  : r.dcMinHQ ? <>{fmtGil(r.dcMinHQ)}<span className="text-text-low text-[10px] ml-1">HQ</span></>
-                  : r.dcMinNQ ? <>{fmtGil(r.dcMinNQ)}<span className="text-text-low text-[10px] ml-1">NQ</span></>
-                  : <span className="text-text-low">—</span>}
-              </MobileMetric>
-              <MobileMetric label="Profit">
-                {r.craftable === false
-                  ? <span className="text-text-low">—</span>
-                  : r.craftable === null
-                    ? <span className="text-text-low">…</span>
-                    : r.profit != null
-                      ? <span className={r.profit > 0 ? 'text-jade' : 'text-crimson'}>{fmtGil(r.profit)}</span>
+        {lm.visible.map((r) => {
+          const alert = detectAlert(r);
+          const tone = profitTone(r.profit);
+          return (
+            <div key={r.id} className="p-3 pl-2 flex gap-2 active:bg-bg-card-hi transition-colors">
+              <span aria-hidden className={`w-[3px] rounded-sm flex-shrink-0 ${tone.bar}`} />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-baseline gap-2">
+                  <Link
+                    to={`/item/${r.id}`}
+                    className="text-text-cream hover:text-aether hover:underline decoration-1 underline-offset-4 flex-1 min-w-0 break-words"
+                  >
+                    {r.name}
+                  </Link>
+                  <CopyButton text={r.name} />
+                  <button
+                    onClick={() => onSelect(r.id)}
+                    className="font-mono text-text-low hover:text-aether active:text-aether transition-colors shrink-0 px-2 py-2 -mr-2"
+                    aria-label="Open per-item settings"
+                  >
+                    ⚙
+                  </button>
+                </div>
+                <div className="font-mono text-[11px] text-text-low mt-1 flex items-center gap-2 flex-wrap">
+                  <CraftTag crafter={r.crafter} status={r.craftStatus} />
+                  <span>Lv {r.lvl}</span>
+                  <span>·</span>
+                  <span>{r.cat}{r.subcat ? ` · ${r.subcat}` : ''}</span>
+                  {alert && (
+                    <span className={`border ${ALERT_CLASS[alert]} px-1.5 py-0.5 leading-none text-[9px] tracking-widest uppercase rounded-sm`}>
+                      {ALERT_LABEL[alert]}
+                    </span>
+                  )}
+                </div>
+                <div className="grid grid-cols-3 gap-2 mt-2 font-mono text-[12px]">
+                  <MobileMetric label="Sale">
+                    {r.craftable === false
+                      ? <span className="text-text-low text-[10px] tracking-widest uppercase">sale-only</span>
+                      : r.dcMinHQ ? <>{fmtGil(r.dcMinHQ)}<span className="text-text-low text-[10px] ml-1">HQ</span></>
+                      : r.dcMinNQ ? <>{fmtGil(r.dcMinNQ)}<span className="text-text-low text-[10px] ml-1">NQ</span></>
                       : <span className="text-text-low">—</span>}
-              </MobileMetric>
-              <MobileMetric label="Gil/day">
-                {r.gilPerDay != null ? fmtGil(Math.round(r.gilPerDay)) : <span className="text-text-low">—</span>}
-              </MobileMetric>
+                  </MobileMetric>
+                  <MobileMetric label="Profit">
+                    {r.craftable === false
+                      ? <span className="text-text-low">—</span>
+                      : r.craftable === null
+                        ? <span className="text-text-low">…</span>
+                        : r.profit != null
+                          ? <span className={tone.text}>{fmtGil(r.profit)}</span>
+                          : <span className="text-text-low">—</span>}
+                  </MobileMetric>
+                  <MobileMetric label="Gil/day">
+                    {r.gilPerDay != null ? fmtGil(Math.round(r.gilPerDay)) : <span className="text-text-low">—</span>}
+                  </MobileMetric>
+                </div>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="hidden md:block overflow-x-auto">
@@ -175,31 +230,44 @@ export function WatchlistTable({ rows, onSelect, sparklineMap, sparklineLoading 
           </tr>
         </thead>
         <tbody>
-          {lm.visible.map((r) => (
+          {lm.visible.map((r) => {
+            const alert = detectAlert(r);
+            const tone = profitTone(r.profit);
+            return (
             <tr key={r.id} className="border-t border-border-base hover:bg-bg-card-hi active:bg-bg-card-hi transition-colors">
-              <td className={`px-3 ${rowY}`}>
-                <div className="flex items-baseline gap-2">
-                  <Link
-                    to={`/item/${r.id}`}
-                    className="text-text-cream hover:text-aether hover:underline decoration-1 underline-offset-4 text-left"
-                  >
-                    {r.name}
-                  </Link>
-                  <CopyButton text={r.name} />
-                  <button
-                    onClick={() => onSelect(r.id)}
-                    className="font-mono text-[10px] text-text-low hover:text-aether transition-colors shrink-0"
-                    title="Per-item recipe settings (craft intermediates, craft time, history)"
-                    aria-label="Open per-item settings"
-                  >
-                    ⚙
-                  </button>
-                </div>
-                <div className="font-mono text-[10px] text-text-low mt-0.5">
-                  {r.cat}{r.subcat ? ` · ${r.subcat}` : ''}
-                  {r.staleDays != null && r.staleDays > 3 && (
-                    <span className="text-crimson ml-2">{r.staleDays.toFixed(0)}d stale</span>
-                  )}
+              <td className={`pl-2 pr-3 ${rowY}`}>
+                <div className="flex items-stretch gap-2">
+                  <span aria-hidden className={`w-[3px] rounded-sm flex-shrink-0 self-stretch ${tone.bar}`} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline gap-2 flex-wrap">
+                      <Link
+                        to={`/item/${r.id}`}
+                        className="text-text-cream hover:text-aether hover:underline decoration-1 underline-offset-4 text-left"
+                      >
+                        {r.name}
+                      </Link>
+                      <CopyButton text={r.name} />
+                      <button
+                        onClick={() => onSelect(r.id)}
+                        className="font-mono text-[10px] text-text-low hover:text-aether transition-colors shrink-0"
+                        title="Per-item recipe settings (craft intermediates, craft time, history)"
+                        aria-label="Open per-item settings"
+                      >
+                        ⚙
+                      </button>
+                      {alert && (
+                        <span className={`border ${ALERT_CLASS[alert]} px-1.5 py-0.5 leading-none text-[9px] tracking-widest uppercase rounded-sm`}>
+                          {ALERT_LABEL[alert]}
+                        </span>
+                      )}
+                    </div>
+                    <div className="font-mono text-[10px] text-text-low mt-0.5">
+                      {r.cat}{r.subcat ? ` · ${r.subcat}` : ''}
+                      {r.staleDays != null && r.staleDays > 3 && (
+                        <span className="text-crimson ml-2">{r.staleDays.toFixed(0)}d stale</span>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </td>
               <td className={`px-3 ${rowY}`}><CraftTag crafter={r.crafter} status={r.craftStatus} /></td>
@@ -233,7 +301,7 @@ export function WatchlistTable({ rows, onSelect, sparklineMap, sparklineLoading 
                   : r.craftable === null
                     ? <span className="text-text-low">…</span>
                     : r.profit != null
-                      ? <span className={r.profit > 0 ? 'text-jade' : 'text-crimson'}>{fmtGil(r.profit)}</span>
+                      ? <span className={tone.text}>{fmtGil(r.profit)}</span>
                       : <span className="text-text-low">—</span>}
               </td>
               <td className={`px-3 ${rowY} font-mono text-right`}>
@@ -241,7 +309,8 @@ export function WatchlistTable({ rows, onSelect, sparklineMap, sparklineLoading 
               </td>
               <td className={`px-3 ${rowY} font-mono text-right hidden md:table-cell`}>{r.dcSpd.toFixed(1)}</td>
             </tr>
-          ))}
+            );
+          })}
         </tbody>
         </table>
       </div>
