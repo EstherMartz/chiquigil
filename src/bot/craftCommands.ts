@@ -54,7 +54,7 @@ export async function handleCraftNew(
   console.log(`[craft] new project: ${projectName} (item ${itemId}, qty ${opts.qty})`);
 
   // Run breakdown
-  const { recipes, namesById, vendorMap, specialShop, gatheringCatalog } = deps.snapshots;
+  const { recipes, namesById, vendorMap, specialShop, gatheringCatalog, companyCraft } = deps.snapshots;
 
   const preExplode = explode(itemId, opts.qty, recipes, { craftIntermediates });
   const allLeafIds = [...preExplode.leaves.keys()];
@@ -66,7 +66,7 @@ export async function handleCraftNew(
     itemId,
     opts.qty,
     market,
-    { recipes, namesById, vendorMap, specialShop, gatheringCatalog },
+    { recipes, namesById, vendorMap, specialShop, gatheringCatalog, companyCraft },
     { craftIntermediates },
   );
 

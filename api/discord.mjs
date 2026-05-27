@@ -1140,11 +1140,8 @@ function explode(targetId, targetQty, recipes, opts = {}) {
 }
 
 // src/bot/craftSourcing.ts
-function buildBreakdown(targetId, targetQty, market, deps, opts = {}) {
-  const cheapVendorThreshold = opts.cheapVendorThreshold ?? 100;
-  const { crafts: craftMap, leaves } = explode(targetId, targetQty, deps.recipes, opts);
-  const dcPrices = market.dc;
-  const survey = surveyIngredients(leaves, dcPrices, deps.vendorMap, deps.specialShop);
+function sourceLeaves(leaves, market, deps, cheapVendorThreshold) {
+  const survey = surveyIngredients(leaves, market.dc, deps.vendorMap, deps.specialShop);
   const acquire = [];
   for (const s of survey) {
     const name = deps.namesById.get(s.id) ?? `Item #${s.id}`;
@@ -1184,18 +1181,43 @@ function buildBreakdown(targetId, targetQty, market, deps, opts = {}) {
       });
     }
   }
-  const crafts = [];
-  for (const [itemId, info] of craftMap) {
-    const name = deps.namesById.get(itemId) ?? `Item #${itemId}`;
-    crafts.push({
-      itemId,
-      itemName: name,
-      qtyNeeded: info.outputQty,
-      source: "craft",
-      meta: { job: info.job }
-    });
+  return acquire;
+}
+function buildBreakdown(targetId, targetQty, market, deps, opts = {}) {
+  const cheapVendorThreshold = opts.cheapVendorThreshold ?? 100;
+  if (deps.recipes.get(targetId)) {
+    const { crafts: craftMap, leaves } = explode(targetId, targetQty, deps.recipes, opts);
+    const acquire = sourceLeaves(leaves, market, deps, cheapVendorThreshold);
+    const crafts = [];
+    for (const [itemId, info] of craftMap) {
+      const name = deps.namesById.get(itemId) ?? `Item #${itemId}`;
+      crafts.push({
+        itemId,
+        itemName: name,
+        qtyNeeded: info.outputQty,
+        source: "craft",
+        meta: { job: info.job }
+      });
+    }
+    return { crafts, acquire };
   }
-  return { crafts, acquire };
+  const cc = deps.companyCraft.get(targetId);
+  if (cc) {
+    const leaves = /* @__PURE__ */ new Map();
+    for (const ing of cc.ingredients) {
+      leaves.set(ing.itemId, (leaves.get(ing.itemId) ?? 0) + ing.qty * targetQty);
+    }
+    const acquire = sourceLeaves(leaves, market, deps, cheapVendorThreshold);
+    const workshopTask = {
+      itemId: cc.resultItemId,
+      itemName: deps.namesById.get(cc.resultItemId) ?? cc.resultName,
+      qtyNeeded: targetQty,
+      source: "workshop",
+      meta: {}
+    };
+    return { crafts: [workshopTask], acquire };
+  }
+  return { crafts: [], acquire: [] };
 }
 
 // src/bot/craftStrings.ts
@@ -1212,6 +1234,7 @@ var REQUEST_TITLE = "\u{1F6E0} Pedir un crafteo";
 var REQUEST_DESCRIPTION = "\xBFNecesitas craftear algo? Pulsa el bot\xF3n de abajo para pedirlo y el bot lo desglosar\xE1 en tareas que la guild podr\xE1 reclamar.";
 var REQUEST_BUTTON = "Pedir un crafteo";
 var SECTION_CRAFT = "CRAFTEAR";
+var SECTION_WORKSHOP = "\u{1F6E0} TALLER DE LA CL";
 var SECTION_MARKET = "\u{1FA99} COMPRAR \u2014 Mercado";
 var SECTION_VENDOR = "\u{1F3EA} COMPRAR \u2014 Vendedor PNJ";
 var SECTION_CURRENCY = "\u{1F4A0} COMPRAR \u2014 Divisa";
@@ -1278,6 +1301,7 @@ var JOB_EMOJI = {
 };
 var SOURCE_EMOJI = {
   craft: "\u{1F528}",
+  workshop: "\u{1F6E0}",
   market: "\u{1FA99}",
   vendor: "\u{1F3EA}",
   currency: "\u{1F4A0}",
@@ -1316,6 +1340,8 @@ function groupBySection(tasks) {
       const job = t.meta?.job ?? "ANY";
       const jobName = JOB_NAME[job] ?? job;
       key = `${SECTION_CRAFT} \u2014 ${JOB_EMOJI[job] ?? "\u{1F528}"} ${jobName}`;
+    } else if (t.source === "workshop") {
+      key = SECTION_WORKSHOP;
     } else if (t.source === "market") {
       key = SECTION_MARKET;
     } else if (t.source === "vendor") {
@@ -1497,7 +1523,7 @@ async function handleCraftNew(opts, guildId, channelId, userId, deps) {
   const projectName = opts.name ?? `${opts.qty}\xD7 ${itemName}`;
   const craftIntermediates = opts.intermediates ?? true;
   console.log(`[craft] new project: ${projectName} (item ${itemId}, qty ${opts.qty})`);
-  const { recipes, namesById, vendorMap, specialShop, gatheringCatalog } = deps.snapshots;
+  const { recipes, namesById, vendorMap, specialShop, gatheringCatalog, companyCraft } = deps.snapshots;
   const preExplode = explode(itemId, opts.qty, recipes, { craftIntermediates });
   const allLeafIds = [...preExplode.leaves.keys()];
   console.log(`[craft] using pre-fetched market for ${allLeafIds.length} leaf items\u2026`);
@@ -1506,7 +1532,7 @@ async function handleCraftNew(opts, guildId, channelId, userId, deps) {
     itemId,
     opts.qty,
     market,
-    { recipes, namesById, vendorMap, specialShop, gatheringCatalog },
+    { recipes, namesById, vendorMap, specialShop, gatheringCatalog, companyCraft },
     { craftIntermediates }
   );
   const allTasks = [...breakdown.crafts, ...breakdown.acquire];
@@ -1974,7 +2000,7 @@ async function handleCraftRequestModal(fields, userId, guildId, channelId, deps)
 async function createCraftProjectFromModal(_itemQuery, itemId, qty, label, userId, guildId, channelId, deps) {
   const itemName = deps.snapshots.namesById.get(itemId) ?? `Item #${itemId}`;
   const projectName = label ?? `${qty}\xD7 ${itemName}`;
-  const { recipes, namesById, vendorMap, specialShop, gatheringCatalog } = deps.snapshots;
+  const { recipes, namesById, vendorMap, specialShop, gatheringCatalog, companyCraft } = deps.snapshots;
   const preExplode = explode(itemId, qty, recipes, { craftIntermediates: true });
   const allLeafIds = [...preExplode.leaves.keys()];
   const market = await deps.fetchMarket(allLeafIds, { world: deps.world, dc: deps.dc, region: deps.region });
@@ -1982,7 +2008,7 @@ async function createCraftProjectFromModal(_itemQuery, itemId, qty, label, userI
     itemId,
     qty,
     market,
-    { recipes, namesById, vendorMap, specialShop, gatheringCatalog },
+    { recipes, namesById, vendorMap, specialShop, gatheringCatalog, companyCraft },
     { craftIntermediates: true }
   );
   const allTasks = [...breakdown.crafts, ...breakdown.acquire];
@@ -2053,7 +2079,7 @@ async function handleRequestPick(customId, values, userId, guildId, channelId, d
   }
   const itemName = deps.snapshots.namesById.get(itemId) ?? `Item #${itemId}`;
   const projectName = label ?? `${qty}\xD7 ${itemName}`;
-  const { recipes, namesById, vendorMap, specialShop, gatheringCatalog } = deps.snapshots;
+  const { recipes, namesById, vendorMap, specialShop, gatheringCatalog, companyCraft } = deps.snapshots;
   const preExplode = explode(itemId, qty, recipes, { craftIntermediates: true });
   const allLeafIds = [...preExplode.leaves.keys()];
   const market = await deps.fetchMarket(allLeafIds, { world: deps.world, dc: deps.dc, region: deps.region });
@@ -2061,7 +2087,7 @@ async function handleRequestPick(customId, values, userId, guildId, channelId, d
     itemId,
     qty,
     market,
-    { recipes, namesById, vendorMap, specialShop, gatheringCatalog },
+    { recipes, namesById, vendorMap, specialShop, gatheringCatalog, companyCraft },
     { craftIntermediates: true }
   );
   const allTasks = [...breakdown.crafts, ...breakdown.acquire];
@@ -2160,12 +2186,13 @@ async function handleCraftProgressModal(customId, fields, userId, guildId, _mess
 var cached = null;
 async function loadSnapshots(baseUrl) {
   if (cached) return cached;
-  const [itemsRaw, recipesRaw, vendorRaw, specialRaw, gatherRaw] = await Promise.all([
+  const [itemsRaw, recipesRaw, vendorRaw, specialRaw, gatherRaw, companyCraftRaw] = await Promise.all([
     fetch(`${baseUrl}/data/snapshots/items.json`).then((r) => r.json()),
     fetch(`${baseUrl}/data/snapshots/recipes.json`).then((r) => r.json()),
     fetch(`${baseUrl}/data/snapshots/vendorShop.json`).then((r) => r.json()),
     fetch(`${baseUrl}/data/snapshots/specialShop.json`).then((r) => r.json()),
-    fetch(`${baseUrl}/data/snapshots/gathering.json`).then((r) => r.json())
+    fetch(`${baseUrl}/data/snapshots/gathering.json`).then((r) => r.json()),
+    fetch(`${baseUrl}/data/snapshots/companyCraft.json`).then((r) => r.json())
   ]);
   const itemsById = /* @__PURE__ */ new Map();
   const namesById = /* @__PURE__ */ new Map();
@@ -2192,7 +2219,11 @@ async function loadSnapshots(baseUrl) {
   for (const [id, info] of gatherRaw.entries) {
     gatheringCatalog.set(id, info);
   }
-  cached = { itemsById, namesById, recipes, vendorMap, specialShop, gatheringCatalog };
+  const companyCraft = /* @__PURE__ */ new Map();
+  for (const [id, recipe] of companyCraftRaw.entries) {
+    companyCraft.set(id, recipe);
+  }
+  cached = { itemsById, namesById, recipes, vendorMap, specialShop, gatheringCatalog, companyCraft };
   return cached;
 }
 
