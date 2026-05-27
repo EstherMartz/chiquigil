@@ -7,7 +7,11 @@
 import { fetchXivapiPage, nextCursor } from './xivapiRetry';
 
 const BASE = (import.meta.env?.VITE_XIVAPI_BASE as string | undefined) ?? 'https://v2.xivapi.com';
-const PAGE_SIZE = 100;
+// XIVAPI v2 caps responses at ~20k expanded rows. Each sequence expands to up
+// to 8 parts × 3 processes × 12 supply items × 2 (SupplyItem + nested Item)
+// ≈ 576 rows, so 25 sequences per page sits safely under the budget.
+// limit ≥ 50 fails with HTTP 400 ("would require processing over 20,000 rows").
+const PAGE_SIZE = 25;
 
 // Deep field selector. Each level uses `[].sub` for array nesting.
 const FIELDS = [

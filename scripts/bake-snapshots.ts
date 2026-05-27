@@ -18,6 +18,7 @@ import { fetchQuestSnapshot } from '../src/lib/questSnapshot';
 import { fetchVendorSnapshot } from '../src/lib/vendorShopSnapshot';
 import { fetchSpecialShopSnapshot } from '../src/lib/specialShopSnapshot';
 import { buildGatheringCatalog } from '../src/lib/gatheringCatalog';
+import { fetchCompanyCraftSnapshot } from '../src/lib/companyCraftSnapshot';
 import { currencyByItemId } from '../src/lib/currencies';
 
 const OUT_DIR = join(process.cwd(), 'public', 'data', 'snapshots');
@@ -103,25 +104,45 @@ async function bakeQuests(bakedAt: number) {
   return quests.length;
 }
 
+async function bakeCompanyCraft(bakedAt: number, namesById: Map<number, string>) {
+  log('companyCraft', 'fetching XIVAPI CompanyCraftSequence sheet…');
+  const map = await fetchCompanyCraftSnapshot(namesById, {
+    onProgress: (n) => process.stdout.write(`\r[companyCraft] ${n} sequences…`),
+  });
+  process.stdout.write('\n');
+  await writeFile(
+    join(OUT_DIR, 'companyCraft.json'),
+    JSON.stringify({ bakedAt, entries: [...map.entries()] }),
+  );
+  log('companyCraft', `wrote ${map.size} sequences`);
+  return map.size;
+}
+
 async function main() {
   await mkdir(OUT_DIR, { recursive: true });
   const bakedAt = Date.now();
   const bakedAtIso = new Date(bakedAt).toISOString();
 
-  const [items, recipes, leves, vendor, special, gathering, quests] = [
-    await bakeItems(bakedAt),
-    await bakeRecipes(bakedAt),
-    await bakeLeves(bakedAt),
-    await bakeVendor(bakedAt),
-    await bakeSpecialShop(bakedAt),
-    await bakeGathering(bakedAt),
-    await bakeQuests(bakedAt),
-  ];
+  const items = await bakeItems(bakedAt);
+  const recipes = await bakeRecipes(bakedAt);
+  const leves = await bakeLeves(bakedAt);
+  const vendor = await bakeVendor(bakedAt);
+  const special = await bakeSpecialShop(bakedAt);
+  const gathering = await bakeGathering(bakedAt);
+  const quests = await bakeQuests(bakedAt);
+
+  // Read baked items back to build names map for CompanyCraft.
+  const { readFile } = await import('node:fs/promises');
+  const itemsRaw = JSON.parse(await readFile(join(OUT_DIR, 'items.json'), 'utf-8')) as {
+    items: Array<{ id: number; name: string }>;
+  };
+  const namesById = new Map<number, string>(itemsRaw.items.map((i) => [i.id, i.name]));
+  const companyCraft = await bakeCompanyCraft(bakedAt, namesById);
 
   const manifest = {
     bakedAt,
     bakedAtIso,
-    counts: { items, recipes, leves, vendorShop: vendor, specialShop: special, gathering, quests },
+    counts: { items, recipes, leves, vendorShop: vendor, specialShop: special, gathering, quests, companyCraft },
   };
   await writeFile(join(OUT_DIR, 'manifest.json'), JSON.stringify(manifest, null, 2));
   log('manifest', `bake complete at ${bakedAtIso}`);
