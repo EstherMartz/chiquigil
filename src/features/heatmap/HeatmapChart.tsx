@@ -1,34 +1,38 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { squarify } from './squarify';
-import type { HeatmapCell } from './buildHeatmapData';
+import type { HeatmapCell, CellKind, CellTier } from './buildHeatmapData';
 import { fmtGil, garlandItemUrl, gamerEscapeItemUrl, universalisItemUrl } from '../../lib/format';
 import { CopyButton } from '../../components/CopyButton';
 
 const CHART_HEIGHT = 520;
 
-function marginColor(margin: number): string {
-  const clamped = Math.max(0, Math.min(1, (margin + 0.1) / 0.6));
-  if (clamped < 0.5) {
-    const t = clamped * 2;
-    const r = 200;
-    const g = Math.round(80 + t * 140);
-    const b = Math.round(40 + t * 10);
-    return `rgb(${r},${g},${b})`;
-  }
-  const t = (clamped - 0.5) * 2;
-  const r = Math.round(200 - t * 140);
-  const g = Math.round(220 - t * 30);
-  const b = Math.round(50 + t * 50);
-  return `rgb(${r},${g},${b})`;
-}
+// Base hex color per play kind — matches the design tokens (gold/jade/aether/crimson).
+const KIND_BASE: Record<CellKind, string> = {
+  craft:  '#d4a857',
+  vendor: '#7ab06f',
+  gather: '#c2683a',
+  flip:   '#7a8cc2',
+};
 
-function velocityColor(velocity: number, maxVelocity: number): string {
-  const t = maxVelocity > 0 ? Math.min(1, velocity / maxVelocity) : 0;
-  const r = Math.round(60 + t * 10);
-  const g = Math.round(80 + t * 40);
-  const b = Math.round(120 + t * 100);
-  return `rgb(${r},${g},${b})`;
+// Brightness alpha (00..ff hex) per tier — S is brightest, D is faintest.
+const TIER_ALPHA: Record<CellTier, string> = {
+  S: 'cc',
+  A: '99',
+  B: '66',
+  C: '40',
+  D: '20',
+};
+
+const KIND_LABEL: Record<CellKind, string> = {
+  craft:  'Craft-flip',
+  vendor: 'Vendor flip',
+  gather: 'Gathering',
+  flip:   'Cross-world / currency',
+};
+
+function tileColor(kind: CellKind, tier: CellTier): string {
+  return KIND_BASE[kind] + TIER_ALPHA[tier];
 }
 
 export function HeatmapChart({ cells }: { cells: HeatmapCell[] }) {
@@ -47,8 +51,6 @@ export function HeatmapChart({ cells }: { cells: HeatmapCell[] }) {
     return () => ro.disconnect();
   }, []);
 
-  const maxVelocity = useMemo(() => Math.max(...cells.map((c) => c.velocity), 1), [cells]);
-
   const rects = useMemo(
     () => squarify(cells.map((c) => ({ id: c.id, area: c.area })), containerWidth, CHART_HEIGHT),
     [cells, containerWidth],
@@ -64,6 +66,19 @@ export function HeatmapChart({ cells }: { cells: HeatmapCell[] }) {
 
   return (
     <div className="space-y-3">
+      {/* Legend: hue = kind */}
+      <div className="flex items-center gap-4 flex-wrap font-mono text-[10px] text-text-low">
+        <span className="tracking-widest uppercase">Color:</span>
+        {(['craft', 'vendor', 'gather', 'flip'] as CellKind[]).map((k) => (
+          <span key={k} className="flex items-center gap-1.5 text-text-dim">
+            <span className="inline-block w-3 h-3 rounded-sm" style={{ background: KIND_BASE[k] }} />
+            {KIND_LABEL[k]}
+          </span>
+        ))}
+        <span className="flex-1" />
+        <span className="tracking-widest uppercase">Size = velocity · Brightness = margin tier</span>
+      </div>
+
       <div
         ref={containerRef}
         className="relative border border-border-base bg-bg-deep overflow-hidden"
@@ -72,9 +87,7 @@ export function HeatmapChart({ cells }: { cells: HeatmapCell[] }) {
         {rects.map((r) => {
           const cell = cellById.get(r.id);
           if (!cell) return null;
-          const bg = cell.craftable && cell.margin != null
-            ? marginColor(cell.margin)
-            : velocityColor(cell.velocity, maxVelocity);
+          const bg = tileColor(cell.kind, cell.tier);
           const showLabel = r.w > 50 && r.h > 28;
           const showPrice = r.w > 70 && r.h > 44;
           const isSelected = r.id === selectedId;
@@ -90,7 +103,7 @@ export function HeatmapChart({ cells }: { cells: HeatmapCell[] }) {
                 backgroundColor: bg,
               }}
               onClick={() => setSelectedId(r.id === selectedId ? null : r.id)}
-              title={cell.name}
+              title={`${cell.name} · ${KIND_LABEL[cell.kind]} · ${fmtGil(Math.round(cell.salePrice * cell.velocity))} gil/day`}
             >
               {showLabel && (
                 <span className="text-[10px] font-mono leading-tight text-white/90 truncate drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)]">
@@ -113,24 +126,28 @@ export function HeatmapChart({ cells }: { cells: HeatmapCell[] }) {
             <div className="flex items-center gap-2">
               <span className="font-display text-lg text-text-cream">{selected.name}</span>
               <CopyButton text={selected.name} />
+              <span className="font-mono text-[10px] tracking-widest uppercase border px-2 py-0.5 rounded-sm"
+                    style={{ color: KIND_BASE[selected.kind], borderColor: KIND_BASE[selected.kind] + '66' }}>
+                {KIND_LABEL[selected.kind]}
+              </span>
             </div>
             <dl className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-1 font-mono text-xs">
               <div>
                 <dt className="text-text-low">Price</dt>
-                <dd className="text-text-cream">{fmtGil(selected.salePrice)}</dd>
+                <dd className="text-text-cream tabular-nums">{fmtGil(selected.salePrice)}</dd>
               </div>
               <div>
                 <dt className="text-text-low">Velocity</dt>
-                <dd className="text-text-cream">{selected.velocity.toFixed(1)}/day</dd>
+                <dd className="text-text-cream tabular-nums">{selected.velocity.toFixed(1)}/day</dd>
               </div>
               <div>
-                <dt className="text-text-low">Daily revenue</dt>
-                <dd className="text-gold">{fmtGil(Math.round(selected.salePrice * selected.velocity))}</dd>
+                <dt className="text-text-low">Gil/day</dt>
+                <dd className="text-gold tabular-nums">{fmtGil(Math.round(selected.salePrice * selected.velocity))}</dd>
               </div>
               {selected.margin != null && (
                 <div>
                   <dt className="text-text-low">Margin</dt>
-                  <dd className={selected.margin > 0.2 ? 'text-jade' : selected.margin > 0 ? 'text-text-cream' : 'text-red-400'}>
+                  <dd className={`tabular-nums ${selected.margin > 0.2 ? 'text-jade' : selected.margin > 0 ? 'text-text-cream' : 'text-crimson'}`}>
                     {(selected.margin * 100).toFixed(0)}%
                   </dd>
                 </div>
@@ -142,9 +159,9 @@ export function HeatmapChart({ cells }: { cells: HeatmapCell[] }) {
               to={`/item/${selected.id}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="font-mono text-[10px] tracking-widest uppercase border border-border-base text-aether px-3 py-2 hover:border-aether transition-colors"
+              className="font-mono text-[10px] tracking-widest uppercase bg-gold text-bg-deep px-3 py-2 hover:opacity-90 transition-opacity"
             >
-              Item page ↗
+              Open item page →
             </Link>
             <a
               href={gamerEscapeItemUrl(selected.name)}
@@ -178,3 +195,5 @@ export function HeatmapChart({ cells }: { cells: HeatmapCell[] }) {
     </div>
   );
 }
+
+export { KIND_BASE, KIND_LABEL };

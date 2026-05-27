@@ -5,6 +5,8 @@ import type { Recipe } from '../../lib/recipes';
 const MIN_VELOCITY = 0.1;
 
 export type CellTag = 'craftable' | 'gatherable' | 'vendor' | 'currency' | 'material' | 'consumable' | 'equipment';
+export type CellKind = 'craft' | 'vendor' | 'gather' | 'flip';
+export type CellTier = 'S' | 'A' | 'B' | 'C' | 'D';
 
 export interface HeatmapCell {
   id: number;
@@ -15,6 +17,10 @@ export interface HeatmapCell {
   margin: number | null;
   craftable: boolean;
   tags: Set<CellTag>;
+  /** Primary play kind, drives hue in the chart and leaderboard accent. */
+  kind: CellKind;
+  /** Margin (or velocity, for non-craftables) bucket, drives chart brightness. */
+  tier: CellTier;
 }
 
 export interface HeatmapSourceSets {
@@ -37,6 +43,35 @@ function ingredientCost(recipe: Recipe, market: MarketData): number | null {
     total += price * ing.amount;
   }
   return total;
+}
+
+// Pick the dominant play kind for the cell. Vendor wins over craft because NPC
+// arbitrage is rare and high-signal; gather wins over flip for the same reason.
+function classifyKind(args: { craftable: boolean; isVendor: boolean; isGather: boolean }): CellKind {
+  if (args.isVendor) return 'vendor';
+  if (args.craftable) return 'craft';
+  if (args.isGather) return 'gather';
+  return 'flip';
+}
+
+// Margin tiers for craftables; for non-craftables we use velocity-relative tiering
+// (computed in a second pass since it depends on the population).
+function marginTier(margin: number): CellTier {
+  if (margin >= 0.40) return 'S';
+  if (margin >= 0.25) return 'A';
+  if (margin >= 0.10) return 'B';
+  if (margin >= 0)    return 'C';
+  return 'D';
+}
+
+function velocityTier(velocity: number, p90: number): CellTier {
+  if (p90 <= 0) return 'C';
+  const ratio = velocity / p90;
+  if (ratio >= 1)    return 'S';
+  if (ratio >= 0.6)  return 'A';
+  if (ratio >= 0.3)  return 'B';
+  if (ratio >= 0.1)  return 'C';
+  return 'D';
 }
 
 // Item search category groups for tagging
@@ -70,12 +105,17 @@ export function buildHeatmapCells(
 
     const tags = new Set<CellTag>();
     if (craftable) tags.add('craftable');
-    if (sources.gatherableIds?.has(item.id)) tags.add('gatherable');
-    if (sources.vendorIds?.has(item.id)) tags.add('vendor');
-    if (sources.currencyIds?.has(item.id)) tags.add('currency');
+    const isGather = !!sources.gatherableIds?.has(item.id);
+    const isVendor = !!sources.vendorIds?.has(item.id);
+    const isCurrency = !!sources.currencyIds?.has(item.id);
+    if (isGather) tags.add('gatherable');
+    if (isVendor) tags.add('vendor');
+    if (isCurrency) tags.add('currency');
     if (MATERIAL_SCS.has(item.sc)) tags.add('material');
     if (CONSUMABLE_SCS.has(item.sc)) tags.add('consumable');
     if (EQUIPMENT_SCS.has(item.sc)) tags.add('equipment');
+
+    const kind = classifyKind({ craftable, isVendor, isGather });
 
     out.push({
       id: item.id,
@@ -86,7 +126,26 @@ export function buildHeatmapCells(
       margin,
       craftable,
       tags,
+      kind,
+      // Tier filled in after we know the population's velocity distribution.
+      tier: 'C',
     });
   }
+
+  // Second pass: assign tiers. Craftables use margin tier; everything else
+  // uses a velocity tier relative to the 90th percentile of non-craftables,
+  // so a tiny-but-busy market doesn't all collapse to "D".
+  const nonCraftVels = out.filter((c) => !c.craftable).map((c) => c.velocity).sort((a, b) => a - b);
+  const p90Idx = Math.floor(nonCraftVels.length * 0.9);
+  const p90 = nonCraftVels[p90Idx] ?? 0;
+
+  for (const c of out) {
+    if (c.craftable && c.margin != null) {
+      c.tier = marginTier(c.margin);
+    } else {
+      c.tier = velocityTier(c.velocity, p90);
+    }
+  }
+
   return out;
 }

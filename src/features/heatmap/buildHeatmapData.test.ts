@@ -76,4 +76,64 @@ describe('buildHeatmapCells', () => {
     const cells = buildHeatmapCells(items, market, recipes);
     expect(cells[0].margin).toBeNull();
   });
+
+  it('classifies craftable items as kind=craft', () => {
+    const items = [mkItem(200, 'Iron Ingot')];
+    const market = {
+      '200': mkMarket({ medianNQ: 500, velocity: 3 }),
+      '100': mkMarket({ minNQ: 100 }),
+    };
+    const recipes = new Map<number, Recipe>([
+      [200, { itemResultId: 200, classJob: 'BSM', recipeLevel: 10, ingredients: [{ itemId: 100, amount: 3 }] }],
+    ]);
+    const cells = buildHeatmapCells(items, market, recipes);
+    expect(cells[0].kind).toBe('craft');
+  });
+
+  it('classifies vendor-source items as kind=vendor regardless of craftability', () => {
+    const items = [mkItem(300, 'Allagan Catalyst')];
+    const market = { '300': mkMarket({ velocity: 2 }) };
+    const cells = buildHeatmapCells(items, market, new Map(), { vendorIds: new Set([300]) });
+    expect(cells[0].kind).toBe('vendor');
+  });
+
+  it('classifies gatherable, non-craftable items as kind=gather', () => {
+    const items = [mkItem(400, 'Cobalt Ore')];
+    const market = { '400': mkMarket({ velocity: 4 }) };
+    const cells = buildHeatmapCells(items, market, new Map(), { gatherableIds: new Set([400]) });
+    expect(cells[0].kind).toBe('gather');
+  });
+
+  it('falls back to kind=flip for items without a source classification', () => {
+    const items = [mkItem(500, 'Mystery Item')];
+    const market = { '500': mkMarket({ velocity: 1 }) };
+    const cells = buildHeatmapCells(items, market, new Map());
+    expect(cells[0].kind).toBe('flip');
+  });
+
+  it('assigns margin tier S to craftables with margin ≥ 40%', () => {
+    const items = [mkItem(200, 'Strong Profit Ingot')];
+    const market = {
+      '200': mkMarket({ medianNQ: 1000, velocity: 3 }),
+      '100': mkMarket({ minNQ: 50 }), // 50 * 3 = 150 cost vs 1000 sale → 85% margin
+    };
+    const recipes = new Map<number, Recipe>([
+      [200, { itemResultId: 200, classJob: 'BSM', recipeLevel: 10, ingredients: [{ itemId: 100, amount: 3 }] }],
+    ]);
+    const cells = buildHeatmapCells(items, market, recipes);
+    expect(cells[0].tier).toBe('S');
+  });
+
+  it('assigns tier D to craftables that lose money', () => {
+    const items = [mkItem(200, 'Loss Ingot')];
+    const market = {
+      '200': mkMarket({ medianNQ: 100, velocity: 3 }),
+      '100': mkMarket({ minNQ: 200 }), // cost 600 > sale 100 → −500% margin
+    };
+    const recipes = new Map<number, Recipe>([
+      [200, { itemResultId: 200, classJob: 'BSM', recipeLevel: 10, ingredients: [{ itemId: 100, amount: 3 }] }],
+    ]);
+    const cells = buildHeatmapCells(items, market, recipes);
+    expect(cells[0].tier).toBe('D');
+  });
 });
