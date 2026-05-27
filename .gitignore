@@ -6,7 +6,7 @@ dist
 .env
 .env.local
 coverage
-.claude/settings.local.json
+.claude/
 .worktrees
 
 # Smoke-test / Playwright MCP artifacts
