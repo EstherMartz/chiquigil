@@ -45,6 +45,33 @@ describe('craftStore', () => {
     expect(unclaimed).toBe(true);
   });
 
+  it('claimTaskByCharacter claims a task with a character name', async () => {
+    const pid = await store.createProject({
+      guildId: 'g1', channelId: 'c1', name: 'Plugin Test', targetItemId: 1, targetQty: 1, createdBy: 'u1',
+    });
+    await store.addTasks(pid, [
+      { itemId: 10, itemName: 'Cotton Boll', qtyNeeded: 40, source: 'market', meta: {} },
+    ]);
+    const tasks = await store.getTasks(pid);
+    const result = await store.claimTaskByCharacter(tasks[0].id, 'Estheria Moonweave');
+    expect(result).not.toBeNull();
+    expect(result!.assigneeId).toBe('Estheria Moonweave');
+    expect(result!.status).toBe('claimed');
+  });
+
+  it('claimTaskByCharacter returns null when task is already claimed', async () => {
+    const pid = await store.createProject({
+      guildId: 'g1', channelId: 'c1', name: 'P', targetItemId: 1, targetQty: 1, createdBy: 'u1',
+    });
+    await store.addTasks(pid, [
+      { itemId: 10, itemName: 'Ore', qtyNeeded: 5, source: 'market', meta: {} },
+    ]);
+    const tasks = await store.getTasks(pid);
+    await store.claimTask(tasks[0].id, 'discordUser1');
+    const result = await store.claimTaskByCharacter(tasks[0].id, 'Estheria Moonweave');
+    expect(result).toBeNull();
+  });
+
   it('logs progress and marks task done when complete', async () => {
     const pid = await store.createProject({
       guildId: 'g1', channelId: 'c1', name: 'P', targetItemId: 1, targetQty: 1, createdBy: 'u1',

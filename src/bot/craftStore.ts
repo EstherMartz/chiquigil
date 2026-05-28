@@ -18,6 +18,7 @@ export interface CraftStore {
   getTasks(projectId: number): Promise<StoredTask[]>;
   listOpenProjects(guildId: string): Promise<CraftProject[]>;
   claimTask(taskId: number, userId: string): Promise<boolean>;
+  claimTaskByCharacter(taskId: number, characterName: string): Promise<StoredTask | null>;
   logProgress(taskId: number, userId: string, amount: number): Promise<StoredTask | null>;
   unclaimTask(taskId: number, userId: string): Promise<boolean>;
   setProjectMessageId(projectId: number, messageId: string): Promise<void>;
@@ -231,6 +232,20 @@ export async function openCraftStore(url: string, authToken?: string): Promise<C
         args: [userId, now, taskId],
       });
       return result.rowsAffected > 0;
+    },
+
+    async claimTaskByCharacter(taskId, characterName) {
+      const now = Date.now();
+      const result = await client.execute({
+        sql: "UPDATE tasks SET assignee_id = ?, status = 'claimed', updated_at = ? WHERE id = ? AND status = 'open'",
+        args: [characterName, now, taskId],
+      });
+      if (result.rowsAffected === 0) return null;
+      const row = await client.execute({
+        sql: 'SELECT * FROM tasks WHERE id = ?',
+        args: [taskId],
+      });
+      return row.rows[0] ? rowToTask(row.rows[0]) : null;
     },
 
     async logProgress(taskId, userId, amount) {
