@@ -38,7 +38,12 @@ function TaskRow({ t, userNames }: { t: StoredTask; userNames: Record<string, st
   const pct = t.qtyNeeded > 0 ? Math.round((t.qtyDone / t.qtyNeeded) * 100) : 0;
   const assigneeLabel = t.assigneeId ? userNames[t.assigneeId] ?? t.assigneeId : 'unclaimed';
   return (
-    <li className="flex items-center justify-between gap-3 py-1.5 border-b border-border-base/20 last:border-0">
+    <li className={[
+      'flex items-center justify-between gap-3 py-1.5 border-b border-border-base/20 last:border-0 px-1 -mx-1 rounded',
+      t.status === 'done'    ? 'bg-green-400/5' :
+      t.status === 'claimed' ? 'bg-yellow-400/5' :
+                               '',
+    ].join(' ')}>
       <div className="flex-1 min-w-0">
         <span className="font-mono text-xs text-text-low mr-2">{t.qtyNeeded}×</span>
         <Link to={`/item/${t.itemId}`} className="hover:underline">{t.itemName}</Link>
@@ -49,7 +54,14 @@ function TaskRow({ t, userNames }: { t: StoredTask; userNames: Record<string, st
       <div className="font-mono text-xs text-text-low w-36 text-right truncate">
         {t.assigneeId ? `@${assigneeLabel}` : 'unclaimed'}
       </div>
-      <div className="font-mono text-xs w-16 text-right">{t.status}</div>
+      <div className={[
+        'font-mono text-xs w-16 text-right font-semibold',
+        t.status === 'done'    ? 'text-green-400' :
+        t.status === 'claimed' ? 'text-yellow-400' :
+                                 'text-text-low',
+      ].join(' ')}>
+        {t.status === 'done' ? '✓ done' : t.status === 'claimed' ? '⚒ claimed' : 'open'}
+      </div>
     </li>
   );
 }
