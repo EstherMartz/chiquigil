@@ -1313,6 +1313,9 @@ var THREAD_PROJECT_CREATED = (userId, taskCount) => `\u{1F4CB} Proyecto creado p
 var THREAD_CLAIMED = (userId, qty, item) => `<@${userId}> ha reclamado ${qty}\xD7 **${item}**`;
 var THREAD_PROGRESS = (userId, item, done, needed, isDone) => `<@${userId}> avanz\xF3 **${item}** \u2192 ${done}/${needed}${isDone ? " \u2705" : ""}`;
 var THREAD_DONE = (userId, count) => `<@${userId}> marc\xF3 ${count} tarea(s) como completadas \u2705`;
+var EMPTY_PROJECT_CREATED = (id) => `Kyah~! Proyecto **#${id}** creado, nyeh. Usa \`/craft add-item id:${id}\` para a\xF1adir piezas, kukuru~!`;
+var ITEM_ADDED = (itemName, taskCount) => `Nyeh~! **${itemName}** a\xF1adido al proyecto. ${taskCount} tareas en total, kukuru!`;
+var ADD_ITEM_PROJECT_CLOSED = "Nyeh~! Ese proyecto ya est\xE1 cerrado, kukuru.";
 var DID_YOU_MEAN = (query) => `No encontr\xE9 "${query}" exacto, pero encontr\xE9 estas opciones. Selecciona una:`;
 var NO_CLOSE_MATCHES = (query) => `No encontr\xE9 nada parecido a "${query}" \u2014 intenta con el nombre en ingl\xE9s exacto.`;
 var LIST_TITLE = "\u{1F4CB} Proyectos abiertos";
@@ -1458,7 +1461,7 @@ function filterToPhase(tasks, partKey, phaseIndex) {
     return t.meta.partKey === partKey && t.meta.phaseIndex === phaseIndex;
   });
 }
-function buildProjectMessage(project, tasks) {
+function buildProjectMessage(project, tasks, projectItems) {
   const totalTasks = tasks.length;
   const doneTasks = tasks.filter((t) => t.status === "done").length;
   const isClosed = project.status === "closed";
@@ -1484,9 +1487,13 @@ function buildProjectMessage(project, tasks) {
       description += taskLine(t) + "\n";
     }
   }
+  let itemsSummary = "";
+  if (projectItems && projectItems.length >= 2) {
+    itemsSummary = "Items: " + projectItems.map((pi) => `${pi.itemName} \xD7${pi.qty}`).join(" \xB7 ") + "\n";
+  }
   const title = isClosed ? `\u2705 [Cerrado] ${project.name}` : `\u{1F6E0}  ${project.name}`;
   const fullDescription = `\`[${statusTag}]\`
-${description}`;
+${itemsSummary}${description}`;
   const color = isClosed ? 6710886 : 13936984;
   const footer = { text: `Proyecto #${project.id}` };
   const timestamp = new Date(project.createdAt).toISOString();
@@ -1703,23 +1710,39 @@ function initialDisplayPhase(tasks) {
   return null;
 }
 async function handleCraftNew(opts, guildId, channelId, userId, deps) {
+  if (!opts.item) {
+    if (!opts.name) {
+      return { content: "Nyeh~! Se requiere un nombre cuando no se especifica objeto, kukuru.", flags: 64 };
+    }
+    const targetChannelId2 = deps.craftChannelId ?? channelId;
+    const projectId2 = await deps.store.createProject({
+      guildId,
+      channelId: targetChannelId2,
+      name: opts.name,
+      targetItemId: 0,
+      targetQty: 0,
+      createdBy: userId
+    });
+    return { content: EMPTY_PROJECT_CREATED(projectId2), flags: 64 };
+  }
+  const qty = opts.qty ?? 1;
   const matches = searchItems(deps.nameIndex, opts.item, 1);
   if (matches.length === 0) {
     return { content: ITEM_NOT_FOUND(opts.item), flags: 64 };
   }
   const itemId = matches[0].id;
   const itemName = matches[0].name;
-  const projectName = opts.name ?? `${opts.qty}\xD7 ${itemName}`;
+  const projectName = opts.name ?? `${qty}\xD7 ${itemName}`;
   const craftIntermediates = opts.intermediates ?? true;
-  console.log(`[craft] new project: ${projectName} (item ${itemId}, qty ${opts.qty})`);
+  console.log(`[craft] new project: ${projectName} (item ${itemId}, qty ${qty})`);
   const { recipes, namesById, vendorMap, specialShop, gatheringCatalog, companyCraft } = deps.snapshots;
-  const preExplode = explode(itemId, opts.qty, recipes, { craftIntermediates });
+  const preExplode = explode(itemId, qty, recipes, { craftIntermediates });
   const allLeafIds = [...preExplode.leaves.keys()];
   console.log(`[craft] using pre-fetched market for ${allLeafIds.length} leaf items\u2026`);
   const market = deps.marketBundle;
   const breakdown = buildBreakdown(
     itemId,
-    opts.qty,
+    qty,
     market,
     { recipes, namesById, vendorMap, specialShop, gatheringCatalog, companyCraft },
     { craftIntermediates }
@@ -1735,7 +1758,7 @@ async function handleCraftNew(opts, guildId, channelId, userId, deps) {
     channelId: targetChannelId,
     name: projectName,
     targetItemId: itemId,
-    targetQty: opts.qty,
+    targetQty: qty,
     createdBy: userId,
     displayPartKey: initial?.partKey ?? null,
     displayPhaseIndex: initial?.phaseIndex ?? null
@@ -1779,6 +1802,98 @@ async function handleCraftNew(opts, guildId, channelId, userId, deps) {
     content: PROJECT_CREATED(projectId, targetChannelId, storedTasks.length),
     flags: 64
   };
+}
+function mergeTasks(tasks) {
+  const map = /* @__PURE__ */ new Map();
+  for (const t of tasks) {
+    const key = `${t.itemId}|${t.source}`;
+    const existing = map.get(key);
+    if (existing) {
+      existing.qtyNeeded += t.qtyNeeded;
+    } else {
+      map.set(key, { ...t });
+    }
+  }
+  return [...map.values()];
+}
+async function handleCraftAddItem(opts, guildId, userId, deps) {
+  const matches = searchItems(deps.nameIndex, opts.item, 1);
+  if (matches.length === 0) {
+    return { content: ITEM_NOT_FOUND(opts.item), flags: 64 };
+  }
+  const itemId = matches[0].id;
+  const itemName = matches[0].name;
+  const project = await deps.store.getProject(opts.projectId);
+  if (!project || project.guildId !== guildId) {
+    return { content: PROJECT_NOT_FOUND(opts.projectId), flags: 64 };
+  }
+  if (project.status !== "open") {
+    return { content: ADD_ITEM_PROJECT_CLOSED, flags: 64 };
+  }
+  await deps.store.addProjectItem(opts.projectId, itemId, itemName, opts.qty);
+  const projectItems = await deps.store.getProjectItems(opts.projectId);
+  const { recipes, namesById, vendorMap, specialShop, gatheringCatalog, companyCraft } = deps.snapshots;
+  const market = deps.marketBundle;
+  const allRawTasks = [];
+  for (const pi of projectItems) {
+    const bd = buildBreakdown(
+      pi.itemId,
+      pi.qty,
+      market,
+      { recipes, namesById, vendorMap, specialShop, gatheringCatalog, companyCraft },
+      { craftIntermediates: true }
+    );
+    allRawTasks.push(...bd.crafts, ...bd.acquire);
+  }
+  const mergedTasks = mergeTasks(allRawTasks);
+  if (mergedTasks.length === 0) {
+    return { content: NO_RECIPE(itemName), flags: 64 };
+  }
+  await deps.store.replaceTasks(opts.projectId, mergedTasks);
+  const updatedProject = await deps.store.getProject(opts.projectId);
+  if (!updatedProject) return { content: PROJECT_NOT_FOUND(opts.projectId), flags: 64 };
+  const storedTasks = await deps.store.getTasks(opts.projectId);
+  const piSummary = projectItems.map((pi) => ({ itemName: pi.itemName, qty: pi.qty }));
+  const { embeds, components } = buildProjectMessage(updatedProject, storedTasks, piSummary);
+  const targetChannelId = updatedProject.channelId;
+  if (!updatedProject.messageId) {
+    const roleId = deps.crafterRoleId;
+    let content = "";
+    if (roleId) content = `<@&${roleId}> `;
+    content += NEW_PROJECT_CONTENT(opts.projectId);
+    const announcementMsg = await sendToChannel(deps.botToken, targetChannelId, {
+      content,
+      embeds,
+      components,
+      allowed_mentions: roleId ? { roles: [roleId] } : void 0
+    });
+    if (!announcementMsg) {
+      return { content: CHANNEL_NOT_FOUND, flags: 64 };
+    }
+    const messageId = String(announcementMsg.id);
+    await deps.store.setProjectMessageId(opts.projectId, messageId);
+    try {
+      const thread = await createThread(deps.botToken, targetChannelId, messageId, updatedProject.name.slice(0, 100));
+      if (thread) {
+        const threadId = String(thread.id);
+        await deps.store.setProjectThreadId(opts.projectId, threadId);
+        await sendToChannel(deps.botToken, threadId, {
+          content: THREAD_PROJECT_CREATED(userId, storedTasks.length)
+        });
+      }
+    } catch (e) {
+      console.error("[craft] failed to create thread:", e instanceof Error ? e.message : e);
+    }
+  } else {
+    try {
+      await editMessage(deps.botToken, targetChannelId, updatedProject.messageId, { embeds, components });
+    } catch (e) {
+      console.error("[craft] failed to edit announcement:", e instanceof Error ? e.message : e);
+    }
+  }
+  await refreshBoard(deps, guildId);
+  console.log(`[craft] add-item: project #${opts.projectId} now has ${storedTasks.length} tasks`);
+  return { content: ITEM_ADDED(itemName, storedTasks.length), flags: 64 };
 }
 async function handleCraftList(guildId, deps) {
   const projects = await deps.store.listOpenProjects(guildId);
@@ -2553,6 +2668,15 @@ async function openCraftStore(url, authToken) {
       request_message_id TEXT,
       PRIMARY KEY (guild_id, channel_id)
     );
+
+    CREATE TABLE IF NOT EXISTS project_items (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      project_id  INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+      item_id     INTEGER NOT NULL,
+      item_name   TEXT NOT NULL,
+      qty         INTEGER NOT NULL,
+      created_at  INTEGER NOT NULL
+    );
   `;
   const statements = SCHEMA.split(";").map((s) => s.trim()).filter((s) => s.length > 0);
   for (const stmt of statements) {
@@ -2758,6 +2882,36 @@ async function openCraftStore(url, authToken) {
           state.requestMessageId
         ]
       });
+    },
+    async addProjectItem(projectId, itemId, itemName, qty) {
+      const createdAt = Date.now();
+      await client.execute({
+        sql: "INSERT INTO project_items (project_id, item_id, item_name, qty, created_at) VALUES (?, ?, ?, ?, ?)",
+        args: [projectId, itemId, itemName, qty, createdAt]
+      });
+    },
+    async getProjectItems(projectId) {
+      const result = await client.execute({
+        sql: "SELECT * FROM project_items WHERE project_id = ? ORDER BY created_at ASC",
+        args: [projectId]
+      });
+      return result.rows.map((row) => ({
+        id: Number(row.id),
+        itemId: Number(row.item_id),
+        itemName: String(row.item_name),
+        qty: Number(row.qty)
+      }));
+    },
+    async replaceTasks(projectId, tasks) {
+      const now = Date.now();
+      const statements2 = [
+        { sql: "DELETE FROM tasks WHERE project_id = ?", args: [projectId] },
+        ...tasks.map((t) => ({
+          sql: "INSERT INTO tasks (project_id, item_id, item_name, qty_needed, source, meta, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+          args: [projectId, t.itemId, t.itemName, t.qtyNeeded, t.source, t.meta ? JSON.stringify(t.meta) : null, now]
+        }))
+      ];
+      await client.batch(statements2, "write");
     },
     async close() {
       await client.close();
@@ -2980,7 +3134,7 @@ async function handler(req, res) {
               crafterRoleId: CRAFTER_ROLE_ID
             };
             if (subcommand === "new") {
-              const item = subOptions.find((o) => o.name === "item")?.value ?? "";
+              const item = subOptions.find((o) => o.name === "item")?.value ?? null;
               const qty = parseInt(subOptions.find((o) => o.name === "qty")?.value ?? "1", 10);
               const name = subOptions.find((o) => o.name === "name")?.value ?? null;
               const pingRole = subOptions.find((o) => o.name === "ping_role")?.value ?? null;
@@ -2993,6 +3147,11 @@ async function handler(req, res) {
                 userId,
                 deps
               );
+            } else if (subcommand === "add-item") {
+              const projectId = parseInt(subOptions.find((o) => o.name === "id")?.value ?? "0", 10);
+              const item = String(subOptions.find((o) => o.name === "item")?.value ?? "");
+              const qty = parseInt(subOptions.find((o) => o.name === "qty")?.value ?? "1", 10);
+              response = await handleCraftAddItem({ projectId, item, qty }, guildId, userId, deps);
             } else if (subcommand === "list") {
               response = await handleCraftList(guildId, deps);
             } else if (subcommand === "show") {
