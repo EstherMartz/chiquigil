@@ -119,6 +119,7 @@ describe('craftStore', () => {
     expect(items[1].qty).toBe(10);
   });
 
+  // replaceTasks uses client.batch('write') so the DELETE + INSERTs are atomic.
   it('replaceTasks deletes old tasks and inserts new ones', async () => {
     const pid = await store.createProject({
       guildId: 'g1', channelId: 'c1', name: 'P', targetItemId: 0, targetQty: 0, createdBy: 'u1',

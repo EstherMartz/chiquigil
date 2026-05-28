@@ -342,14 +342,15 @@ export async function openCraftStore(url: string, authToken?: string): Promise<C
     },
 
     async replaceTasks(projectId, tasks) {
-      await client.execute({ sql: 'DELETE FROM tasks WHERE project_id = ?', args: [projectId] });
       const now = Date.now();
-      for (const t of tasks) {
-        await client.execute({
+      const statements = [
+        { sql: 'DELETE FROM tasks WHERE project_id = ?', args: [projectId] as (number | string | null)[] },
+        ...tasks.map((t) => ({
           sql: 'INSERT INTO tasks (project_id, item_id, item_name, qty_needed, source, meta, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
-          args: [projectId, t.itemId, t.itemName, t.qtyNeeded, t.source, t.meta ? JSON.stringify(t.meta) : null, now],
-        });
-      }
+          args: [projectId, t.itemId, t.itemName, t.qtyNeeded, t.source, t.meta ? JSON.stringify(t.meta) : null, now] as (number | string | null)[],
+        })),
+      ];
+      await client.batch(statements, 'write');
     },
 
     async close() {
