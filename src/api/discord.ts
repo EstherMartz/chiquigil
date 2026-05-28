@@ -5,6 +5,7 @@ import { handleChat } from '../bot/chatHandler';
 import { GROQ_MODEL } from '../bot/llm';
 import {
   handleCraftNew,
+  handleCraftAddItem,
   handleCraftList,
   handleCraftShow,
   handleCraftClose,
@@ -234,7 +235,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             };
 
             if (subcommand === 'new') {
-              const item = subOptions.find((o) => o.name === 'item')?.value ?? '';
+              const item = subOptions.find((o) => o.name === 'item')?.value ?? null;
               const qty = parseInt(subOptions.find((o) => o.name === 'qty')?.value ?? '1', 10);
               const name = subOptions.find((o) => o.name === 'name')?.value ?? null;
               const pingRole = subOptions.find((o) => o.name === 'ping_role')?.value ?? null;
@@ -248,6 +249,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 userId,
                 deps,
               );
+            } else if (subcommand === 'add-item') {
+              const projectId = parseInt(subOptions.find((o) => o.name === 'id')?.value ?? '0', 10);
+              const item = String(subOptions.find((o) => o.name === 'item')?.value ?? '');
+              const qty = parseInt(subOptions.find((o) => o.name === 'qty')?.value ?? '1', 10);
+              response = await handleCraftAddItem({ projectId, item, qty }, guildId, userId, deps);
             } else if (subcommand === 'list') {
               response = await handleCraftList(guildId, deps);
             } else if (subcommand === 'show') {
