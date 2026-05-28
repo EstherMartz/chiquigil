@@ -188,7 +188,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const cmdName = interaction.data?.name;
     const subName = interaction.data?.options?.[0]?.name;
     // /craft show is meant to be shared; everything else is a private confirmation.
-    const isEphemeral = cmdName === 'craft' && subName !== 'show';
+    // /prune confirmation is always ephemeral.
+    const isEphemeral = (cmdName === 'craft' && subName !== 'show') || cmdName === 'prune';
     res.status(200).json({ type: 5, data: isEphemeral ? { flags: 64 } : {} });
 
     waitUntil(
@@ -412,6 +413,51 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 }
               } catch (e) {
                 response = qEmbed(`¡Error error! Qiqirn no entiende archivo 🐀\n${e instanceof Error ? e.message : String(e)}`);
+              }
+            }
+          }
+
+          if (commandName === 'prune') {
+            const amount = Math.min(100, Math.max(1, parseInt(options.find((o) => o.name === 'amount')?.value ?? '10', 10)));
+            const MANAGE_MESSAGES = BigInt(1 << 13);
+            if (!(permissions & MANAGE_MESSAGES)) {
+              response = { content: '🐀 ¡Qiqirn no puede! Solo quien gestiona mensajes puede limpiar limpiar el canal.' };
+            } else {
+              try {
+                // Fetch recent messages
+                const fetchRes = await fetch(
+                  `https://discord.com/api/v10/channels/${channelId}/messages?limit=${amount}`,
+                  { headers: { Authorization: `Bot ${DISCORD_BOT_TOKEN}` } },
+                );
+                const msgs = (await fetchRes.json()) as Array<{ id: string; timestamp: string }>;
+
+                // Bulk delete only accepts 2-100 messages and they must be <14 days old
+                const cutoff = Date.now() - 14 * 24 * 60 * 60 * 1000;
+                const ids = msgs
+                  .filter((m) => new Date(m.timestamp).getTime() > cutoff)
+                  .map((m) => m.id);
+
+                if (ids.length === 0) {
+                  response = { content: '🐀 Qiqirn no encontró mensajes recientes recientes para borrar (máx. 14 días).' };
+                } else if (ids.length === 1) {
+                  await fetch(
+                    `https://discord.com/api/v10/channels/${channelId}/messages/${ids[0]}`,
+                    { method: 'DELETE', headers: { Authorization: `Bot ${DISCORD_BOT_TOKEN}` } },
+                  );
+                  response = { content: `✨ Qiqirn limpió limpió 1 mensaje del canal. ¡Brilli brilli!` };
+                } else {
+                  await fetch(
+                    `https://discord.com/api/v10/channels/${channelId}/messages/bulk-delete`,
+                    {
+                      method: 'POST',
+                      headers: { Authorization: `Bot ${DISCORD_BOT_TOKEN}`, 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ messages: ids }),
+                    },
+                  );
+                  response = { content: `✨ Qiqirn limpió limpió ${ids.length} mensajes del canal. ¡Brilli brilli!` };
+                }
+              } catch (e) {
+                response = { content: `🐀 ¡Error error! Qiqirn no pudo limpiar: ${e instanceof Error ? e.message : String(e)}` };
               }
             }
           }

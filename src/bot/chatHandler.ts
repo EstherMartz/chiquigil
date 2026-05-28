@@ -50,7 +50,13 @@ export async function handleChat(question: string, deps: ChatHandlerDeps): Promi
     try {
       const jokes = await deps.store.getRandomChistes(5);
       if (jokes.length > 0) {
-        jokeInjection = '\n\nCHISTES EXTRA DE LA TABERNA — OBLIGATORIO: elige UNO de estos y cuéntalo entero:\n'
+        jokeInjection = '\n\nCHISTES EXTRA DE LA TABERNA — OBLIGATORIO: elige UNO de estos y cuéntalo entero. '
+          + 'IMPORTANTE: antes de contarlo, adáptalo al mundo de Eorzea — reemplaza profesiones '
+          + '(médico→conjurador o alquimista, abogado→legalista de Ul\'dah, ingeniero→maquinista de Garlond, '
+          + 'maestro→maestro artesano del gremio), lugares (hospital→Gremio de Curanderos, bar o cantina→taberna '
+          + 'del Chocobo Dorado, escuela→academia del gremio, trabajo→el mercado de Ul\'dah), y cualquier '
+          + 'concepto del mundo real con su equivalente en Eorzea. Mantén el remate del chiste intacto. '
+          + 'Cuéntalo ENTERO sin cortar.\n'
           + jokes.map((j, i) => `${i + 1}. "${j}"`).join('\n');
       }
     } catch {

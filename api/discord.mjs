@@ -964,7 +964,7 @@ async function handleChat(question, deps) {
     try {
       const jokes = await deps.store.getRandomChistes(5);
       if (jokes.length > 0) {
-        jokeInjection = "\n\nCHISTES EXTRA DE LA TABERNA \u2014 OBLIGATORIO: elige UNO de estos y cu\xE9ntalo entero:\n" + jokes.map((j, i) => `${i + 1}. "${j}"`).join("\n");
+        jokeInjection = "\n\nCHISTES EXTRA DE LA TABERNA \u2014 OBLIGATORIO: elige UNO de estos y cu\xE9ntalo entero. IMPORTANTE: antes de contarlo, ad\xE1ptalo al mundo de Eorzea \u2014 reemplaza profesiones (m\xE9dico\u2192conjurador o alquimista, abogado\u2192legalista de Ul'dah, ingeniero\u2192maquinista de Garlond, maestro\u2192maestro artesano del gremio), lugares (hospital\u2192Gremio de Curanderos, bar o cantina\u2192taberna del Chocobo Dorado, escuela\u2192academia del gremio, trabajo\u2192el mercado de Ul'dah), y cualquier concepto del mundo real con su equivalente en Eorzea. Mant\xE9n el remate del chiste intacto. Cu\xE9ntalo ENTERO sin cortar.\n" + jokes.map((j, i) => `${i + 1}. "${j}"`).join("\n");
       }
     } catch {
     }
@@ -3134,7 +3134,7 @@ async function handler(req, res) {
   if (interaction.type === 2) {
     const cmdName = interaction.data?.name;
     const subName = interaction.data?.options?.[0]?.name;
-    const isEphemeral = cmdName === "craft" && subName !== "show";
+    const isEphemeral = cmdName === "craft" && subName !== "show" || cmdName === "prune";
     res.status(200).json({ type: 5, data: isEphemeral ? { flags: 64 } : {} });
     waitUntil(
       (async () => {
@@ -3331,6 +3331,44 @@ async function handler(req, res) {
               } catch (e) {
                 response = qEmbed(`\xA1Error error! Qiqirn no entiende archivo \u{1F400}
 ${e instanceof Error ? e.message : String(e)}`);
+              }
+            }
+          }
+          if (commandName === "prune") {
+            const amount = Math.min(100, Math.max(1, parseInt(options.find((o) => o.name === "amount")?.value ?? "10", 10)));
+            const MANAGE_MESSAGES = BigInt(1 << 13);
+            if (!(permissions & MANAGE_MESSAGES)) {
+              response = { content: "\u{1F400} \xA1Qiqirn no puede! Solo quien gestiona mensajes puede limpiar limpiar el canal." };
+            } else {
+              try {
+                const fetchRes = await fetch(
+                  `https://discord.com/api/v10/channels/${channelId}/messages?limit=${amount}`,
+                  { headers: { Authorization: `Bot ${DISCORD_BOT_TOKEN}` } }
+                );
+                const msgs = await fetchRes.json();
+                const cutoff = Date.now() - 14 * 24 * 60 * 60 * 1e3;
+                const ids = msgs.filter((m) => new Date(m.timestamp).getTime() > cutoff).map((m) => m.id);
+                if (ids.length === 0) {
+                  response = { content: "\u{1F400} Qiqirn no encontr\xF3 mensajes recientes recientes para borrar (m\xE1x. 14 d\xEDas)." };
+                } else if (ids.length === 1) {
+                  await fetch(
+                    `https://discord.com/api/v10/channels/${channelId}/messages/${ids[0]}`,
+                    { method: "DELETE", headers: { Authorization: `Bot ${DISCORD_BOT_TOKEN}` } }
+                  );
+                  response = { content: `\u2728 Qiqirn limpi\xF3 limpi\xF3 1 mensaje del canal. \xA1Brilli brilli!` };
+                } else {
+                  await fetch(
+                    `https://discord.com/api/v10/channels/${channelId}/messages/bulk-delete`,
+                    {
+                      method: "POST",
+                      headers: { Authorization: `Bot ${DISCORD_BOT_TOKEN}`, "Content-Type": "application/json" },
+                      body: JSON.stringify({ messages: ids })
+                    }
+                  );
+                  response = { content: `\u2728 Qiqirn limpi\xF3 limpi\xF3 ${ids.length} mensajes del canal. \xA1Brilli brilli!` };
+                }
+              } catch (e) {
+                response = { content: `\u{1F400} \xA1Error error! Qiqirn no pudo limpiar: ${e instanceof Error ? e.message : String(e)}` };
               }
             }
           }
