@@ -155,6 +155,7 @@ function filterToPhase(
 export function buildProjectMessage(
   project: CraftProject,
   tasks: StoredTask[],
+  projectItems?: Array<{ itemName: string; qty: number }>,
 ): { embeds: object[]; components: object[] } {
   const totalTasks = tasks.length;
   const doneTasks = tasks.filter((t) => t.status === 'done').length;
@@ -191,11 +192,16 @@ export function buildProjectMessage(
     }
   }
 
+  let itemsSummary = '';
+  if (projectItems && projectItems.length >= 2) {
+    itemsSummary = 'Items: ' + projectItems.map((pi) => `${pi.itemName} ×${pi.qty}`).join(' · ') + '\n';
+  }
+
   const title = isClosed
     ? `✅ [Cerrado] ${project.name}`
     : `🛠  ${project.name}`;
 
-  const fullDescription = `\`[${statusTag}]\`\n${description}`;
+  const fullDescription = `\`[${statusTag}]\`\n${itemsSummary}${description}`;
   const color = isClosed ? 0x666666 : 0xD4A958;
   const footer = { text: `Proyecto #${project.id}` };
   const timestamp = new Date(project.createdAt).toISOString();
