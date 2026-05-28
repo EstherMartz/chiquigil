@@ -254,8 +254,9 @@ function HeaderBlock({ name, ilvl, sc, canHq, rarity, itemId, recipe }: {
           {rarityTier && <span className={rarityName ?? ''}>{rarityTier}</span>}
           {canHq && <span className="text-gold inline-flex items-center gap-1"><HqStar /> HQ</span>}
         </div>
-        <h1 className={`font-display text-2xl sm:text-3xl tracking-tight ${rarityName ?? 'text-text-cream'}`}>
+        <h1 className={`font-display text-2xl sm:text-3xl tracking-tight inline-flex items-center gap-2 ${rarityName ?? 'text-text-cream'}`}>
           {name}
+          <CopyButton text={name} label="Copy item name" className="text-base" />
         </h1>
       </div>
       <div className="flex flex-col sm:flex-row sm:items-end gap-3 self-start sm:self-end">
