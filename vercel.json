@@ -8,10 +8,18 @@
     },
     "api/projects.mjs": {
       "maxDuration": 30
+    },
+    "api/plugin-claim.mjs": {
+      "maxDuration": 15
+    },
+    "api/plugin-craftable.mjs": {
+      "maxDuration": 30
     }
   },
   "rewrites": [
     { "source": "/api/projects/:id", "destination": "/api/projects" },
+    { "source": "/api/plugin/claim", "destination": "/api/plugin-claim" },
+    { "source": "/api/plugin/craftable", "destination": "/api/plugin-craftable" },
     { "source": "/(.*)", "destination": "/" }
   ]
 }
