@@ -41,15 +41,36 @@ export interface CommandResponse {
 }
 
 /**
- * Handle /craft new — create a new craft project
+ * Handle /craft new — create a new craft project.
+ * When `item` is omitted, creates an empty multi-item project (no announcement yet).
  */
 export async function handleCraftNew(
-  opts: { item: string; qty: number; name?: string | null; intermediates?: boolean; pingRole?: string | null },
+  opts: { item?: string | null; qty?: number | null; name?: string | null; intermediates?: boolean; pingRole?: string | null },
   guildId: string,
   channelId: string,
   userId: string,
   deps: CraftCommandDeps,
 ): Promise<CommandResponse> {
+  // ── Empty project (no item provided) ──────────────────────────────────────
+  if (!opts.item) {
+    if (!opts.name) {
+      return { content: 'Nyeh~! Se requiere un nombre cuando no se especifica objeto, kukuru.', flags: 64 };
+    }
+    const targetChannelId = deps.craftChannelId ?? channelId;
+    const projectId = await deps.store.createProject({
+      guildId,
+      channelId: targetChannelId,
+      name: opts.name,
+      targetItemId: 0,
+      targetQty: 0,
+      createdBy: userId,
+    });
+    return { content: S.EMPTY_PROJECT_CREATED(projectId), flags: 64 };
+  }
+
+  // ── Single-item project (existing flow) ───────────────────────────────────
+  const qty = opts.qty ?? 1;
+
   // Resolve item name
   const matches = searchItems(deps.nameIndex, opts.item, 1);
   if (matches.length === 0) {
@@ -58,15 +79,15 @@ export async function handleCraftNew(
 
   const itemId = matches[0].id;
   const itemName = matches[0].name;
-  const projectName = opts.name ?? `${opts.qty}× ${itemName}`;
+  const projectName = opts.name ?? `${qty}× ${itemName}`;
   const craftIntermediates = opts.intermediates ?? true;
 
-  console.log(`[craft] new project: ${projectName} (item ${itemId}, qty ${opts.qty})`);
+  console.log(`[craft] new project: ${projectName} (item ${itemId}, qty ${qty})`);
 
   // Run breakdown
   const { recipes, namesById, vendorMap, specialShop, gatheringCatalog, companyCraft } = deps.snapshots;
 
-  const preExplode = explode(itemId, opts.qty, recipes, { craftIntermediates });
+  const preExplode = explode(itemId, qty, recipes, { craftIntermediates });
   const allLeafIds = [...preExplode.leaves.keys()];
 
   console.log(`[craft] using pre-fetched market for ${allLeafIds.length} leaf items…`);
@@ -74,7 +95,7 @@ export async function handleCraftNew(
 
   const breakdown = buildBreakdown(
     itemId,
-    opts.qty,
+    qty,
     market,
     { recipes, namesById, vendorMap, specialShop, gatheringCatalog, companyCraft },
     { craftIntermediates },
@@ -98,7 +119,7 @@ export async function handleCraftNew(
     channelId: targetChannelId,
     name: projectName,
     targetItemId: itemId,
-    targetQty: opts.qty,
+    targetQty: qty,
     createdBy: userId,
     displayPartKey: initial?.partKey ?? null,
     displayPhaseIndex: initial?.phaseIndex ?? null,
@@ -155,6 +176,132 @@ export async function handleCraftNew(
     content: S.PROJECT_CREATED(projectId, targetChannelId, storedTasks.length),
     flags: 64,
   };
+}
+
+/** Merge CraftTask[] by (itemId, source) — sum qtyNeeded, keep first meta. */
+function mergeTasks(tasks: CraftTask[]): CraftTask[] {
+  const map = new Map<string, CraftTask>();
+  for (const t of tasks) {
+    const key = `${t.itemId}|${t.source}`;
+    const existing = map.get(key);
+    if (existing) {
+      existing.qtyNeeded += t.qtyNeeded;
+    } else {
+      map.set(key, { ...t });
+    }
+  }
+  return [...map.values()];
+}
+
+/**
+ * Handle /craft add-item — add an item to an existing (possibly empty) project
+ */
+export async function handleCraftAddItem(
+  opts: { projectId: number; item: string; qty: number },
+  guildId: string,
+  userId: string,
+  deps: CraftCommandDeps,
+): Promise<CommandResponse> {
+  // 1. Resolve item
+  const matches = searchItems(deps.nameIndex, opts.item, 1);
+  if (matches.length === 0) {
+    return { content: S.ITEM_NOT_FOUND(opts.item), flags: 64 };
+  }
+  const itemId = matches[0].id;
+  const itemName = matches[0].name;
+
+  // 2. Load + validate project
+  const project = await deps.store.getProject(opts.projectId);
+  if (!project || project.guildId !== guildId) {
+    return { content: S.PROJECT_NOT_FOUND(opts.projectId), flags: 64 };
+  }
+  if (project.status !== 'open') {
+    return { content: S.ADD_ITEM_PROJECT_CLOSED, flags: 64 };
+  }
+
+  // 3. Record the item
+  await deps.store.addProjectItem(opts.projectId, itemId, itemName, opts.qty);
+
+  // 4. Load all project items and rebuild merged task list
+  const projectItems = await deps.store.getProjectItems(opts.projectId);
+  const { recipes, namesById, vendorMap, specialShop, gatheringCatalog, companyCraft } = deps.snapshots;
+  const market = deps.marketBundle;
+
+  const allRawTasks: CraftTask[] = [];
+  for (const pi of projectItems) {
+    const bd = buildBreakdown(
+      pi.itemId,
+      pi.qty,
+      market,
+      { recipes, namesById, vendorMap, specialShop, gatheringCatalog, companyCraft },
+      { craftIntermediates: true },
+    );
+    allRawTasks.push(...bd.crafts, ...bd.acquire);
+  }
+
+  const mergedTasks = mergeTasks(allRawTasks);
+  if (mergedTasks.length === 0) {
+    return { content: S.NO_RECIPE(itemName), flags: 64 };
+  }
+
+  // 5. Atomically replace tasks
+  await deps.store.replaceTasks(opts.projectId, mergedTasks);
+
+  // 6. Fetch fresh project + tasks for rendering
+  const updatedProject = await deps.store.getProject(opts.projectId);
+  if (!updatedProject) return { content: S.PROJECT_NOT_FOUND(opts.projectId), flags: 64 };
+  const storedTasks = await deps.store.getTasks(opts.projectId);
+  const piSummary = projectItems.map((pi) => ({ itemName: pi.itemName, qty: pi.qty }));
+  const { embeds, components } = buildProjectMessage(updatedProject, storedTasks, piSummary);
+
+  const targetChannelId = updatedProject.channelId;
+
+  // 7. Post or edit announcement
+  if (!updatedProject.messageId) {
+    // First item added — post fresh announcement
+    const roleId = deps.crafterRoleId;
+    let content = '';
+    if (roleId) content = `<@&${roleId}> `;
+    content += S.NEW_PROJECT_CONTENT(opts.projectId);
+
+    const announcementMsg = await discordApi.sendToChannel(deps.botToken, targetChannelId, {
+      content,
+      embeds,
+      components,
+      allowed_mentions: roleId ? { roles: [roleId] } : undefined,
+    });
+    if (!announcementMsg) {
+      return { content: S.CHANNEL_NOT_FOUND, flags: 64 };
+    }
+    const messageId = String(announcementMsg.id);
+    await deps.store.setProjectMessageId(opts.projectId, messageId);
+
+    try {
+      const thread = await discordApi.createThread(deps.botToken, targetChannelId, messageId, updatedProject.name.slice(0, 100));
+      if (thread) {
+        const threadId = String(thread.id);
+        await deps.store.setProjectThreadId(opts.projectId, threadId);
+        await discordApi.sendToChannel(deps.botToken, threadId, {
+          content: S.THREAD_PROJECT_CREATED(userId, storedTasks.length),
+        });
+      }
+    } catch (e) {
+      console.error('[craft] failed to create thread:', e instanceof Error ? e.message : e);
+    }
+  } else {
+    // Subsequent item — edit existing announcement
+    try {
+      await discordApi.editMessage(deps.botToken, targetChannelId, updatedProject.messageId, { embeds, components });
+    } catch (e) {
+      console.error('[craft] failed to edit announcement:', e instanceof Error ? e.message : e);
+    }
+  }
+
+  // 8. Refresh board
+  await refreshBoard(deps, guildId);
+
+  console.log(`[craft] add-item: project #${opts.projectId} now has ${storedTasks.length} tasks`);
+  return { content: S.ITEM_ADDED(itemName, storedTasks.length), flags: 64 };
 }
 
 /**
