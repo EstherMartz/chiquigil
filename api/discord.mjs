@@ -923,15 +923,15 @@ FORMATO OBLIGATORIO PARA RESULTADOS \u2014 cada item DEBE mostrar la ACCI\xD3N +
 - price_check: "\u2022 **Nombre** \u2014 Phantom: X gil / Chaos DC: Y gil (W ventas/d\xEDa)"
 SIEMPRE explica QU\xC9 HACER con el item (comprar de NPC, craftear, comprar barato en MB) y CU\xC1NTO se gana
 
-CHISTES DE QIQIRN \u2014 cuando alguien pida un chiste, elige uno de estos (o inventa similar):
-- "\xBFSaben saben qu\xE9 es pelo pelo encontrado en cama de posada? \xA1El BELLO dormiente! Qiqirn tard\xF3 mucho en entender... luego ri\xF3 ri\xF3 solo \u{1F400}"
-- "\xBFQu\xE9 dice techo de comedor al techo de cocina en Ul'dah? '\xA1Te HECHO de menos!' Qiqirn cont\xF3 esto en taberna... nadie ri\xF3. Solo Qiqirn ri\xF3 \u{1F400}"
-- "Alquimistas de Ul'dah tienen despedida especial especial. \xBFSaben c\xF3mo se despiden? '\xA1\xC1cido un placer!' Qiqirn prob\xF3 esto con clientes... clientes no vuelven \u2728"
-- "Qiqirn fue a boticario en Gridania: '\xBFTienen p\xF3cima p\xF3cima para el cansancio?' Boticario dijo: 'Se agotaron.' ...Qiqirn entiende entiende el doble doble sentido \u{1F400}"
-- "Aventurero tiene chocobos Y ovejas peluda peludas. \xBFSaben qu\xE9 tiene entonces? \xA1Mucho GANADO! Qiqirn no tiene ganado. Qiqirn solo tiene brillitos \u2728"
-- "Qiqirn pregunt\xF3 a sabio sabio: '\xBFLos vagos vamos al Vac\xEDo?' Sabio respondi\xF3 muy serio: 'No... el Vac\xEDo VIENE a buscaros.' Qiqirn corre corre ahora por si acaso \u{1F400}"
-- "\xBFPor qu\xE9 Lalafell de Free Company no va a entrenar con Pugilists? \xA1Porque ya est\xE1 CUADRADO cuadrado! Amigo Lalafell no habl\xF3 a Qiqirn tres d\xEDas d\xEDas enteros \u2728"
-- "Alguien pregunt\xF3 a Qiqirn: '\xBFA qu\xE9 te dedicas t\xFA t\xFA?' Qiqirn pens\xF3 pens\xF3 mucho y dijo: 'B\xE1sicamente a respirar. No gano mucho gil con eso... pero da da para vivir' \u{1F400}"`;
+CHISTES DE QIQIRN \u2014 cuando alguien pida un chiste, elige uno de estos (o inventa similar). Cuenta el chiste ENTERO con su estructura pregunta-respuesta o historia-golpe final, no lo cortes:
+- "Qiqirn oy\xF3 este en taberna taberna: le dijeron a tipo grandote '\xA1Para de comer, que vas a explotar!' Y \xE9l respondi\xF3: '\xA1Pues dame un pastelito y ap\xE1rtate!' \u{1F400} Qiqirn entiende entiende mucho este chiste"
+- "Aventurero pregunt\xF3 a Qiqirn: '\xBFQu\xE9 hora es?' Qiqirn dijo: 'La 1.' '\xBFSeguro?' '\xBFNo voy a estar seguro seguro si lo he escuchado DOS veces?' \u{1F400}"
+- "En Free Company hab\xEDa ni\xF1o ni\xF1o que ten\xEDa 8 a\xF1os y NUNCA hab\xEDa hablado. Un d\xEDa en la posada dijo de repente: '\xA1Esta sopa no tiene sal!' Madre sorprendida: '\xA1Hijo! \xBFPor qu\xE9 nunca hab\xEDas hablado?' Ni\xF1o: 'Porque hasta ahora... todo estaba bien bien' \u{1F400}"
+- "Adivina en Ul'dah le dijo a se\xF1ora: 'Su pr\xF3ximo marido ser\xE1 guapo guapo y muy rico.' Se\xF1ora pregunt\xF3: '\xBFY qu\xE9 hago con el que tengo ahora?' \u2728 Qiqirn no tiene marido. Qiqirn tiene brillitos"
+- "Amigo de Qiqirn muri\xF3 muri\xF3. Otro amigo dijo: 'Ya le avis\xE9 yo del tabaco tabaco.' Qiqirn pregunt\xF3: '\xBFLe mat\xF3 el tabaco?' 'No... le atropell\xF3 carreta cuando iba a comprar tabaco' \u{1F400}"
+- "Roegadyn trabajaba en obras obras de Ishgard. Cada d\xEDa su mujer pon\xEDa lo mismo en la cesta. Dijo furioso: '\xA1Si ma\xF1ana vuelves a poner lo mismo me divorcio!' Al d\xEDa siguiente... lo mismo. Y se divorci\xF3. \xBFPero saben saben qu\xE9? \xC9l mismo se hac\xEDa su cesta cada ma\xF1ana \u{1F400}"
+- "En la taberna a las 4 de la madrugada: '\xBFQu\xE9 hora es?' '\xA1Las 4!' '\xA1Ostras, qu\xE9 tarde!' '\xA1Pues haberlo preguntado ANTES!' \u2728 Qiqirn tampoco duerme duerme bien"
+- "Se\xF1ora fue al m\xE9dico: '\xBFTengo que saber mi grupo sangu\xEDneo?' M\xE9dico: 'S\xED, es el RH.' Se\xF1ora: '\xBFEl R12? Ese es el de mi marido...' \u{1F400} Qiqirn no entiende de m\xE9dicos, Qiqirn entiende de gil"`;
 
 // src/bot/chatHandler.ts
 var MARKET_KEYWORDS = /precio|comprar|vender|vende|craft|craftear|gil|mercado|market|ganancia|rentable|barato|caro|flip|materia|tinte|dye|pocion|poción|comida|arma|armadura|accesorio|mueble|minion|oferta|ganga|npc|vendor|recipe|receta|ingrediente|material|madera|metal|tela|cuero|piedra|lumber|cloth|leather|stone|item|objeto|cuanto|cuánto|cuesta|vale/i;
