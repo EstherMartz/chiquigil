@@ -935,8 +935,12 @@ CHISTES DE QIQIRN \u2014 cuando alguien pida un chiste, elige uno de estos (o in
 
 // src/bot/chatHandler.ts
 var MARKET_KEYWORDS = /precio|comprar|vender|vende|craft|craftear|gil|mercado|market|ganancia|rentable|barato|caro|flip|materia|tinte|dye|pocion|poción|comida|arma|armadura|accesorio|mueble|minion|oferta|ganga|npc|vendor|recipe|receta|ingrediente|material|madera|metal|tela|cuero|piedra|lumber|cloth|leather|stone|item|objeto|cuanto|cuánto|cuesta|vale/i;
+var JOKE_KEYWORDS = /chiste|chistoso|chistosa|cuéntame|cuentame|haznos reír|hazme reír|hazme reir|haznos reir|un chiste|otro chiste|chistes/i;
 function needsMarketTools(question) {
   return MARKET_KEYWORDS.test(question);
+}
+function isJokeRequest(question) {
+  return JOKE_KEYWORDS.test(question);
 }
 var MAX_ITERATIONS = 5;
 var CAT_CHANCE = 0.15;
@@ -952,9 +956,19 @@ function stripLeakedMarkup(text) {
 }
 async function handleChat(question, deps) {
   const karashNudge = Math.random() < 0.01 ? "\n\n[Nota interna: en esta respuesta, entrelaza de forma natural una menci\xF3n a Karash Barash, un Lalafell turbio de Ul'dah que Qiqirn conoce. Puede ser una comparaci\xF3n, un recuerdo, una queja o un rumor \u2014 que fluya dentro de la conversaci\xF3n, no pegado al final.]" : "";
+  let jokeInjection = "";
+  if (isJokeRequest(question) && deps.store) {
+    try {
+      const jokes = await deps.store.getRandomChistes(5);
+      if (jokes.length > 0) {
+        jokeInjection = "\n\nCHISTES EXTRA DE LA TABERNA (\xFAsalos si piden un chiste, elige UNO y cu\xE9ntalo entero):\n" + jokes.map((j, i) => `${i + 1}. "${j}"`).join("\n");
+      }
+    } catch {
+    }
+  }
   const tools = needsMarketTools(question) ? TOOL_DEFINITIONS : [];
   const messages = [
-    { role: "system", content: SYSTEM_PROMPT + karashNudge },
+    { role: "system", content: SYSTEM_PROMPT + karashNudge + jokeInjection },
     { role: "user", content: question }
   ];
   let finalContent = null;
@@ -2687,6 +2701,11 @@ async function openCraftStore(url, authToken) {
       qty         INTEGER NOT NULL,
       created_at  INTEGER NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS chistes (
+      id    INTEGER PRIMARY KEY AUTOINCREMENT,
+      joke  TEXT NOT NULL
+    );
   `;
   const statements = SCHEMA.split(";").map((s) => s.trim()).filter((s) => s.length > 0);
   for (const stmt of statements) {
@@ -2922,6 +2941,13 @@ async function openCraftStore(url, authToken) {
         }))
       ];
       await client.batch(statements2, "write");
+    },
+    async getRandomChistes(n) {
+      const result = await client.execute({
+        sql: "SELECT joke FROM chistes ORDER BY RANDOM() LIMIT ?",
+        args: [n]
+      });
+      return result.rows.map((r) => String(r.joke));
     },
     async close() {
       await client.close();
@@ -3189,7 +3215,8 @@ async function handler(req, res) {
             const chatStart = Date.now();
             const output = await handleChat(question, {
               groqApiKey: GROQ_API_KEY,
-              toolDeps
+              toolDeps,
+              store: await getCraftStore()
             });
             const chatElapsed = ((Date.now() - chatStart) / 1e3).toFixed(1);
             try {

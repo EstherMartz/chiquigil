@@ -284,6 +284,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             const output = await handleChat(question, {
               groqApiKey: GROQ_API_KEY,
               toolDeps,
+              store: await getCraftStore(),
             });
             const chatElapsed = ((Date.now() - chatStart) / 1000).toFixed(1);
 

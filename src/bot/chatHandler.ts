@@ -1,11 +1,17 @@
 import { callGroq, parseResponse, type ChatMessage } from './llm';
 import { TOOL_DEFINITIONS, executeTool, type ToolDeps } from './tools';
 import { SYSTEM_PROMPT } from './systemPrompt';
+import type { CraftStore } from './craftStore';
 
 const MARKET_KEYWORDS = /precio|comprar|vender|vende|craft|craftear|gil|mercado|market|ganancia|rentable|barato|caro|flip|materia|tinte|dye|pocion|poción|comida|arma|armadura|accesorio|mueble|minion|oferta|ganga|npc|vendor|recipe|receta|ingrediente|material|madera|metal|tela|cuero|piedra|lumber|cloth|leather|stone|item|objeto|cuanto|cuánto|cuesta|vale/i;
+const JOKE_KEYWORDS = /chiste|chistoso|chistosa|cuéntame|cuentame|haznos reír|hazme reír|hazme reir|haznos reir|un chiste|otro chiste|chistes/i;
 
 function needsMarketTools(question: string): boolean {
   return MARKET_KEYWORDS.test(question);
+}
+
+function isJokeRequest(question: string): boolean {
+  return JOKE_KEYWORDS.test(question);
 }
 
 const MAX_ITERATIONS = 5;
@@ -29,6 +35,7 @@ export function stripLeakedMarkup(text: string): string {
 export interface ChatHandlerDeps {
   groqApiKey: string;
   toolDeps: ToolDeps;
+  store?: CraftStore;
 }
 
 export async function handleChat(question: string, deps: ChatHandlerDeps): Promise<string> {
@@ -37,10 +44,24 @@ export async function handleChat(question: string, deps: ChatHandlerDeps): Promi
     ? '\n\n[Nota interna: en esta respuesta, entrelaza de forma natural una mención a Karash Barash, un Lalafell turbio de Ul\'dah que Qiqirn conoce. Puede ser una comparación, un recuerdo, una queja o un rumor — que fluya dentro de la conversación, no pegado al final.]'
     : '';
 
+  // If the user wants a joke, pull 5 random ones from the DB and inject them.
+  let jokeInjection = '';
+  if (isJokeRequest(question) && deps.store) {
+    try {
+      const jokes = await deps.store.getRandomChistes(5);
+      if (jokes.length > 0) {
+        jokeInjection = '\n\nCHISTES EXTRA DE LA TABERNA (úsalos si piden un chiste, elige UNO y cuéntalo entero):\n'
+          + jokes.map((j, i) => `${i + 1}. "${j}"`).join('\n');
+      }
+    } catch {
+      // DB not yet seeded or unavailable — fall back to system-prompt jokes
+    }
+  }
+
   const tools = needsMarketTools(question) ? TOOL_DEFINITIONS : [];
 
   const messages: ChatMessage[] = [
-    { role: 'system', content: SYSTEM_PROMPT + karashNudge },
+    { role: 'system', content: SYSTEM_PROMPT + karashNudge + jokeInjection },
     { role: 'user', content: question },
   ];
 

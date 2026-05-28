@@ -2,6 +2,7 @@ import { createClient } from '@libsql/client';
 import type { CraftProject, StoredTask, CraftTask, ChannelState } from './craftTypes';
 
 export interface CraftStore {
+  getRandomChistes(n: number): Promise<string[]>;
   createProject(p: {
     guildId: string;
     channelId: string;
@@ -83,6 +84,11 @@ export async function openCraftStore(url: string, authToken?: string): Promise<C
       item_name   TEXT NOT NULL,
       qty         INTEGER NOT NULL,
       created_at  INTEGER NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS chistes (
+      id    INTEGER PRIMARY KEY AUTOINCREMENT,
+      joke  TEXT NOT NULL
     );
   `;
 
@@ -351,6 +357,14 @@ export async function openCraftStore(url: string, authToken?: string): Promise<C
         })),
       ];
       await client.batch(statements, 'write');
+    },
+
+    async getRandomChistes(n: number) {
+      const result = await client.execute({
+        sql: 'SELECT joke FROM chistes ORDER BY RANDOM() LIMIT ?',
+        args: [n],
+      });
+      return result.rows.map((r) => String(r.joke));
     },
 
     async close() {
