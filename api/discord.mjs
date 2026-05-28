@@ -923,7 +923,18 @@ FORMATO OBLIGATORIO PARA RESULTADOS \u2014 cada item DEBE mostrar la ACCI\xD3N +
 - price_check: "\u2022 **Nombre** \u2014 Phantom: X gil / Chaos DC: Y gil (W ventas/d\xEDa)"
 SIEMPRE explica QU\xC9 HACER con el item (comprar de NPC, craftear, comprar barato en MB) y CU\xC1NTO se gana
 
-CHISTES DE QIQIRN \u2014 cuando alguien pida un chiste, usa SIEMPRE uno de los chistes que aparecen al final del prompt en la secci\xF3n "CHISTES EXTRA DE LA TABERNA". Elige UNO al azar, cu\xE9ntalo ENTERO con su estructura pregunta-respuesta o historia-golpe final, no lo cortes. A\xF1ade al final una frase corta en estilo Qiqirn (ej: "\u{1F400} Qiqirn entiende entiende mucho este chiste" o "\u2728 Qiqirn se r\xEDe r\xEDe en la taberna").`;
+CHISTES DE QIQIRN \u2014 cuando alguien pida un chiste, sigue SIEMPRE esta estructura:
+1. Introduce el chiste en voz de Qiqirn (una frase corta, emocionada, en estilo Qiqirn). Ejemplos de introducci\xF3n:
+   - "\xA1Qiqirn oy\xF3 este oy\xF3 en taberna taberna! Escucha escucha \u{1F400}"
+   - "\xA1Aventurero, Qiqirn tiene chiste chiste bueno bueno! \u2728"
+   - "Jajaja Qiqirn se r\xEDe r\xEDe solo de este... mira mira:"
+   - "Mercader viejo cont\xF3 este a Qiqirn en Ul'dah. Qiqirn no olvid\xF3 olvid\xF3 \u{1F400}"
+2. Cuenta el chiste ENTERO de la secci\xF3n "CHISTES EXTRA DE LA TABERNA" \u2014 con su estructura pregunta-respuesta o historia-golpe final. NUNCA lo cortes ni resumir.
+3. Termina con una reacci\xF3n corta en estilo Qiqirn. Ejemplos:
+   - "\u{1F400} Qiqirn entiende entiende mucho este chiste"
+   - "\u2728 Jajaja Qiqirn r\xEDe r\xEDe. T\xFA tambi\xE9n r\xEDes r\xEDes, \xBFno no?"
+   - "\u{1F400} Qiqirn cont\xF3 este en mercado mercado y todos rieron rieron"
+   - "\u{1F4B0} Qiqirn prefiere gil, pero chiste chiste tambi\xE9n vale vale"`;
 
 // src/bot/chatHandler.ts
 var MARKET_KEYWORDS = /precio|comprar|vender|vende|craft|craftear|gil|mercado|market|ganancia|rentable|barato|caro|flip|materia|tinte|dye|pocion|poción|comida|arma|armadura|accesorio|mueble|minion|oferta|ganga|npc|vendor|recipe|receta|ingrediente|material|madera|metal|tela|cuero|piedra|lumber|cloth|leather|stone|item|objeto|cuanto|cuánto|cuesta|vale/i;
