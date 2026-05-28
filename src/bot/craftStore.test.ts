@@ -102,4 +102,41 @@ describe('craftStore', () => {
     expect(project?.displayPartKey).toBeNull();
     expect(project?.displayPhaseIndex).toBeNull();
   });
+
+  it('addProjectItem stores and getProjectItems retrieves items', async () => {
+    const pid = await store.createProject({
+      guildId: 'g1', channelId: 'c1', name: 'P', targetItemId: 0, targetQty: 0, createdBy: 'u1',
+    });
+    await store.addProjectItem(pid, 42, 'Iron Ingot', 3);
+    await store.addProjectItem(pid, 99, 'Copper Ore', 10);
+    const items = await store.getProjectItems(pid);
+    expect(items).toHaveLength(2);
+    expect(items[0].itemId).toBe(42);
+    expect(items[0].itemName).toBe('Iron Ingot');
+    expect(items[0].qty).toBe(3);
+    expect(items[1].itemId).toBe(99);
+    expect(items[1].itemName).toBe('Copper Ore');
+    expect(items[1].qty).toBe(10);
+  });
+
+  it('replaceTasks deletes old tasks and inserts new ones', async () => {
+    const pid = await store.createProject({
+      guildId: 'g1', channelId: 'c1', name: 'P', targetItemId: 0, targetQty: 0, createdBy: 'u1',
+    });
+    await store.addTasks(pid, [
+      { itemId: 10, itemName: 'Old Item', qtyNeeded: 5, source: 'market', meta: {} },
+    ]);
+    const before = await store.getTasks(pid);
+    expect(before).toHaveLength(1);
+
+    await store.replaceTasks(pid, [
+      { itemId: 100, itemName: 'New Item A', qtyNeeded: 2, source: 'craft', meta: { job: 'BSM' } },
+      { itemId: 200, itemName: 'New Item B', qtyNeeded: 4, source: 'gather', meta: {} },
+    ]);
+    const after = await store.getTasks(pid);
+    expect(after).toHaveLength(2);
+    expect(after.find((t) => t.itemId === 10)).toBeUndefined();
+    expect(after.find((t) => t.itemId === 100)?.itemName).toBe('New Item A');
+    expect(after.find((t) => t.itemId === 200)?.qtyNeeded).toBe(4);
+  });
 });

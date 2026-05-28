@@ -23,6 +23,9 @@ export interface CraftStore {
   setProjectThreadId(projectId: number, threadId: string): Promise<void>;
   setProjectDisplayPhase(projectId: number, partKey: string, phaseIndex: number): Promise<void>;
   closeProject(projectId: number): Promise<void>;
+  addProjectItem(projectId: number, itemId: number, itemName: string, qty: number): Promise<void>;
+  getProjectItems(projectId: number): Promise<Array<{ id: number; itemId: number; itemName: string; qty: number }>>;
+  replaceTasks(projectId: number, tasks: CraftTask[]): Promise<void>;
   getChannelState(guildId: string, channelId: string): Promise<ChannelState | null>;
   upsertChannelState(state: ChannelState): Promise<void>;
   close(): Promise<void>;
@@ -71,6 +74,15 @@ export async function openCraftStore(url: string, authToken?: string): Promise<C
       board_message_id   TEXT,
       request_message_id TEXT,
       PRIMARY KEY (guild_id, channel_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS project_items (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      project_id  INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+      item_id     INTEGER NOT NULL,
+      item_name   TEXT NOT NULL,
+      qty         INTEGER NOT NULL,
+      created_at  INTEGER NOT NULL
     );
   `;
 
@@ -306,6 +318,38 @@ export async function openCraftStore(url: string, authToken?: string): Promise<C
           state.requestMessageId,
         ],
       });
+    },
+
+    async addProjectItem(projectId, itemId, itemName, qty) {
+      const createdAt = Date.now();
+      await client.execute({
+        sql: 'INSERT INTO project_items (project_id, item_id, item_name, qty, created_at) VALUES (?, ?, ?, ?, ?)',
+        args: [projectId, itemId, itemName, qty, createdAt],
+      });
+    },
+
+    async getProjectItems(projectId) {
+      const result = await client.execute({
+        sql: 'SELECT * FROM project_items WHERE project_id = ? ORDER BY created_at ASC',
+        args: [projectId],
+      });
+      return result.rows.map((row) => ({
+        id: Number(row.id),
+        itemId: Number(row.item_id),
+        itemName: String(row.item_name),
+        qty: Number(row.qty),
+      }));
+    },
+
+    async replaceTasks(projectId, tasks) {
+      await client.execute({ sql: 'DELETE FROM tasks WHERE project_id = ?', args: [projectId] });
+      const now = Date.now();
+      for (const t of tasks) {
+        await client.execute({
+          sql: 'INSERT INTO tasks (project_id, item_id, item_name, qty_needed, source, meta, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+          args: [projectId, t.itemId, t.itemName, t.qtyNeeded, t.source, t.meta ? JSON.stringify(t.meta) : null, now],
+        });
+      }
     },
 
     async close() {
