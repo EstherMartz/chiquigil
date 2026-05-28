@@ -19,6 +19,7 @@ export interface ProjectDetailResponse {
   project: Omit<ProjectSummary, 'taskCounts'>;
   tasks: StoredTask[];
   userNames: Record<string, string>;
+  projectItems: Array<{ itemName: string; qty: number }>;
 }
 
 export interface ProjectsListResponse {

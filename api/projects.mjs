@@ -42,6 +42,15 @@ async function openCraftStore(url, authToken) {
       request_message_id TEXT,
       PRIMARY KEY (guild_id, channel_id)
     );
+
+    CREATE TABLE IF NOT EXISTS project_items (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      project_id  INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+      item_id     INTEGER NOT NULL,
+      item_name   TEXT NOT NULL,
+      qty         INTEGER NOT NULL,
+      created_at  INTEGER NOT NULL
+    );
   `;
   const statements = SCHEMA.split(";").map((s) => s.trim()).filter((s) => s.length > 0);
   for (const stmt of statements) {
@@ -248,6 +257,36 @@ async function openCraftStore(url, authToken) {
         ]
       });
     },
+    async addProjectItem(projectId, itemId, itemName, qty) {
+      const createdAt = Date.now();
+      await client.execute({
+        sql: "INSERT INTO project_items (project_id, item_id, item_name, qty, created_at) VALUES (?, ?, ?, ?, ?)",
+        args: [projectId, itemId, itemName, qty, createdAt]
+      });
+    },
+    async getProjectItems(projectId) {
+      const result = await client.execute({
+        sql: "SELECT * FROM project_items WHERE project_id = ? ORDER BY created_at ASC",
+        args: [projectId]
+      });
+      return result.rows.map((row) => ({
+        id: Number(row.id),
+        itemId: Number(row.item_id),
+        itemName: String(row.item_name),
+        qty: Number(row.qty)
+      }));
+    },
+    async replaceTasks(projectId, tasks) {
+      const now = Date.now();
+      const statements2 = [
+        { sql: "DELETE FROM tasks WHERE project_id = ?", args: [projectId] },
+        ...tasks.map((t) => ({
+          sql: "INSERT INTO tasks (project_id, item_id, item_name, qty_needed, source, meta, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+          args: [projectId, t.itemId, t.itemName, t.qtyNeeded, t.source, t.meta ? JSON.stringify(t.meta) : null, now]
+        }))
+      ];
+      await client.batch(statements2, "write");
+    },
     async close() {
       await client.close();
     }
@@ -338,9 +377,13 @@ async function handler(req, res) {
     if (!project || !isAllowed(project.guildId)) {
       return res.status(404).json({ error: "Not found" });
     }
-    const tasks = await store.getTasks(id);
+    const [tasks, rawProjectItems] = await Promise.all([
+      store.getTasks(id),
+      store.getProjectItems(id)
+    ]);
     const userIds = [project.createdBy, ...tasks.map((t) => t.assigneeId).filter((id2) => id2 != null)];
     const userNames2 = await resolveNames(project.guildId, userIds);
+    const projectItems = rawProjectItems.map(({ itemName, qty }) => ({ itemName, qty }));
     return res.status(200).json({
       project: {
         id: project.id,
@@ -353,7 +396,8 @@ async function handler(req, res) {
         createdAt: project.createdAt
       },
       tasks,
-      userNames: userNames2
+      userNames: userNames2,
+      projectItems
     });
   }
   const guildId = req.query?.guild ?? "";

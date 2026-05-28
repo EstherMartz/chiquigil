@@ -102,9 +102,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Return 404 in both branches to avoid revealing whether the ID exists.
       return res.status(404).json({ error: 'Not found' });
     }
-    const tasks = await store.getTasks(id);
+    const [tasks, rawProjectItems] = await Promise.all([
+      store.getTasks(id),
+      store.getProjectItems(id),
+    ]);
     const userIds = [project.createdBy, ...tasks.map((t) => t.assigneeId).filter((id): id is string => id != null)];
     const userNames = await resolveNames(project.guildId, userIds);
+    const projectItems = rawProjectItems.map(({ itemName, qty }) => ({ itemName, qty }));
     return res.status(200).json({
       project: {
         id: project.id,
@@ -118,6 +122,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       },
       tasks,
       userNames,
+      projectItems,
     });
   }
 
