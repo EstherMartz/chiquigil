@@ -133,14 +133,11 @@ export async function loadSharedMarketCache(homeWorld: string, dc: string, regio
   sharedCacheLoaded = true;
   try {
     const cacheUrl = (import.meta as any).env?.VITE_CACHE_BLOB_URL || '/data/market-cache.json';
-    const res = await fetch(cacheUrl);
+    // no-store: always fetch the latest blob, never serve browser-cached stale version
+    const res = await fetch(cacheUrl, { cache: 'no-store' });
     if (!res.ok) return;
     const data = (await res.json()) as SharedCache;
     const age = Date.now() - data.ts;
-    if (age > 120 * 60_000) {
-      console.log(`[market] shared cache too old (${Math.round(age / 60_000)}min), skipping`);
-      return;
-    }
 
     const scopes: [string, MarketData][] = [
       [homeWorld, data.phantom],
