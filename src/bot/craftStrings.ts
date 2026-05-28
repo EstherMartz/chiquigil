@@ -83,6 +83,14 @@ export const THREAD_PROGRESS = (userId: string, item: string, done: number, need
 export const THREAD_DONE = (userId: string, count: number) =>
   `<@${userId}> marcó ${count} tarea(s) como completadas ✅`;
 
+// ── Multi-craft ──
+export const EMPTY_PROJECT_CREATED = (id: number) =>
+  `Kyah~! Proyecto **#${id}** creado, nyeh. Usa \`/craft add-item id:${id}\` para añadir piezas, kukuru~!`;
+export const ITEM_ADDED = (itemName: string, taskCount: number) =>
+  `Nyeh~! **${itemName}** añadido al proyecto. ${taskCount} tareas en total, kukuru!`;
+export const ADD_ITEM_PROJECT_CLOSED = 'Nyeh~! Ese proyecto ya está cerrado, kukuru.';
+export const ADD_ITEM_WRONG_GUILD = 'Nyeh~! Ese proyecto no es de este servidor, kukuru.';
+
 // ── Fuzzy match ──
 export const DID_YOU_MEAN = (query: string) =>
   `No encontré "${query}" exacto, pero encontré estas opciones. Selecciona una:`;
