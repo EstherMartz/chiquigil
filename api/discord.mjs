@@ -923,15 +923,7 @@ FORMATO OBLIGATORIO PARA RESULTADOS \u2014 cada item DEBE mostrar la ACCI\xD3N +
 - price_check: "\u2022 **Nombre** \u2014 Phantom: X gil / Chaos DC: Y gil (W ventas/d\xEDa)"
 SIEMPRE explica QU\xC9 HACER con el item (comprar de NPC, craftear, comprar barato en MB) y CU\xC1NTO se gana
 
-CHISTES DE QIQIRN \u2014 cuando alguien pida un chiste, elige uno de estos (o inventa similar). Cuenta el chiste ENTERO con su estructura pregunta-respuesta o historia-golpe final, no lo cortes:
-- "Qiqirn oy\xF3 este en taberna taberna: le dijeron a tipo grandote '\xA1Para de comer, que vas a explotar!' Y \xE9l respondi\xF3: '\xA1Pues dame un pastelito y ap\xE1rtate!' \u{1F400} Qiqirn entiende entiende mucho este chiste"
-- "Aventurero pregunt\xF3 a Qiqirn: '\xBFQu\xE9 hora es?' Qiqirn dijo: 'La 1.' '\xBFSeguro?' '\xBFNo voy a estar seguro seguro si lo he escuchado DOS veces?' \u{1F400}"
-- "En Free Company hab\xEDa ni\xF1o ni\xF1o que ten\xEDa 8 a\xF1os y NUNCA hab\xEDa hablado. Un d\xEDa en la posada dijo de repente: '\xA1Esta sopa no tiene sal!' Madre sorprendida: '\xA1Hijo! \xBFPor qu\xE9 nunca hab\xEDas hablado?' Ni\xF1o: 'Porque hasta ahora... todo estaba bien bien' \u{1F400}"
-- "Adivina en Ul'dah le dijo a se\xF1ora: 'Su pr\xF3ximo marido ser\xE1 guapo guapo y muy rico.' Se\xF1ora pregunt\xF3: '\xBFY qu\xE9 hago con el que tengo ahora?' \u2728 Qiqirn no tiene marido. Qiqirn tiene brillitos"
-- "Amigo de Qiqirn muri\xF3 muri\xF3. Otro amigo dijo: 'Ya le avis\xE9 yo del tabaco tabaco.' Qiqirn pregunt\xF3: '\xBFLe mat\xF3 el tabaco?' 'No... le atropell\xF3 carreta cuando iba a comprar tabaco' \u{1F400}"
-- "Roegadyn trabajaba en obras obras de Ishgard. Cada d\xEDa su mujer pon\xEDa lo mismo en la cesta. Dijo furioso: '\xA1Si ma\xF1ana vuelves a poner lo mismo me divorcio!' Al d\xEDa siguiente... lo mismo. Y se divorci\xF3. \xBFPero saben saben qu\xE9? \xC9l mismo se hac\xEDa su cesta cada ma\xF1ana \u{1F400}"
-- "En la taberna a las 4 de la madrugada: '\xBFQu\xE9 hora es?' '\xA1Las 4!' '\xA1Ostras, qu\xE9 tarde!' '\xA1Pues haberlo preguntado ANTES!' \u2728 Qiqirn tampoco duerme duerme bien"
-- "Se\xF1ora fue al m\xE9dico: '\xBFTengo que saber mi grupo sangu\xEDneo?' M\xE9dico: 'S\xED, es el RH.' Se\xF1ora: '\xBFEl R12? Ese es el de mi marido...' \u{1F400} Qiqirn no entiende de m\xE9dicos, Qiqirn entiende de gil"`;
+CHISTES DE QIQIRN \u2014 cuando alguien pida un chiste, usa SIEMPRE uno de los chistes que aparecen al final del prompt en la secci\xF3n "CHISTES EXTRA DE LA TABERNA". Elige UNO al azar, cu\xE9ntalo ENTERO con su estructura pregunta-respuesta o historia-golpe final, no lo cortes. A\xF1ade al final una frase corta en estilo Qiqirn (ej: "\u{1F400} Qiqirn entiende entiende mucho este chiste" o "\u2728 Qiqirn se r\xEDe r\xEDe en la taberna").`;
 
 // src/bot/chatHandler.ts
 var MARKET_KEYWORDS = /precio|comprar|vender|vende|craft|craftear|gil|mercado|market|ganancia|rentable|barato|caro|flip|materia|tinte|dye|pocion|poción|comida|arma|armadura|accesorio|mueble|minion|oferta|ganga|npc|vendor|recipe|receta|ingrediente|material|madera|metal|tela|cuero|piedra|lumber|cloth|leather|stone|item|objeto|cuanto|cuánto|cuesta|vale/i;
@@ -961,7 +953,7 @@ async function handleChat(question, deps) {
     try {
       const jokes = await deps.store.getRandomChistes(5);
       if (jokes.length > 0) {
-        jokeInjection = "\n\nCHISTES EXTRA DE LA TABERNA (\xFAsalos si piden un chiste, elige UNO y cu\xE9ntalo entero):\n" + jokes.map((j, i) => `${i + 1}. "${j}"`).join("\n");
+        jokeInjection = "\n\nCHISTES EXTRA DE LA TABERNA \u2014 OBLIGATORIO: elige UNO de estos y cu\xE9ntalo entero:\n" + jokes.map((j, i) => `${i + 1}. "${j}"`).join("\n");
       }
     } catch {
     }

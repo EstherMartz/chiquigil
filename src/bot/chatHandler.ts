@@ -50,7 +50,7 @@ export async function handleChat(question: string, deps: ChatHandlerDeps): Promi
     try {
       const jokes = await deps.store.getRandomChistes(5);
       if (jokes.length > 0) {
-        jokeInjection = '\n\nCHISTES EXTRA DE LA TABERNA (úsalos si piden un chiste, elige UNO y cuéntalo entero):\n'
+        jokeInjection = '\n\nCHISTES EXTRA DE LA TABERNA — OBLIGATORIO: elige UNO de estos y cuéntalo entero:\n'
           + jokes.map((j, i) => `${i + 1}. "${j}"`).join('\n');
       }
     } catch {
