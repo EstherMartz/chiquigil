@@ -21,11 +21,19 @@ const commands = [
       {
         type: 1, name: 'new', description: 'Crear proyecto',
         options: [
-          { type: 3, name: 'item', description: 'Item a craftear', required: true, autocomplete: true },
-          { type: 4, name: 'qty', description: 'Cantidad', required: true, min_value: 1 },
+          { type: 3, name: 'item', description: 'Item a craftear', required: false, autocomplete: true },
+          { type: 4, name: 'qty', description: 'Cantidad', required: false, min_value: 1 },
           { type: 3, name: 'name', description: 'Nombre del proyecto', required: false },
           { type: 5, name: 'intermediates', description: 'Incluir intermedios (por defecto: sí)', required: false },
           { type: 8, name: 'ping_role', description: 'Rol a mencionar', required: false },
+        ],
+      },
+      {
+        type: 1, name: 'add-item', description: 'Añadir item a un proyecto multi-craft',
+        options: [
+          { type: 4, name: 'id', description: 'ID del proyecto', required: true },
+          { type: 3, name: 'item', description: 'Item a añadir', required: true, autocomplete: true },
+          { type: 4, name: 'qty', description: 'Cantidad', required: false, min_value: 1 },
         ],
       },
       { type: 1, name: 'list', description: 'Ver proyectos abiertos' },
