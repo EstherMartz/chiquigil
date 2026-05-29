@@ -172,6 +172,7 @@ export default function Item() {
           materialCost={recipeMaterialCost}
           homeWorld={world}
           canHq={canHq}
+          now={Date.now()}
         />
       )}
 
