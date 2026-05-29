@@ -187,6 +187,7 @@ async function handler(req, res) {
     }
   } catch {
   }
+  res.setHeader("Cache-Control", "public, max-age=600");
   return res.status(200).json({
     itemId,
     itemName,

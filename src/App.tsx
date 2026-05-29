@@ -2,6 +2,7 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { Sidebar } from './components/layout/Sidebar';
 import { ContentBar } from './components/layout/ContentBar';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { OnboardingWizard } from './features/onboarding/OnboardingWizard';
 import { usePluginConnection } from './features/plugin/usePluginConnection';
 import Home from './routes/Home';
@@ -82,6 +83,7 @@ export default function App() {
       )}
       <main className="flex-1 min-w-0 pt-16 md:pt-8 px-4 pb-[max(5rem,env(safe-area-inset-bottom))]">
         <ContentBar />
+        <ErrorBoundary>
         <Routes>
             <Route path="/" element={<Navigate to="/trading" replace />} />
             <Route path="/home" element={<Home />} />
@@ -110,6 +112,7 @@ export default function App() {
             <Route path="/projects" element={<Projects />} />
             <Route path="/projects/:id" element={<Project />} />
           </Routes>
+        </ErrorBoundary>
       </main>
     </div>
   );

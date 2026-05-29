@@ -360,6 +360,7 @@ async function handler(req, res) {
       totalCost += acquire.meta.price * acquire.qtyNeeded;
     }
   }
+  res.setHeader("Cache-Control", "public, max-age=600");
   return res.status(200).json({
     itemId,
     itemName,

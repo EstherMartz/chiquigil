@@ -60,6 +60,7 @@ function SortableHeader({
         hideOnMobile ? 'hidden md:table-cell' : ''
       } ${active ? 'text-gold' : 'text-text-dim hover:text-aether'}`}
       onClick={onClick}
+      aria-sort={active ? 'descending' : 'none'}
     >
       {children}{arrow}
     </th>

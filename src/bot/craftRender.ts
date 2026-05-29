@@ -1,7 +1,9 @@
 import type { CraftProject, StoredTask } from './craftTypes';
 import * as S from './craftStrings';
 
-const ITEMS_BASE_URL = process.env.PROJECTS_BASE_URL ?? 'https://qiqirn.tools';
+// Browser-safe (imported by ProjectDetail.tsx); `process` is undefined in the browser.
+const ITEMS_BASE_URL =
+  (typeof process !== 'undefined' ? process.env.PROJECTS_BASE_URL : undefined) ?? 'https://qiqirn.tools';
 
 const JOB_EMOJI: Record<string, string> = {
   CRP: '🪚', BSM: '⚒️', ARM: '🛡️', GSM: '💎', LTW: '🧵',

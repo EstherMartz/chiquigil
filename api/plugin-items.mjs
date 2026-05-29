@@ -77,6 +77,7 @@ async function handler(req, res) {
   const start = (page - 1) * pageSize;
   const end = start + pageSize;
   const items = matches.slice(start, end);
+  res.setHeader("Cache-Control", "public, max-age=600");
   return res.status(200).json({
     items,
     total,

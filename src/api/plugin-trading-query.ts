@@ -1,9 +1,10 @@
 import { loadSnapshots } from '../bot/loadSnapshots';
 import { cheapestWorld } from '../lib/cheapestWorld';
+import { categoriesByGroup } from '../lib/itemSearchCategories';
 
-// ── Resolved category group IDs ────────────────────────────────────────────
-const HOUSING_CATS = [56, 65, 66, 67, 68, 69, 70, 71, 72, 81, 82];
-const MATERIAL_CATS = [7, 47, 48, 49, 50, 51, 52, 53, 54, 57, 58, 59, 61, 79, 80];
+// ── Resolved category group IDs (shared with the web's category map) ────────
+const HOUSING_CATS = categoriesByGroup('Housing');
+const MATERIAL_CATS = categoriesByGroup('Materials');
 
 // ── Preset definitions (mirrors src/features/queries/presets.ts) ──────────
 interface QueryFilter {
@@ -193,6 +194,15 @@ function runStandardQuery(
 // ── Handler ───────────────────────────────────────────────────────────────
 async function handler(req: any, res: any) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+
+  // Catalog mode: the plugin fetches the preset list (id/label/category) so its
+  // buttons stay in sync with the backend without a plugin release.
+  if (req.query.list) {
+    res.setHeader('Cache-Control', 'public, max-age=600');
+    return res.status(200).json({
+      presets: PRESETS.map(p => ({ id: p.id, label: p.label, category: p.category })),
+    });
+  }
 
   const { preset: presetId, world } = req.query;
 

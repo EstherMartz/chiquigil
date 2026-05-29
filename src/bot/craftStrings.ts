@@ -56,7 +56,10 @@ export const CHANNEL_NOT_FOUND = 'No pude publicar el proyecto en el canal — r
 export const PROJECT_CREATED = (id: number, channelId: string, taskCount: number) =>
   `✅ Proyecto **#${id}** creado en <#${channelId}> con ${taskCount} tareas.`;
 export const PROJECT_CLOSED = (id: number) => `🔒 Proyecto #${id} cerrado.`;
-const PROJECTS_BASE_URL = process.env.PROJECTS_BASE_URL ?? 'https://qiqirn.tools';
+// Browser-safe: this module is imported by client code (via craftRender), where
+// `process` is undefined. Guard so Vite doesn't throw at module-eval time.
+const PROJECTS_BASE_URL =
+  (typeof process !== 'undefined' ? process.env.PROJECTS_BASE_URL : undefined) ?? 'https://qiqirn.tools';
 export const NEW_PROJECT_CONTENT = (projectId: number) =>
   `🛠 Nuevo proyecto de crafteo:\n📋 ${PROJECTS_BASE_URL}/projects/${projectId}`;
 export const SETUP_DONE = (channelId: string) =>
