@@ -11,19 +11,19 @@ import { useGcSupplyUsedInIndex } from '../features/items/useGcSupplyUsedInIndex
 import { useLeveUsedInIndex } from '../features/items/useLeveUsedInIndex';
 import { DeliverablesBlock } from '../features/items/DeliverablesBlock';
 import { CraftTreeBlock } from '../features/items/CraftTreeBlock';
+import { CraftSellMathCard } from '../features/items/CraftSellMathCard';
 import { explode } from '../bot/craftExplode';
 import { useMarketData } from '../features/watchlist/useMarketData';
 import { useVendorShopSnapshot } from '../features/queries/useVendorShopSnapshot';
 import { useSpecialShopSnapshot } from '../features/queries/useSpecialShopSnapshot';
-import { SaleHistoryBlock } from '../features/items/SaleHistoryBlock';
 import { VendorSourceCard } from '../features/items/VendorSourceCard';
 import { CurrencySourceCard } from '../features/items/CurrencySourceCard';
-import { CrossWorldListingsBlock } from '../features/items/CrossWorldListingsBlock';
 import { VerdictCard } from '../features/items/VerdictCard';
+import { MarketSnapshotRow } from '../features/items/MarketSnapshotRow';
 import { findItemCurrencyOffers } from '../features/items/currencyOffers';
 import { AddToWatchlistButton } from '../features/items/AddToWatchlistButton';
 import { AddToShoppingListButton } from '../features/shoppingList/AddToShoppingListButton';
-import { fmtGil, garlandItemUrl, gamerEscapeItemUrl, universalisItemUrl } from '../lib/format';
+import { fmtGil, fmtRelative, garlandItemUrl, gamerEscapeItemUrl, universalisItemUrl } from '../lib/format';
 import { Gil } from '../components/Gil';
 import { rarityBorderLeftClass, rarityLabel, rarityTextClass } from '../features/items/rarity';
 import { categoryLabel } from '../lib/itemSearchCategories';
@@ -41,18 +41,20 @@ import type { Recipe } from '../lib/recipes';
 
 const USED_IN_LIMIT = 20;
 
-const SOURCE_LABEL: Record<IngredientSource, string> = {
+const SOURCE_LABEL: Record<IngredientSource | 'mb', string> = {
   vendor: 'Vendor',
   gather: 'Gather',
   craft: 'Craft',
-  other: '—',
+  other: 'MB',
+  mb: 'MB',
 };
 
-const SOURCE_CHIP_CLASS: Record<IngredientSource, string> = {
+const SOURCE_CHIP_CLASS: Record<IngredientSource | 'mb', string> = {
   vendor: 'text-jade border-jade/40',
   gather: 'text-aether border-aether/40',
   craft:  'text-gold border-gold/40',
-  other:  'text-text-low border-border-base',
+  other:  'text-aether border-aether/40',
+  mb:     'text-aether border-aether/40',
 };
 
 export default function Item() {
@@ -161,6 +163,19 @@ export default function Item() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 space-y-6">
+      {/* Breadcrumb row */}
+      <div className="font-mono text-[10px] tracking-widest uppercase text-text-low flex items-center gap-1 flex-wrap">
+        <Link to="/" className="hover:text-aether transition-colors">Search</Link>
+        <span className="text-text-dim">›</span>
+        {displaySc > 0 && (
+          <>
+            <span className="text-text-dim">{categoryLabel(displaySc)}</span>
+            <span className="text-text-dim">›</span>
+          </>
+        )}
+        <span className="text-text-dim truncate">{displayName}</span>
+      </div>
+
       <HeaderBlock
         name={displayName}
         ilvl={displayIlvl}
@@ -169,6 +184,9 @@ export default function Item() {
         rarity={item?.rarity}
         itemId={itemId}
         recipe={recipe ?? null}
+        world={world}
+        dc={dc}
+        updatedMs={phantomMarket?.lastUploadTime ?? null}
       />
 
       {snapshot.isLoading && (
@@ -191,22 +209,15 @@ export default function Item() {
         />
       )}
 
-      <PricesBlock
-        worldLabel={world}
+      <MarketSnapshotRow
+        itemId={itemId}
+        homeWorld={world}
         dcLabel={dc}
-        loading={market.isLoading}
         phantom={phantomMarket}
         dc={dcMarket}
+        region={regionMarket}
+        canHq={canHq}
       />
-
-      {regionMarket && regionMarket.worldListings.length > 0 && (
-        <CrossWorldListingsBlock
-          listings={regionMarket.worldListings}
-          homeWorld={world}
-          homeMinNQ={phantomMarket?.minNQ ?? null}
-          homeMinHQ={phantomMarket?.minHQ ?? null}
-        />
-      )}
 
       {vendorPrice ? (
         <VendorSourceCard
@@ -229,18 +240,26 @@ export default function Item() {
         />
       )}
 
-      <SaleHistoryBlock itemId={itemId} scope={dc} canHq={canHq} />
-
       {recipes.isLoading && !recipe && (
         <div className="py-4"><Spinner label="Loading recipe catalog…" /></div>
       )}
       {recipe && (
-        <RecipeBlock
-          recipe={recipe}
-          itemNames={snapshot.data?.items}
-          phantom={market.data?.phantom}
-          garlandIngredients={garland.data?.ingredients}
-        />
+        <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-3 items-start">
+          <RecipeBlock
+            recipe={recipe}
+            itemNames={snapshot.data?.items}
+            phantom={market.data?.phantom}
+            garlandIngredients={garland.data?.ingredients}
+          />
+          <CraftSellMathCard
+            recipe={recipe}
+            materialsHome={recipeMaterialCost}
+            regionMap={market.data?.region}
+            homeWorld={world}
+            phantom={phantomMarket}
+            canHq={canHq}
+          />
+        </div>
       )}
 
       {recipe && (
@@ -279,15 +298,17 @@ export default function Item() {
   );
 }
 
-function HeaderBlock({ name, ilvl, sc, canHq, rarity, itemId, recipe }: {
+function HeaderBlock({ name, ilvl, sc, canHq, rarity, itemId, recipe, world, dc, updatedMs }: {
   name: string; ilvl: number; sc: number; canHq: boolean; rarity: number | undefined; itemId: number; recipe: Recipe | null;
+  world: string; dc: string; updatedMs: number | null;
 }) {
   const rarityBorder = rarityBorderLeftClass(rarity);
   const rarityName = rarityTextClass(rarity);
   const rarityTier = rarityLabel(rarity);
+  const relativeTime = updatedMs ? fmtRelative(updatedMs) : '—';
   return (
     <header className={`border border-border-base bg-bg-card p-5 sm:p-6 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 ${rarityBorder ? `border-l-4 ${rarityBorder}` : ''}`}>
-      <div>
+      <div className="flex-1">
         <div className="font-mono text-[10px] tracking-[0.3em] uppercase text-text-low mb-1 flex items-center gap-3 flex-wrap">
           {ilvl > 1 && <span className="text-gold">Item Level {ilvl}</span>}
           {sc > 0 && <span>{categoryLabel(sc)}</span>}
@@ -298,92 +319,58 @@ function HeaderBlock({ name, ilvl, sc, canHq, rarity, itemId, recipe }: {
           {name}
           <CopyButton text={name} label="Copy item name" className="text-base" />
         </h1>
+        {/* Meta subtitle line */}
+        <div className="font-mono text-[10px] tracking-widest uppercase text-text-low mt-2 flex items-center gap-1 flex-wrap">
+          <span>• {world} •</span>
+          <span>{dc}</span>
+          <span>•</span>
+          <span>Updated {relativeTime}</span>
+          <span>•</span>
+          <a
+            href={garlandItemUrl(itemId)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-text-low hover:text-aether transition-colors"
+            title="Open on Garland Tools"
+          >
+            Garland
+          </a>
+          <span>•</span>
+          <a
+            href={gamerEscapeItemUrl(name)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-text-low hover:text-aether transition-colors"
+            title="Gamer Escape wiki"
+          >
+            GE
+          </a>
+          <span>•</span>
+          <a
+            href={universalisItemUrl(itemId)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-text-low hover:text-aether transition-colors"
+            title="Universalis (market data)"
+          >
+            UV
+          </a>
+        </div>
       </div>
       <div className="flex flex-col sm:flex-row sm:items-end gap-3 self-start sm:self-end">
         <div className="flex flex-wrap gap-2">
           <AddToWatchlistButton itemId={itemId} itemName={name} ilvl={ilvl} recipe={recipe} />
           <AddToShoppingListButton itemId={itemId} hasRecipe={recipe != null} />
-        </div>
-        <div className="flex flex-wrap items-center gap-1 sm:border-l sm:border-border-base sm:pl-3">
-          <a
-            href={garlandItemUrl(itemId)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-mono text-[10px] tracking-widest uppercase text-text-dim hover:text-aether px-2 py-2 transition-colors"
-            title="Open on Garland Tools"
+          <Link
+            to="/projects"
+            className="font-mono text-[10px] tracking-widest uppercase bg-gold text-bg-deep px-3 py-2 hover:opacity-90 transition-opacity"
+            title="Open crafting projects"
           >
-            Garland ↗
-          </a>
-          <a
-            href={gamerEscapeItemUrl(name)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-mono text-[10px] tracking-widest uppercase text-text-dim hover:text-aether px-2 py-2 transition-colors"
-            title="Gamer Escape wiki"
-          >
-            GE ↗
-          </a>
-          <a
-            href={universalisItemUrl(itemId)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-mono text-[10px] tracking-widest uppercase text-text-dim hover:text-aether px-2 py-2 transition-colors"
-            title="Universalis (market data)"
-          >
-            UV ↗
-          </a>
+            + Project
+          </Link>
         </div>
       </div>
     </header>
-  );
-}
-
-function PricesBlock({ worldLabel, dcLabel, loading, phantom, dc }: {
-  worldLabel: string; dcLabel: string; loading: boolean;
-  phantom: MarketItem | undefined; dc: MarketItem | undefined;
-}) {
-  return (
-    <section>
-      <SectionHeader label="Prices" compact />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <PriceCard scope={worldLabel} m={phantom} loading={loading} />
-        <PriceCard scope={dcLabel} m={dc} loading={loading} />
-      </div>
-    </section>
-  );
-}
-
-function PriceCard({ scope, m, loading }: { scope: string; m: MarketItem | undefined; loading: boolean }) {
-  return (
-    <div className="border border-border-base bg-bg-card p-4">
-      <div className="font-mono text-[10px] tracking-widest uppercase text-text-low mb-2">{scope}</div>
-      {loading && !m ? (
-        <div className="text-text-low text-sm italic">Loading…</div>
-      ) : !m || (m.minNQ == null && m.minHQ == null) ? (
-        <div className="text-text-low text-sm italic">No marketboard data.</div>
-      ) : (
-        <dl className="grid grid-cols-2 gap-y-1.5 gap-x-4 font-mono text-xs">
-          <PriceRow label="Min NQ" value={m.minNQ} />
-          <PriceRow label="Min HQ" value={m.minHQ} />
-          <PriceRow label="Avg NQ" value={m.averagePriceNQ} dim />
-          <PriceRow label="Avg HQ" value={m.averagePriceHQ} dim />
-          <PriceRow label="Velocity" raw={`${m.velocity.toFixed(1)} /day`} />
-          <PriceRow label="Listings" raw={String(m.listingCount)} />
-        </dl>
-      )}
-    </div>
-  );
-}
-
-function PriceRow({ label, value, raw, dim }: {
-  label: string; value?: number | null; raw?: string; dim?: boolean;
-}) {
-  const text = raw ?? fmtGil(value ?? null);
-  return (
-    <>
-      <dt className="text-text-low">{label}</dt>
-      <dd className={`text-right tabular-nums ${dim ? 'text-text-dim' : 'text-text-cream'}`}>{text}</dd>
-    </>
   );
 }
 
@@ -425,6 +412,7 @@ function RecipeBlock({ recipe, itemNames, phantom, garlandIngredients }: {
               <th className="text-left py-1">Ingredient</th>
               <th className="text-right py-1">Qty</th>
               <th className="text-right py-1">Unit (home)</th>
+              <th className="text-right py-1">Sub-total</th>
               <th className="text-right py-1 hidden sm:table-cell">Source</th>
             </tr>
           </thead>
@@ -432,7 +420,9 @@ function RecipeBlock({ recipe, itemNames, phantom, garlandIngredients }: {
             {recipe.ingredients.map((ing) => {
               const m = phantom?.[String(ing.itemId)];
               const unit = m?.minNQ ?? m?.minHQ ?? null;
+              const subtotal = unit != null ? unit * ing.amount : null;
               const source = sourceById.get(ing.itemId);
+              const displaySource = source ?? 'mb';
               const name = nameById.get(ing.itemId) ?? `Item #${ing.itemId}`;
               return (
                 <tr key={ing.itemId} className="border-t border-border-base">
@@ -444,14 +434,11 @@ function RecipeBlock({ recipe, itemNames, phantom, garlandIngredients }: {
                   </td>
                   <td className="py-2 text-right font-mono">{ing.amount}</td>
                   <td className="py-2 text-right font-mono">{fmtGil(unit)}</td>
+                  <td className="py-2 text-right font-mono">{fmtGil(subtotal)}</td>
                   <td className="py-2 text-right hidden sm:table-cell">
-                    {source ? (
-                      <span className={`font-mono text-[10px] tracking-widest uppercase border ${SOURCE_CHIP_CLASS[source]} px-2 py-0.5 rounded-sm`}>
-                        {SOURCE_LABEL[source]}
-                      </span>
-                    ) : (
-                      <span className="text-text-low font-mono">—</span>
-                    )}
+                    <span className={`font-mono text-[10px] tracking-widest uppercase border ${SOURCE_CHIP_CLASS[displaySource]} px-2 py-0.5 rounded-sm`}>
+                      {SOURCE_LABEL[displaySource]}
+                    </span>
                   </td>
                 </tr>
               );
@@ -460,7 +447,7 @@ function RecipeBlock({ recipe, itemNames, phantom, garlandIngredients }: {
               <td colSpan={2} className="py-2 font-mono text-[10px] tracking-widest uppercase text-text-low text-right">
                 Material total (home)
               </td>
-              <td className="py-2 text-right font-mono text-gold"><Gil value={total} /></td>
+              <td colSpan={2} className="py-2 text-right font-mono text-gold"><Gil value={total} /></td>
               <td className="hidden sm:table-cell" />
             </tr>
           </tbody>
@@ -578,62 +565,32 @@ function SourcesBlock({ itemId, itemName, gather }: {
   itemName: string;
   gather: { level: number; timed: boolean; hidden: boolean } | undefined;
 }) {
-  const externalLinks = (
-    <div className="flex flex-wrap gap-2">
-      <a
-        href={garlandItemUrl(itemId)}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="font-mono text-[11px] tracking-widest uppercase border border-border-base text-text-dim hover:text-aether hover:border-aether active:text-aether px-3 py-2 transition-colors"
-      >
-        Garland ↗
-      </a>
-      <a
-        href={gamerEscapeItemUrl(itemName)}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="font-mono text-[11px] tracking-widest uppercase border border-border-base text-text-dim hover:text-aether hover:border-aether active:text-aether px-3 py-2 transition-colors"
-      >
-        GE ↗
-      </a>
-      <a
-        href={universalisItemUrl(itemId)}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="font-mono text-[11px] tracking-widest uppercase border border-border-base text-text-dim hover:text-aether hover:border-aether active:text-aether px-3 py-2 transition-colors"
-      >
-        UV ↗
-      </a>
-    </div>
-  );
-
-  if (!gather) {
-    return (
-      <section>
-        <SectionHeader label="Sources" compact />
-        <div className="border border-border-base bg-bg-card p-4 space-y-3">
-          <div className="text-text-low text-sm italic">No gathering data in catalog.</div>
-          {externalLinks}
-        </div>
-      </section>
-    );
-  }
+  const linkClass = 'font-mono text-[10px] tracking-widest uppercase text-text-low hover:text-aether transition-colors';
   return (
-    <section>
-      <SectionHeader label="Sources" compact />
-      <div className="border border-border-base bg-bg-card p-4 space-y-3">
-        <div className="flex items-baseline gap-3 flex-wrap">
-          <span className="font-mono text-[10px] tracking-widest uppercase text-text-low">Gathering</span>
-          <span className="text-text-cream">Lv {gather.level || '?'}</span>
-          {gather.timed && <span className="text-gold font-mono text-[10px] tracking-widest uppercase">⏱ Timed</span>}
-        </div>
-        {externalLinks}
+    <footer className="border-t border-border-base mt-2 pt-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+      <div className="flex items-center gap-1 flex-wrap">
+        <span className="font-mono text-[10px] tracking-widest uppercase text-text-dim mr-1">External sources</span>
+        <a href={garlandItemUrl(itemId)} target="_blank" rel="noopener noreferrer" className={linkClass}>Garland Tools ↗</a>
+        <span className="text-text-low">·</span>
+        <a href={gamerEscapeItemUrl(itemName)} target="_blank" rel="noopener noreferrer" className={linkClass}>Gamer Escape ↗</a>
+        <span className="text-text-low">·</span>
+        <a href={universalisItemUrl(itemId)} target="_blank" rel="noopener noreferrer" className={linkClass}>Universalis ↗</a>
       </div>
-    </section>
+      <div className="font-mono text-[10px] tracking-widest uppercase text-text-low">
+        {gather ? (
+          <span>
+            Gathering Lv {gather.level || '?'}
+            {gather.timed && <span className="text-gold"> · ⏱ Timed</span>}
+          </span>
+        ) : (
+          <span>No gathering data in catalog</span>
+        )}
+      </div>
+    </footer>
   );
 }
 
-function findBestSingleStopFor(
+export function findBestSingleStopFor(
   ingredients: Recipe['ingredients'],
   regionByIngId: Record<string, MarketItem | undefined>,
   homeWorld: string,

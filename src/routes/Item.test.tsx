@@ -178,13 +178,13 @@ describe('Item route', () => {
     expect(screen.queryByText(/currency source/i)).not.toBeInTheDocument();
   });
 
-  it('renders Cross-world listings section when region data is populated', async () => {
+  it('renders Cross-world Arb card when region data is populated', async () => {
     await putCachedItems([
       { id: 5057, name: 'Earth Shard', sc: 58, ui: 0, ilvl: 1, canHq: false },
     ]);
     await putCachedRecipeSnapshot([]);
     // Mock Universalis: home (Phantom), DC (Chaos), region (Europe) all return data.
-    // Region payload carries the cross-world listings the new section renders.
+    // Region payload carries the cross-world listings the arb card renders.
     const regionItem = {
       listings: [
         { hq: false, pricePerUnit: 8, worldName: 'Lich' },
@@ -204,8 +204,11 @@ describe('Item route', () => {
     render(withProviders('/item/5057'));
 
     await waitFor(() => {
-      expect(screen.getByText(/cross-world listings/i)).toBeInTheDocument();
+      expect(screen.getByText(/cross-world arb/i)).toBeInTheDocument();
+      // Wait on the data row itself — the card header renders immediately
+      // (even in its empty state), so only the populated row proves the
+      // region fetch resolved.
+      expect(screen.getByText(/Lich/)).toBeInTheDocument();
     });
-    expect(screen.getByText(/Lich/)).toBeInTheDocument();
   });
 });

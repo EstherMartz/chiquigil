@@ -1,0 +1,202 @@
+import { useMemo } from 'react';
+import { findBestSingleStopFor } from '../../routes/Item';
+import type { Recipe } from '../../lib/recipes';
+import type { MarketItem } from '../../lib/universalis';
+import { Gil } from '../../components/Gil';
+import { SectionHeader } from '../../components/SectionHeader';
+
+export interface CraftSellMathInput {
+  materialsHome: number;
+  materialsRegionBest: number;
+  salePrice: number | null;
+  velocity: number;
+}
+
+export interface CraftSellMathOutput {
+  bestMaterials: number;
+  profitPerCraft: number | null;
+  daysToMove: number | null;
+  gilPerHour: number | null;
+}
+
+export function craftSellMath(input: CraftSellMathInput): CraftSellMathOutput {
+  const { materialsHome, materialsRegionBest, salePrice, velocity } = input;
+
+  const bestMaterials = Math.min(materialsHome, materialsRegionBest);
+  const profitPerCraft = salePrice != null ? salePrice - bestMaterials : null;
+  const daysToMove = velocity > 0 ? 1 / velocity : null;
+  const gilPerHour = profitPerCraft != null && daysToMove != null && daysToMove > 0
+    ? profitPerCraft / (daysToMove * 24)
+    : null;
+
+  return {
+    bestMaterials,
+    profitPerCraft,
+    daysToMove,
+    gilPerHour,
+  };
+}
+
+function humanizeDays(days: number | null): string {
+  if (days == null) return 'unknown';
+  if (days < 1) {
+    const hours = Math.round(days * 24);
+    return `${hours}h`;
+  }
+  if (days < 14) {
+    return `${Math.round(days)}d`;
+  }
+  const weeks = Math.round(days / 7);
+  return `~${weeks}wk`;
+}
+
+export function CraftSellMathCard({
+  recipe,
+  materialsHome,
+  regionMap,
+  homeWorld,
+  phantom,
+  canHq,
+}: {
+  recipe: Recipe;
+  materialsHome: number;
+  regionMap?: Record<string, MarketItem | undefined>;
+  homeWorld: string;
+  phantom?: MarketItem;
+  canHq: boolean;
+}) {
+  // Compute the best single-stop region cost if we have region data.
+  const { materialsRegionBest, bestWorld } = useMemo(() => {
+    if (!regionMap) return { materialsRegionBest: materialsHome, bestWorld: null };
+    const result = findBestSingleStopFor(recipe.ingredients, regionMap, homeWorld, materialsHome);
+    return { materialsRegionBest: result.cost, bestWorld: result.world };
+  }, [recipe.ingredients, regionMap, homeWorld, materialsHome]);
+
+  // Get the sale price: prefer HQ average, fall back to NQ average.
+  const salePrice = useMemo(() => {
+    if (!phantom) return null;
+    if (canHq) {
+      return phantom.averagePriceHQ ?? phantom.medianHQ ?? phantom.minHQ ?? null;
+    }
+    return phantom.averagePriceNQ ?? phantom.medianNQ ?? phantom.minNQ ?? null;
+  }, [phantom, canHq]);
+
+  const velocity = phantom?.velocity ?? 0;
+
+  const math = useMemo(
+    () => craftSellMath({
+      materialsHome,
+      materialsRegionBest,
+      salePrice,
+      velocity,
+    }),
+    [materialsHome, materialsRegionBest, salePrice, velocity],
+  );
+
+  const regionCheaper = materialsRegionBest < materialsHome;
+
+  const salePriceLabel = canHq && salePrice != null ? 'Sale price (Avg HQ)' : 'Sale price (Avg NQ)';
+
+  return (
+    <section>
+      <SectionHeader label="Craft → sell math" compact />
+      <div className="border border-border-base bg-bg-card p-4 space-y-3">
+        {/* Input rows */}
+        <div className="space-y-2 text-sm">
+          <div className="flex justify-between items-baseline">
+            <span className="text-text-dim font-mono text-[10px] tracking-widest uppercase">Materials @ home</span>
+            <span className="font-mono"><Gil value={materialsHome} /></span>
+          </div>
+          <div className="flex justify-between items-baseline">
+            <span className="text-text-dim font-mono text-[10px] tracking-widest uppercase">
+              Materials @ region
+            </span>
+            <div className="flex items-center gap-2">
+              <span className="font-mono"><Gil value={materialsRegionBest} /></span>
+              {regionCheaper && bestWorld && (
+                <span className="text-[9px] text-text-low font-mono">
+                  (best at {bestWorld})
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="flex justify-between items-baseline">
+            <span className="text-text-dim font-mono text-[10px] tracking-widest uppercase">HQ rate</span>
+            <span className="text-text-low text-xs italic">
+              —{' '}
+              <span className="text-[9px]">depends on your gear</span>
+            </span>
+          </div>
+          <div className="flex justify-between items-baseline">
+            <span className="text-text-dim font-mono text-[10px] tracking-widest uppercase">
+              {salePriceLabel}
+            </span>
+            <span className="font-mono">
+              {salePrice != null ? <Gil value={salePrice} /> : '—'}
+            </span>
+          </div>
+        </div>
+
+        {/* Divider */}
+        <div className="border-t border-border-base/50" />
+
+        {/* Profit headline */}
+        <div>
+          <div className="flex justify-between items-baseline">
+            <span className="text-text-dim font-mono text-[10px] tracking-widest uppercase">Profit / craft</span>
+            <span
+              className={`font-mono text-2xl ${
+                math.profitPerCraft != null && math.profitPerCraft > 0
+                  ? 'text-jade'
+                  : 'text-text-low'
+              }`}
+            >
+              {math.profitPerCraft != null ? (
+                <>
+                  +<Gil value={math.profitPerCraft} />
+                </>
+              ) : (
+                '—'
+              )}
+            </span>
+          </div>
+          <div className="text-[11px] text-text-low">if you craft now</div>
+        </div>
+
+        {/* Reality check callout */}
+        {velocity > 0 ? (
+          <div className="text-[11px] text-text-low space-y-1">
+            <div className="flex gap-1">
+              <span className="text-gold flex-shrink-0">•</span>
+              <span>
+                At {velocity.toFixed(1)} sales/day you'd wait ~{humanizeDays(math.daysToMove)} to move 1.
+                {math.gilPerHour != null && (
+                  <>
+                    {' '}True gil/hour ≈{' '}
+                    <span className="text-text-cream font-mono">
+                      <Gil value={Math.round(math.gilPerHour)} />
+                    </span>
+                    .
+                  </>
+                )}
+              </span>
+            </div>
+          </div>
+        ) : (
+          <div className="text-[11px] text-text-low flex gap-1">
+            <span className="text-gold flex-shrink-0">•</span>
+            <span>No recent sales — gil/hour unknown.</span>
+          </div>
+        )}
+
+        {/* No home sale price yet */}
+        {salePrice == null && (
+          <div className="text-[11px] text-text-low flex gap-1">
+            <span className="text-gold flex-shrink-0">•</span>
+            <span>No home sale price yet.</span>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}

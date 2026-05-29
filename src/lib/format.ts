@@ -26,3 +26,20 @@ export function gamerEscapeItemUrl(name: string): string {
 export function garlandQuestUrl(id: number): string {
   return `https://www.garlandtools.org/db/#quest/${id}`;
 }
+
+export function fmtRelative(ms: number): string {
+  if (!ms) return '—';
+  const now = Date.now();
+  const elapsed = now - ms;
+  const seconds = Math.floor(elapsed / 1000);
+  const minutes = Math.floor(elapsed / 60_000);
+  const hours = Math.floor(elapsed / 3_600_000);
+  const days = Math.floor(elapsed / 86_400_000);
+  const weeks = Math.floor(elapsed / 604_800_000);
+
+  if (seconds < 60) return 'just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  if (days < 7) return `${days}d ago`;
+  return `${weeks}w ago`;
+}

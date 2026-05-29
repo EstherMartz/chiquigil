@@ -1,63 +1,14 @@
 import type { WorldListing } from '../../lib/universalis';
-import { dcOf } from '../../lib/europeWorlds';
 import { fmtGil } from '../../lib/format';
 import { SectionHeader } from '../../components/SectionHeader';
 import { HqStar } from '../../components/HqStar';
+import { prepare, dcClass, diffClass, formatDiff } from './crossWorld';
 
 interface Props {
   listings: WorldListing[];
   homeWorld: string;
   homeMinNQ: number | null;
   homeMinHQ: number | null;
-}
-
-interface PreparedRow {
-  world: string;
-  price: number;
-  hq: boolean;
-  dc: 'Chaos' | 'Light' | null;
-  isHome: boolean;
-  diffPct: number | null;
-}
-
-function prepare(listings: WorldListing[], homeWorld: string, homeMinNQ: number | null, homeMinHQ: number | null): PreparedRow[] {
-  const rows: PreparedRow[] = [];
-  for (const l of listings) {
-    if (!l.world) continue;
-    const isHome = l.world === homeWorld;
-    const home = l.hq ? homeMinHQ : homeMinNQ;
-    const diffPct = isHome || home == null || home === 0
-      ? null
-      : Math.round(((l.price - home) / home) * 100);
-    rows.push({
-      world: l.world,
-      price: l.price,
-      hq: l.hq,
-      dc: dcOf(l.world),
-      isHome,
-      diffPct,
-    });
-  }
-  rows.sort((a, b) => a.price - b.price || a.world.localeCompare(b.world));
-  return rows;
-}
-
-function dcClass(dc: 'Chaos' | 'Light' | null): string {
-  if (dc === 'Chaos') return 'text-aether';
-  if (dc === 'Light') return 'text-jade';
-  return 'text-text-low';
-}
-
-function diffClass(diff: number | null): string {
-  if (diff == null) return 'text-text-low';
-  if (diff < 0) return 'text-jade';
-  if (diff > 0) return 'text-crimson';
-  return 'text-text-cream';
-}
-
-function formatDiff(diff: number | null): string {
-  if (diff == null) return '—';
-  return diff > 0 ? `+${diff}%` : `${diff}%`;
 }
 
 export function CrossWorldListingsBlock({ listings, homeWorld, homeMinNQ, homeMinHQ }: Props) {
