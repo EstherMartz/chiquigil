@@ -154,6 +154,133 @@ function categoriesByGroup(group) {
   return ITEM_SEARCH_CATEGORIES.filter((c) => c.group === group).map((c) => c.id);
 }
 
+// src/lib/priceTrust.ts
+var MIN_RECENT_SALES = 5;
+var MAX_LISTING_RATIO = 5;
+function buildCandidates(m, hq, canHq) {
+  const out = [];
+  if ((hq === "hq" || hq === "either") && canHq) {
+    out.push({ rawMin: m.minHQ, median: m.medianHQ, recent: m.recentSalesHQ, isHq: true });
+  }
+  if (hq === "nq" || hq === "either") {
+    out.push({ rawMin: m.minNQ, median: m.medianNQ, recent: m.recentSalesNQ, isHq: false });
+  }
+  return out;
+}
+function passesTrustFilter(c) {
+  if (c.rawMin == null) return false;
+  if (c.recent < MIN_RECENT_SALES) return false;
+  if (c.median == null) return false;
+  if (c.rawMin > c.median * MAX_LISTING_RATIO) return false;
+  return true;
+}
+function toTier(c) {
+  return { unit: Math.min(c.rawMin, c.median), isHq: c.isHq };
+}
+function pickFirstTrustedTier(m, hq, canHq) {
+  for (const c of buildCandidates(m, hq, canHq)) {
+    if (!passesTrustFilter(c)) continue;
+    return toTier(c);
+  }
+  return null;
+}
+
+// src/features/profit/computeProfit.ts
+function unitCost(itemId, dc, phantom) {
+  const d = dc[itemId];
+  if (d?.minNQ != null) return d.minNQ;
+  const p = phantom[itemId];
+  if (p?.avgNQ != null) return p.avgNQ;
+  return 0;
+}
+function computeMaterialCost(recipe, recipeMap, marketDc, flags, phantom = {}, depth = 0) {
+  let total = 0;
+  for (const ing of recipe.ingredients) {
+    total += ingredientCost(ing, recipeMap, marketDc, flags, phantom, depth);
+  }
+  return total;
+}
+function ingredientCost(ing, recipeMap, dc, flags, phantom, depth) {
+  const subRecipe = recipeMap.get(ing.itemId);
+  const wantsCraft = flags[ing.itemId]?.craftIntermediates;
+  if (wantsCraft && subRecipe && depth === 0) {
+    return computeMaterialCost(subRecipe, recipeMap, dc, flags, phantom, depth + 1) * ing.amount;
+  }
+  return unitCost(ing.itemId, dc, phantom) * ing.amount;
+}
+
+// src/features/queries/commonFilters.ts
+function passesMarketGate(market, gate) {
+  if (market.velocity < gate.minVelocity) return false;
+  if (gate.maxListings != null && market.listingCount > gate.maxListings) return false;
+  return true;
+}
+
+// src/features/queries/runCraftFlip.ts
+function narrowForCraftFlip(snapshot, priceMap, filter) {
+  const catSet = filter.searchCategories.length ? new Set(filter.searchCategories) : null;
+  const out = [];
+  for (const item of snapshot) {
+    if (catSet && !catSet.has(item.sc)) continue;
+    if (filter.hq === "hq" && !item.canHq) continue;
+    const m = priceMap[item.id];
+    if (!m) continue;
+    if (!passesMarketGate(m, { minVelocity: filter.minVelocity, maxListings: filter.maxListings ?? null })) continue;
+    if (pickFirstTrustedTier(m, filter.hq, item.canHq) == null) continue;
+    out.push(item.id);
+  }
+  return out;
+}
+function compare(a, b, sort) {
+  switch (sort) {
+    case "gilFlow":
+      return b.gilPerDay - a.gilPerDay;
+    case "velocity":
+      return b.velocity - a.velocity;
+    case "unitPrice":
+      return b.unitPrice - a.unitPrice;
+    case "discount":
+      return b.profit / Math.max(1, b.unitPrice) - a.profit / Math.max(1, a.unitPrice);
+  }
+}
+function runCraftFlip(snapshot, priceMap, recipeMap, filter, levels) {
+  const narrowed = new Set(narrowForCraftFlip(snapshot, priceMap, filter));
+  const out = [];
+  for (const item of snapshot) {
+    if (!narrowed.has(item.id)) continue;
+    const recipe = recipeMap.get(item.id);
+    if (!recipe) continue;
+    if (filter.trainedEye) {
+      if (!levels) continue;
+      if (recipe.classJob === "ANY") continue;
+      const crafterLevel = levels[recipe.classJob];
+      if (crafterLevel == null) continue;
+      if (recipe.recipeLevel > crafterLevel - 10) continue;
+    }
+    const m = priceMap[item.id];
+    const tier = pickFirstTrustedTier(m, filter.hq, item.canHq);
+    if (!tier) continue;
+    const materialCost = computeMaterialCost(recipe, recipeMap, priceMap, {});
+    const profit = tier.unit - materialCost;
+    if (profit <= 0) continue;
+    if (filter.minPrice != null && tier.unit < filter.minPrice) continue;
+    if (filter.maxPrice != null && tier.unit > filter.maxPrice) continue;
+    out.push({
+      id: item.id,
+      name: item.name,
+      sc: item.sc,
+      unitPrice: tier.unit,
+      materialCost,
+      profit,
+      velocity: m.velocity,
+      gilPerDay: profit * m.velocity,
+      hq: tier.isHq
+    });
+  }
+  out.sort((a, b) => compare(a, b, filter.sort));
+  return out.slice(0, filter.limit);
+}
+
 // src/api/plugin-trading-query.ts
 var HOUSING_CATS = categoriesByGroup("Housing");
 var MATERIAL_CATS = categoriesByGroup("Materials");
@@ -279,18 +406,30 @@ var PRESETS = [
     category: "gathering",
     filter: { searchCategories: [46], hq: "nq", minDealPct: 0, minVelocity: 3, minPrice: null, maxPrice: null, sort: "gilFlow", limit: 100, scope: "home", maxListings: null, mode: "standard", minGap: null, gatherableOnly: true }
   },
-  // ── Crafting (craftableOnly intersects recipe outputs — crafted intermediates) ──
+  // ── Crafting (craft mode: profit = sale − material cost, ranked by gil/day) ──
+  {
+    id: "craft-flip",
+    label: "Craft-flip",
+    category: "crafting",
+    filter: { searchCategories: [], hq: "either", minDealPct: 0, minVelocity: 3, minPrice: null, maxPrice: null, sort: "gilFlow", limit: 100, scope: "home", maxListings: null, mode: "craft", minGap: null }
+  },
+  {
+    id: "undersupply",
+    label: "Undersupply",
+    category: "crafting",
+    filter: { searchCategories: [], hq: "either", minDealPct: 0, minVelocity: 1, minPrice: null, maxPrice: null, sort: "gilFlow", limit: 100, scope: "home", maxListings: 2, mode: "craft", minGap: null }
+  },
   {
     id: "intermediate-materials",
     label: "Intermediate Materials",
     category: "crafting",
-    filter: { searchCategories: MATERIAL_CATS, hq: "either", minDealPct: 0, minVelocity: 1, minPrice: null, maxPrice: null, sort: "gilFlow", limit: 100, scope: "dc", maxListings: null, mode: "standard", minGap: null, craftableOnly: true }
+    filter: { searchCategories: MATERIAL_CATS, hq: "either", minDealPct: 0, minVelocity: 1, minPrice: null, maxPrice: null, sort: "gilFlow", limit: 100, scope: "home", maxListings: null, mode: "craft", minGap: null }
   },
   {
     id: "craftable-housing",
     label: "Craftable Housing",
     category: "crafting",
-    filter: { searchCategories: HOUSING_CATS, hq: "either", minDealPct: 0, minVelocity: 0.5, minPrice: null, maxPrice: null, sort: "gilFlow", limit: 100, scope: "dc", maxListings: null, mode: "standard", minGap: null, craftableOnly: true }
+    filter: { searchCategories: HOUSING_CATS, hq: "either", minDealPct: 0, minVelocity: 0.5, minPrice: null, maxPrice: null, sort: "gilFlow", limit: 100, scope: "home", maxListings: null, mode: "craft", minGap: null }
   }
 ];
 var PRESET_MAP = new Map(PRESETS.map((p) => [p.id, p]));
@@ -402,8 +541,8 @@ async function handler(req, res) {
       minGap: null
     };
   }
-  if (filter.mode !== "standard") {
-    return res.status(400).json({ error: "Only standard mode is supported by the plugin API currently." });
+  if (filter.mode === "repost") {
+    return res.status(400).json({ error: "Repost mode is not supported by the plugin API yet." });
   }
   const baseUrl = process.env.VITE_APP_URL ?? "https://qiqirn.tools";
   const [snapshots, market] = await Promise.all([
@@ -421,7 +560,33 @@ async function handler(req, res) {
   } else {
     priceMap = market.dc ?? {};
   }
-  const rows = runStandardQuery(snapshot, priceMap, filter, gatherSet, recipeSet);
+  let rows;
+  if (filter.mode === "craft") {
+    const flips = runCraftFlip(
+      snapshot,
+      priceMap,
+      snapshots.recipes,
+      { ...filter, trainedEye: false }
+    );
+    rows = flips.map((r) => ({
+      id: r.id,
+      name: r.name,
+      sc: r.sc,
+      unitPrice: r.unitPrice,
+      averagePrice: r.unitPrice,
+      dealPct: 0,
+      velocity: r.velocity,
+      gilFlow: r.gilPerDay,
+      hq: r.hq,
+      cheapestWorld: null,
+      cheapestPrice: null,
+      materialCost: r.materialCost,
+      profit: r.profit,
+      gilPerDay: r.gilPerDay
+    }));
+  } else {
+    rows = runStandardQuery(snapshot, priceMap, filter, gatherSet, recipeSet);
+  }
   return res.status(200).json({
     rows,
     total: rows.length,

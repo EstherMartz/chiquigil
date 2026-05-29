@@ -1,6 +1,7 @@
 import { loadSnapshots } from '../bot/loadSnapshots';
 import { cheapestWorld } from '../lib/cheapestWorld';
 import { categoriesByGroup } from '../lib/itemSearchCategories';
+import { runCraftFlip } from '../features/queries/runCraftFlip';
 
 // ── Resolved category group IDs (shared with the web's category map) ────────
 const HOUSING_CATS = categoriesByGroup('Housing');
@@ -76,11 +77,15 @@ const PRESETS: Preset[] = [
   { id: 'fishing-commodities', label: 'Fishing commodities',     category: 'gathering',
     filter: { searchCategories: [46], hq: 'nq', minDealPct: 0, minVelocity: 3, minPrice: null, maxPrice: null, sort: 'gilFlow', limit: 100, scope: 'home', maxListings: null, mode: 'standard', minGap: null, gatherableOnly: true } },
 
-  // ── Crafting (craftableOnly intersects recipe outputs — crafted intermediates) ──
+  // ── Crafting (craft mode: profit = sale − material cost, ranked by gil/day) ──
+  { id: 'craft-flip',          label: 'Craft-flip',              category: 'crafting',
+    filter: { searchCategories: [], hq: 'either', minDealPct: 0, minVelocity: 3, minPrice: null, maxPrice: null, sort: 'gilFlow', limit: 100, scope: 'home', maxListings: null, mode: 'craft', minGap: null } },
+  { id: 'undersupply',         label: 'Undersupply',             category: 'crafting',
+    filter: { searchCategories: [], hq: 'either', minDealPct: 0, minVelocity: 1, minPrice: null, maxPrice: null, sort: 'gilFlow', limit: 100, scope: 'home', maxListings: 2, mode: 'craft', minGap: null } },
   { id: 'intermediate-materials', label: 'Intermediate Materials', category: 'crafting',
-    filter: { searchCategories: MATERIAL_CATS, hq: 'either', minDealPct: 0, minVelocity: 1, minPrice: null, maxPrice: null, sort: 'gilFlow', limit: 100, scope: 'dc', maxListings: null, mode: 'standard', minGap: null, craftableOnly: true } },
+    filter: { searchCategories: MATERIAL_CATS, hq: 'either', minDealPct: 0, minVelocity: 1, minPrice: null, maxPrice: null, sort: 'gilFlow', limit: 100, scope: 'home', maxListings: null, mode: 'craft', minGap: null } },
   { id: 'craftable-housing',   label: 'Craftable Housing',       category: 'crafting',
-    filter: { searchCategories: HOUSING_CATS, hq: 'either', minDealPct: 0, minVelocity: 0.5, minPrice: null, maxPrice: null, sort: 'gilFlow', limit: 100, scope: 'dc', maxListings: null, mode: 'standard', minGap: null, craftableOnly: true } },
+    filter: { searchCategories: HOUSING_CATS, hq: 'either', minDealPct: 0, minVelocity: 0.5, minPrice: null, maxPrice: null, sort: 'gilFlow', limit: 100, scope: 'home', maxListings: null, mode: 'craft', minGap: null } },
 ];
 
 const PRESET_MAP = new Map(PRESETS.map(p => [p.id, p]));
@@ -128,6 +133,10 @@ interface QueryRow {
   hq: boolean;
   cheapestWorld: string | null;
   cheapestPrice: number | null;
+  // Populated only in craft mode (mode === 'craft').
+  materialCost?: number;
+  profit?: number;
+  gilPerDay?: number;
 }
 
 function pickTier(m: MarketItem, hq: QueryFilter['hq']) {
@@ -231,9 +240,9 @@ async function handler(req: any, res: any) {
     };
   }
 
-  // Only standard mode for now
-  if (filter.mode !== 'standard') {
-    return res.status(400).json({ error: 'Only standard mode is supported by the plugin API currently.' });
+  // standard + craft supported; repost not yet.
+  if (filter.mode === 'repost') {
+    return res.status(400).json({ error: 'Repost mode is not supported by the plugin API yet.' });
   }
 
   const baseUrl = process.env.VITE_APP_URL ?? 'https://qiqirn.tools';
@@ -259,7 +268,25 @@ async function handler(req: any, res: any) {
     priceMap = market.dc ?? {};
   }
 
-  const rows = runStandardQuery(snapshot, priceMap, filter, gatherSet, recipeSet);
+  let rows: QueryRow[];
+  if (filter.mode === 'craft') {
+    // Reuse the web's craft-flip: profit = sale − material cost, ranked by gil/day.
+    const flips = runCraftFlip(
+      snapshot as any,
+      priceMap as any,
+      snapshots.recipes as any,
+      { ...filter, trainedEye: false } as any,
+    );
+    rows = flips.map((r: any) => ({
+      id: r.id, name: r.name, sc: r.sc,
+      unitPrice: r.unitPrice, averagePrice: r.unitPrice, dealPct: 0,
+      velocity: r.velocity, gilFlow: r.gilPerDay, hq: r.hq,
+      cheapestWorld: null, cheapestPrice: null,
+      materialCost: r.materialCost, profit: r.profit, gilPerDay: r.gilPerDay,
+    }));
+  } else {
+    rows = runStandardQuery(snapshot, priceMap, filter, gatherSet, recipeSet);
+  }
 
   return res.status(200).json({
     rows,
