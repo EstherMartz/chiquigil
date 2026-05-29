@@ -658,11 +658,12 @@ export async function postChannelSetup(
   channelId: string,
   botToken: string,
   store: CraftStore,
-): Promise<void> {
+): Promise<{ portedProjects: number }> {
   const channelInfo = await discordApi.getChannel(botToken, channelId);
   const isForumChannel = channelInfo?.type === 15;
   const { embeds: reqEmbeds, components: reqComponents } = buildRequestPrompt();
   const existingState = await store.getChannelState(guildId, channelId);
+  let portedProjects = 0;
 
   if (isForumChannel) {
     // For forum channels: create a pinned forum post with the request button.
@@ -679,6 +680,33 @@ export async function postChannelSetup(
       boardMessageId: existingState?.boardMessageId ?? null,
       requestMessageId: String(forumPost!.id),
     });
+
+    // Port any open projects that aren't already in this forum into forum posts.
+    const openProjects = await store.listOpenProjects(guildId);
+    for (const p of openProjects) {
+      if (p.channelId === channelId) continue; // already lives in this forum
+      try {
+        const tasks = await store.getTasks(p.id);
+        const projectItems = await store.getProjectItems(p.id);
+        const piSummary = projectItems.length
+          ? projectItems.map((pi) => ({ itemName: pi.itemName, qty: pi.qty }))
+          : undefined;
+        const { embeds, components } = buildProjectMessage(p, tasks, piSummary);
+        const post = await discordApi.createForumPost(
+          botToken,
+          channelId,
+          p.name.slice(0, 100),
+          { embeds, components },
+        );
+        if (post) {
+          // Forum post = thread; no separate board message, so clear messageId.
+          await store.setProjectChannel(p.id, channelId, null, String(post.id));
+          portedProjects++;
+        }
+      } catch (e) {
+        console.error(`[setup] failed to port project #${p.id} to forum:`, e instanceof Error ? e.message : e);
+      }
+    }
   } else {
     // Text channel: post/refresh board + request prompt
     const projects = await store.listOpenProjects(guildId);
@@ -715,6 +743,8 @@ export async function postChannelSetup(
 
     await store.upsertChannelState({ guildId, channelId, boardMessageId: boardMsgId, requestMessageId: reqMsgId });
   }
+
+  return { portedProjects };
 }
 
 /**

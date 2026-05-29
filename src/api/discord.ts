@@ -651,10 +651,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           try {
             const store = await getCraftStore();
             await store.setGuildConfig({ guildId, craftChannelId: selectedChannelId, language: 'es' });
-            await postChannelSetup(guildId, selectedChannelId, DISCORD_BOT_TOKEN, store);
-            console.log(`[setup] channel ${selectedChannelId} configured for guild ${guildId}`);
+            const { portedProjects } = await postChannelSetup(guildId, selectedChannelId, DISCORD_BOT_TOKEN, store);
+            console.log(`[setup] channel ${selectedChannelId} configured for guild ${guildId} (ported ${portedProjects} projects)`);
+            const portedNote = portedProjects > 0
+              ? ` Se trasladaron ${portedProjects} proyecto${portedProjects !== 1 ? 's' : ''} abierto${portedProjects !== 1 ? 's' : ''} al foro.`
+              : '';
             await editOriginalResponse(DISCORD_APP_ID, interaction.token, {
-              content: `✅ Canal configurado: <#${selectedChannelId}> — ¡Mensajes publicados!`,
+              content: `✅ Canal configurado: <#${selectedChannelId}> — ¡Mensajes publicados!${portedNote}`,
             });
           } catch (e) {
             const msg = e instanceof Error ? e.message : String(e);

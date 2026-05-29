@@ -2202,6 +2202,7 @@ async function postChannelSetup(guildId, channelId, botToken, store) {
   const isForumChannel = channelInfo?.type === 15;
   const { embeds: reqEmbeds, components: reqComponents } = buildRequestPrompt();
   const existingState = await store.getChannelState(guildId, channelId);
+  let portedProjects = 0;
   if (isForumChannel) {
     const forumPost = await createForumPost(
       botToken,
@@ -2215,6 +2216,28 @@ async function postChannelSetup(guildId, channelId, botToken, store) {
       boardMessageId: existingState?.boardMessageId ?? null,
       requestMessageId: String(forumPost.id)
     });
+    const openProjects = await store.listOpenProjects(guildId);
+    for (const p of openProjects) {
+      if (p.channelId === channelId) continue;
+      try {
+        const tasks = await store.getTasks(p.id);
+        const projectItems = await store.getProjectItems(p.id);
+        const piSummary = projectItems.length ? projectItems.map((pi) => ({ itemName: pi.itemName, qty: pi.qty })) : void 0;
+        const { embeds, components } = buildProjectMessage(p, tasks, piSummary);
+        const post = await createForumPost(
+          botToken,
+          channelId,
+          p.name.slice(0, 100),
+          { embeds, components }
+        );
+        if (post) {
+          await store.setProjectChannel(p.id, channelId, null, String(post.id));
+          portedProjects++;
+        }
+      } catch (e) {
+        console.error(`[setup] failed to port project #${p.id} to forum:`, e instanceof Error ? e.message : e);
+      }
+    }
   } else {
     const projects = await store.listOpenProjects(guildId);
     const projectsWithTasks = await Promise.all(
@@ -2247,6 +2270,7 @@ async function postChannelSetup(guildId, channelId, botToken, store) {
     }
     await store.upsertChannelState({ guildId, channelId, boardMessageId: boardMsgId, requestMessageId: reqMsgId });
   }
+  return { portedProjects };
 }
 async function handleSetupView(guildId, permissions, deps) {
   const isAdmin = (permissions & 0x8n) !== 0n;
@@ -3057,6 +3081,12 @@ async function openCraftStore(url, authToken) {
         args: [threadId, projectId]
       });
     },
+    async setProjectChannel(projectId, channelId, messageId, threadId) {
+      await client.execute({
+        sql: "UPDATE projects SET channel_id = ?, message_id = ?, thread_id = ? WHERE id = ?",
+        args: [channelId, messageId, threadId, projectId]
+      });
+    },
     async setProjectDisplayPhase(projectId, partKey, phaseIndex) {
       await client.execute({
         sql: "UPDATE projects SET display_part_key = ?, display_phase_index = ? WHERE id = ?",
@@ -3741,10 +3771,11 @@ ${e instanceof Error ? e.message : String(e)}`);
           try {
             const store = await getCraftStore();
             await store.setGuildConfig({ guildId, craftChannelId: selectedChannelId, language: "es" });
-            await postChannelSetup(guildId, selectedChannelId, DISCORD_BOT_TOKEN, store);
-            console.log(`[setup] channel ${selectedChannelId} configured for guild ${guildId}`);
+            const { portedProjects } = await postChannelSetup(guildId, selectedChannelId, DISCORD_BOT_TOKEN, store);
+            console.log(`[setup] channel ${selectedChannelId} configured for guild ${guildId} (ported ${portedProjects} projects)`);
+            const portedNote = portedProjects > 0 ? ` Se trasladaron ${portedProjects} proyecto${portedProjects !== 1 ? "s" : ""} abierto${portedProjects !== 1 ? "s" : ""} al foro.` : "";
             await editOriginalResponse(DISCORD_APP_ID, interaction.token, {
-              content: `\u2705 Canal configurado: <#${selectedChannelId}> \u2014 \xA1Mensajes publicados!`
+              content: `\u2705 Canal configurado: <#${selectedChannelId}> \u2014 \xA1Mensajes publicados!${portedNote}`
             });
           } catch (e) {
             const msg = e instanceof Error ? e.message : String(e);

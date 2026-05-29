@@ -29,6 +29,8 @@ export interface CraftStore {
   unclaimTask(taskId: number, userId: string): Promise<boolean>;
   setProjectMessageId(projectId: number, messageId: string): Promise<void>;
   setProjectThreadId(projectId: number, threadId: string): Promise<void>;
+  /** Move a project to a new channel/thread (used when porting projects to a forum). */
+  setProjectChannel(projectId: number, channelId: string, messageId: string | null, threadId: string | null): Promise<void>;
   setProjectDisplayPhase(projectId: number, partKey: string, phaseIndex: number): Promise<void>;
   closeProject(projectId: number): Promise<void>;
   addProjectItem(projectId: number, itemId: number, itemName: string, qty: number): Promise<void>;
@@ -303,6 +305,13 @@ export async function openCraftStore(url: string, authToken?: string): Promise<C
       await client.execute({
         sql: 'UPDATE projects SET thread_id = ? WHERE id = ?',
         args: [threadId, projectId],
+      });
+    },
+
+    async setProjectChannel(projectId, channelId, messageId, threadId) {
+      await client.execute({
+        sql: 'UPDATE projects SET channel_id = ?, message_id = ?, thread_id = ? WHERE id = ?',
+        args: [channelId, messageId, threadId, projectId],
       });
     },
 
