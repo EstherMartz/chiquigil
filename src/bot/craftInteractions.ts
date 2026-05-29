@@ -326,17 +326,6 @@ export async function handleCraftSelect(
       // best effort
     }
 
-    // Send thread note
-    const task = tasks.find((t) => t.id === taskId);
-    if (task && project.threadId) {
-      const msg = S.THREAD_CLAIMED(userId, task.qtyNeeded, task.itemName);
-      try {
-        await discordApi.sendToChannel(deps.botToken, project.threadId, { content: msg });
-      } catch {
-        // thread may be archived/deleted
-      }
-    }
-
     // Refresh board
     await refreshBoard(deps, guildId);
   }

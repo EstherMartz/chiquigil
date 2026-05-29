@@ -1337,7 +1337,6 @@ var NO_PENDING_TASKS = "No tienes tareas pendientes en este proyecto.";
 var NO_TASKS_TO_UNCLAIM = "No tienes tareas que soltar.";
 var PROGRESS_FAILED = "No pude actualizar \u2014 \xBFes tu tarea?";
 var THREAD_PROJECT_CREATED = (userId, taskCount) => `\u{1F4CB} Proyecto creado por <@${userId}> \u2014 ${taskCount} tareas. \xA1Reclama las tuyas arriba!`;
-var THREAD_CLAIMED = (userId, qty, item) => `<@${userId}> ha reclamado ${qty}\xD7 **${item}**`;
 var THREAD_PROGRESS = (userId, item, done, needed, isDone) => `<@${userId}> avanz\xF3 **${item}** \u2192 ${done}/${needed}${isDone ? " \u2705" : ""}`;
 var THREAD_DONE = (userId, count) => `<@${userId}> marc\xF3 ${count} tarea(s) como completadas \u2705`;
 var EMPTY_PROJECT_CREATED = (id) => `Kyah~! Proyecto **#${id}** creado, nyeh. Usa \`/craft add-item id:${id}\` para a\xF1adir piezas, kukuru~!`;
@@ -2045,14 +2044,6 @@ async function handleCraftClaim(projectId, taskIdRaw, guildId, userId, deps) {
     } catch {
     }
   }
-  if (task && project.threadId) {
-    try {
-      await sendToChannel(deps.botToken, project.threadId, {
-        content: THREAD_CLAIMED(userId, task.qtyNeeded, task.itemName)
-      });
-    } catch {
-    }
-  }
   await refreshBoard(deps, guildId);
   return {
     content: `\u2705 Reclamaste **${task?.itemName ?? "la tarea"}**.`,
@@ -2503,14 +2494,6 @@ async function handleCraftSelect(customId, values, userId, guildId, messageId, c
     try {
       await editMessage(deps.botToken, channelId, messageId, { embeds, components });
     } catch {
-    }
-    const task = tasks.find((t) => t.id === taskId);
-    if (task && project.threadId) {
-      const msg = THREAD_CLAIMED(userId, task.qtyNeeded, task.itemName);
-      try {
-        await sendToChannel(deps.botToken, project.threadId, { content: msg });
-      } catch {
-      }
     }
     await refreshBoard2(deps, guildId);
   }

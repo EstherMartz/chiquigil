@@ -433,15 +433,6 @@ export async function handleCraftClaim(
       // best effort — message may have been deleted
     }
   }
-  if (task && project.threadId) {
-    try {
-      await discordApi.sendToChannel(deps.botToken, project.threadId, {
-        content: S.THREAD_CLAIMED(userId, task.qtyNeeded, task.itemName),
-      });
-    } catch {
-      // thread may be archived
-    }
-  }
   await refreshBoard(deps, guildId);
 
   return {
