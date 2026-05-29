@@ -14,12 +14,24 @@
     },
     "api/plugin-craftable.mjs": {
       "maxDuration": 30
+    },
+    "api/plugin-items.mjs": {
+      "maxDuration": 15
+    },
+    "api/plugin-item-sources.mjs": {
+      "maxDuration": 30
+    },
+    "api/plugin-craft-breakdown.mjs": {
+      "maxDuration": 30
     }
   },
   "rewrites": [
     { "source": "/api/projects/:id", "destination": "/api/projects" },
     { "source": "/api/plugin/claim", "destination": "/api/plugin-claim" },
     { "source": "/api/plugin/craftable", "destination": "/api/plugin-craftable" },
+    { "source": "/api/plugin/items", "destination": "/api/plugin-items" },
+    { "source": "/api/plugin/item-sources", "destination": "/api/plugin-item-sources" },
+    { "source": "/api/plugin/craft-breakdown", "destination": "/api/plugin-craft-breakdown" },
     { "source": "/(.*)", "destination": "/" }
   ]
 }

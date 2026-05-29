@@ -2831,6 +2831,19 @@ async function openCraftStore(url, authToken) {
       });
       return result.rowsAffected > 0;
     },
+    async claimTaskByCharacter(taskId, characterName) {
+      const now = Date.now();
+      const result = await client.execute({
+        sql: "UPDATE tasks SET assignee_id = ?, status = 'claimed', updated_at = ? WHERE id = ? AND status = 'open'",
+        args: [characterName, now, taskId]
+      });
+      if (result.rowsAffected === 0) return null;
+      const row = await client.execute({
+        sql: "SELECT * FROM tasks WHERE id = ?",
+        args: [taskId]
+      });
+      return row.rows[0] ? rowToTask(row.rows[0]) : null;
+    },
     async logProgress(taskId, userId, amount) {
       const result = await client.execute({
         sql: "SELECT * FROM tasks WHERE id = ?",

@@ -51,6 +51,11 @@ async function openCraftStore(url, authToken) {
       qty         INTEGER NOT NULL,
       created_at  INTEGER NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS chistes (
+      id    INTEGER PRIMARY KEY AUTOINCREMENT,
+      joke  TEXT NOT NULL
+    );
   `;
   const statements = SCHEMA.split(";").map((s) => s.trim()).filter((s) => s.length > 0);
   for (const stmt of statements) {
@@ -173,6 +178,19 @@ async function openCraftStore(url, authToken) {
       });
       return result.rowsAffected > 0;
     },
+    async claimTaskByCharacter(taskId, characterName) {
+      const now = Date.now();
+      const result = await client.execute({
+        sql: "UPDATE tasks SET assignee_id = ?, status = 'claimed', updated_at = ? WHERE id = ? AND status = 'open'",
+        args: [characterName, now, taskId]
+      });
+      if (result.rowsAffected === 0) return null;
+      const row = await client.execute({
+        sql: "SELECT * FROM tasks WHERE id = ?",
+        args: [taskId]
+      });
+      return row.rows[0] ? rowToTask(row.rows[0]) : null;
+    },
     async logProgress(taskId, userId, amount) {
       const result = await client.execute({
         sql: "SELECT * FROM tasks WHERE id = ?",
@@ -286,6 +304,13 @@ async function openCraftStore(url, authToken) {
         }))
       ];
       await client.batch(statements2, "write");
+    },
+    async getRandomChistes(n) {
+      const result = await client.execute({
+        sql: "SELECT joke FROM chistes ORDER BY RANDOM() LIMIT ?",
+        args: [n]
+      });
+      return result.rows.map((r) => String(r.joke));
     },
     async close() {
       await client.close();
