@@ -11,12 +11,43 @@ export interface DailyBucket {
   quantity: number;
 }
 
-interface RawHistoryItem { entries?: HistoryEntry[] }
+interface RawHistoryEntry {
+  pricePerUnit?: number;
+  quantity?: number;
+  timestamp?: number;
+  hq?: boolean;
+}
+interface RawHistoryItem { entries?: RawHistoryEntry[] }
+interface RawHistoryResponse {
+  itemID?: number;
+  entries?: RawHistoryEntry[];
+  items?: Record<string, RawHistoryItem>;
+}
 
-export function parseHistoryResponse(raw: { items?: Record<string, RawHistoryItem> }): Map<number, HistoryEntry[]> {
+const HISTORY_BASE = 'https://universalis.app/api/v2/history';
+
+function normalizeEntries(entries: RawHistoryEntry[] | undefined): HistoryEntry[] {
+  if (!entries) return [];
+  return entries
+    .filter((e) => e.pricePerUnit != null && e.timestamp != null)
+    .map((e) => ({
+      pricePerUnit: e.pricePerUnit as number,
+      quantity: e.quantity ?? 1,
+      timestamp: e.timestamp as number,
+      hq: !!e.hq,
+    }));
+}
+
+export function parseHistoryResponse(raw: RawHistoryResponse): Map<number, HistoryEntry[]> {
   const out = new Map<number, HistoryEntry[]>();
-  for (const [id, item] of Object.entries(raw.items ?? {})) {
-    out.set(Number(id), item.entries ?? []);
+  if (raw.items && typeof raw.items === 'object') {
+    // Multi-item shape: { items: { "5": { entries: [...] } } }
+    for (const [id, item] of Object.entries(raw.items)) {
+      out.set(Number(id), normalizeEntries(item?.entries));
+    }
+  } else if (raw.itemID != null) {
+    // Single-item shape: { itemID, entries: [...] }
+    out.set(Number(raw.itemID), normalizeEntries(raw.entries));
   }
   return out;
 }
@@ -50,14 +81,30 @@ export function dailyBuckets(entries: HistoryEntry[], lookbackDays: number): Dai
     }));
 }
 
-/** History is not cached locally — always returns empty. */
+/**
+ * Fetch recent sale history from Universalis for a small set of items.
+ *
+ * Unlike bulk market data (served from the bot's hourly cache to dodge
+ * rate-limiting), history is fetched LIVE here: callers query a single item at
+ * a time (the item detail page), which is low-volume and CORS-allowed. Callers
+ * should cache results (e.g. React Query staleTime) to avoid refetching.
+ * Universalis caps each response at ~1800 entries regardless of the window.
+ */
 export async function fetchHistoryWithin(
-  _scope: string,
+  scope: string,
   ids: number[],
-  _withinSeconds: number,
+  withinSeconds: number,
 ): Promise<Map<number, HistoryEntry[]>> {
   if (ids.length === 0) return new Map();
-  return new Map();
+  const url = `${HISTORY_BASE}/${encodeURIComponent(scope)}/${ids.join(',')}?entriesWithin=${withinSeconds}`;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return new Map();
+    const json = (await res.json()) as RawHistoryResponse;
+    return parseHistoryResponse(json);
+  } catch {
+    return new Map();
+  }
 }
 
 function median(values: number[]): number {

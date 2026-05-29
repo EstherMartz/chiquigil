@@ -60,21 +60,51 @@ export function priceHistoryStats(
 interface Props {
   entries: HistoryEntry[];
   loading: boolean;
-  phantom?: MarketItem;
+  market?: MarketItem;
   canHq: boolean;
   scopeLabel: string;
 }
 
-export function PriceHistoryCard({ entries, loading, phantom, canHq, scopeLabel }: Props) {
+export function PriceHistoryCard({ entries, loading, market, canHq, scopeLabel }: Props) {
   const [rangeDays, setRangeDays] = useState<7 | 30 | 90 | null>(30);
 
+  // Headline price: current cheapest listing, falling back to the most recent
+  // recorded sale so the card always leads with a number.
+  const mostRecentSale = useMemo(() => {
+    if (!entries.length) return null;
+    return entries.reduce((a, b) => (a.timestamp > b.timestamp ? a : b)).pricePerUnit;
+  }, [entries]);
+  const currentPrice = market?.minHQ ?? market?.minNQ ?? mostRecentSale ?? null;
+
   const stats = useMemo(
-    () => priceHistoryStats(entries, phantom?.minHQ ?? phantom?.minNQ ?? null, rangeDays),
-    [entries, phantom, rangeDays],
+    () => priceHistoryStats(entries, currentPrice, rangeDays),
+    [entries, currentPrice, rangeDays],
   );
 
-  const currentPrice = phantom?.minHQ ?? phantom?.minNQ ?? null;
   const rangeLabel = rangeDays === null ? 'ALL' : `${rangeDays}D`;
+  const Toggle = (
+    <div className="flex gap-1 flex-wrap">
+      {[7, 30, 90].map((days) => (
+        <button
+          key={days}
+          onClick={() => setRangeDays(days as 7 | 30 | 90)}
+          className={`font-mono text-[10px] tracking-widest uppercase px-2 py-1 transition-colors ${
+            rangeDays === days ? 'text-gold' : 'text-text-dim hover:text-aether'
+          }`}
+        >
+          {days}D
+        </button>
+      ))}
+      <button
+        onClick={() => setRangeDays(null)}
+        className={`font-mono text-[10px] tracking-widest uppercase px-2 py-1 transition-colors ${
+          rangeDays === null ? 'text-gold' : 'text-text-dim hover:text-aether'
+        }`}
+      >
+        ALL
+      </button>
+    </div>
+  );
 
   if (loading) {
     return (
@@ -101,18 +131,21 @@ export function PriceHistoryCard({ entries, loading, phantom, canHq, scopeLabel 
       </div>
 
       {/* Current price headline + delta */}
-      {currentPrice != null ? (
-        <div className="mb-3 pb-3 border-b border-border-base">
-          <div className="text-2xl font-display font-bold text-text-cream mb-1">
-            {fmtGil(currentPrice)}
+      <div className="mb-2">
+        <div className="flex items-baseline gap-3">
+          <div className="text-2xl font-display font-bold text-text-cream">
+            {currentPrice != null ? fmtGil(currentPrice) : '—'}
           </div>
-          {stats.deltaPct != null && stats.oldestAgeDays > 0 ? (
+          {stats.deltaPct != null && stats.oldestAgeDays > 0 && (
             <div className={`text-sm font-mono ${stats.deltaPct >= 0 ? 'text-jade' : 'text-crimson'}`}>
-              {stats.deltaPct >= 0 ? '+' : ''}{stats.deltaPct}% vs {stats.oldestAgeDays}d ago
+              {stats.deltaPct >= 0 ? '+' : ''}{stats.deltaPct}% <span className="text-text-low">vs {stats.oldestAgeDays}d ago</span>
             </div>
-          ) : null}
+          )}
         </div>
-      ) : null}
+      </div>
+
+      {/* Range toggle — directly under the headline, above the chart */}
+      <div className="mb-2">{Toggle}</div>
 
       {/* Chart */}
       {stats.salesInRange > 0 ? (
@@ -171,33 +204,10 @@ export function PriceHistoryCard({ entries, loading, phantom, canHq, scopeLabel 
           </ResponsiveContainer>
         </div>
       ) : (
-        <div className="mb-3 py-6 text-center text-text-low text-sm italic">
+        <div className="mb-3 flex items-center justify-center text-text-low text-sm italic" style={{ height: 140 }}>
           No sales in the last {rangeLabel}.
         </div>
       )}
-
-      {/* Range toggle pills */}
-      <div className="flex gap-2 mb-3 flex-wrap">
-        {[7, 30, 90].map((days) => (
-          <button
-            key={days}
-            onClick={() => setRangeDays(days as 7 | 30 | 90)}
-            className={`font-mono text-[10px] tracking-widest uppercase px-2 py-1 transition-colors ${
-              rangeDays === days ? 'text-gold' : 'text-text-dim hover:text-aether'
-            }`}
-          >
-            {days}D
-          </button>
-        ))}
-        <button
-          onClick={() => setRangeDays(null)}
-          className={`font-mono text-[10px] tracking-widest uppercase px-2 py-1 transition-colors ${
-            rangeDays === null ? 'text-gold' : 'text-text-dim hover:text-aether'
-          }`}
-        >
-          ALL
-        </button>
-      </div>
 
       {/* Thin-volume callout for 30-day window */}
       {stats.salesIn30d < 5 && stats.salesIn30d > 0 && (

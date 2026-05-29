@@ -17,6 +17,36 @@ describe('parseHistoryResponse', () => {
     expect(out.get(1)).toHaveLength(2);
     expect(out.get(1)![0]).toEqual({ pricePerUnit: 100, quantity: 1, timestamp: 1, hq: false });
   });
+
+  it('parses the single-item response shape ({ itemID, entries })', () => {
+    const raw = {
+      itemID: 8,
+      entries: [
+        { pricePerUnit: 40, quantity: 5, timestamp: 1700, hq: false },
+        { pricePerUnit: 42, quantity: 1, timestamp: 1800, hq: false },
+      ],
+    };
+    const out = parseHistoryResponse(raw);
+    expect(out.get(8)).toHaveLength(2);
+    expect(out.get(8)![1]).toEqual({ pricePerUnit: 42, quantity: 1, timestamp: 1800, hq: false });
+  });
+
+  it('drops malformed entries and defaults quantity', () => {
+    const raw = {
+      itemID: 9,
+      entries: [
+        { pricePerUnit: 100, timestamp: 10, hq: true },   // no quantity → defaults to 1
+        { quantity: 3, timestamp: 20, hq: false },         // no price → dropped
+        { pricePerUnit: 50, hq: false },                   // no timestamp → dropped
+      ],
+    };
+    const out = parseHistoryResponse(raw);
+    expect(out.get(9)).toEqual([{ pricePerUnit: 100, quantity: 1, timestamp: 10, hq: true }]);
+  });
+
+  it('returns an empty map for an unrecognized shape', () => {
+    expect(parseHistoryResponse({}).size).toBe(0);
+  });
 });
 
 describe('dailyBuckets', () => {

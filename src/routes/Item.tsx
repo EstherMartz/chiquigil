@@ -41,6 +41,9 @@ import type { Recipe } from '../lib/recipes';
 
 const USED_IN_LIMIT = 20;
 
+/** Small bordered metadata chip used in the item header tag row. */
+const CHIP = 'font-mono text-[10px] tracking-widest uppercase border border-border-hi px-2 py-0.5 leading-none';
+
 const SOURCE_LABEL: Record<IngredientSource | 'mb', string> = {
   vendor: 'Vendor',
   gather: 'Gather',
@@ -309,11 +312,11 @@ function HeaderBlock({ name, ilvl, sc, canHq, rarity, itemId, recipe, world, dc,
   return (
     <header className={`border border-border-base bg-bg-card p-5 sm:p-6 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 ${rarityBorder ? `border-l-4 ${rarityBorder}` : ''}`}>
       <div className="flex-1">
-        <div className="font-mono text-[10px] tracking-[0.3em] uppercase text-text-low mb-1 flex items-center gap-3 flex-wrap">
-          {ilvl > 1 && <span className="text-gold">Item Level {ilvl}</span>}
-          {sc > 0 && <span>{categoryLabel(sc)}</span>}
-          {rarityTier && <span className={rarityName ?? ''}>{rarityTier}</span>}
-          {canHq && <span className="text-gold inline-flex items-center gap-1"><HqStar /> HQ</span>}
+        <div className="flex items-center gap-2 mb-2 flex-wrap">
+          {ilvl > 1 && <span className={`${CHIP} text-gold`}>Item Lvl {ilvl}</span>}
+          {sc > 0 && <span className={`${CHIP} text-text-dim`}>{categoryLabel(sc)}</span>}
+          {rarityTier && <span className={`${CHIP} ${rarityName ?? 'text-text-dim'}`}>{rarityTier}</span>}
+          {canHq && <span className={`${CHIP} text-gold inline-flex items-center gap-1`}><HqStar /> HQ-Capable</span>}
         </div>
         <h1 className={`font-display text-2xl sm:text-3xl tracking-tight inline-flex items-center gap-2 ${rarityName ?? 'text-text-cream'}`}>
           {name}

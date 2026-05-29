@@ -38,7 +38,7 @@ export function CrossWorldArbCard({
         <div className="font-mono text-[10px] tracking-widest uppercase text-text-low mb-3">
           Cross-world Arb
         </div>
-        <div className="text-text-low text-sm italic">No cross-world listings.</div>
+        <div className="text-text-low text-sm italic" style={{ minHeight: 80 }}>No active cross-world listings right now.</div>
       </div>
     );
   }
