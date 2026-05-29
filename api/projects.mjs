@@ -236,6 +236,12 @@ async function openCraftStore(url, authToken) {
         args: [threadId, projectId]
       });
     },
+    async setProjectChannel(projectId, channelId, messageId, threadId) {
+      await client.execute({
+        sql: "UPDATE projects SET channel_id = ?, message_id = ?, thread_id = ? WHERE id = ?",
+        args: [channelId, messageId, threadId, projectId]
+      });
+    },
     async setProjectDisplayPhase(projectId, partKey, phaseIndex) {
       await client.execute({
         sql: "UPDATE projects SET display_part_key = ?, display_phase_index = ? WHERE id = ?",

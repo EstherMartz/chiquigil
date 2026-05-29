@@ -3,15 +3,17 @@ import { useSearchParams } from 'react-router-dom';
 import { DcFlipView } from '../features/insights/DcFlipView';
 import { BestDealsView } from '../features/insights/BestDealsView';
 import { MaterialFlipView } from '../features/insights/MaterialFlipView';
+import { MoversView } from '../features/movers/MoversView';
 import { QueriesView } from '../features/queries/QueriesView';
 import { SectionHeader } from '../components/SectionHeader';
 
-type Tab = 'dcFlip' | 'deals' | 'materialFlip' | 'queries';
+type Tab = 'dcFlip' | 'deals' | 'materialFlip' | 'movers' | 'queries';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'dcFlip',       label: 'DC Flip' },
   { id: 'deals',        label: 'Best deals' },
   { id: 'materialFlip', label: 'Material flip' },
+  { id: 'movers',       label: 'Movers' },
   { id: 'queries',      label: 'Queries' },
 ];
 
@@ -38,6 +40,7 @@ export default function Trading() {
       {tab === 'dcFlip' && <DcFlipView />}
       {tab === 'deals' && <BestDealsView />}
       {tab === 'materialFlip' && <MaterialFlipView />}
+      {tab === 'movers' && <MoversView />}
       {tab === 'queries' && <QueriesView category="trading" initialPresetId={presetParam} />}
     </div>
   );

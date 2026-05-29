@@ -1323,7 +1323,7 @@ var NO_RECIPE = (name) => `No pude descomponer **${name}** \u2014 \xBFtiene rece
 var CHANNEL_NOT_FOUND = "No pude publicar el proyecto en el canal \u2014 revisa los logs (puede ser permisos del bot o payload rechazado).";
 var PROJECT_CREATED = (id, channelId, taskCount) => `\u2705 Proyecto **#${id}** creado en <#${channelId}> con ${taskCount} tareas.`;
 var PROJECT_CLOSED = (id) => `\u{1F512} Proyecto #${id} cerrado.`;
-var PROJECTS_BASE_URL = process.env.PROJECTS_BASE_URL ?? "https://qiqirn.tools";
+var PROJECTS_BASE_URL = (typeof process !== "undefined" ? process.env.PROJECTS_BASE_URL : void 0) ?? "https://qiqirn.tools";
 var NEW_PROJECT_CONTENT = (projectId) => `\u{1F6E0} Nuevo proyecto de crafteo:
 \u{1F4CB} ${PROJECTS_BASE_URL}/projects/${projectId}`;
 var SETUP_DONE = (channelId) => `\u2705 Canal de crafteo configurado en <#${channelId}> \u2014 board y prompt pinneados.`;
@@ -1358,7 +1358,7 @@ var JOB_NAME = {
 };
 
 // src/bot/craftRender.ts
-var ITEMS_BASE_URL = process.env.PROJECTS_BASE_URL ?? "https://qiqirn.tools";
+var ITEMS_BASE_URL = (typeof process !== "undefined" ? process.env.PROJECTS_BASE_URL : void 0) ?? "https://qiqirn.tools";
 var JOB_EMOJI = {
   CRP: "\u{1FA9A}",
   BSM: "\u2692\uFE0F",
