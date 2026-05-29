@@ -186,7 +186,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const cmdName = interaction.data?.name;
     const subName = interaction.data?.options?.[0]?.name;
 
-    // /setup modal must be shown immediately (can't defer a modal)
+    // /setup modal — send ephemeral message with channel select (modals only support text inputs)
     if (cmdName === 'setup' && subName === 'modal') {
       const permissions = BigInt(interaction.member?.permissions ?? '0');
       const isAdmin = (permissions & 0x8n) !== 0n;
@@ -197,21 +197,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         });
       }
       return res.status(200).json({
-        type: 9,
+        type: 4,
         data: {
-          custom_id: 'setup:modal',
-          title: 'Configurar Canal de Crafteo',
+          flags: 64,
+          content: '⚙️ **Configurar canal de crafteo** — Elige el canal donde el bot publicará los proyectos:',
           components: [
             {
               type: 1,
               components: [
                 {
-                  type: 4,
-                  custom_id: 'craft_channel_id',
-                  label: 'ID del Canal de Crafteo',
-                  style: 1,
-                  placeholder: '1234567890',
-                  required: true,
+                  type: 8,
+                  custom_id: 'setup:channel_select',
+                  placeholder: 'Elige un canal...',
+                  channel_types: [0, 15], // text + forum
                 },
               ],
             },
@@ -626,6 +624,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           }
         })(),
       );
+    } else if (componentType === 8) {
+      // Channel select
+      const customId = interaction.data?.custom_id ?? '';
+      const values: string[] = interaction.data?.values ?? [];
+
+      if (customId === 'setup:channel_select') {
+        const selectedChannelId = values[0];
+        const guildId = interaction.guild_id ?? '';
+
+        if (!selectedChannelId) {
+          return res.status(200).json({ type: 4, data: { content: 'No se seleccionó ningún canal.', flags: 64 } });
+        }
+
+        try {
+          const store = await getCraftStore();
+          await store.setGuildConfig({ guildId, craftChannelId: selectedChannelId, language: 'es' });
+          return res.status(200).json({
+            type: 7,
+            data: {
+              content: `✅ Canal configurado: <#${selectedChannelId}>`,
+              components: [],
+            },
+          });
+        } catch (e) {
+          console.error('[discord] setup channel_select error:', e);
+          return res.status(200).json({
+            type: 7,
+            data: { content: `Error al guardar: ${e instanceof Error ? e.message : String(e)}`, components: [] },
+          });
+        }
+      }
+
+      return res.status(200).json({ type: 6, data: {} });
     } else if (componentType === 3) {
       // Select menu
       res.status(200).json({ type: 6, data: {} });
@@ -743,22 +774,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
           let interactionResponse;
 
-          if (customId === 'setup:modal') {
-            const setupDeps: CraftCommandDeps = {
-              store,
-              snapshots,
-              nameIndex,
-              marketBundle: { phantom: cache.phantom ?? {}, dc: cache.dc ?? {}, region: cache.region ?? {} } as any,
-              botToken: DISCORD_BOT_TOKEN,
-              appId: DISCORD_APP_ID,
-              world: HOME_WORLD,
-              dc: HOME_DC,
-              region: REGION,
-              craftChannelId: CRAFT_CHANNEL_ID,
-              crafterRoleId: CRAFTER_ROLE_ID,
-            };
-            interactionResponse = await handleSetupSubmit(guildId, fieldMap, setupDeps);
-          } else if (customId === 'cproj:requestmodal') {
+          if (customId === 'cproj:requestmodal') {
             interactionResponse = await handleCraftRequestModal(
               fieldMap,
               userId,

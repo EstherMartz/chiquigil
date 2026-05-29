@@ -2233,25 +2233,6 @@ async function handleSetupView(guildId, permissions, deps) {
   ];
   return { embeds };
 }
-async function handleSetupSubmit(guildId, formData, deps) {
-  const craftChannelId = formData.craft_channel_id?.trim();
-  if (!craftChannelId) {
-    return { content: "El ID del canal es requerido", flags: 64 };
-  }
-  if (!/^\d+$/.test(craftChannelId)) {
-    return { content: "El ID del canal debe ser un n\xFAmero v\xE1lido", flags: 64 };
-  }
-  await deps.store.setGuildConfig({
-    guildId,
-    craftChannelId,
-    language: "es"
-  });
-  console.log(`[setup] configured guild ${guildId} with craft channel ${craftChannelId}`);
-  return {
-    content: `\u2705 Canal configurado: <#${craftChannelId}>`,
-    flags: 64
-  };
-}
 
 // src/bot/craftInteractions.ts
 function initialDisplayPhase2(tasks) {
@@ -3293,8 +3274,8 @@ async function handler(req, res) {
         if (sub?.name === "new") {
           const query = String(focused.value ?? "").trim();
           const snapshots = await loadSnapshots(baseUrl);
-          const nameIndex2 = buildNameIndex(snapshots.namesById);
-          const matches = query ? fuzzySearchItems(nameIndex2, query, 25) : [];
+          const nameIndex = buildNameIndex(snapshots.namesById);
+          const matches = query ? fuzzySearchItems(nameIndex, query, 25) : [];
           const choices = matches.slice(0, 25).map((m) => ({
             name: m.name.slice(0, 100),
             value: m.name.slice(0, 100)
@@ -3336,21 +3317,20 @@ async function handler(req, res) {
         });
       }
       return res.status(200).json({
-        type: 9,
+        type: 4,
         data: {
-          custom_id: "setup:modal",
-          title: "Configurar Canal de Crafteo",
+          flags: 64,
+          content: "\u2699\uFE0F **Configurar canal de crafteo** \u2014 Elige el canal donde el bot publicar\xE1 los proyectos:",
           components: [
             {
               type: 1,
               components: [
                 {
-                  type: 4,
-                  custom_id: "craft_channel_id",
-                  label: "ID del Canal de Crafteo",
-                  style: 1,
-                  placeholder: "1234567890",
-                  required: true
+                  type: 8,
+                  custom_id: "setup:channel_select",
+                  placeholder: "Elige un canal...",
+                  channel_types: [0, 15]
+                  // text + forum
                 }
               ]
             }
@@ -3370,7 +3350,7 @@ async function handler(req, res) {
             loadSnapshots(baseUrl2),
             loadMarketCache()
           ]);
-          const nameIndex2 = buildNameIndex(snapshots.namesById);
+          const nameIndex = buildNameIndex(snapshots.namesById);
           const marketBundle = { phantom: cache.phantom ?? {}, dc: cache.dc ?? {}, region: cache.region ?? {} };
           const commandName = interaction.data.name;
           const options = interaction.data.options ?? [];
@@ -3386,7 +3366,7 @@ async function handler(req, res) {
             const deps = {
               store,
               snapshots,
-              nameIndex: nameIndex2,
+              nameIndex,
               marketBundle,
               botToken: DISCORD_BOT_TOKEN,
               appId: DISCORD_APP_ID,
@@ -3436,7 +3416,7 @@ async function handler(req, res) {
               const deps = {
                 store,
                 snapshots,
-                nameIndex: nameIndex2,
+                nameIndex,
                 marketBundle,
                 botToken: DISCORD_BOT_TOKEN,
                 appId: DISCORD_APP_ID,
@@ -3455,7 +3435,7 @@ async function handler(req, res) {
             const toolDeps = {
               marketBundle,
               snapshots,
-              nameIndex: nameIndex2,
+              nameIndex,
               world: HOME_WORLD,
               dc: HOME_DC
             };
@@ -3702,6 +3682,34 @@ ${e instanceof Error ? e.message : String(e)}`);
           }
         })()
       );
+    } else if (componentType === 8) {
+      const customId2 = interaction.data?.custom_id ?? "";
+      const values = interaction.data?.values ?? [];
+      if (customId2 === "setup:channel_select") {
+        const selectedChannelId = values[0];
+        const guildId = interaction.guild_id ?? "";
+        if (!selectedChannelId) {
+          return res.status(200).json({ type: 4, data: { content: "No se seleccion\xF3 ning\xFAn canal.", flags: 64 } });
+        }
+        try {
+          const store = await getCraftStore();
+          await store.setGuildConfig({ guildId, craftChannelId: selectedChannelId, language: "es" });
+          return res.status(200).json({
+            type: 7,
+            data: {
+              content: `\u2705 Canal configurado: <#${selectedChannelId}>`,
+              components: []
+            }
+          });
+        } catch (e) {
+          console.error("[discord] setup channel_select error:", e);
+          return res.status(200).json({
+            type: 7,
+            data: { content: `Error al guardar: ${e instanceof Error ? e.message : String(e)}`, components: [] }
+          });
+        }
+      }
+      return res.status(200).json({ type: 6, data: {} });
     } else if (componentType === 3) {
       res.status(200).json({ type: 6, data: {} });
       waitUntil(
@@ -3800,22 +3808,7 @@ ${e instanceof Error ? e.message : String(e)}`);
             }
           };
           let interactionResponse;
-          if (customId === "setup:modal") {
-            const setupDeps = {
-              store,
-              snapshots,
-              nameIndex,
-              marketBundle: { phantom: cache.phantom ?? {}, dc: cache.dc ?? {}, region: cache.region ?? {} },
-              botToken: DISCORD_BOT_TOKEN,
-              appId: DISCORD_APP_ID,
-              world: HOME_WORLD,
-              dc: HOME_DC,
-              region: REGION,
-              craftChannelId: CRAFT_CHANNEL_ID,
-              crafterRoleId: CRAFTER_ROLE_ID
-            };
-            interactionResponse = await handleSetupSubmit(guildId, fieldMap, setupDeps);
-          } else if (customId === "cproj:requestmodal") {
+          if (customId === "cproj:requestmodal") {
             interactionResponse = await handleCraftRequestModal(
               fieldMap,
               userId,
