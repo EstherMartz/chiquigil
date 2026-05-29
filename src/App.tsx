@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { Sidebar } from './components/layout/Sidebar';
 import { ContentBar } from './components/layout/ContentBar';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -114,6 +115,7 @@ export default function App() {
           </Routes>
         </ErrorBoundary>
       </main>
+      <Analytics />
     </div>
   );
 }
