@@ -26,6 +26,9 @@
     },
     "api/plugin-trading-query.mjs": {
       "maxDuration": 60
+    },
+    "api/plugin-cleanup.mjs": {
+      "maxDuration": 60
     }
   },
   "rewrites": [
@@ -36,6 +39,7 @@
     { "source": "/api/plugin/item-sources", "destination": "/api/plugin-item-sources" },
     { "source": "/api/plugin/craft-breakdown", "destination": "/api/plugin-craft-breakdown" },
     { "source": "/api/plugin/trading/query", "destination": "/api/plugin-trading-query" },
+    { "source": "/api/plugin/cleanup", "destination": "/api/plugin-cleanup" },
     { "source": "/(.*)", "destination": "/" }
   ]
 }
