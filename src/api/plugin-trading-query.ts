@@ -1,4 +1,5 @@
 import { loadSnapshots } from '../bot/loadSnapshots';
+import { cheapestWorld } from '../lib/cheapestWorld';
 
 // ── Resolved category group IDs ────────────────────────────────────────────
 const HOUSING_CATS = [56, 65, 66, 67, 68, 69, 70, 71, 72, 81, 82];
@@ -107,6 +108,8 @@ interface QueryRow {
   velocity: number;
   gilFlow: number;
   hq: boolean;
+  cheapestWorld: string | null;
+  cheapestPrice: number | null;
 }
 
 function pickTier(m: MarketItem, hq: QueryFilter['hq']) {
@@ -147,9 +150,11 @@ function runStandardQuery(
     if (filter.maxPrice != null && tier.unit > filter.maxPrice) continue;
     if (filter.maxListings != null && m.listingCount > filter.maxListings) continue;
 
+    const best = cheapestWorld(m, tier.isHq);
     out.push({ id: item.id, name: item.name, sc: item.sc,
       unitPrice: tier.unit, averagePrice: tier.avg, dealPct,
-      velocity: m.velocity, gilFlow, hq: tier.isHq });
+      velocity: m.velocity, gilFlow, hq: tier.isHq,
+      cheapestWorld: best?.world ?? null, cheapestPrice: best?.price ?? null });
   }
 
   out.sort((a, b) => {

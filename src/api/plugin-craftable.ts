@@ -1,15 +1,29 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { loadSnapshots } from '../bot/loadSnapshots';
+import { findCraftableFromInventory } from '../features/craftFromInventory/findCraftable';
+import { cheapestWorld } from '../lib/cheapestWorld';
 import type { MarketData } from '../lib/universalis';
 
 interface InventoryEntry { id: number; qty: number }
 
+interface CraftIngredientOut {
+  itemId: number;
+  name: string;
+  needed: number;
+  have: number;
+}
+
 interface CraftableResult {
   itemId: number;
   name: string;
-  qty: number;
-  minNQ: number | null;
-  velocity: number;
+  qty: number;            // how many you can fully craft right now (0 if missing any)
+  missingCount: number;   // # ingredient types not fully owned
+  completeness: number;   // 0..1
+  minNQ: number | null;   // home-world cheapest NQ listing (output)
+  velocity: number;       // sales/day (output)
+  cheapestWorld: string | null;  // DC-wide cheapest world for the output
+  cheapestPrice: number | null;
+  ingredients: CraftIngredientOut[];
 }
 
 interface SharedCache {
@@ -37,6 +51,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'inv must be a URL-encoded JSON array of {id, qty} objects' });
   }
 
+  // 0 = fully craftable only (legacy behavior); higher = show near-complete crafts.
+  const maxMissing = Math.min(5, Math.max(0, parseInt(String(req.query.maxMissing)) || 0));
+
   // Build a lookup map: itemId → qty in inventory
   const invMap = new Map<number, number>();
   for (const entry of inventory) {
@@ -47,34 +64,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const baseUrl = process.env.VITE_APP_URL ?? 'https://qiqirn.tools';
   const snapshots = await loadSnapshots(baseUrl);
 
-  // Check each recipe: can we fully cover all ingredients?
-  const craftable: CraftableResult[] = [];
+  // Reuse the same pure function the web uses, so plugin + web stay in lockstep.
+  const rows = findCraftableFromInventory(invMap, snapshots.recipes, snapshots.namesById, { maxMissing });
 
-  for (const [outputItemId, recipe] of snapshots.recipes) {
-    const amountResult = recipe.amountResult ?? 1;
-
-    // Find the minimum number of batches we can craft
+  const craftable: CraftableResult[] = rows.map((r) => {
+    // How many full batches can we make right now (0 when any ingredient is missing)?
+    const recipe = snapshots.recipes.get(r.recipeItemId);
     let canMake = Infinity;
-    for (const ing of recipe.ingredients) {
-      const have = invMap.get(ing.itemId) ?? 0;
-      const batchesFromThis = Math.floor(have / ing.amount);
-      if (batchesFromThis < canMake) canMake = batchesFromThis;
+    if (recipe) {
+      for (const ing of recipe.ingredients) {
+        const have = invMap.get(ing.itemId) ?? 0;
+        const batches = Math.floor(have / ing.amount);
+        if (batches < canMake) canMake = batches;
+      }
     }
+    const qty = isFinite(canMake) && canMake > 0 ? canMake * r.amountResult : 0;
 
-    // Skip if we can't make even one batch
-    if (!isFinite(canMake) || canMake === 0) continue;
-
-    const totalQty = canMake * amountResult;
-    const name = snapshots.namesById.get(outputItemId) ?? `Item #${outputItemId}`;
-
-    craftable.push({
-      itemId: outputItemId,
-      name,
-      qty: totalQty,
+    return {
+      itemId: r.recipeItemId,
+      name: r.name,
+      qty,
+      missingCount: r.missingCount,
+      completeness: r.completeness,
       minNQ: null,
       velocity: 0,
-    });
-  }
+      cheapestWorld: null,
+      cheapestPrice: null,
+      ingredients: r.ingredients.map((i) => ({
+        itemId: i.itemId, name: i.name, needed: i.needed, have: i.have,
+      })),
+    };
+  });
 
   if (craftable.length === 0) {
     return res.status(200).json({ craftable: [] });
@@ -86,13 +106,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const cacheRes = await fetch(cacheUrl, { cache: 'no-store' } as RequestInit);
     if (cacheRes.ok) {
       const cache = (await cacheRes.json()) as SharedCache;
-      // Use phantom (home world) prices — client can send ?scope= in v2 if needed
-      const market = cache.phantom;
+      const home = cache.phantom ?? {};
+      const dc = cache.dc ?? {};
       for (const item of craftable) {
-        const entry = market[String(item.itemId)];
-        if (entry) {
-          item.minNQ = entry.minNQ;
-          item.velocity = entry.velocity;
+        const homeEntry = home[String(item.itemId)];
+        if (homeEntry) {
+          item.minNQ = homeEntry.minNQ;
+          item.velocity = homeEntry.velocity;
+        }
+        // DC-wide cheapest world: where to buy the output cheapest.
+        const best = cheapestWorld(dc[String(item.itemId)]);
+        if (best) {
+          item.cheapestWorld = best.world;
+          item.cheapestPrice = best.price;
         }
       }
     }
@@ -100,8 +126,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Cache unavailable — return items without prices rather than failing
   }
 
-  // Sort by estimated gil opportunity (minNQ × qty), descending
+  // Sort by completeness first (fully craftable on top), then gil opportunity.
   craftable.sort((a, b) => {
+    if (b.completeness !== a.completeness) return b.completeness - a.completeness;
     const aVal = (a.minNQ ?? 0) * a.qty;
     const bVal = (b.minNQ ?? 0) * b.qty;
     return bVal - aVal;

@@ -43,6 +43,18 @@ async function loadSnapshots(baseUrl) {
   return cached;
 }
 
+// src/lib/cheapestWorld.ts
+function cheapestWorld(m, hq) {
+  if (!m || !m.worldListings || m.worldListings.length === 0) return null;
+  let best = null;
+  for (const l of m.worldListings) {
+    if (hq != null && l.hq !== hq) continue;
+    if (l.price <= 0) continue;
+    if (best === null || l.price < best.price) best = { world: l.world, price: l.price };
+  }
+  return best;
+}
+
 // src/api/plugin-trading-query.ts
 var HOUSING_CATS = [56, 65, 66, 67, 68, 69, 70, 71, 72, 81, 82];
 var MATERIAL_CATS = [7, 47, 48, 49, 50, 51, 52, 53, 54, 57, 58, 59, 61, 79, 80];
@@ -197,6 +209,7 @@ function runStandardQuery(snapshot, priceMap, filter) {
     if (filter.minPrice != null && tier.unit < filter.minPrice) continue;
     if (filter.maxPrice != null && tier.unit > filter.maxPrice) continue;
     if (filter.maxListings != null && m.listingCount > filter.maxListings) continue;
+    const best = cheapestWorld(m, tier.isHq);
     out.push({
       id: item.id,
       name: item.name,
@@ -206,7 +219,9 @@ function runStandardQuery(snapshot, priceMap, filter) {
       dealPct,
       velocity: m.velocity,
       gilFlow,
-      hq: tier.isHq
+      hq: tier.isHq,
+      cheapestWorld: best?.world ?? null,
+      cheapestPrice: best?.price ?? null
     });
   }
   out.sort((a, b) => {

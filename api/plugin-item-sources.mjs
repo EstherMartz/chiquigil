@@ -43,7 +43,36 @@ async function loadSnapshots(baseUrl) {
   return cached;
 }
 
+// src/lib/cheapestWorld.ts
+function cheapestWorld(m, hq) {
+  if (!m || !m.worldListings || m.worldListings.length === 0) return null;
+  let best = null;
+  for (const l of m.worldListings) {
+    if (hq != null && l.hq !== hq) continue;
+    if (l.price <= 0) continue;
+    if (best === null || l.price < best.price) best = { world: l.world, price: l.price };
+  }
+  return best;
+}
+
 // src/api/plugin-item-sources.ts
+var marketCache = null;
+var marketCacheTs = 0;
+var CACHE_TTL_MS = 10 * 60 * 1e3;
+async function loadMarketCache(baseUrl) {
+  const now = Date.now();
+  if (marketCache && now - marketCacheTs < CACHE_TTL_MS) return marketCache;
+  const url = process.env.MARKET_CACHE_BLOB_URL ?? `${baseUrl}/data/market-cache.json`;
+  try {
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) return marketCache ?? { phantom: {}, dc: {}, region: {}, ts: 0 };
+    marketCache = await res.json();
+    marketCacheTs = now;
+    return marketCache;
+  } catch {
+    return marketCache ?? { phantom: {}, dc: {}, region: {}, ts: 0 };
+  }
+}
 async function handler(req, res) {
   if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -141,10 +170,28 @@ async function handler(req, res) {
   if (sources.length === 0) {
     sources.push({ type: "unknown" });
   }
+  let market = null;
+  try {
+    const cache = await loadMarketCache(baseUrl);
+    const dcEntry = cache.dc?.[String(itemId)];
+    const homeEntry = cache.phantom?.[String(itemId)];
+    if (dcEntry || homeEntry) {
+      const best = cheapestWorld(dcEntry);
+      market = {
+        velocity: dcEntry?.velocity ?? homeEntry?.velocity ?? 0,
+        listingCount: dcEntry?.listingCount ?? homeEntry?.listingCount ?? 0,
+        minNQ: homeEntry?.minNQ ?? dcEntry?.minNQ ?? null,
+        cheapestWorld: best?.world ?? null,
+        cheapestPrice: best?.price ?? null
+      };
+    }
+  } catch {
+  }
   return res.status(200).json({
     itemId,
     itemName,
-    sources
+    sources,
+    market
   });
 }
 export {

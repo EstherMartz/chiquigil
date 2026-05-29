@@ -1,5 +1,33 @@
 import { loadSnapshots } from '../bot/loadSnapshots';
 import type { Recipe } from '../lib/recipes';
+import { cheapestWorld } from '../lib/cheapestWorld';
+import type { MarketData } from '../lib/universalis';
+
+interface SharedCache {
+  phantom: MarketData;
+  dc: MarketData;
+  region: MarketData;
+  ts: number;
+}
+
+let marketCache: SharedCache | null = null;
+let marketCacheTs = 0;
+const CACHE_TTL_MS = 10 * 60 * 1000;
+
+async function loadMarketCache(baseUrl: string): Promise<SharedCache> {
+  const now = Date.now();
+  if (marketCache && now - marketCacheTs < CACHE_TTL_MS) return marketCache;
+  const url = process.env.MARKET_CACHE_BLOB_URL ?? `${baseUrl}/data/market-cache.json`;
+  try {
+    const res = await fetch(url, { cache: 'no-store' } as RequestInit);
+    if (!res.ok) return marketCache ?? { phantom: {}, dc: {}, region: {}, ts: 0 };
+    marketCache = (await res.json()) as SharedCache;
+    marketCacheTs = now;
+    return marketCache;
+  } catch {
+    return marketCache ?? { phantom: {}, dc: {}, region: {}, ts: 0 };
+  }
+}
 
 interface RecipeSource {
   type: 'recipe';
@@ -148,10 +176,37 @@ async function handler(req: any, res: any) {
     sources.push({ type: 'unknown' });
   }
 
+  // Market summary: velocity + where the item is cheapest on the DC ("where to buy").
+  let market: {
+    velocity: number;
+    listingCount: number;
+    minNQ: number | null;
+    cheapestWorld: string | null;
+    cheapestPrice: number | null;
+  } | null = null;
+  try {
+    const cache = await loadMarketCache(baseUrl);
+    const dcEntry = cache.dc?.[String(itemId)];
+    const homeEntry = cache.phantom?.[String(itemId)];
+    if (dcEntry || homeEntry) {
+      const best = cheapestWorld(dcEntry);
+      market = {
+        velocity: dcEntry?.velocity ?? homeEntry?.velocity ?? 0,
+        listingCount: dcEntry?.listingCount ?? homeEntry?.listingCount ?? 0,
+        minNQ: homeEntry?.minNQ ?? dcEntry?.minNQ ?? null,
+        cheapestWorld: best?.world ?? null,
+        cheapestPrice: best?.price ?? null,
+      };
+    }
+  } catch {
+    // market summary is best-effort
+  }
+
   return res.status(200).json({
     itemId,
     itemName,
     sources,
+    market,
   });
 }
 

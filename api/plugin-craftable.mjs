@@ -43,6 +43,72 @@ async function loadSnapshots(baseUrl) {
   return cached;
 }
 
+// src/features/craftFromInventory/findCraftable.ts
+function findCraftableFromInventory(inventory, recipes, namesById, filter) {
+  const { maxMissing, marketableOnly, velocityMap, vendorMap, gatheringSet, excludeIngredientIds } = filter;
+  const rows = [];
+  for (const [itemId, recipe] of recipes) {
+    const ingredients = [];
+    let missingCount = 0;
+    for (const ing of recipe.ingredients) {
+      if (excludeIngredientIds?.has(ing.itemId)) continue;
+      const have = inventory.get(ing.itemId) ?? 0;
+      const fulfilled = have >= ing.amount;
+      if (!fulfilled) missingCount++;
+      let source = "unknown";
+      let unitPrice = null;
+      if (!fulfilled) {
+        if (vendorMap?.has(ing.itemId)) {
+          source = "vendor";
+          unitPrice = vendorMap.get(ing.itemId);
+        } else if (gatheringSet?.has(ing.itemId)) {
+          source = "gather";
+        } else {
+          source = "market";
+        }
+      }
+      ingredients.push({
+        itemId: ing.itemId,
+        name: namesById.get(ing.itemId) ?? `Item #${ing.itemId}`,
+        needed: ing.amount,
+        have,
+        fulfilled,
+        source,
+        unitPrice
+      });
+    }
+    if (missingCount > maxMissing) continue;
+    if (marketableOnly && velocityMap && !velocityMap.has(itemId)) continue;
+    const totalIngredients = ingredients.length;
+    const completeness = totalIngredients > 0 ? (totalIngredients - missingCount) / totalIngredients : 1;
+    rows.push({
+      recipeItemId: itemId,
+      name: namesById.get(itemId) ?? `Item #${itemId}`,
+      classJob: recipe.classJob,
+      recipeLevel: recipe.recipeLevel,
+      amountResult: recipe.amountResult ?? 1,
+      totalIngredients,
+      missingCount,
+      completeness,
+      ingredients
+    });
+  }
+  rows.sort((a, b) => b.completeness - a.completeness || b.recipeLevel - a.recipeLevel);
+  return rows;
+}
+
+// src/lib/cheapestWorld.ts
+function cheapestWorld(m, hq) {
+  if (!m || !m.worldListings || m.worldListings.length === 0) return null;
+  let best = null;
+  for (const l of m.worldListings) {
+    if (hq != null && l.hq !== hq) continue;
+    if (l.price <= 0) continue;
+    if (best === null || l.price < best.price) best = { world: l.world, price: l.price };
+  }
+  return best;
+}
+
 // src/api/plugin-craftable.ts
 async function handler(req, res) {
   if (req.method !== "GET") {
@@ -59,32 +125,43 @@ async function handler(req, res) {
   } catch {
     return res.status(400).json({ error: "inv must be a URL-encoded JSON array of {id, qty} objects" });
   }
+  const maxMissing = Math.min(5, Math.max(0, parseInt(String(req.query.maxMissing)) || 0));
   const invMap = /* @__PURE__ */ new Map();
   for (const entry of inventory) {
     invMap.set(entry.id, (invMap.get(entry.id) ?? 0) + entry.qty);
   }
   const baseUrl = process.env.VITE_APP_URL ?? "https://qiqirn.tools";
   const snapshots = await loadSnapshots(baseUrl);
-  const craftable = [];
-  for (const [outputItemId, recipe] of snapshots.recipes) {
-    const amountResult = recipe.amountResult ?? 1;
+  const rows = findCraftableFromInventory(invMap, snapshots.recipes, snapshots.namesById, { maxMissing });
+  const craftable = rows.map((r) => {
+    const recipe = snapshots.recipes.get(r.recipeItemId);
     let canMake = Infinity;
-    for (const ing of recipe.ingredients) {
-      const have = invMap.get(ing.itemId) ?? 0;
-      const batchesFromThis = Math.floor(have / ing.amount);
-      if (batchesFromThis < canMake) canMake = batchesFromThis;
+    if (recipe) {
+      for (const ing of recipe.ingredients) {
+        const have = invMap.get(ing.itemId) ?? 0;
+        const batches = Math.floor(have / ing.amount);
+        if (batches < canMake) canMake = batches;
+      }
     }
-    if (!isFinite(canMake) || canMake === 0) continue;
-    const totalQty = canMake * amountResult;
-    const name = snapshots.namesById.get(outputItemId) ?? `Item #${outputItemId}`;
-    craftable.push({
-      itemId: outputItemId,
-      name,
-      qty: totalQty,
+    const qty = isFinite(canMake) && canMake > 0 ? canMake * r.amountResult : 0;
+    return {
+      itemId: r.recipeItemId,
+      name: r.name,
+      qty,
+      missingCount: r.missingCount,
+      completeness: r.completeness,
       minNQ: null,
-      velocity: 0
-    });
-  }
+      velocity: 0,
+      cheapestWorld: null,
+      cheapestPrice: null,
+      ingredients: r.ingredients.map((i) => ({
+        itemId: i.itemId,
+        name: i.name,
+        needed: i.needed,
+        have: i.have
+      }))
+    };
+  });
   if (craftable.length === 0) {
     return res.status(200).json({ craftable: [] });
   }
@@ -93,18 +170,25 @@ async function handler(req, res) {
     const cacheRes = await fetch(cacheUrl, { cache: "no-store" });
     if (cacheRes.ok) {
       const cache = await cacheRes.json();
-      const market = cache.phantom;
+      const home = cache.phantom ?? {};
+      const dc = cache.dc ?? {};
       for (const item of craftable) {
-        const entry = market[String(item.itemId)];
-        if (entry) {
-          item.minNQ = entry.minNQ;
-          item.velocity = entry.velocity;
+        const homeEntry = home[String(item.itemId)];
+        if (homeEntry) {
+          item.minNQ = homeEntry.minNQ;
+          item.velocity = homeEntry.velocity;
+        }
+        const best = cheapestWorld(dc[String(item.itemId)]);
+        if (best) {
+          item.cheapestWorld = best.world;
+          item.cheapestPrice = best.price;
         }
       }
     }
   } catch {
   }
   craftable.sort((a, b) => {
+    if (b.completeness !== a.completeness) return b.completeness - a.completeness;
     const aVal = (a.minNQ ?? 0) * a.qty;
     const bVal = (b.minNQ ?? 0) * b.qty;
     return bVal - aVal;
