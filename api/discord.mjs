@@ -2201,6 +2201,58 @@ async function refreshBoard(deps, guildId) {
     console.error("[craft] failed to refresh board:", e instanceof Error ? e.message : e);
   }
 }
+async function postChannelSetup(guildId, channelId, botToken, store) {
+  const channelInfo = await getChannel(botToken, channelId);
+  const isForumChannel = channelInfo?.type === 15;
+  const { embeds: reqEmbeds, components: reqComponents } = buildRequestPrompt();
+  const existingState = await store.getChannelState(guildId, channelId);
+  if (isForumChannel) {
+    if (existingState?.requestMessageId) return;
+    const forumPost = await createForumPost(
+      botToken,
+      channelId,
+      "\u{1F6E0} Solicitar un crafteo",
+      { embeds: reqEmbeds, components: reqComponents }
+    );
+    if (forumPost) {
+      await store.upsertChannelState({
+        guildId,
+        channelId,
+        boardMessageId: existingState?.boardMessageId ?? null,
+        requestMessageId: String(forumPost.id)
+      });
+    }
+  } else {
+    const projects = await store.listOpenProjects(guildId);
+    const projectsWithTasks = await Promise.all(
+      projects.map(async (p) => ({ project: p, tasks: await store.getTasks(p.id) }))
+    );
+    const { embeds: boardEmbeds } = buildBoardMessage(projectsWithTasks);
+    let boardMsgId = existingState?.boardMessageId ?? null;
+    try {
+      if (boardMsgId) {
+        await editMessage(botToken, channelId, boardMsgId, { embeds: boardEmbeds });
+      } else {
+        throw new Error("no board");
+      }
+    } catch {
+      const msg = await sendToChannel(botToken, channelId, { embeds: boardEmbeds });
+      if (msg) boardMsgId = String(msg.id);
+    }
+    let reqMsgId = existingState?.requestMessageId ?? null;
+    try {
+      if (reqMsgId) {
+        await editMessage(botToken, channelId, reqMsgId, { embeds: reqEmbeds, components: reqComponents });
+      } else {
+        throw new Error("no req");
+      }
+    } catch {
+      const msg = await sendToChannel(botToken, channelId, { embeds: reqEmbeds, components: reqComponents });
+      if (msg) reqMsgId = String(msg.id);
+    }
+    await store.upsertChannelState({ guildId, channelId, boardMessageId: boardMsgId, requestMessageId: reqMsgId });
+  }
+}
 async function handleSetupView(guildId, permissions, deps) {
   const isAdmin = (permissions & 0x8n) !== 0n;
   if (!isAdmin) {
@@ -3646,7 +3698,7 @@ ${e instanceof Error ? e.message : String(e)}`);
               }
             };
             let interactionResponse;
-            if (customId === "cproj:requestbutton") {
+            if (customId === "cproj:request") {
               interactionResponse = handleCraftRequestButton();
             } else {
               interactionResponse = await handleCraftButton(
@@ -3691,23 +3743,24 @@ ${e instanceof Error ? e.message : String(e)}`);
         if (!selectedChannelId) {
           return res.status(200).json({ type: 4, data: { content: "No se seleccion\xF3 ning\xFAn canal.", flags: 64 } });
         }
-        try {
-          const store = await getCraftStore();
-          await store.setGuildConfig({ guildId, craftChannelId: selectedChannelId, language: "es" });
-          return res.status(200).json({
-            type: 7,
-            data: {
-              content: `\u2705 Canal configurado: <#${selectedChannelId}>`,
-              components: []
-            }
-          });
-        } catch (e) {
-          console.error("[discord] setup channel_select error:", e);
-          return res.status(200).json({
-            type: 7,
-            data: { content: `Error al guardar: ${e instanceof Error ? e.message : String(e)}`, components: [] }
-          });
-        }
+        res.status(200).json({
+          type: 7,
+          data: {
+            content: `\u2705 Canal configurado: <#${selectedChannelId}> \u2014 preparando mensajes\u2026`,
+            components: []
+          }
+        });
+        waitUntil((async () => {
+          try {
+            const store = await getCraftStore();
+            await store.setGuildConfig({ guildId, craftChannelId: selectedChannelId, language: "es" });
+            await postChannelSetup(guildId, selectedChannelId, DISCORD_BOT_TOKEN, store);
+            console.log(`[setup] channel ${selectedChannelId} configured for guild ${guildId}`);
+          } catch (e) {
+            console.error("[discord] setup channel_select error:", e);
+          }
+        })());
+        return;
       }
       return res.status(200).json({ type: 6, data: {} });
     } else if (componentType === 3) {

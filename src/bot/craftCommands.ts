@@ -653,6 +653,78 @@ async function refreshBoard(deps: CraftCommandDeps, guildId: string): Promise<vo
 }
 
 /**
+ * Post (or refresh) the setup messages in a craft channel after configuration.
+ * Forum channels get a dedicated forum post with the request button.
+ * Text channels get a board message + a standing request-prompt message.
+ */
+export async function postChannelSetup(
+  guildId: string,
+  channelId: string,
+  botToken: string,
+  store: CraftStore,
+): Promise<void> {
+  const channelInfo = await discordApi.getChannel(botToken, channelId);
+  const isForumChannel = channelInfo?.type === 15;
+  const { embeds: reqEmbeds, components: reqComponents } = buildRequestPrompt();
+  const existingState = await store.getChannelState(guildId, channelId);
+
+  if (isForumChannel) {
+    // For forum channels: create (or keep) a pinned forum post with the request button.
+    // If one already exists, leave it — can't easily update a forum post's first message without
+    // knowing the exact message ID inside the thread.
+    if (existingState?.requestMessageId) return; // already set up
+
+    const forumPost = await discordApi.createForumPost(
+      botToken,
+      channelId,
+      '🛠 Solicitar un crafteo',
+      { embeds: reqEmbeds, components: reqComponents },
+    );
+    if (forumPost) {
+      await store.upsertChannelState({
+        guildId,
+        channelId,
+        boardMessageId: existingState?.boardMessageId ?? null,
+        requestMessageId: String(forumPost.id),
+      });
+    }
+  } else {
+    // Text channel: post/refresh board + request prompt
+    const projects = await store.listOpenProjects(guildId);
+    const projectsWithTasks = await Promise.all(
+      projects.map(async (p) => ({ project: p, tasks: await store.getTasks(p.id) })),
+    );
+    const { embeds: boardEmbeds } = buildBoardMessage(projectsWithTasks);
+
+    let boardMsgId = existingState?.boardMessageId ?? null;
+    try {
+      if (boardMsgId) {
+        await discordApi.editMessage(botToken, channelId, boardMsgId, { embeds: boardEmbeds });
+      } else {
+        throw new Error('no board');
+      }
+    } catch {
+      const msg = await discordApi.sendToChannel(botToken, channelId, { embeds: boardEmbeds });
+      if (msg) boardMsgId = String(msg.id);
+    }
+
+    let reqMsgId = existingState?.requestMessageId ?? null;
+    try {
+      if (reqMsgId) {
+        await discordApi.editMessage(botToken, channelId, reqMsgId, { embeds: reqEmbeds, components: reqComponents });
+      } else {
+        throw new Error('no req');
+      }
+    } catch {
+      const msg = await discordApi.sendToChannel(botToken, channelId, { embeds: reqEmbeds, components: reqComponents });
+      if (msg) reqMsgId = String(msg.id);
+    }
+
+    await store.upsertChannelState({ guildId, channelId, boardMessageId: boardMsgId, requestMessageId: reqMsgId });
+  }
+}
+
+/**
  * Handle /setup view — show current guild config
  */
 export async function handleSetupView(

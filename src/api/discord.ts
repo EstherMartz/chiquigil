@@ -13,6 +13,7 @@ import {
   handleCraftClaim,
   handleSetupView,
   handleSetupSubmit,
+  postChannelSetup,
 } from '../bot/craftCommands';
 import {
   handleCraftButton,
@@ -580,7 +581,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
             let interactionResponse;
 
-            if (customId === 'cproj:requestbutton') {
+            if (customId === 'cproj:request') {
               interactionResponse = handleCraftRequestButton();
             } else {
               interactionResponse = await handleCraftButton(
@@ -637,23 +638,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           return res.status(200).json({ type: 4, data: { content: 'No se seleccionó ningún canal.', flags: 64 } });
         }
 
-        try {
-          const store = await getCraftStore();
-          await store.setGuildConfig({ guildId, craftChannelId: selectedChannelId, language: 'es' });
-          return res.status(200).json({
-            type: 7,
-            data: {
-              content: `✅ Canal configurado: <#${selectedChannelId}>`,
-              components: [],
-            },
-          });
-        } catch (e) {
-          console.error('[discord] setup channel_select error:', e);
-          return res.status(200).json({
-            type: 7,
-            data: { content: `Error al guardar: ${e instanceof Error ? e.message : String(e)}`, components: [] },
-          });
-        }
+        // Acknowledge immediately, post setup messages in background
+        res.status(200).json({
+          type: 7,
+          data: {
+            content: `✅ Canal configurado: <#${selectedChannelId}> — preparando mensajes…`,
+            components: [],
+          },
+        });
+
+        waitUntil((async () => {
+          try {
+            const store = await getCraftStore();
+            await store.setGuildConfig({ guildId, craftChannelId: selectedChannelId, language: 'es' });
+            await postChannelSetup(guildId, selectedChannelId, DISCORD_BOT_TOKEN, store);
+            console.log(`[setup] channel ${selectedChannelId} configured for guild ${guildId}`);
+          } catch (e) {
+            console.error('[discord] setup channel_select error:', e);
+          }
+        })());
+
+        return;
       }
 
       return res.status(200).json({ type: 6, data: {} });
