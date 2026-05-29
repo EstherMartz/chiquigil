@@ -10,6 +10,8 @@ import { useUsedInIndex } from '../features/items/useUsedInIndex';
 import { useGcSupplyUsedInIndex } from '../features/items/useGcSupplyUsedInIndex';
 import { useLeveUsedInIndex } from '../features/items/useLeveUsedInIndex';
 import { DeliverablesBlock } from '../features/items/DeliverablesBlock';
+import { CraftTreeBlock } from '../features/items/CraftTreeBlock';
+import { explode } from '../bot/craftExplode';
 import { useMarketData } from '../features/watchlist/useMarketData';
 import { useVendorShopSnapshot } from '../features/queries/useVendorShopSnapshot';
 import { useSpecialShopSnapshot } from '../features/queries/useSpecialShopSnapshot';
@@ -82,10 +84,17 @@ export default function Item() {
 
   const ingredientIds = recipe?.ingredients.map((i) => i.itemId) ?? [];
   const usedInIds = useMemo(() => usedIn.map((e) => e.resultId), [usedIn]);
+  // Every item in the full craft tree, so the make-vs-buy block has prices for
+  // deep descendants (not just the direct ingredients).
+  const craftTreeIds = useMemo(() => {
+    if (!valid || !recipe || !recipes.data) return [];
+    const { crafts, leaves } = explode(itemId, 1, recipes.data, { craftIntermediates: true });
+    return [...crafts.keys(), ...leaves.keys()];
+  }, [valid, recipe, recipes.data, itemId]);
   const priceIds = useMemo(() => {
     if (!valid) return [];
-    return [...new Set<number>([itemId, ...ingredientIds, ...usedInIds])];
-  }, [itemId, ingredientIds, usedInIds, valid]);
+    return [...new Set<number>([itemId, ...ingredientIds, ...usedInIds, ...craftTreeIds])];
+  }, [itemId, ingredientIds, usedInIds, craftTreeIds, valid]);
 
   const market = useMarketData(priceIds, world, dc, 'Europe');
   const vendors = useVendorShopSnapshot();
@@ -143,6 +152,12 @@ export default function Item() {
     }
     return total;
   }, [recipe, phantomMarket, market.data]);
+
+  const nameOf = useMemo(() => {
+    const m = new Map<number, string>();
+    for (const i of snapshot.data?.items ?? []) m.set(i.id, i.name);
+    return (id: number) => m.get(id) ?? `Item #${id}`;
+  }, [snapshot.data?.items]);
 
   return (
     <div className="max-w-5xl mx-auto px-4 space-y-6">
@@ -234,6 +249,16 @@ export default function Item() {
           homeWorld={world}
           regionMap={market.data?.region}
           itemNames={snapshot.data?.items}
+        />
+      )}
+
+      {recipe && recipes.data && !market.isLoading && (
+        <CraftTreeBlock
+          itemId={itemId}
+          recipeMap={recipes.data}
+          dc={market.data?.dc}
+          phantom={market.data?.phantom}
+          nameOf={nameOf}
         />
       )}
 

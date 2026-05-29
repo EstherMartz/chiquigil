@@ -88,9 +88,11 @@ describe('Item route', () => {
     await waitFor(() => {
       expect(screen.getByText(/crafting recipe/i)).toBeInTheDocument();
     });
-    // Ingredient row is a link to /item/11
-    const ingLink = await screen.findByRole('link', { name: /maple log/i });
-    expect(ingLink.getAttribute('href')).toBe('/item/11');
+    // Ingredient links to /item/11 (appears in both the recipe table and the
+    // make-vs-buy tree, so allow multiple matches).
+    const ingLinks = await screen.findAllByRole('link', { name: /maple log/i });
+    expect(ingLinks.length).toBeGreaterThan(0);
+    expect(ingLinks.every((l) => l.getAttribute('href') === '/item/11')).toBe(true);
   });
 
   it('renders the "used in" section for an ingredient that appears in other recipes', async () => {
