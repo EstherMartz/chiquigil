@@ -169,4 +169,24 @@ describe('parseGarlandItem', () => {
       { id: 200, name: 'Mystery NPC', locationId: 1, currencyItemId: 28 },
     ]);
   });
+
+  it('extracts usedInQuests with names/genre resolved from quest partials', () => {
+    const raw = {
+      item: { id: 13099, name: "Witch's Hat", ilvl: 1, usedInQuest: [67686, 99999] },
+      partials: [
+        { type: 'quest', id: 67686, obj: { n: 'Joining the Circus', g: 248 } },
+        { type: 'item', id: 1, obj: { n: 'Other', i: 1 } },
+      ],
+    };
+    const out = parseGarlandItem(raw);
+    expect(out?.usedInQuests).toEqual([
+      { id: 67686, name: 'Joining the Circus', genre: 248 },
+      { id: 99999, name: '#99999' },
+    ]);
+  });
+
+  it('defaults usedInQuests to [] when field absent', () => {
+    const raw = { item: { id: 1, name: 'Plain', ilvl: 1 }, partials: [] };
+    expect(parseGarlandItem(raw)?.usedInQuests).toEqual([]);
+  });
 });
