@@ -166,7 +166,7 @@ async function handler(req, res) {
     return res.status(200).json({ craftable: [] });
   }
   try {
-    const cacheUrl = process.env.MARKET_CACHE_BLOB_URL ?? `${baseUrl}/data/market-cache.json`;
+    const cacheUrl = process.env.VITE_CACHE_BLOB_URL ?? process.env.MARKET_CACHE_BLOB_URL ?? `${baseUrl}/data/market-cache.json`;
     const cacheRes = await fetch(cacheUrl, { cache: "no-store" });
     if (cacheRes.ok) {
       const cache = await cacheRes.json();

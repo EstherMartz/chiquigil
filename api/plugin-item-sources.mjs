@@ -62,7 +62,7 @@ var CACHE_TTL_MS = 10 * 60 * 1e3;
 async function loadMarketCache(baseUrl) {
   const now = Date.now();
   if (marketCache && now - marketCacheTs < CACHE_TTL_MS) return marketCache;
-  const url = process.env.MARKET_CACHE_BLOB_URL ?? `${baseUrl}/data/market-cache.json`;
+  const url = process.env.VITE_CACHE_BLOB_URL ?? process.env.MARKET_CACHE_BLOB_URL ?? `${baseUrl}/data/market-cache.json`;
   try {
     const res = await fetch(url, { cache: "no-store" });
     if (!res.ok) return marketCache ?? { phantom: {}, dc: {}, region: {}, ts: 0 };

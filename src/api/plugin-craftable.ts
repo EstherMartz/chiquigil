@@ -102,7 +102,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // Fetch market prices from the hourly bot cache blob
   try {
-    const cacheUrl = process.env.MARKET_CACHE_BLOB_URL ?? `${baseUrl}/data/market-cache.json`;
+    // Prefer the full live blob (has dc + worldListings for cheapest-world);
+    // fall back to the static trimmed cache.
+    const cacheUrl = process.env.VITE_CACHE_BLOB_URL ?? process.env.MARKET_CACHE_BLOB_URL ?? `${baseUrl}/data/market-cache.json`;
     const cacheRes = await fetch(cacheUrl, { cache: 'no-store' } as RequestInit);
     if (cacheRes.ok) {
       const cache = (await cacheRes.json()) as SharedCache;
