@@ -164,17 +164,22 @@ export async function handleCraftNew(
   // ──────────────────────────────────────────────────────────────────
   if (isForumChannel) {
     // Forum: create a post (which is a thread with a first message)
-    const forumPost = await discordApi.createForumPost(
-      deps.botToken,
-      targetChannelId,
-      projectName.slice(0, 100),
-      {
-        content,
-        embeds,
-        components,
-        allowed_mentions: roleId ? { roles: [roleId] } : undefined,
-      },
-    );
+    let forumPost: Record<string, unknown> | null = null;
+    try {
+      forumPost = await discordApi.createForumPost(
+        deps.botToken,
+        targetChannelId,
+        projectName.slice(0, 100),
+        {
+          content,
+          embeds,
+          components,
+          allowed_mentions: roleId ? { roles: [roleId] } : undefined,
+        },
+      );
+    } catch (e) {
+      return { content: `No se pudo crear el post en el foro — ${e instanceof Error ? e.message : String(e)}`, flags: 64 };
+    }
 
     if (!forumPost) {
       return { content: 'No se pudo crear el post en el foro', flags: 64 };
@@ -669,25 +674,20 @@ export async function postChannelSetup(
   const existingState = await store.getChannelState(guildId, channelId);
 
   if (isForumChannel) {
-    // For forum channels: create (or keep) a pinned forum post with the request button.
-    // If one already exists, leave it — can't easily update a forum post's first message without
-    // knowing the exact message ID inside the thread.
-    if (existingState?.requestMessageId) return; // already set up
-
+    // For forum channels: create a pinned forum post with the request button.
+    // createForumPost throws on failure with the Discord error detail.
     const forumPost = await discordApi.createForumPost(
       botToken,
       channelId,
       '🛠 Solicitar un crafteo',
       { embeds: reqEmbeds, components: reqComponents },
     );
-    if (forumPost) {
-      await store.upsertChannelState({
-        guildId,
-        channelId,
-        boardMessageId: existingState?.boardMessageId ?? null,
-        requestMessageId: String(forumPost.id),
-      });
-    }
+    await store.upsertChannelState({
+      guildId,
+      channelId,
+      boardMessageId: existingState?.boardMessageId ?? null,
+      requestMessageId: String(forumPost!.id),
+    });
   } else {
     // Text channel: post/refresh board + request prompt
     const projects = await store.listOpenProjects(guildId);

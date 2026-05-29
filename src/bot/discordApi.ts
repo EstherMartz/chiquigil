@@ -81,7 +81,7 @@ export async function createForumPost(
   if (!res.ok) {
     const detail = await res.text().catch(() => '');
     console.error(`[discord] createForumPost ${channelId} → ${res.status}:`, detail.slice(0, 800));
-    return null;
+    throw new Error(`Discord ${res.status}: ${detail.slice(0, 300)}`);
   }
   return res.json() as Promise<Record<string, unknown>>;
 }

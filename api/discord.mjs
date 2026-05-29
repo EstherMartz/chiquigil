@@ -1749,7 +1749,7 @@ async function createForumPost(botToken, channelId, name, payload) {
   if (!res.ok) {
     const detail = await res.text().catch(() => "");
     console.error(`[discord] createForumPost ${channelId} \u2192 ${res.status}:`, detail.slice(0, 800));
-    return null;
+    throw new Error(`Discord ${res.status}: ${detail.slice(0, 300)}`);
   }
   return res.json();
 }
@@ -1847,17 +1847,22 @@ async function handleCraftNew(opts, guildId, channelId, userId, deps) {
   if (roleId) content = `<@&${roleId}> `;
   content += NEW_PROJECT_CONTENT(projectId);
   if (isForumChannel) {
-    const forumPost = await createForumPost(
-      deps.botToken,
-      targetChannelId,
-      projectName.slice(0, 100),
-      {
-        content,
-        embeds,
-        components,
-        allowed_mentions: roleId ? { roles: [roleId] } : void 0
-      }
-    );
+    let forumPost = null;
+    try {
+      forumPost = await createForumPost(
+        deps.botToken,
+        targetChannelId,
+        projectName.slice(0, 100),
+        {
+          content,
+          embeds,
+          components,
+          allowed_mentions: roleId ? { roles: [roleId] } : void 0
+        }
+      );
+    } catch (e) {
+      return { content: `No se pudo crear el post en el foro \u2014 ${e instanceof Error ? e.message : String(e)}`, flags: 64 };
+    }
     if (!forumPost) {
       return { content: "No se pudo crear el post en el foro", flags: 64 };
     }
@@ -2207,21 +2212,18 @@ async function postChannelSetup(guildId, channelId, botToken, store) {
   const { embeds: reqEmbeds, components: reqComponents } = buildRequestPrompt();
   const existingState = await store.getChannelState(guildId, channelId);
   if (isForumChannel) {
-    if (existingState?.requestMessageId) return;
     const forumPost = await createForumPost(
       botToken,
       channelId,
       "\u{1F6E0} Solicitar un crafteo",
       { embeds: reqEmbeds, components: reqComponents }
     );
-    if (forumPost) {
-      await store.upsertChannelState({
-        guildId,
-        channelId,
-        boardMessageId: existingState?.boardMessageId ?? null,
-        requestMessageId: String(forumPost.id)
-      });
-    }
+    await store.upsertChannelState({
+      guildId,
+      channelId,
+      boardMessageId: existingState?.boardMessageId ?? null,
+      requestMessageId: String(forumPost.id)
+    });
   } else {
     const projects = await store.listOpenProjects(guildId);
     const projectsWithTasks = await Promise.all(
