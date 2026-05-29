@@ -44,3 +44,44 @@ export async function fetchMessages(botToken: string, channelId: string, limit: 
   if (!res.ok) return [];
   return res.json() as Promise<Array<{ id: string }>>;
 }
+
+export interface ChannelInfo {
+  id: string;
+  type: number; // 0=text, 15=forum, etc.
+  name: string;
+}
+
+export async function getChannel(botToken: string, channelId: string): Promise<ChannelInfo | null> {
+  const res = await fetch(`${BASE}/channels/${channelId}`, { headers: headers(botToken) });
+  if (!res.ok) {
+    console.error(`[discord] getChannel ${channelId} → ${res.status}`);
+    return null;
+  }
+  const data = await res.json() as any;
+  return { id: data.id, type: data.type, name: data.name };
+}
+
+export async function createForumPost(
+  botToken: string,
+  channelId: string,
+  name: string,
+  payload: Record<string, unknown>,
+): Promise<Record<string, unknown> | null> {
+  // Forum posts are created via POST /channels/{channel_id}/threads with is_private=false
+  const threadPayload = {
+    name,
+    auto_archive_duration: 10080,
+    message: payload,
+  };
+  const res = await fetch(`${BASE}/channels/${channelId}/threads`, {
+    method: 'POST',
+    headers: headers(botToken),
+    body: JSON.stringify(threadPayload),
+  });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '');
+    console.error(`[discord] createForumPost ${channelId} → ${res.status}:`, detail.slice(0, 800));
+    return null;
+  }
+  return res.json() as Promise<Record<string, unknown>>;
+}

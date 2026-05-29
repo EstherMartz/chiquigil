@@ -47,7 +47,15 @@ const commands = [
         ],
       },
       { type: 1, name: 'close', description: 'Cerrar proyecto', options: [{ type: 4, name: 'id', description: 'ID del proyecto', required: true }] },
-      { type: 1, name: 'setup', description: 'Configurar canal de craft (admin)' },
+    ],
+  },
+  {
+    name: 'setup',
+    description: 'Configura el bot',
+    default_member_permissions: '8', // ADMINISTRATOR
+    options: [
+      { type: 1, name: 'modal', description: 'Abre el formulario de configuración' },
+      { type: 1, name: 'view', description: 'Muestra la configuración actual' },
     ],
   },
   {

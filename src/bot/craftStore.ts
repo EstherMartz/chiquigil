@@ -1,6 +1,12 @@
 import { createClient } from '@libsql/client';
 import type { CraftProject, StoredTask, CraftTask, ChannelState } from './craftTypes';
 
+export interface GuildConfig {
+  guildId: string;
+  craftChannelId: string;
+  language: string; // 'es' | 'en' etc — future extensibility
+}
+
 export interface CraftStore {
   getRandomChistes(n: number): Promise<string[]>;
   createProject(p: {
@@ -30,6 +36,8 @@ export interface CraftStore {
   replaceTasks(projectId: number, tasks: CraftTask[]): Promise<void>;
   getChannelState(guildId: string, channelId: string): Promise<ChannelState | null>;
   upsertChannelState(state: ChannelState): Promise<void>;
+  getGuildConfig(guildId: string): Promise<GuildConfig | null>;
+  setGuildConfig(config: GuildConfig): Promise<void>;
   close(): Promise<void>;
 }
 
@@ -90,6 +98,12 @@ export async function openCraftStore(url: string, authToken?: string): Promise<C
     CREATE TABLE IF NOT EXISTS chistes (
       id    INTEGER PRIMARY KEY AUTOINCREMENT,
       joke  TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS guild_config (
+      guild_id       TEXT PRIMARY KEY,
+      craft_channel_id TEXT NOT NULL,
+      language       TEXT NOT NULL DEFAULT 'es'
     );
   `;
 
@@ -380,6 +394,33 @@ export async function openCraftStore(url: string, authToken?: string): Promise<C
         args: [n],
       });
       return result.rows.map((r) => String(r.joke));
+    },
+
+    async getGuildConfig(guildId) {
+      const result = await client.execute({
+        sql: 'SELECT * FROM guild_config WHERE guild_id = ?',
+        args: [guildId],
+      });
+      const row = result.rows[0];
+      if (!row) return null;
+      return {
+        guildId: String(row.guild_id),
+        craftChannelId: String(row.craft_channel_id),
+        language: String(row.language),
+      };
+    },
+
+    async setGuildConfig(config) {
+      await client.execute({
+        sql: `
+          INSERT INTO guild_config (guild_id, craft_channel_id, language)
+          VALUES (?, ?, ?)
+          ON CONFLICT(guild_id) DO UPDATE SET
+            craft_channel_id = ?,
+            language = ?
+        `,
+        args: [config.guildId, config.craftChannelId, config.language, config.craftChannelId, config.language],
+      });
     },
 
     async close() {

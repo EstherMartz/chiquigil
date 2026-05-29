@@ -11,6 +11,8 @@ import {
   handleCraftClose,
   handleCraftSetup,
   handleCraftClaim,
+  handleSetupView,
+  handleSetupSubmit,
 } from '../bot/craftCommands';
 import {
   handleCraftButton,
@@ -180,16 +182,52 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // For deferred interactions, defer immediately then process in background
   if (interaction.type === 2) {
-    // Slash command — defer ephemerally for /craft sub-commands whose
+    // Slash command — handle modals immediately without deferring
+    const cmdName = interaction.data?.name;
+    const subName = interaction.data?.options?.[0]?.name;
+
+    // /setup modal must be shown immediately (can't defer a modal)
+    if (cmdName === 'setup' && subName === 'modal') {
+      const permissions = BigInt(interaction.member?.permissions ?? '0');
+      const isAdmin = (permissions & 0x8n) !== 0n;
+      if (!isAdmin) {
+        return res.status(200).json({
+          type: 4,
+          data: { content: 'Solo administradores pueden ejecutar /setup', flags: 64 },
+        });
+      }
+      return res.status(200).json({
+        type: 9,
+        data: {
+          custom_id: 'setup:modal',
+          title: 'Configurar Canal de Crafteo',
+          components: [
+            {
+              type: 1,
+              components: [
+                {
+                  type: 4,
+                  custom_id: 'craft_channel_id',
+                  label: 'ID del Canal de Crafteo',
+                  style: 1,
+                  placeholder: '1234567890',
+                  required: true,
+                },
+              ],
+            },
+          ],
+        },
+      });
+    }
+
+    // For other slash commands, defer ephemerally for /craft sub-commands whose
     // handlers return flags: 64. The "ephemeral" bit must be set on the
     // INITIAL deferred response; setting it later via editOriginal is a
     // no-op, which is why the "Proyecto N creado…" reply was showing up
     // publicly even though the handler asked for ephemeral.
-    const cmdName = interaction.data?.name;
-    const subName = interaction.data?.options?.[0]?.name;
     // /craft show is meant to be shared; everything else is a private confirmation.
-    // /prune confirmation is always ephemeral.
-    const isEphemeral = (cmdName === 'craft' && subName !== 'show') || cmdName === 'prune';
+    // /prune confirmation is always ephemeral. /setup commands are ephemeral.
+    const isEphemeral = (cmdName === 'craft' && subName !== 'show') || cmdName === 'prune' || cmdName === 'setup';
     res.status(200).json({ type: 5, data: isEphemeral ? { flags: 64 } : {} });
 
     waitUntil(
@@ -269,6 +307,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               response = await handleCraftClose(projectId, guildId, userId, permissions, deps);
             } else if (subcommand === 'setup') {
               response = await handleCraftSetup(guildId, channelId, permissions, deps);
+            }
+          } else if (commandName === 'setup') {
+            // /setup view — show current config
+            // (/setup modal is handled above before defer)
+            if (options[0]?.name === 'view') {
+              const store = await getCraftStore();
+              const deps: CraftCommandDeps = {
+                store,
+                snapshots,
+                nameIndex,
+                marketBundle: marketBundle as any,
+                botToken: DISCORD_BOT_TOKEN,
+                appId: DISCORD_APP_ID,
+                world: HOME_WORLD,
+                dc: HOME_DC,
+                region: REGION,
+                craftChannelId: CRAFT_CHANNEL_ID,
+                crafterRoleId: CRAFTER_ROLE_ID,
+              };
+              response = await handleSetupView(guildId, permissions, deps);
+            } else {
+              response = { content: 'Unknown /setup subcommand', flags: 64 };
             }
           } else if (commandName === 'oye') {
             const question = options.find((o) => o.name === 'question')?.value ?? '';
@@ -683,7 +743,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
           let interactionResponse;
 
-          if (customId === 'cproj:requestmodal') {
+          if (customId === 'setup:modal') {
+            const setupDeps: CraftCommandDeps = {
+              store,
+              snapshots,
+              nameIndex,
+              marketBundle: { phantom: cache.phantom ?? {}, dc: cache.dc ?? {}, region: cache.region ?? {} } as any,
+              botToken: DISCORD_BOT_TOKEN,
+              appId: DISCORD_APP_ID,
+              world: HOME_WORLD,
+              dc: HOME_DC,
+              region: REGION,
+              craftChannelId: CRAFT_CHANNEL_ID,
+              crafterRoleId: CRAFTER_ROLE_ID,
+            };
+            interactionResponse = await handleSetupSubmit(guildId, fieldMap, setupDeps);
+          } else if (customId === 'cproj:requestmodal') {
             interactionResponse = await handleCraftRequestModal(
               fieldMap,
               userId,

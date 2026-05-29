@@ -1726,6 +1726,33 @@ async function createThread(botToken, channelId, messageId, name) {
   if (!res.ok) return null;
   return res.json();
 }
+async function getChannel(botToken, channelId) {
+  const res = await fetch(`${BASE}/channels/${channelId}`, { headers: headers(botToken) });
+  if (!res.ok) {
+    console.error(`[discord] getChannel ${channelId} \u2192 ${res.status}`);
+    return null;
+  }
+  const data = await res.json();
+  return { id: data.id, type: data.type, name: data.name };
+}
+async function createForumPost(botToken, channelId, name, payload) {
+  const threadPayload = {
+    name,
+    auto_archive_duration: 10080,
+    message: payload
+  };
+  const res = await fetch(`${BASE}/channels/${channelId}/threads`, {
+    method: "POST",
+    headers: headers(botToken),
+    body: JSON.stringify(threadPayload)
+  });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    console.error(`[discord] createForumPost ${channelId} \u2192 ${res.status}:`, detail.slice(0, 800));
+    return null;
+  }
+  return res.json();
+}
 
 // src/bot/craftCommands.ts
 function initialDisplayPhase(tasks) {
@@ -1741,7 +1768,15 @@ async function handleCraftNew(opts, guildId, channelId, userId, deps) {
     if (!opts.name) {
       return { content: "Nyeh~! Se requiere un nombre cuando no se especifica objeto, kukuru.", flags: 64 };
     }
-    const targetChannelId2 = deps.craftChannelId ?? channelId;
+    let targetChannelId2 = deps.craftChannelId ?? channelId;
+    try {
+      const guildConfig = await deps.store.getGuildConfig(guildId);
+      if (guildConfig) {
+        targetChannelId2 = guildConfig.craftChannelId;
+      }
+    } catch (e) {
+      console.warn("[craft] failed to fetch guild config, using fallback", e instanceof Error ? e.message : e);
+    }
     const projectId2 = await deps.store.createProject({
       guildId,
       channelId: targetChannelId2,
@@ -1778,7 +1813,17 @@ async function handleCraftNew(opts, guildId, channelId, userId, deps) {
   if (allTasks.length === 0) {
     return { content: NO_RECIPE(itemName), flags: 64 };
   }
-  const targetChannelId = deps.craftChannelId ?? channelId;
+  let targetChannelId = deps.craftChannelId ?? channelId;
+  try {
+    const guildConfig = await deps.store.getGuildConfig(guildId);
+    if (guildConfig) {
+      targetChannelId = guildConfig.craftChannelId;
+    }
+  } catch (e) {
+    console.warn("[craft] failed to fetch guild config, using fallback", e instanceof Error ? e.message : e);
+  }
+  const channelInfo = await getChannel(deps.botToken, targetChannelId);
+  const isForumChannel = channelInfo?.type === 15;
   const initial = initialDisplayPhase(allTasks);
   const projectId = await deps.store.createProject({
     guildId,
@@ -1801,29 +1846,61 @@ async function handleCraftNew(opts, guildId, channelId, userId, deps) {
   let content = "";
   if (roleId) content = `<@&${roleId}> `;
   content += NEW_PROJECT_CONTENT(projectId);
-  const announcementMsg = await sendToChannel(deps.botToken, targetChannelId, {
-    content,
-    embeds,
-    components,
-    allowed_mentions: roleId ? { roles: [roleId] } : void 0
-  });
-  if (!announcementMsg) {
-    return { content: CHANNEL_NOT_FOUND, flags: 64 };
-  }
-  const messageId = String(announcementMsg.id);
-  await deps.store.setProjectMessageId(projectId, messageId);
-  try {
-    const thread = await createThread(deps.botToken, targetChannelId, messageId, projectName.slice(0, 100));
-    if (thread) {
-      const threadId = String(thread.id);
-      await deps.store.setProjectThreadId(projectId, threadId);
-      const threadMsg = THREAD_PROJECT_CREATED(userId, storedTasks.length);
-      await sendToChannel(deps.botToken, threadId, { content: threadMsg });
+  if (isForumChannel) {
+    const forumPost = await createForumPost(
+      deps.botToken,
+      targetChannelId,
+      projectName.slice(0, 100),
+      {
+        content,
+        embeds,
+        components,
+        allowed_mentions: roleId ? { roles: [roleId] } : void 0
+      }
+    );
+    if (!forumPost) {
+      return { content: "No se pudo crear el post en el foro", flags: 64 };
     }
-  } catch (e) {
-    console.error("[craft] failed to create thread:", e instanceof Error ? e.message : e);
+    const threadId = String(forumPost.id);
+    await deps.store.setProjectThreadId(projectId, threadId);
+    const threadMsg = THREAD_PROJECT_CREATED(userId, storedTasks.length);
+    try {
+      await sendToChannel(deps.botToken, threadId, { content: threadMsg });
+    } catch (e) {
+      console.error("[craft] failed to send forum post message:", e instanceof Error ? e.message : e);
+    }
+  } else {
+    const announcementMsg = await sendToChannel(deps.botToken, targetChannelId, {
+      content,
+      embeds,
+      components,
+      allowed_mentions: roleId ? { roles: [roleId] } : void 0
+    });
+    if (!announcementMsg) {
+      return { content: CHANNEL_NOT_FOUND, flags: 64 };
+    }
+    const messageId = String(announcementMsg.id);
+    await deps.store.setProjectMessageId(projectId, messageId);
+    try {
+      const thread = await createThread(
+        deps.botToken,
+        targetChannelId,
+        messageId,
+        projectName.slice(0, 100)
+      );
+      if (thread) {
+        const threadId = String(thread.id);
+        await deps.store.setProjectThreadId(projectId, threadId);
+        const threadMsg = THREAD_PROJECT_CREATED(userId, storedTasks.length);
+        await sendToChannel(deps.botToken, threadId, { content: threadMsg });
+      }
+    } catch (e) {
+      console.error("[craft] failed to create thread:", e instanceof Error ? e.message : e);
+    }
   }
-  await refreshBoard(deps, guildId);
+  if (!isForumChannel) {
+    await refreshBoard(deps, guildId);
+  }
   console.log(`[craft] project #${projectId} created with ${storedTasks.length} tasks`);
   return {
     content: PROJECT_CREATED(projectId, targetChannelId, storedTasks.length),
@@ -2018,7 +2095,15 @@ async function handleCraftSetup(guildId, channelId, permissions, deps) {
   if (!isAdmin) {
     return { content: SETUP_ADMIN_ONLY, flags: 64 };
   }
-  const targetChannelId = deps.craftChannelId ?? channelId;
+  let targetChannelId = deps.craftChannelId ?? channelId;
+  try {
+    const guildConfig = await deps.store.getGuildConfig(guildId);
+    if (guildConfig) {
+      targetChannelId = guildConfig.craftChannelId;
+    }
+  } catch (e) {
+    console.warn("[craft] failed to fetch guild config, using fallback", e instanceof Error ? e.message : e);
+  }
   const existingState = await deps.store.getChannelState(guildId, targetChannelId);
   const projects = await deps.store.listOpenProjects(guildId);
   const projectsWithTasks = await Promise.all(
@@ -2071,8 +2156,20 @@ async function handleCraftSetup(guildId, channelId, permissions, deps) {
   return { content: SETUP_DONE(targetChannelId), flags: 64 };
 }
 async function refreshBoard(deps, guildId) {
-  const channelId = deps.craftChannelId;
+  let channelId = deps.craftChannelId;
+  try {
+    const guildConfig = await deps.store.getGuildConfig(guildId);
+    if (guildConfig) {
+      channelId = guildConfig.craftChannelId;
+    }
+  } catch (e) {
+    console.warn("[craft] failed to fetch guild config in refreshBoard", e instanceof Error ? e.message : e);
+  }
   if (!channelId) return;
+  const channelInfo = await getChannel(deps.botToken, channelId);
+  if (channelInfo?.type === 15) {
+    return;
+  }
   try {
     const projects = await deps.store.listOpenProjects(guildId);
     const projectsWithTasks = await Promise.all(
@@ -2103,6 +2200,57 @@ async function refreshBoard(deps, guildId) {
   } catch (e) {
     console.error("[craft] failed to refresh board:", e instanceof Error ? e.message : e);
   }
+}
+async function handleSetupView(guildId, permissions, deps) {
+  const isAdmin = (permissions & 0x8n) !== 0n;
+  if (!isAdmin) {
+    return { content: "Solo administradores pueden ejecutar /setup", flags: 64 };
+  }
+  const config2 = await deps.store.getGuildConfig(guildId);
+  if (!config2) {
+    return {
+      content: "No hay configuraci\xF3n a\xFAn. Usa `/setup modal` para configurar.",
+      flags: 64
+    };
+  }
+  const embeds = [
+    {
+      title: "\u2699\uFE0F Configuraci\xF3n del Bot",
+      color: 3447003,
+      fields: [
+        {
+          name: "Canal de Crafteo",
+          value: `<#${config2.craftChannelId}>`,
+          inline: true
+        },
+        {
+          name: "Idioma",
+          value: config2.language === "es" ? "\u{1F1EA}\u{1F1F8} Espa\xF1ol" : "\u{1F1EC}\u{1F1E7} English",
+          inline: true
+        }
+      ]
+    }
+  ];
+  return { embeds };
+}
+async function handleSetupSubmit(guildId, formData, deps) {
+  const craftChannelId = formData.craft_channel_id?.trim();
+  if (!craftChannelId) {
+    return { content: "El ID del canal es requerido", flags: 64 };
+  }
+  if (!/^\d+$/.test(craftChannelId)) {
+    return { content: "El ID del canal debe ser un n\xFAmero v\xE1lido", flags: 64 };
+  }
+  await deps.store.setGuildConfig({
+    guildId,
+    craftChannelId,
+    language: "es"
+  });
+  console.log(`[setup] configured guild ${guildId} with craft channel ${craftChannelId}`);
+  return {
+    content: `\u2705 Canal configurado: <#${craftChannelId}>`,
+    flags: 64
+  };
 }
 
 // src/bot/craftInteractions.ts
@@ -2709,6 +2857,12 @@ async function openCraftStore(url, authToken) {
       id    INTEGER PRIMARY KEY AUTOINCREMENT,
       joke  TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS guild_config (
+      guild_id       TEXT PRIMARY KEY,
+      craft_channel_id TEXT NOT NULL,
+      language       TEXT NOT NULL DEFAULT 'es'
+    );
   `;
   const statements = SCHEMA.split(";").map((s) => s.trim()).filter((s) => s.length > 0);
   for (const stmt of statements) {
@@ -2965,6 +3119,31 @@ async function openCraftStore(url, authToken) {
       });
       return result.rows.map((r) => String(r.joke));
     },
+    async getGuildConfig(guildId) {
+      const result = await client.execute({
+        sql: "SELECT * FROM guild_config WHERE guild_id = ?",
+        args: [guildId]
+      });
+      const row = result.rows[0];
+      if (!row) return null;
+      return {
+        guildId: String(row.guild_id),
+        craftChannelId: String(row.craft_channel_id),
+        language: String(row.language)
+      };
+    },
+    async setGuildConfig(config2) {
+      await client.execute({
+        sql: `
+          INSERT INTO guild_config (guild_id, craft_channel_id, language)
+          VALUES (?, ?, ?)
+          ON CONFLICT(guild_id) DO UPDATE SET
+            craft_channel_id = ?,
+            language = ?
+        `,
+        args: [config2.guildId, config2.craftChannelId, config2.language, config2.craftChannelId, config2.language]
+      });
+    },
     async close() {
       await client.close();
     }
@@ -3114,8 +3293,8 @@ async function handler(req, res) {
         if (sub?.name === "new") {
           const query = String(focused.value ?? "").trim();
           const snapshots = await loadSnapshots(baseUrl);
-          const nameIndex = buildNameIndex(snapshots.namesById);
-          const matches = query ? fuzzySearchItems(nameIndex, query, 25) : [];
+          const nameIndex2 = buildNameIndex(snapshots.namesById);
+          const matches = query ? fuzzySearchItems(nameIndex2, query, 25) : [];
           const choices = matches.slice(0, 25).map((m) => ({
             name: m.name.slice(0, 100),
             value: m.name.slice(0, 100)
@@ -3147,7 +3326,39 @@ async function handler(req, res) {
   if (interaction.type === 2) {
     const cmdName = interaction.data?.name;
     const subName = interaction.data?.options?.[0]?.name;
-    const isEphemeral = cmdName === "craft" && subName !== "show" || cmdName === "prune";
+    if (cmdName === "setup" && subName === "modal") {
+      const permissions = BigInt(interaction.member?.permissions ?? "0");
+      const isAdmin = (permissions & 0x8n) !== 0n;
+      if (!isAdmin) {
+        return res.status(200).json({
+          type: 4,
+          data: { content: "Solo administradores pueden ejecutar /setup", flags: 64 }
+        });
+      }
+      return res.status(200).json({
+        type: 9,
+        data: {
+          custom_id: "setup:modal",
+          title: "Configurar Canal de Crafteo",
+          components: [
+            {
+              type: 1,
+              components: [
+                {
+                  type: 4,
+                  custom_id: "craft_channel_id",
+                  label: "ID del Canal de Crafteo",
+                  style: 1,
+                  placeholder: "1234567890",
+                  required: true
+                }
+              ]
+            }
+          ]
+        }
+      });
+    }
+    const isEphemeral = cmdName === "craft" && subName !== "show" || cmdName === "prune" || cmdName === "setup";
     res.status(200).json({ type: 5, data: isEphemeral ? { flags: 64 } : {} });
     waitUntil(
       (async () => {
@@ -3159,7 +3370,7 @@ async function handler(req, res) {
             loadSnapshots(baseUrl2),
             loadMarketCache()
           ]);
-          const nameIndex = buildNameIndex(snapshots.namesById);
+          const nameIndex2 = buildNameIndex(snapshots.namesById);
           const marketBundle = { phantom: cache.phantom ?? {}, dc: cache.dc ?? {}, region: cache.region ?? {} };
           const commandName = interaction.data.name;
           const options = interaction.data.options ?? [];
@@ -3175,7 +3386,7 @@ async function handler(req, res) {
             const deps = {
               store,
               snapshots,
-              nameIndex,
+              nameIndex: nameIndex2,
               marketBundle,
               botToken: DISCORD_BOT_TOKEN,
               appId: DISCORD_APP_ID,
@@ -3219,12 +3430,32 @@ async function handler(req, res) {
             } else if (subcommand === "setup") {
               response = await handleCraftSetup(guildId, channelId, permissions, deps);
             }
+          } else if (commandName === "setup") {
+            if (options[0]?.name === "view") {
+              const store = await getCraftStore();
+              const deps = {
+                store,
+                snapshots,
+                nameIndex: nameIndex2,
+                marketBundle,
+                botToken: DISCORD_BOT_TOKEN,
+                appId: DISCORD_APP_ID,
+                world: HOME_WORLD,
+                dc: HOME_DC,
+                region: REGION,
+                craftChannelId: CRAFT_CHANNEL_ID,
+                crafterRoleId: CRAFTER_ROLE_ID
+              };
+              response = await handleSetupView(guildId, permissions, deps);
+            } else {
+              response = { content: "Unknown /setup subcommand", flags: 64 };
+            }
           } else if (commandName === "oye") {
             const question = options.find((o) => o.name === "question")?.value ?? "";
             const toolDeps = {
               marketBundle,
               snapshots,
-              nameIndex,
+              nameIndex: nameIndex2,
               world: HOME_WORLD,
               dc: HOME_DC
             };
@@ -3569,7 +3800,22 @@ ${e instanceof Error ? e.message : String(e)}`);
             }
           };
           let interactionResponse;
-          if (customId === "cproj:requestmodal") {
+          if (customId === "setup:modal") {
+            const setupDeps = {
+              store,
+              snapshots,
+              nameIndex,
+              marketBundle: { phantom: cache.phantom ?? {}, dc: cache.dc ?? {}, region: cache.region ?? {} },
+              botToken: DISCORD_BOT_TOKEN,
+              appId: DISCORD_APP_ID,
+              world: HOME_WORLD,
+              dc: HOME_DC,
+              region: REGION,
+              craftChannelId: CRAFT_CHANNEL_ID,
+              crafterRoleId: CRAFTER_ROLE_ID
+            };
+            interactionResponse = await handleSetupSubmit(guildId, fieldMap, setupDeps);
+          } else if (customId === "cproj:requestmodal") {
             interactionResponse = await handleCraftRequestModal(
               fieldMap,
               userId,

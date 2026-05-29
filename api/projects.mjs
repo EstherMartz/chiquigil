@@ -56,6 +56,12 @@ async function openCraftStore(url, authToken) {
       id    INTEGER PRIMARY KEY AUTOINCREMENT,
       joke  TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS guild_config (
+      guild_id       TEXT PRIMARY KEY,
+      craft_channel_id TEXT NOT NULL,
+      language       TEXT NOT NULL DEFAULT 'es'
+    );
   `;
   const statements = SCHEMA.split(";").map((s) => s.trim()).filter((s) => s.length > 0);
   for (const stmt of statements) {
@@ -311,6 +317,31 @@ async function openCraftStore(url, authToken) {
         args: [n]
       });
       return result.rows.map((r) => String(r.joke));
+    },
+    async getGuildConfig(guildId) {
+      const result = await client.execute({
+        sql: "SELECT * FROM guild_config WHERE guild_id = ?",
+        args: [guildId]
+      });
+      const row = result.rows[0];
+      if (!row) return null;
+      return {
+        guildId: String(row.guild_id),
+        craftChannelId: String(row.craft_channel_id),
+        language: String(row.language)
+      };
+    },
+    async setGuildConfig(config2) {
+      await client.execute({
+        sql: `
+          INSERT INTO guild_config (guild_id, craft_channel_id, language)
+          VALUES (?, ?, ?)
+          ON CONFLICT(guild_id) DO UPDATE SET
+            craft_channel_id = ?,
+            language = ?
+        `,
+        args: [config2.guildId, config2.craftChannelId, config2.language, config2.craftChannelId, config2.language]
+      });
     },
     async close() {
       await client.close();

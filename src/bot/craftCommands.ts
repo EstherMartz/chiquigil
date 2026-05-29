@@ -56,7 +56,15 @@ export async function handleCraftNew(
     if (!opts.name) {
       return { content: 'Nyeh~! Se requiere un nombre cuando no se especifica objeto, kukuru.', flags: 64 };
     }
-    const targetChannelId = deps.craftChannelId ?? channelId;
+    let targetChannelId = deps.craftChannelId ?? channelId;
+    try {
+      const guildConfig = await deps.store.getGuildConfig(guildId);
+      if (guildConfig) {
+        targetChannelId = guildConfig.craftChannelId;
+      }
+    } catch (e) {
+      console.warn('[craft] failed to fetch guild config, using fallback', e instanceof Error ? e.message : e);
+    }
     const projectId = await deps.store.createProject({
       guildId,
       channelId: targetChannelId,
@@ -106,8 +114,19 @@ export async function handleCraftNew(
     return { content: S.NO_RECIPE(itemName), flags: 64 };
   }
 
-  // Determine target channel for the announcement
-  const targetChannelId = deps.craftChannelId ?? channelId;
+  // Determine target channel from guild config or env var, then detect if forum
+  let targetChannelId = deps.craftChannelId ?? channelId;
+  try {
+    const guildConfig = await deps.store.getGuildConfig(guildId);
+    if (guildConfig) {
+      targetChannelId = guildConfig.craftChannelId;
+    }
+  } catch (e) {
+    console.warn('[craft] failed to fetch guild config, using fallback', e instanceof Error ? e.message : e);
+  }
+
+  const channelInfo = await discordApi.getChannel(deps.botToken, targetChannelId);
+  const isForumChannel = channelInfo?.type === 15;
 
   // For CompanyCraft projects with multiple phases, default the embed to show
   // the first phase (Wall · Fase 1 etc.); standard recipes leave these null.
@@ -140,36 +159,77 @@ export async function handleCraftNew(
   if (roleId) content = `<@&${roleId}> `;
   content += S.NEW_PROJECT_CONTENT(projectId);
 
-  // Send announcement message
-  const announcementMsg = await discordApi.sendToChannel(deps.botToken, targetChannelId, {
-    content,
-    embeds,
-    components,
-    allowed_mentions: roleId ? { roles: [roleId] } : undefined,
-  });
+  // ──────────────────────────────────────────────────────────────────
+  // Forum vs Text channel flow
+  // ──────────────────────────────────────────────────────────────────
+  if (isForumChannel) {
+    // Forum: create a post (which is a thread with a first message)
+    const forumPost = await discordApi.createForumPost(
+      deps.botToken,
+      targetChannelId,
+      projectName.slice(0, 100),
+      {
+        content,
+        embeds,
+        components,
+        allowed_mentions: roleId ? { roles: [roleId] } : undefined,
+      },
+    );
 
-  if (!announcementMsg) {
-    return { content: S.CHANNEL_NOT_FOUND, flags: 64 };
-  }
-
-  const messageId = String(announcementMsg.id);
-  await deps.store.setProjectMessageId(projectId, messageId);
-
-  // Create thread on the announcement
-  try {
-    const thread = await discordApi.createThread(deps.botToken, targetChannelId, messageId, projectName.slice(0, 100));
-    if (thread) {
-      const threadId = String(thread.id);
-      await deps.store.setProjectThreadId(projectId, threadId);
-      const threadMsg = S.THREAD_PROJECT_CREATED(userId, storedTasks.length);
-      await discordApi.sendToChannel(deps.botToken, threadId, { content: threadMsg });
+    if (!forumPost) {
+      return { content: 'No se pudo crear el post en el foro', flags: 64 };
     }
-  } catch (e) {
-    console.error('[craft] failed to create thread:', e instanceof Error ? e.message : e);
+
+    // In forum channels, the thread is the post itself
+    const threadId = String(forumPost.id);
+    await deps.store.setProjectThreadId(projectId, threadId);
+
+    // Send welcome message to the forum post thread
+    const threadMsg = S.THREAD_PROJECT_CREATED(userId, storedTasks.length);
+    try {
+      await discordApi.sendToChannel(deps.botToken, threadId, { content: threadMsg });
+    } catch (e) {
+      console.error('[craft] failed to send forum post message:', e instanceof Error ? e.message : e);
+    }
+  } else {
+    // Text channel: create message and thread
+    const announcementMsg = await discordApi.sendToChannel(deps.botToken, targetChannelId, {
+      content,
+      embeds,
+      components,
+      allowed_mentions: roleId ? { roles: [roleId] } : undefined,
+    });
+
+    if (!announcementMsg) {
+      return { content: S.CHANNEL_NOT_FOUND, flags: 64 };
+    }
+
+    const messageId = String(announcementMsg.id);
+    await deps.store.setProjectMessageId(projectId, messageId);
+
+    // Create thread on the announcement
+    try {
+      const thread = await discordApi.createThread(
+        deps.botToken,
+        targetChannelId,
+        messageId,
+        projectName.slice(0, 100),
+      );
+      if (thread) {
+        const threadId = String(thread.id);
+        await deps.store.setProjectThreadId(projectId, threadId);
+        const threadMsg = S.THREAD_PROJECT_CREATED(userId, storedTasks.length);
+        await discordApi.sendToChannel(deps.botToken, threadId, { content: threadMsg });
+      }
+    } catch (e) {
+      console.error('[craft] failed to create thread:', e instanceof Error ? e.message : e);
+    }
   }
 
-  // Refresh the pinned board
-  await refreshBoard(deps, guildId);
+  // Refresh the pinned board (only for text channels, forums have native post list)
+  if (!isForumChannel) {
+    await refreshBoard(deps, guildId);
+  }
 
   console.log(`[craft] project #${projectId} created with ${storedTasks.length} tasks`);
   return {
@@ -461,7 +521,17 @@ export async function handleCraftSetup(
     return { content: S.SETUP_ADMIN_ONLY, flags: 64 };
   }
 
-  const targetChannelId = deps.craftChannelId ?? channelId;
+  // Use guild config if available, otherwise fall back to env var or current channel
+  let targetChannelId = deps.craftChannelId ?? channelId;
+  try {
+    const guildConfig = await deps.store.getGuildConfig(guildId);
+    if (guildConfig) {
+      targetChannelId = guildConfig.craftChannelId;
+    }
+  } catch (e) {
+    console.warn('[craft] failed to fetch guild config, using fallback', e instanceof Error ? e.message : e);
+  }
+
   const existingState = await deps.store.getChannelState(guildId, targetChannelId);
 
   // 1. Create or refresh the board
@@ -523,11 +593,27 @@ export async function handleCraftSetup(
 }
 
 /**
- * Refresh the pinned board in the craft channel
+ * Refresh the pinned board in the craft channel (text channels only, not forums)
  */
 async function refreshBoard(deps: CraftCommandDeps, guildId: string): Promise<void> {
-  const channelId = deps.craftChannelId;
+  // Get channel from guild config or env var
+  let channelId = deps.craftChannelId;
+  try {
+    const guildConfig = await deps.store.getGuildConfig(guildId);
+    if (guildConfig) {
+      channelId = guildConfig.craftChannelId;
+    }
+  } catch (e) {
+    console.warn('[craft] failed to fetch guild config in refreshBoard', e instanceof Error ? e.message : e);
+  }
+
   if (!channelId) return;
+
+  // Skip board refresh for forum channels (they have native post list)
+  const channelInfo = await discordApi.getChannel(deps.botToken, channelId);
+  if (channelInfo?.type === 15) {
+    return; // Forum channel, skip board message
+  }
 
   try {
     const projects = await deps.store.listOpenProjects(guildId);
@@ -564,4 +650,83 @@ async function refreshBoard(deps: CraftCommandDeps, guildId: string): Promise<vo
   } catch (e) {
     console.error('[craft] failed to refresh board:', e instanceof Error ? e.message : e);
   }
+}
+
+/**
+ * Handle /setup view — show current guild config
+ */
+export async function handleSetupView(
+  guildId: string,
+  permissions: bigint,
+  deps: CraftCommandDeps,
+): Promise<CommandResponse> {
+  // Check permissions
+  const isAdmin = (permissions & 0x8n) !== 0n;
+  if (!isAdmin) {
+    return { content: 'Solo administradores pueden ejecutar /setup', flags: 64 };
+  }
+
+  const config = await deps.store.getGuildConfig(guildId);
+
+  if (!config) {
+    return {
+      content: 'No hay configuración aún. Usa `/setup modal` para configurar.',
+      flags: 64,
+    };
+  }
+
+  const embeds = [
+    {
+      title: '⚙️ Configuración del Bot',
+      color: 3447003,
+      fields: [
+        {
+          name: 'Canal de Crafteo',
+          value: `<#${config.craftChannelId}>`,
+          inline: true,
+        },
+        {
+          name: 'Idioma',
+          value: config.language === 'es' ? '🇪🇸 Español' : '🇬🇧 English',
+          inline: true,
+        },
+      ],
+    },
+  ];
+
+  return { embeds };
+}
+
+/**
+ * Handle /setup modal submission — save guild config to database
+ */
+export async function handleSetupSubmit(
+  guildId: string,
+  formData: Record<string, string>,
+  deps: CraftCommandDeps,
+): Promise<CommandResponse> {
+  const craftChannelId = formData.craft_channel_id?.trim();
+
+  if (!craftChannelId) {
+    return { content: 'El ID del canal es requerido', flags: 64 };
+  }
+
+  // Validate it's a number
+  if (!/^\d+$/.test(craftChannelId)) {
+    return { content: 'El ID del canal debe ser un número válido', flags: 64 };
+  }
+
+  // Store config
+  await deps.store.setGuildConfig({
+    guildId,
+    craftChannelId,
+    language: 'es',
+  });
+
+  console.log(`[setup] configured guild ${guildId} with craft channel ${craftChannelId}`);
+
+  return {
+    content: `✅ Canal configurado: <#${craftChannelId}>`,
+    flags: 64,
+  };
 }

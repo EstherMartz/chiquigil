@@ -59,10 +59,19 @@ export async function registerCommands(token: string, clientId: string, guildIds
         .addIntegerOption((opt) =>
           opt.setName('id').setDescription('ID del proyecto').setRequired(true),
         ),
+    );
+
+  const setup = new SlashCommandBuilder()
+    .setName('setup')
+    .setDescription('Configura el bot 🔧')
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+    .addSubcommand((sub) =>
+      sub.setName('modal')
+        .setDescription('Abre el formulario de configuración'),
     )
     .addSubcommand((sub) =>
-      sub.setName('setup')
-        .setDescription('Configura el canal de crafteo — pinnea board y request prompt (admin)')
+      sub.setName('view')
+        .setDescription('Muestra la configuración actual'),
     );
 
   const rest = new REST({ version: '10' }).setToken(token);
@@ -71,9 +80,9 @@ export async function registerCommands(token: string, clientId: string, guildIds
     try {
       await rest.put(
         Routes.applicationGuildCommands(clientId, guildId),
-        { body: [cleanup.toJSON(), purge.toJSON(), craft.toJSON()] },
+        { body: [cleanup.toJSON(), purge.toJSON(), craft.toJSON(), setup.toJSON()] },
       );
-      console.log(`Registered /cleanup, /purge, /craft in guild ${guildId}`);
+      console.log(`Registered /cleanup, /purge, /craft, /setup in guild ${guildId}`);
     } catch (e) {
       console.error(`Failed to register commands in guild ${guildId}:`, e);
     }
