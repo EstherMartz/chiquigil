@@ -13,7 +13,7 @@ function bestForeignListing(
 ): WorldListing | null {
   if (!m) return null;
   const candidates = m.worldListings
-    .filter((l) => l.world !== homeWorld && (canHq ? true : !l.hq))
+    .filter((l) => l.world !== homeWorld && l.hq === canHq)
     .sort((a, b) => a.price - b.price);
   return candidates[0] ?? null;
 }

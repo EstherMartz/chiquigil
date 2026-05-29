@@ -60,6 +60,27 @@ describe('arbPlay', () => {
     });
     expect(arbPlay(m, m, 'Home', false, NOW)).toBeNull();
   });
+  it('ignores a cheap foreign listing of the wrong quality (no NQ→HQ arb)', () => {
+    const m = mkt({
+      minHQ: 2000, avgHQ: 2000, recentSalesHQ: 10, velocity: 5,
+      worldListings: [
+        { world: 'Lich', price: 300, hq: false }, // cheap NQ — must be ignored when selling HQ
+        { world: 'Lich', price: 1900, hq: true },  // HQ, but not below the ARB_DISCOUNT threshold of home HQ
+      ],
+    });
+    expect(arbPlay(m, m, 'Home', true, NOW)).toBeNull();
+  });
+  it('uses a cheap foreign HQ listing when selling HQ', () => {
+    const m = mkt({
+      minHQ: 2000, avgHQ: 2000, recentSalesHQ: 10, velocity: 5,
+      worldListings: [
+        { world: 'Lich', price: 300, hq: false }, // NQ, ignored
+        { world: 'Lich', price: 1000, hq: true },  // HQ, below 0.7*2000=1400 → valid arb
+      ],
+    });
+    const p = arbPlay(m, m, 'Home', true, NOW);
+    expect(p!.cost).toBe(1000);
+  });
 });
 
 describe('vendorPlay', () => {
