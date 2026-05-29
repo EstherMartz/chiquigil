@@ -41,3 +41,52 @@ export function robustSellPrice(m: MarketItem, quality: Quality): number | null 
 
 // exported for reuse / testing in later tasks
 export { clamp01 };
+
+export interface PlayMetrics {
+  netPerUnit: number;
+  effectiveUnitsPerDay: number;
+  gilPerDay: number;
+  roi: number | null;
+  confidence: number;
+}
+
+function ageScore(lastUploadTime: number, now: number): number {
+  if (lastUploadTime <= 0) return 0;
+  const ageHours = (now - lastUploadTime) / 3_600_000;
+  const staleHours = STALE_DAYS * 24;
+  if (ageHours <= FRESH_HOURS) return 1;
+  if (ageHours >= staleHours) return 0;
+  return 1 - (ageHours - FRESH_HOURS) / (staleHours - FRESH_HOURS);
+}
+
+function liquidityScore(m: MarketItem, quality: Quality): number {
+  const recent = quality === 'HQ' ? m.recentSalesHQ : m.recentSalesNQ;
+  const bySales = recent / FULL_LIQUIDITY_SALES;
+  const byVelocity = m.velocity / HEALTHY_VELOCITY;
+  return clamp01(Math.max(bySales, byVelocity));
+}
+
+export function confidence(m: MarketItem, quality: Quality, now: number): number {
+  return ageScore(m.lastUploadTime, now) * liquidityScore(m, quality);
+}
+
+export function riskLabel(conf: number, velocity: number): string {
+  if (conf < CONFIDENCE_LOW) return 'Low confidence — stale or thin data';
+  if (velocity >= HEALTHY_VELOCITY) return 'Strong — moves daily';
+  if (velocity >= 1) return 'Steady';
+  return 'Slow seller';
+}
+
+export function playMetrics(
+  sellPrice: number, cost: number, m: MarketItem, quality: Quality, now: number,
+): PlayMetrics {
+  const netPerUnit = applyTax(sellPrice) - cost;
+  const units = effectiveUnitsPerDay(m.velocity, m.listingCount);
+  return {
+    netPerUnit,
+    effectiveUnitsPerDay: units,
+    gilPerDay: netPerUnit * units,
+    roi: cost > 0 ? netPerUnit / cost : null,
+    confidence: confidence(m, quality, now),
+  };
+}

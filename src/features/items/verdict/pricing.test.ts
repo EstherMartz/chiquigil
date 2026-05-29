@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   applyTax, captureShare, effectiveUnitsPerDay, robustSellPrice, MB_TAX,
+  confidence, riskLabel, playMetrics,
 } from './pricing';
 import type { MarketItem } from '../../../lib/universalis';
 
@@ -50,5 +51,55 @@ describe('robustSellPrice', () => {
   });
   it('returns null when neither a listing nor an average exists', () => {
     expect(robustSellPrice(mkt({}), 'NQ')).toBeNull();
+  });
+});
+
+const DAY = 86_400_000;
+const NOW = 1_000 * DAY; // arbitrary fixed "now" in ms
+
+describe('confidence', () => {
+  it('is high for fresh data with healthy sales', () => {
+    const m = mkt({ lastUploadTime: NOW - 2 * 3_600_000, recentSalesNQ: 10, velocity: 6 });
+    expect(confidence(m, 'NQ', NOW)).toBeCloseTo(1, 5);
+  });
+  it('is zero when the upload time is unknown', () => {
+    const m = mkt({ lastUploadTime: 0, recentSalesNQ: 10, velocity: 6 });
+    expect(confidence(m, 'NQ', NOW)).toBe(0);
+  });
+  it('decays toward zero as data ages past the stale window', () => {
+    const m = mkt({ lastUploadTime: NOW - 14 * DAY, recentSalesNQ: 10, velocity: 6 });
+    expect(confidence(m, 'NQ', NOW)).toBeCloseTo(0, 5);
+  });
+  it('is low when there are no real sales even if data is fresh', () => {
+    const m = mkt({ lastUploadTime: NOW - 1_000, recentSalesNQ: 0, velocity: 0 });
+    expect(confidence(m, 'NQ', NOW)).toBe(0);
+  });
+});
+
+describe('riskLabel', () => {
+  it('flags low-confidence data regardless of velocity', () => {
+    expect(riskLabel(0.2, 10)).toMatch(/Low confidence/);
+  });
+  it('labels strong movers', () => {
+    expect(riskLabel(0.9, 6)).toMatch(/Strong/);
+  });
+  it('labels steady and slow sellers', () => {
+    expect(riskLabel(0.9, 2)).toMatch(/Steady/);
+    expect(riskLabel(0.9, 0.2)).toMatch(/Slow/);
+  });
+});
+
+describe('playMetrics', () => {
+  it('computes tax-aware net, throughput, gil/day, and roi', () => {
+    const m = mkt({ lastUploadTime: NOW - 1_000, recentSalesNQ: 10, velocity: 8, listingCount: 3 });
+    const r = playMetrics(1000, 400, m, 'NQ', NOW);
+    expect(r.netPerUnit).toBe(550);            // 1000*0.95 - 400
+    expect(r.effectiveUnitsPerDay).toBe(2);    // 8 * 1/(1+3)
+    expect(r.gilPerDay).toBe(1100);            // 550 * 2
+    expect(r.roi).toBeCloseTo(1.375, 5);       // 550 / 400
+  });
+  it('returns null roi when cost is zero', () => {
+    const m = mkt({ lastUploadTime: NOW - 1_000, recentSalesNQ: 10, velocity: 8 });
+    expect(playMetrics(1000, 0, m, 'NQ', NOW).roi).toBeNull();
   });
 });
