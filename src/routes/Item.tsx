@@ -324,40 +324,11 @@ function HeaderBlock({ name, ilvl, sc, canHq, rarity, itemId, recipe, world, dc,
         </h1>
         {/* Meta subtitle line */}
         <div className="font-mono text-[10px] tracking-widest uppercase text-text-low mt-2 flex items-center gap-1 flex-wrap">
-          <span>• {world} •</span>
+          <span>• {world}</span>
+          <span>•</span>
           <span>{dc}</span>
           <span>•</span>
           <span>Updated {relativeTime}</span>
-          <span>•</span>
-          <a
-            href={garlandItemUrl(itemId)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-text-low hover:text-aether transition-colors"
-            title="Open on Garland Tools"
-          >
-            Garland
-          </a>
-          <span>•</span>
-          <a
-            href={gamerEscapeItemUrl(name)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-text-low hover:text-aether transition-colors"
-            title="Gamer Escape wiki"
-          >
-            GE
-          </a>
-          <span>•</span>
-          <a
-            href={universalisItemUrl(itemId)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-text-low hover:text-aether transition-colors"
-            title="Universalis (market data)"
-          >
-            UV
-          </a>
         </div>
       </div>
       <div className="flex flex-col sm:flex-row sm:items-end gap-3 self-start sm:self-end">
@@ -371,6 +342,35 @@ function HeaderBlock({ name, ilvl, sc, canHq, rarity, itemId, recipe, world, dc,
           >
             + Project
           </Link>
+        </div>
+        <div className="flex flex-wrap items-center gap-1 sm:border-l sm:border-border-base sm:pl-3">
+          <a
+            href={garlandItemUrl(itemId)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-mono text-[10px] tracking-widest uppercase text-text-dim hover:text-aether px-2 py-1 transition-colors"
+            title="Open on Garland Tools"
+          >
+            Garland ↗
+          </a>
+          <a
+            href={gamerEscapeItemUrl(name)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-mono text-[10px] tracking-widest uppercase text-text-dim hover:text-aether px-2 py-1 transition-colors"
+            title="Gamer Escape wiki"
+          >
+            GE ↗
+          </a>
+          <a
+            href={universalisItemUrl(itemId)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-mono text-[10px] tracking-widest uppercase text-text-dim hover:text-aether px-2 py-1 transition-colors"
+            title="Universalis (market data)"
+          >
+            UV ↗
+          </a>
         </div>
       </div>
     </header>
