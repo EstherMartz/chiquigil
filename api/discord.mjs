@@ -1697,7 +1697,7 @@ function buildRequestPrompt() {
         custom_id: "cproj:request",
         label: REQUEST_BUTTON,
         style: 1,
-        emoji: "\u{1F6E0}"
+        emoji: { name: "\u{1F6E0}" }
       }
     ]
   };

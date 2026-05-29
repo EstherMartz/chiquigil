@@ -406,7 +406,7 @@ export function buildRequestPrompt(): { embeds: object[]; components: object[] }
         custom_id: 'cproj:request',
         label: S.REQUEST_BUTTON,
         style: 1,
-        emoji: '🛠',
+        emoji: { name: '🛠' },
       },
     ],
   };
