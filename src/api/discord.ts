@@ -653,8 +653,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             await store.setGuildConfig({ guildId, craftChannelId: selectedChannelId, language: 'es' });
             await postChannelSetup(guildId, selectedChannelId, DISCORD_BOT_TOKEN, store);
             console.log(`[setup] channel ${selectedChannelId} configured for guild ${guildId}`);
+            await editOriginalResponse(DISCORD_APP_ID, interaction.token, {
+              content: `✅ Canal configurado: <#${selectedChannelId}> — ¡Mensajes publicados!`,
+            });
           } catch (e) {
-            console.error('[discord] setup channel_select error:', e);
+            const msg = e instanceof Error ? e.message : String(e);
+            console.error('[discord] setup channel_select error:', msg);
+            await editOriginalResponse(DISCORD_APP_ID, interaction.token, {
+              content: `❌ Error al configurar canal: ${msg}`,
+            }).catch(() => {});
           }
         })());
 

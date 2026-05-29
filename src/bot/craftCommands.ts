@@ -706,6 +706,7 @@ export async function postChannelSetup(
     } catch {
       const msg = await discordApi.sendToChannel(botToken, channelId, { embeds: boardEmbeds });
       if (msg) boardMsgId = String(msg.id);
+      else throw new Error(`No se pudo publicar en <#${channelId}> — ¿tiene el bot permisos de escritura en ese canal?`);
     }
 
     let reqMsgId = existingState?.requestMessageId ?? null;
@@ -718,6 +719,7 @@ export async function postChannelSetup(
     } catch {
       const msg = await discordApi.sendToChannel(botToken, channelId, { embeds: reqEmbeds, components: reqComponents });
       if (msg) reqMsgId = String(msg.id);
+      else throw new Error(`No se pudo publicar en <#${channelId}> — ¿tiene el bot permisos de escritura en ese canal?`);
     }
 
     await store.upsertChannelState({ guildId, channelId, boardMessageId: boardMsgId, requestMessageId: reqMsgId });

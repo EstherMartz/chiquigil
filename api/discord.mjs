@@ -2238,6 +2238,7 @@ async function postChannelSetup(guildId, channelId, botToken, store) {
     } catch {
       const msg = await sendToChannel(botToken, channelId, { embeds: boardEmbeds });
       if (msg) boardMsgId = String(msg.id);
+      else throw new Error(`No se pudo publicar en <#${channelId}> \u2014 \xBFtiene el bot permisos de escritura en ese canal?`);
     }
     let reqMsgId = existingState?.requestMessageId ?? null;
     try {
@@ -2249,6 +2250,7 @@ async function postChannelSetup(guildId, channelId, botToken, store) {
     } catch {
       const msg = await sendToChannel(botToken, channelId, { embeds: reqEmbeds, components: reqComponents });
       if (msg) reqMsgId = String(msg.id);
+      else throw new Error(`No se pudo publicar en <#${channelId}> \u2014 \xBFtiene el bot permisos de escritura en ese canal?`);
     }
     await store.upsertChannelState({ guildId, channelId, boardMessageId: boardMsgId, requestMessageId: reqMsgId });
   }
@@ -3756,8 +3758,16 @@ ${e instanceof Error ? e.message : String(e)}`);
             await store.setGuildConfig({ guildId, craftChannelId: selectedChannelId, language: "es" });
             await postChannelSetup(guildId, selectedChannelId, DISCORD_BOT_TOKEN, store);
             console.log(`[setup] channel ${selectedChannelId} configured for guild ${guildId}`);
+            await editOriginalResponse(DISCORD_APP_ID, interaction.token, {
+              content: `\u2705 Canal configurado: <#${selectedChannelId}> \u2014 \xA1Mensajes publicados!`
+            });
           } catch (e) {
-            console.error("[discord] setup channel_select error:", e);
+            const msg = e instanceof Error ? e.message : String(e);
+            console.error("[discord] setup channel_select error:", msg);
+            await editOriginalResponse(DISCORD_APP_ID, interaction.token, {
+              content: `\u274C Error al configurar canal: ${msg}`
+            }).catch(() => {
+            });
           }
         })());
         return;
