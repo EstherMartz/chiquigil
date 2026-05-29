@@ -22,3 +22,7 @@ export function universalisItemUrl(id: number): string {
 export function gamerEscapeItemUrl(name: string): string {
   return `https://ffxiv.gamerescape.com/wiki/${encodeURIComponent(name.replace(/ /g, '_'))}`;
 }
+
+export function garlandQuestUrl(id: number): string {
+  return `https://www.garlandtools.org/db/#quest/${id}`;
+}

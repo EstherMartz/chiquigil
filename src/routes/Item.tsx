@@ -7,6 +7,9 @@ import { useGatheringCatalog } from '../features/queries/useGatheringCatalog';
 import { useGarlandItem } from '../features/queries/useGarlandItem';
 import { useGarlandLocations } from '../features/queries/useGarlandLocations';
 import { useUsedInIndex } from '../features/items/useUsedInIndex';
+import { useGcSupplyUsedInIndex } from '../features/items/useGcSupplyUsedInIndex';
+import { useLeveUsedInIndex } from '../features/items/useLeveUsedInIndex';
+import { DeliverablesBlock } from '../features/items/DeliverablesBlock';
 import { useMarketData } from '../features/watchlist/useMarketData';
 import { useVendorShopSnapshot } from '../features/queries/useVendorShopSnapshot';
 import { useSpecialShopSnapshot } from '../features/queries/useSpecialShopSnapshot';
@@ -62,6 +65,8 @@ export default function Item() {
   const garland = useGarlandItem(valid ? itemId : null);
   const locations = useGarlandLocations();
   const usedInIdx = useUsedInIndex();
+  const gcSupplyIdx = useGcSupplyUsedInIndex();
+  const leveIdx = useLeveUsedInIndex();
 
   const item: SnapshotItem | undefined = useMemo(() => {
     if (!valid || !snapshot.data) return undefined;
@@ -71,6 +76,9 @@ export default function Item() {
   const recipe = valid && recipes.data ? recipes.data.get(itemId) : undefined;
 
   const usedIn = valid ? (usedInIdx.data.get(itemId) ?? []) : [];
+  const gcSupplyDeliverables = valid ? (gcSupplyIdx.data.get(itemId) ?? []) : [];
+  const leveDeliverables = valid ? (leveIdx.data.get(itemId) ?? []) : [];
+  const questDeliverables = garland.data?.usedInQuests ?? [];
 
   const ingredientIds = recipe?.ingredients.map((i) => i.itemId) ?? [];
   const usedInIds = useMemo(() => usedIn.map((e) => e.resultId), [usedIn]);
@@ -229,6 +237,12 @@ export default function Item() {
       )}
 
       <UsedInBlock entries={usedIn} itemNames={snapshot.data?.items} phantom={market.data?.phantom} />
+
+      <DeliverablesBlock
+        gcSupply={gcSupplyDeliverables}
+        leves={leveDeliverables}
+        quests={questDeliverables}
+      />
 
       <SourcesBlock
         itemId={itemId}

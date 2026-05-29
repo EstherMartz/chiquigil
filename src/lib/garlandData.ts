@@ -54,6 +54,12 @@ export interface GarlandTradeShopNpc extends GarlandNpcRef {
   currencyItemId: number;
 }
 
+export interface GarlandQuestRef {
+  id: number;
+  name: string;
+  genre?: number;
+}
+
 export interface GarlandItem {
   id: number;
   name: string;
@@ -61,6 +67,7 @@ export interface GarlandItem {
   ingredients: GarlandIngredient[];
   gilShopNpcs: GarlandNpcRef[];
   tradeShopNpcs: GarlandTradeShopNpc[];
+  usedInQuests: GarlandQuestRef[];
 }
 
 interface RawPartialItemObj {
@@ -72,10 +79,11 @@ interface RawPartialItemObj {
   partials?: Array<[string, number]>;
 }
 interface RawNpcObj { n?: string; l?: number }
+interface RawQuestObj { n?: string; g?: number }
 interface RawPartial {
   type?: string;
   id?: number | string;
-  obj?: (RawPartialItemObj & RawNpcObj);
+  obj?: (RawPartialItemObj & RawNpcObj & RawQuestObj);
 }
 interface RawTradeListing {
   item?: Array<{ id?: string | number; amount?: number }>;
@@ -94,6 +102,7 @@ interface RawItem {
   craft?: Array<{ ingredients?: Array<{ id?: number; amount?: number }> }>;
   vendors?: number[];
   tradeShops?: RawTradeShop[];
+  usedInQuest?: number[];
 }
 interface RawResponse { item?: RawItem; partials?: RawPartial[] }
 
@@ -111,11 +120,13 @@ export function parseGarlandItem(raw: RawResponse): GarlandItem | null {
   const partials = raw.partials ?? [];
   const itemPartials = new Map<number, RawPartialItemObj>();
   const npcPartials = new Map<number, RawNpcObj>();
+  const questPartials = new Map<number, RawQuestObj>();
   for (const p of partials) {
     const id = typeof p.id === 'string' ? Number(p.id) : p.id;
     if (id == null || Number.isNaN(id)) continue;
     if (p.type === 'item' && p.obj) itemPartials.set(id, p.obj);
     else if (p.type === 'npc' && p.obj?.n) npcPartials.set(id, p.obj);
+    else if (p.type === 'quest' && p.obj) questPartials.set(id, p.obj);
   }
   const ingSrc = item.craft?.[0]?.ingredients ?? item.ingredients ?? [];
   const ingredients: GarlandIngredient[] = [];
@@ -167,6 +178,16 @@ export function parseGarlandItem(raw: RawResponse): GarlandItem | null {
     }
   }
 
+  const usedInQuests: GarlandQuestRef[] = [];
+  for (const questId of item.usedInQuest ?? []) {
+    const part = questPartials.get(questId);
+    usedInQuests.push(
+      part?.n != null
+        ? { id: questId, name: part.n, ...(part.g != null ? { genre: part.g } : {}) }
+        : { id: questId, name: `#${questId}` },
+    );
+  }
+
   return {
     id: item.id,
     name: item.name ?? '',
@@ -174,6 +195,7 @@ export function parseGarlandItem(raw: RawResponse): GarlandItem | null {
     ingredients,
     gilShopNpcs,
     tradeShopNpcs,
+    usedInQuests,
   };
 }
 
