@@ -116,10 +116,19 @@ After all candidate `Play`s are built:
 - `score = confidence * (BLEND_GIL * gNorm + BLEND_ROI * rNorm)`, with
   `BLEND_GIL = BLEND_ROI = 0.5`.
 
-Sort candidates by `score` descending. `best` = first. `runnerUp` = the highest-scoring remaining
-play that is *distinct* from `best` (differs in `kind` or `quality`) and whose `score >=
-RUNNER_UP_MIN_SCORE` (a small floor, e.g. 0.05); otherwise `null`. This prevents surfacing, e.g.,
-NQ-craft as the runner-up to HQ-craft when they are effectively the same play.
+Sort candidates by `score` descending.
+
+**`best` selection — active plays win over the passive list.** The `list` play has no acquisition
+cost, so its per-unit net (and gil/day) is structurally higher than crafting/buying the same item;
+left to compete on raw gil/day it would always beat a profitable craft. That is the wrong advice
+when there is a genuine acquisition edge. So `best` is the **highest-scoring *active* play**
+(`craft` / `arb` / `vendor`) when any active play qualifies; `list` becomes `best` only when no
+active play exists (the "just sell it" fallback).
+
+**`runnerUp`** = the highest-scoring remaining play of a **different `kind`** than `best`, with
+`score >= RUNNER_UP_MIN_SCORE` (a small floor, e.g. 0.05); otherwise `null`. Distinctness is by
+`kind` so NQ-craft is never surfaced as the runner-up to HQ-craft (they are the same play). The
+`list` play is eligible as a runner-up — e.g. "best play: craft-flip; also viable: just list it."
 
 ### Risk label — `riskLabel(confidence, velocity)`
 Replaces `riskFromVelocity`. Combines confidence band and velocity band, e.g.:
