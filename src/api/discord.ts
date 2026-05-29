@@ -547,6 +547,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const customId = interaction.data?.custom_id ?? '';
 
     if (componentType === 2) {
+      // The "request a craft" button opens a modal — modals MUST be the first
+      // response, so return it synchronously instead of deferring with type 6.
+      if (customId === 'cproj:request') {
+        const modal = handleCraftRequestButton();
+        return res.status(200).json(modal);
+      }
+
       // Button
       res.status(200).json({ type: 6, data: {} });
 
@@ -579,29 +586,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               },
             };
 
-            let interactionResponse;
-
-            if (customId === 'cproj:request') {
-              interactionResponse = handleCraftRequestButton();
-            } else {
-              interactionResponse = await handleCraftButton(
-                customId,
-                userId,
-                guildId,
-                messageId,
-                channelId,
-                deps,
-              );
-            }
-
-            // Handle modal responses (type 9) - these are returned synchronously
-            if (interactionResponse.type === 9) {
-              // Modal responses should not happen here as we defer first
-              // But if they do, we need to send them differently
-              // For now, we'll treat this as an error case
-              console.warn('[discord] received modal response for deferred button');
-              return;
-            }
+            const interactionResponse = await handleCraftButton(
+              customId,
+              userId,
+              guildId,
+              messageId,
+              channelId,
+              deps,
+            );
 
             // For deferred responses (type 6), use editOriginal
             if (interactionResponse.type === 6 || !interactionResponse.type) {

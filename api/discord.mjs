@@ -3687,6 +3687,10 @@ ${e instanceof Error ? e.message : String(e)}`);
     const componentType = interaction.data?.component_type ?? 0;
     const customId = interaction.data?.custom_id ?? "";
     if (componentType === 2) {
+      if (customId === "cproj:request") {
+        const modal = handleCraftRequestButton();
+        return res.status(200).json(modal);
+      }
       res.status(200).json({ type: 6, data: {} });
       waitUntil(
         (async () => {
@@ -3714,23 +3718,14 @@ ${e instanceof Error ? e.message : String(e)}`);
                 return fetchMarketForOutputs(ids, cfg.world, cfg.dc, cfg.region);
               }
             };
-            let interactionResponse;
-            if (customId === "cproj:request") {
-              interactionResponse = handleCraftRequestButton();
-            } else {
-              interactionResponse = await handleCraftButton(
-                customId,
-                userId,
-                guildId,
-                messageId,
-                channelId,
-                deps
-              );
-            }
-            if (interactionResponse.type === 9) {
-              console.warn("[discord] received modal response for deferred button");
-              return;
-            }
+            const interactionResponse = await handleCraftButton(
+              customId,
+              userId,
+              guildId,
+              messageId,
+              channelId,
+              deps
+            );
             if (interactionResponse.type === 6 || !interactionResponse.type) {
               await editOriginalResponse(
                 DISCORD_APP_ID,
