@@ -19,12 +19,16 @@ interface QueryFilter {
   maxListings: number | null;
   mode: 'standard' | 'craft' | 'repost';
   minGap: number | null;
+  /** Restrict to items that are actually gatherable (intersect gatheringCatalog). */
+  gatherableOnly?: boolean;
+  /** Restrict to items that have a recipe (crafted intermediates). */
+  craftableOnly?: boolean;
 }
 
 interface Preset {
   id: string;
   label: string;
-  category: 'trading' | 'craft' | 'gathering';
+  category: 'trading' | 'craft' | 'gathering' | 'crafting';
   filter: QueryFilter;
 }
 
@@ -61,8 +65,21 @@ const PRESETS: Preset[] = [
     filter: { searchCategories: [57], hq: 'either', minDealPct: 0, minVelocity: 1, minPrice: null, maxPrice: null, sort: 'gilFlow', limit: 100, scope: 'dc', maxListings: null, mode: 'standard', minGap: null } },
   { id: 'top-minions',         label: 'Top Minions',             category: 'trading',
     filter: { searchCategories: [75], hq: 'either', minDealPct: 0, minVelocity: 0.5, minPrice: null, maxPrice: null, sort: 'gilFlow', limit: 100, scope: 'dc', maxListings: null, mode: 'standard', minGap: null } },
+  // ── Gathering (gatherableOnly intersects the gathering catalog) ──────────
   { id: 'gather-commodities',  label: 'Gatherer commodities',    category: 'gathering',
-    filter: { searchCategories: [44,46,47,48,49,50,53,58,81], hq: 'nq', minDealPct: 0, minVelocity: 5, minPrice: null, maxPrice: null, sort: 'gilFlow', limit: 100, scope: 'dc', maxListings: null, mode: 'standard', minGap: null } },
+    filter: { searchCategories: [44,46,47,48,49,50,53,58,81], hq: 'nq', minDealPct: 0, minVelocity: 5, minPrice: null, maxPrice: null, sort: 'gilFlow', limit: 100, scope: 'dc', maxListings: null, mode: 'standard', minGap: null, gatherableOnly: true } },
+  { id: 'mining-commodities',  label: 'Mining commodities',      category: 'gathering',
+    filter: { searchCategories: [47,48,58], hq: 'nq', minDealPct: 0, minVelocity: 3, minPrice: null, maxPrice: null, sort: 'gilFlow', limit: 100, scope: 'home', maxListings: null, mode: 'standard', minGap: null, gatherableOnly: true } },
+  { id: 'botany-commodities',  label: 'Botany commodities',      category: 'gathering',
+    filter: { searchCategories: [49,50,53,81], hq: 'nq', minDealPct: 0, minVelocity: 3, minPrice: null, maxPrice: null, sort: 'gilFlow', limit: 100, scope: 'home', maxListings: null, mode: 'standard', minGap: null, gatherableOnly: true } },
+  { id: 'fishing-commodities', label: 'Fishing commodities',     category: 'gathering',
+    filter: { searchCategories: [46], hq: 'nq', minDealPct: 0, minVelocity: 3, minPrice: null, maxPrice: null, sort: 'gilFlow', limit: 100, scope: 'home', maxListings: null, mode: 'standard', minGap: null, gatherableOnly: true } },
+
+  // ── Crafting (craftableOnly intersects recipe outputs — crafted intermediates) ──
+  { id: 'intermediate-materials', label: 'Intermediate Materials', category: 'crafting',
+    filter: { searchCategories: MATERIAL_CATS, hq: 'either', minDealPct: 0, minVelocity: 1, minPrice: null, maxPrice: null, sort: 'gilFlow', limit: 100, scope: 'dc', maxListings: null, mode: 'standard', minGap: null, craftableOnly: true } },
+  { id: 'craftable-housing',   label: 'Craftable Housing',       category: 'crafting',
+    filter: { searchCategories: HOUSING_CATS, hq: 'either', minDealPct: 0, minVelocity: 0.5, minPrice: null, maxPrice: null, sort: 'gilFlow', limit: 100, scope: 'dc', maxListings: null, mode: 'standard', minGap: null, craftableOnly: true } },
 ];
 
 const PRESET_MAP = new Map(PRESETS.map(p => [p.id, p]));
@@ -129,12 +146,17 @@ function runStandardQuery(
   snapshot: { id: number; name: string; sc: number; canHq: boolean }[],
   priceMap: Record<string, MarketItem>,
   filter: QueryFilter,
+  gatherSet: Set<number> | null,
+  recipeSet: Set<number> | null,
 ): QueryRow[] {
   const catSet = filter.searchCategories.length ? new Set(filter.searchCategories) : null;
   const out: QueryRow[] = [];
 
   for (const item of snapshot) {
     if (catSet && !catSet.has(item.sc)) continue;
+    // Source gates: only actually-gatherable / only craftable (crafted intermediates).
+    if (filter.gatherableOnly && (!gatherSet || !gatherSet.has(item.id))) continue;
+    if (filter.craftableOnly && (!recipeSet || !recipeSet.has(item.id))) continue;
     if (filter.hq === 'hq' && !item.canHq) continue;
     const m = priceMap[String(item.id)];
     if (!m) continue;
@@ -212,6 +234,10 @@ async function handler(req: any, res: any) {
 
   const snapshot = [...snapshots.itemsById.values()];
 
+  // Source sets (built once per request) for the gatherableOnly / craftableOnly gates.
+  const gatherSet = filter.gatherableOnly ? new Set(snapshots.gatheringCatalog.keys()) : null;
+  const recipeSet = filter.craftableOnly ? new Set(snapshots.recipes.keys()) : null;
+
   // For scope=home, require world param
   let priceMap: Record<string, MarketItem>;
   if (filter.scope === 'home') {
@@ -223,7 +249,7 @@ async function handler(req: any, res: any) {
     priceMap = market.dc ?? {};
   }
 
-  const rows = runStandardQuery(snapshot, priceMap, filter);
+  const rows = runStandardQuery(snapshot, priceMap, filter, gatherSet, recipeSet);
 
   return res.status(200).json({
     rows,

@@ -155,11 +155,43 @@ var PRESETS = [
     category: "trading",
     filter: { searchCategories: [75], hq: "either", minDealPct: 0, minVelocity: 0.5, minPrice: null, maxPrice: null, sort: "gilFlow", limit: 100, scope: "dc", maxListings: null, mode: "standard", minGap: null }
   },
+  // ── Gathering (gatherableOnly intersects the gathering catalog) ──────────
   {
     id: "gather-commodities",
     label: "Gatherer commodities",
     category: "gathering",
-    filter: { searchCategories: [44, 46, 47, 48, 49, 50, 53, 58, 81], hq: "nq", minDealPct: 0, minVelocity: 5, minPrice: null, maxPrice: null, sort: "gilFlow", limit: 100, scope: "dc", maxListings: null, mode: "standard", minGap: null }
+    filter: { searchCategories: [44, 46, 47, 48, 49, 50, 53, 58, 81], hq: "nq", minDealPct: 0, minVelocity: 5, minPrice: null, maxPrice: null, sort: "gilFlow", limit: 100, scope: "dc", maxListings: null, mode: "standard", minGap: null, gatherableOnly: true }
+  },
+  {
+    id: "mining-commodities",
+    label: "Mining commodities",
+    category: "gathering",
+    filter: { searchCategories: [47, 48, 58], hq: "nq", minDealPct: 0, minVelocity: 3, minPrice: null, maxPrice: null, sort: "gilFlow", limit: 100, scope: "home", maxListings: null, mode: "standard", minGap: null, gatherableOnly: true }
+  },
+  {
+    id: "botany-commodities",
+    label: "Botany commodities",
+    category: "gathering",
+    filter: { searchCategories: [49, 50, 53, 81], hq: "nq", minDealPct: 0, minVelocity: 3, minPrice: null, maxPrice: null, sort: "gilFlow", limit: 100, scope: "home", maxListings: null, mode: "standard", minGap: null, gatherableOnly: true }
+  },
+  {
+    id: "fishing-commodities",
+    label: "Fishing commodities",
+    category: "gathering",
+    filter: { searchCategories: [46], hq: "nq", minDealPct: 0, minVelocity: 3, minPrice: null, maxPrice: null, sort: "gilFlow", limit: 100, scope: "home", maxListings: null, mode: "standard", minGap: null, gatherableOnly: true }
+  },
+  // ── Crafting (craftableOnly intersects recipe outputs — crafted intermediates) ──
+  {
+    id: "intermediate-materials",
+    label: "Intermediate Materials",
+    category: "crafting",
+    filter: { searchCategories: MATERIAL_CATS, hq: "either", minDealPct: 0, minVelocity: 1, minPrice: null, maxPrice: null, sort: "gilFlow", limit: 100, scope: "dc", maxListings: null, mode: "standard", minGap: null, craftableOnly: true }
+  },
+  {
+    id: "craftable-housing",
+    label: "Craftable Housing",
+    category: "crafting",
+    filter: { searchCategories: HOUSING_CATS, hq: "either", minDealPct: 0, minVelocity: 0.5, minPrice: null, maxPrice: null, sort: "gilFlow", limit: 100, scope: "dc", maxListings: null, mode: "standard", minGap: null, craftableOnly: true }
   }
 ];
 var PRESET_MAP = new Map(PRESETS.map((p) => [p.id, p]));
@@ -192,11 +224,13 @@ function pickTier(m, hq) {
   if (!candidates.length) return null;
   return candidates.reduce((a, b) => a.unit <= b.unit ? a : b);
 }
-function runStandardQuery(snapshot, priceMap, filter) {
+function runStandardQuery(snapshot, priceMap, filter, gatherSet, recipeSet) {
   const catSet = filter.searchCategories.length ? new Set(filter.searchCategories) : null;
   const out = [];
   for (const item of snapshot) {
     if (catSet && !catSet.has(item.sc)) continue;
+    if (filter.gatherableOnly && (!gatherSet || !gatherSet.has(item.id))) continue;
+    if (filter.craftableOnly && (!recipeSet || !recipeSet.has(item.id))) continue;
     if (filter.hq === "hq" && !item.canHq) continue;
     const m = priceMap[String(item.id)];
     if (!m) continue;
@@ -272,6 +306,8 @@ async function handler(req, res) {
     loadMarketCache()
   ]);
   const snapshot = [...snapshots.itemsById.values()];
+  const gatherSet = filter.gatherableOnly ? new Set(snapshots.gatheringCatalog.keys()) : null;
+  const recipeSet = filter.craftableOnly ? new Set(snapshots.recipes.keys()) : null;
   let priceMap;
   if (filter.scope === "home") {
     if (!world) return res.status(400).json({ error: "world param required for scope=home queries" });
@@ -280,7 +316,7 @@ async function handler(req, res) {
   } else {
     priceMap = market.dc ?? {};
   }
-  const rows = runStandardQuery(snapshot, priceMap, filter);
+  const rows = runStandardQuery(snapshot, priceMap, filter, gatherSet, recipeSet);
   return res.status(200).json({
     rows,
     total: rows.length,
