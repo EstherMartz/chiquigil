@@ -18,6 +18,45 @@ npm run dev
 3. Vercel auto-detects Vite, no config needed beyond `vercel.json` already in repo.
 4. Optional env var: `VITE_XIVAPI_BASE` if you want to override the default `https://v2.xivapi.com`.
 
+## Auth (Discord login gate)
+
+The web app is gated behind Discord OAuth: only members of an allow-listed Discord
+guild can sign in. The gate is enforced at the API (`/api/projects` requires a valid
+session) with a `/login` page + route guard for UX. Non-browser endpoints
+(`/api/plugin/*`, `/api/discord`, `/api/refresh-cache`) stay ungated for their own clients.
+
+### Env vars
+
+| Var | Purpose |
+| --- | --- |
+| `DISCORD_CLIENT_ID` | OAuth2 client id from the Discord app. |
+| `DISCORD_CLIENT_SECRET` | OAuth2 client secret. |
+| `AUTH_SESSION_SECRET` | HMAC key signing the session + state JWTs. Use ≥32 random bytes, e.g. `openssl rand -base64 48`. |
+| `OAUTH_REDIRECT_URI` | Exact callback URL, e.g. `https://qiqirn.tools/api/auth/callback`. Must byte-match a redirect URI registered in the Discord app. |
+| `GUILD_ALLOWLIST` | Comma-separated Discord guild IDs allowed in (reused from the projects/bot config). |
+| `DISCORD_BOT_TOKEN` | Existing — used server-side to resolve display names. |
+
+In the Discord Developer Portal → your app → **OAuth2**, register both the production
+callback (`https://qiqirn.tools/api/auth/callback`) and a localhost one for dev.
+
+A missing `AUTH_SESSION_SECRET` or an empty `GUILD_ALLOWLIST` fails **closed** — the gate
+stays locked rather than letting anyone in.
+
+### Local dev
+
+`npm run dev` runs Vite alone and does **not** serve the `/api/*` serverless functions,
+so the OAuth round-trip won't work under it. To exercise login locally, run the functions
+with the Vercel CLI:
+
+```
+npm i -g vercel      # once
+vercel dev           # serves the SPA + /api/* together
+```
+
+Put the env vars above in `.env` (already gitignored) and register
+`http://localhost:3000/api/auth/callback` (match whatever port `vercel dev` prints) as a
+Discord redirect URI.
+
 ## Test
 
 ```
