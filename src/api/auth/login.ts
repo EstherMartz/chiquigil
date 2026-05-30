@@ -1,12 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { signState } from '../_auth';
-
-function redirectUri(req: VercelRequest): string {
-  if (process.env.OAUTH_REDIRECT_URI) return process.env.OAUTH_REDIRECT_URI;
-  const host = req.headers?.host ?? 'localhost:3000';
-  const proto = host.startsWith('localhost') ? 'http' : 'https';
-  return `${proto}://${host}/api/auth/callback`;
-}
+import { signState, oauthRedirectUri } from '../_auth';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
@@ -16,7 +9,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const params = new URLSearchParams({
     client_id: process.env.DISCORD_CLIENT_ID ?? '',
-    redirect_uri: redirectUri(req),
+    redirect_uri: oauthRedirectUri(req),
     response_type: 'code',
     scope: 'identify guilds',
     state,

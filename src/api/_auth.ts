@@ -118,3 +118,12 @@ export async function requireSession(req: VercelRequest): Promise<SessionUser | 
   if (!token) return null;
   return verifySession(token);
 }
+
+/** The OAuth redirect URI — MUST be identical in the login redirect and the
+ *  callback token exchange, and must match a URI registered in the Discord app. */
+export function oauthRedirectUri(req: VercelRequest): string {
+  if (process.env.OAUTH_REDIRECT_URI) return process.env.OAUTH_REDIRECT_URI;
+  const host = req.headers?.host ?? 'localhost:3000';
+  const proto = host.startsWith('localhost') || host.startsWith('127.0.0.1') ? 'http' : 'https';
+  return `${proto}://${host}/api/auth/callback`;
+}
