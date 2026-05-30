@@ -91,6 +91,19 @@ describe('session token', () => {
     process.env.AUTH_SESSION_SECRET = 'completely-different-secret-value-000';
     expect(await verifySession(token)).toBeNull();
   });
+
+  // Token-confusion guard: a validly-signed token from a different audience
+  // (e.g. a short-lived OAuth `state` token, which is exposed in the public
+  // /api/auth/login redirect URL) must NOT be accepted as a session.
+  it('rejects a validly-signed token with the wrong audience', async () => {
+    const { SignJWT } = await import('jose');
+    const wrongAud = await new SignJWT({})
+      .setProtectedHeader({ alg: 'HS256' })
+      .setAudience('state')
+      .setExpirationTime('10m')
+      .sign(new TextEncoder().encode(process.env.AUTH_SESSION_SECRET!));
+    expect(await verifySession(wrongAud)).toBeNull();
+  });
 });
 ```
 
@@ -114,6 +127,10 @@ export interface SessionUser {
 
 const SESSION_TTL = '7d';
 
+// Distinct audiences so the two token types signed with the same secret can
+// never be swapped (a public `state` token must not work as a session cookie).
+const SESSION_AUD = 'session';
+
 function secretKey(): Uint8Array {
   const s = process.env.AUTH_SESSION_SECRET;
   if (!s) throw new Error('AUTH_SESSION_SECRET is not set');
@@ -124,6 +141,7 @@ export async function signSession(user: SessionUser): Promise<string> {
   return new SignJWT({ username: user.username, avatar: user.avatar, guilds: user.guilds })
     .setProtectedHeader({ alg: 'HS256' })
     .setSubject(user.sub)
+    .setAudience(SESSION_AUD)
     .setIssuedAt()
     .setExpirationTime(SESSION_TTL)
     .sign(secretKey());
@@ -131,7 +149,10 @@ export async function signSession(user: SessionUser): Promise<string> {
 
 export async function verifySession(token: string): Promise<SessionUser | null> {
   try {
-    const { payload } = await jwtVerify(token, secretKey());
+    const { payload } = await jwtVerify(token, secretKey(), {
+      algorithms: ['HS256'],
+      audience: SESSION_AUD,
+    });
     return {
       sub: String(payload.sub),
       username: String(payload.username ?? ''),
@@ -185,6 +206,12 @@ describe('oauth state', () => {
     const token = await signState('/projects');
     expect(await verifyState(token.slice(0, -2) + 'zz')).toBeNull();
   });
+
+  // Token-confusion guard: a real session token must NOT be accepted as state.
+  it('rejects a session token used as state', async () => {
+    const sessionToken = await signSession(USER);
+    expect(await verifyState(sessionToken)).toBeNull();
+  });
 });
 
 describe('cookies', () => {
@@ -196,6 +223,14 @@ describe('cookies', () => {
 
   it('returns {} for no header', () => {
     expect(parseCookies(undefined)).toEqual({});
+  });
+
+  // A malformed percent-escape in any cookie must not throw (this parser sits
+  // in the auth request path; an attacker-supplied Cookie header reaches it).
+  it('does not throw on a malformed percent-escape', () => {
+    const jar = parseCookies('bad=%E0%A4%A; ok=1');
+    expect(jar.ok).toBe('1');
+    expect(jar.bad).toBe('%E0%A4%A');
   });
 
   it('serializes an httpOnly session cookie', () => {
@@ -240,10 +275,12 @@ Append to `src/api/_auth.ts`:
 ```ts
 export const SESSION_COOKIE = 'qiqirn_session';
 const STATE_TTL = '10m';
+const STATE_AUD = 'state';
 
 export async function signState(returnTo: string): Promise<string> {
   return new SignJWT({ rt: returnTo })
     .setProtectedHeader({ alg: 'HS256' })
+    .setAudience(STATE_AUD)
     .setIssuedAt()
     .setExpirationTime(STATE_TTL)
     .sign(secretKey());
@@ -251,7 +288,10 @@ export async function signState(returnTo: string): Promise<string> {
 
 export async function verifyState(token: string): Promise<string | null> {
   try {
-    const { payload } = await jwtVerify(token, secretKey());
+    const { payload } = await jwtVerify(token, secretKey(), {
+      algorithms: ['HS256'],
+      audience: STATE_AUD,
+    });
     const rt = typeof payload.rt === 'string' ? payload.rt : '/';
     // Only allow same-site relative return paths.
     return rt.startsWith('/') && !rt.startsWith('//') ? rt : '/';
@@ -268,7 +308,12 @@ export function parseCookies(header: string | undefined): Record<string, string>
     if (idx === -1) continue;
     const k = part.slice(0, idx).trim();
     const v = part.slice(idx + 1).trim();
-    if (k) jar[k] = decodeURIComponent(v);
+    // decodeURIComponent throws on a malformed escape (e.g. "%E0%A4%A"); fall
+    // back to the raw value so a junk cookie can't 500 the auth path.
+    if (k) {
+      try { jar[k] = decodeURIComponent(v); }
+      catch { jar[k] = v; }
+    }
   }
   return jar;
 }
@@ -483,8 +528,39 @@ git commit -m "feat(auth): GET /api/auth/login redirect to Discord"
 ## Task 5: `GET /api/auth/callback`
 
 **Files:**
+- Modify: `src/api/_auth.ts` (add shared `oauthRedirectUri`)
+- Modify: `src/api/auth/login.ts` (use the shared helper)
 - Create: `src/api/auth/callback.ts`
 - Test: `src/api/auth/callback.test.ts`
+
+> **Why the refactor first:** Discord requires the `redirect_uri` in the token exchange (this task) to **byte-match** the one used in the authorize redirect (Task 4's login.ts). Both currently derive it. To guarantee they never drift, lift the logic into one shared `oauthRedirectUri()` in `_auth.ts` and have both endpoints import it. (Found in Task 4 review.)
+
+- [ ] **Step 0a: Add the shared helper to `src/api/_auth.ts`**
+
+Append to `src/api/_auth.ts`:
+```ts
+/** The OAuth redirect URI — MUST be identical in the login redirect and the
+ *  callback token exchange, and must match a URI registered in the Discord app. */
+export function oauthRedirectUri(req: VercelRequest): string {
+  if (process.env.OAUTH_REDIRECT_URI) return process.env.OAUTH_REDIRECT_URI;
+  const host = req.headers?.host ?? 'localhost:3000';
+  const proto = host.startsWith('localhost') || host.startsWith('127.0.0.1') ? 'http' : 'https';
+  return `${proto}://${host}/api/auth/callback`;
+}
+```
+(`VercelRequest` is already imported at the top of `_auth.ts` from Task 3.)
+
+- [ ] **Step 0b: Update `src/api/auth/login.ts` to use it**
+
+In `src/api/auth/login.ts`, delete the local `redirectUri` function and import the shared one. Change the import line:
+```ts
+import { signState, oauthRedirectUri } from '../_auth';
+```
+and replace the `redirect_uri: redirectUri(req),` line in the `URLSearchParams` with:
+```ts
+    redirect_uri: oauthRedirectUri(req),
+```
+Run `npx vitest run src/api/auth/login.test.ts` — expected: still PASS (the env `OAUTH_REDIRECT_URI` path is unchanged).
 
 - [ ] **Step 1: Write the failing test**
 
@@ -573,15 +649,8 @@ Create `src/api/auth/callback.ts`:
 ```ts
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import {
-  verifyState, signSession, serializeSessionCookie, allowedGuildsFor,
+  verifyState, signSession, serializeSessionCookie, allowedGuildsFor, oauthRedirectUri,
 } from '../_auth';
-
-function redirectUri(req: VercelRequest): string {
-  if (process.env.OAUTH_REDIRECT_URI) return process.env.OAUTH_REDIRECT_URI;
-  const host = req.headers?.host ?? 'localhost:3000';
-  const proto = host.startsWith('localhost') ? 'http' : 'https';
-  return `${proto}://${host}/api/auth/callback`;
-}
 
 function redirect(res: VercelResponse, location: string) {
   res.setHeader('Location', location);
@@ -609,7 +678,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         client_secret: process.env.DISCORD_CLIENT_SECRET ?? '',
         grant_type: 'authorization_code',
         code,
-        redirect_uri: redirectUri(req),
+        redirect_uri: oauthRedirectUri(req),
       }),
     });
     if (!tokenRes.ok) return redirect(res, '/login?error=discord');
