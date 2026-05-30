@@ -6,7 +6,6 @@ import { useRecipeSnapshot } from '../queries/useRecipeSnapshot';
 import { fetchInBatches } from '../../lib/universalisBulk';
 import type { SnapshotItem } from '../../lib/itemSnapshot';
 import { fetchMarketData, type MarketData, type MarketItem } from '../../lib/universalis';
-import { fetchHistoryWithin, type HistoryEntry } from '../../lib/universalisHistory';
 import { furnishingCandidates, materialCandidates, allHousingCandidates, housingCategoryIds } from '../../lib/housingItems';
 import { categoryLabel } from '../../lib/itemSearchCategories';
 import { buildHousingRow, housingMaterialCost, sortHousingRows, type HousingRow, type HousingSortKey } from './spikeSignal';
@@ -20,14 +19,11 @@ import { fmtGil } from '../../lib/format';
 type Tab = 'furnishings' | 'materials' | 'all';
 const TABS: { id: Tab; label: string; sort: HousingSortKey }[] = [
   { id: 'furnishings', label: 'Furnishings', sort: 'craftGilPerDay' },
-  { id: 'materials', label: 'Materials', sort: 'momentumPct' },
-  { id: 'all', label: 'All housing', sort: 'momentumPct' },
+  { id: 'materials', label: 'Materials', sort: 'velocity' },
+  { id: 'all', label: 'All housing', sort: 'velocity' },
 ];
 
 const MAX_CANDIDATES = 400;
-const TOP_N_HISTORY = 100;
-const THIRTY_DAYS_SEC = 30 * 24 * 60 * 60;
-const HISTORY_CHUNK = 100;
 const SCAN_STALE_MS = 5 * 60 * 1000; // re-opening a tab within 5 min serves cache
 
 interface MarketScanResult {
@@ -90,39 +86,19 @@ export function HousingMarketView() {
     },
   });
 
-  const historyScan = useQuery<Map<number, HistoryEntry[]>>({
-    queryKey: ['housing-history', tab, world, dc, housingCats.join(','), candidateIds.length],
-    enabled: marketScan.data != null,
-    staleTime: SCAN_STALE_MS,
-    retry: false,  // don't retry if Universalis history is down — show "—" instead
-    queryFn: async () => {
-      const { market, ids } = marketScan.data!;
-      const topIds = [...ids]
-        .sort((a, b) => (market[String(b)]?.velocity ?? 0) - (market[String(a)]?.velocity ?? 0))
-        .slice(0, TOP_N_HISTORY);
-      const history = new Map<number, HistoryEntry[]>();
-      for (let i = 0; i < topIds.length; i += HISTORY_CHUNK) {
-        const chunk = topIds.slice(i, i + HISTORY_CHUNK);
-        const got = await fetchHistoryWithin(dc, chunk, THIRTY_DAYS_SEC);
-        for (const [id, entries] of got) history.set(id, entries);
-      }
-      return history;
-    },
-  });
 
   const rows = useMemo<HousingRow[]>(() => {
     if (!items.data || !recipes.data || !marketScan.data) return [];
-    const history = historyScan.data ?? new Map<number, HistoryEntry[]>();
     const built = marketScan.data.ids.flatMap((id) => {
       const item = itemById.get(id);
       if (!item) return [];
       const market = marketScan.data!.market[String(id)];
       const recipe = recipes.data!.get(id);
       const materialCost = recipe ? housingMaterialCost(recipe, marketScan.data!.market) : 0;
-      return [buildHousingRow({ item, market, recipe, materialCost, history: history.get(id), now })];
+      return [buildHousingRow({ item, market, recipe, materialCost, history: undefined, now })];
     });
     return sortHousingRows(built, sortKey);
-  }, [items.data, recipes.data, marketScan.data, historyScan.data, itemById, sortKey, now]);
+  }, [items.data, recipes.data, marketScan.data, itemById, sortKey, now]);
 
   return (
     <div className="space-y-4">
@@ -140,7 +116,7 @@ export function HousingMarketView() {
         ))}
         <button
           type="button"
-          onClick={() => { void marketScan.refetch(); void historyScan.refetch(); }}
+          onClick={() => { void marketScan.refetch(); }}
           disabled={marketScan.isFetching || notReady}
           title="Re-fetch prices & recent sales for this tab"
           className="font-mono text-[10px] tracking-widest uppercase border border-border-base text-text-dim px-3 py-2 hover:text-aether disabled:opacity-50 sm:ml-auto"
@@ -167,12 +143,6 @@ export function HousingMarketView() {
 
       {marketScan.isLoading && <Spinner label="Fetching prices…" />}
       {marketScan.isError && <StatusBanner kind="error">Universalis fetch failed: {(marketScan.error as Error).message}</StatusBanner>}
-      {historyScan.isFetching && marketScan.data && (
-        <p className="font-mono text-[10px] text-text-low">Loading momentum data…</p>
-      )}
-      {historyScan.isError && (
-        <StatusBanner kind="error">Momentum data unavailable (Universalis history timed out) — all other columns are unaffected.</StatusBanner>
-      )}
 
       {marketScan.data && (
         <ResultTableScaffold<HousingRow>
@@ -187,7 +157,6 @@ export function HousingMarketView() {
                   <th className="px-3 py-2">Item</th>
                   <SortableHeader active={sortKey === 'price'} onClick={() => setSortKey('price')}>Price</SortableHeader>
                   <SortableHeader active={sortKey === 'velocity'} onClick={() => setSortKey('velocity')}>Sales/day</SortableHeader>
-                  <SortableHeader active={sortKey === 'momentumPct'} onClick={() => setSortKey('momentumPct')}>Momentum</SortableHeader>
                   <SortableHeader active={sortKey === 'craftMargin'} onClick={() => setSortKey('craftMargin')}>Craft margin</SortableHeader>
                   <SortableHeader active={sortKey === 'craftGilPerDay'} onClick={() => setSortKey('craftGilPerDay')}>Gil/day</SortableHeader>
                 </tr>
@@ -198,9 +167,6 @@ export function HousingMarketView() {
                     <td className="px-3 py-2"><ItemNameLinks id={r.id} name={r.name} /></td>
                     <td className="px-3 py-2 text-right font-mono tabular-nums">{r.price != null ? fmtGil(r.price) : '—'}</td>
                     <td className="px-3 py-2 text-right font-mono tabular-nums">{r.velocity.toFixed(1)}</td>
-                    <td className={`px-3 py-2 text-right font-mono tabular-nums ${r.momentumPct == null ? 'text-text-low' : r.momentumPct >= 0 ? 'text-jade' : 'text-crimson'}`}>
-                      {r.momentumPct == null ? '—' : `${r.momentumPct >= 0 ? '+' : ''}${Math.round(r.momentumPct)}%`}
-                    </td>
                     <td className="px-3 py-2 text-right font-mono tabular-nums">{r.craftMargin != null ? fmtGil(r.craftMargin) : '—'}</td>
                     <td className="px-3 py-2 text-right font-mono tabular-nums text-gold">{r.craftGilPerDay != null ? fmtGil(r.craftGilPerDay) : '—'}</td>
                   </tr>
