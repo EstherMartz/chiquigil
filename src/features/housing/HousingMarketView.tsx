@@ -7,10 +7,12 @@ import { fetchInBatches } from '../../lib/universalisBulk';
 import type { SnapshotItem } from '../../lib/itemSnapshot';
 import { fetchMarketData, type MarketData, type MarketItem } from '../../lib/universalis';
 import { fetchHistoryWithin, type HistoryEntry } from '../../lib/universalisHistory';
-import { furnishingCandidates, materialCandidates, allHousingCandidates } from '../../lib/housingItems';
+import { furnishingCandidates, materialCandidates, allHousingCandidates, housingCategoryIds } from '../../lib/housingItems';
+import { categoryLabel } from '../../lib/itemSearchCategories';
 import { buildHousingRow, housingMaterialCost, sortHousingRows, type HousingRow, type HousingSortKey } from './spikeSignal';
 import { ResultTableScaffold, EmptyResults } from '../queries/ResultTableScaffold';
 import { ItemNameLinks } from '../../components/ItemNameLinks';
+import { CategorySelect } from '../../components/CategorySelect';
 import { Spinner } from '../../components/Spinner';
 import { StatusBanner } from '../../components/StatusBanner';
 import { fmtGil } from '../../lib/format';
@@ -38,6 +40,7 @@ export function HousingMarketView() {
   const items = useItemSnapshot();
   const recipes = useRecipeSnapshot();
   const [tab, setTab] = useState<Tab>('furnishings');
+  const [housingCats, setHousingCats] = useState<number[]>([]);
   const now = Date.now();
 
   const itemById = useMemo(() => {
@@ -52,8 +55,16 @@ export function HousingMarketView() {
       const furn = furnishingCandidates(items.data.items, recipes.data);
       return materialCandidates(recipes.data, furn);
     }
-    return allHousingCandidates(items.data.items);
-  }, [items.data, recipes.data, tab]);
+    // tab === 'all'
+    const all = allHousingCandidates(items.data.items);
+    if (housingCats.length === 0) return all;
+    // Filter by selected housing categories
+    const catSet = new Set(housingCats);
+    return all.filter((id) => {
+      const item = itemById.get(id);
+      return item && catSet.has(item.sc);
+    });
+  }, [items.data, recipes.data, tab, housingCats, itemById]);
 
   const run = useMutation<ScanResult>({
     mutationFn: async () => {
@@ -115,9 +126,20 @@ export function HousingMarketView() {
         </button>
       </div>
 
+      {tab === 'all' && (
+        <div className="mt-2">
+          <CategorySelect
+            categories={housingCategoryIds().map((id) => ({ id, name: categoryLabel(id) }))}
+            selected={housingCats}
+            onChange={setHousingCats}
+            placeholder="Filter by housing category…"
+          />
+        </div>
+      )}
+
       <div className="font-mono text-[10px] text-text-low">
         {notReady ? 'Loading catalog…' : `${candidateIds.length.toLocaleString()} candidate items`}
-        {candidateIds.length > MAX_CANDIDATES && <span className="text-gold"> · showing first {MAX_CANDIDATES} — narrow with the tab</span>}
+        {candidateIds.length > MAX_CANDIDATES && <span className="text-gold"> · showing first {MAX_CANDIDATES} — narrow with the filter</span>}
       </div>
 
       {run.isPending && <Spinner label="Fetching prices & recent sales…" />}
