@@ -40,6 +40,7 @@ export interface CommandResponse {
   flags?: number;
   projectId?: number;
   taskCount?: number;
+  unmatched?: string[];
 }
 
 /**
@@ -251,6 +252,132 @@ export async function handleCraftNew(
     flags: 64,
     projectId,
     taskCount: storedTasks.length,
+  };
+}
+
+/**
+ * Create a project from a pasted list of target items (plugin list-import).
+ * Each entry is a target that gets broken down + merged into tasks, then the
+ * project is announced to Discord like a normal /craft new.
+ * NOTE: the announce/post sequence below intentionally mirrors handleCraftNew —
+ * keep them in sync. (Not extracted: the posting path has no test coverage.)
+ */
+export async function handleCraftNewFromList(
+  opts: { name: string; items: Array<{ name: string; qty: number }> },
+  guildId: string,
+  channelId: string,
+  userId: string,
+  deps: CraftCommandDeps,
+): Promise<CommandResponse> {
+  // 1. Resolve names → item IDs
+  const { resolved, unmatched } = resolveItemsByName(deps.nameIndex, opts.items);
+  if (resolved.length === 0) {
+    return { content: S.ITEM_NOT_FOUND(opts.items.map((i) => i.name).join(', ')), flags: 64, unmatched };
+  }
+
+  // 2. Determine target channel from guild config or fallback
+  let targetChannelId = deps.craftChannelId ?? channelId;
+  try {
+    const guildConfig = await deps.store.getGuildConfig(guildId);
+    if (guildConfig) targetChannelId = guildConfig.craftChannelId;
+  } catch (e) {
+    console.warn('[craft] failed to fetch guild config, using fallback', e instanceof Error ? e.message : e);
+  }
+
+  // 3. Create the project (empty target — it is a multi-item list project)
+  const projectId = await deps.store.createProject({
+    guildId,
+    channelId: targetChannelId,
+    name: opts.name,
+    targetItemId: 0,
+    targetQty: 0,
+    createdBy: userId,
+  });
+
+  // 4. Record each resolved item + build merged tasks
+  for (const r of resolved) {
+    await deps.store.addProjectItem(projectId, r.itemId, r.itemName, r.qty);
+  }
+  const projectItems = await deps.store.getProjectItems(projectId);
+  const tasks = buildTasksForProjectItems(projectItems, deps);
+  if (tasks.length === 0) {
+    return { content: S.NO_RECIPE(resolved[0].itemName), flags: 64, unmatched };
+  }
+  await deps.store.addTasks(projectId, tasks);
+
+  // 5. Set the initial display phase (for multi-phase CompanyCraft items)
+  const initial = initialDisplayPhase(tasks);
+  if (initial) {
+    await deps.store.setProjectDisplayPhase(projectId, initial.partKey, initial.phaseIndex);
+  }
+
+  // 6. Render + announce (mirrors handleCraftNew)
+  const project = await deps.store.getProject(projectId);
+  if (!project) return { content: 'Failed to create project', flags: 64, unmatched };
+  const storedTasks = await deps.store.getTasks(projectId);
+  const piSummary = projectItems.map((pi) => ({ itemName: pi.itemName, qty: pi.qty }));
+  const { embeds, components } = buildProjectMessage(project, storedTasks, piSummary);
+
+  const roleId = deps.crafterRoleId;
+  let content = '';
+  if (roleId) content = `<@&${roleId}> `;
+  content += S.NEW_PROJECT_CONTENT(projectId);
+
+  const channelInfo = await discordApi.getChannel(deps.botToken, targetChannelId);
+  const isForumChannel = channelInfo?.type === 15;
+
+  if (isForumChannel) {
+    let forumPost: Record<string, unknown> | null = null;
+    try {
+      forumPost = await discordApi.createForumPost(deps.botToken, targetChannelId, opts.name.slice(0, 100), {
+        content, embeds, components,
+        allowed_mentions: roleId ? { roles: [roleId] } : undefined,
+      });
+    } catch (e) {
+      return { content: `No se pudo crear el post en el foro — ${e instanceof Error ? e.message : String(e)}`, flags: 64, projectId, taskCount: storedTasks.length, unmatched };
+    }
+    if (forumPost) {
+      const threadId = String(forumPost.id);
+      await deps.store.setProjectThreadId(projectId, threadId);
+      try {
+        await discordApi.sendToChannel(deps.botToken, threadId, { content: S.THREAD_PROJECT_CREATED(userId, storedTasks.length) });
+      } catch (e) {
+        console.error('[craft] failed to send forum post message:', e instanceof Error ? e.message : e);
+      }
+    }
+  } else {
+    const announcementMsg = await discordApi.sendToChannel(deps.botToken, targetChannelId, {
+      content, embeds, components,
+      allowed_mentions: roleId ? { roles: [roleId] } : undefined,
+    });
+    if (!announcementMsg) {
+      return { content: S.CHANNEL_NOT_FOUND, flags: 64, projectId, taskCount: storedTasks.length, unmatched };
+    }
+    const messageId = String(announcementMsg.id);
+    await deps.store.setProjectMessageId(projectId, messageId);
+    try {
+      const thread = await discordApi.createThread(deps.botToken, targetChannelId, messageId, opts.name.slice(0, 100));
+      if (thread) {
+        const threadId = String(thread.id);
+        await deps.store.setProjectThreadId(projectId, threadId);
+        await discordApi.sendToChannel(deps.botToken, threadId, { content: S.THREAD_PROJECT_CREATED(userId, storedTasks.length) });
+      }
+    } catch (e) {
+      console.error('[craft] failed to create thread:', e instanceof Error ? e.message : e);
+    }
+  }
+
+  if (!isForumChannel) {
+    await refreshBoard(deps, guildId);
+  }
+
+  console.log(`[craft] list project #${projectId} created with ${storedTasks.length} tasks (${unmatched.length} unmatched)`);
+  return {
+    content: S.PROJECT_CREATED(projectId, targetChannelId, storedTasks.length),
+    flags: 64,
+    projectId,
+    taskCount: storedTasks.length,
+    unmatched,
   };
 }
 
