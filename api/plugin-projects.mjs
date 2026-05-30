@@ -763,7 +763,7 @@ function fmtPrice(n) {
 }
 function taskLine(t) {
   const done = t.status === "done" ? "\u2705" : "";
-  const assignee = t.assigneeId ? `<@${t.assigneeId}>` : `_${UNCLAIMED}_`;
+  const assignee = t.assigneeId ? mentionOrName(t.assigneeId) : `_${UNCLAIMED}_`;
   const progress = `(${t.qtyDone}/${t.qtyNeeded})`;
   let detail = "";
   if (t.source === "craft" && t.meta?.job) {

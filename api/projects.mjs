@@ -406,18 +406,9 @@ async function requireSession(req) {
   return verifySession(token);
 }
 
-// src/api/projects.ts
+// src/api/_projects-core.ts
 function getAllowList() {
   return (process.env.GUILD_ALLOWLIST ?? "").split(",").map((s) => s.trim()).filter(Boolean);
-}
-var storePromise = null;
-function getStore() {
-  const injected = globalThis.__testCraftStore;
-  if (injected) return Promise.resolve(injected);
-  if (!storePromise) {
-    storePromise = openCraftStore(process.env.TURSO_DATABASE_URL, process.env.TURSO_AUTH_TOKEN);
-  }
-  return storePromise;
 }
 function isAllowed(guildId) {
   const list = getAllowList();
@@ -478,47 +469,7 @@ async function resolveNames(guildId, userIds) {
   const entries = await Promise.all(unique.map(async (id) => [id, await fetchDisplayName(guildId, id, token)]));
   return Object.fromEntries(entries);
 }
-async function handler(req, res) {
-  if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
-  const session = await requireSession(req);
-  if (!session) return res.status(401).json({ error: "Not authenticated" });
-  res.setHeader("Cache-Control", "no-store");
-  const url = req.url ?? "";
-  const detailMatch = /\/api\/projects\/(\d+)/.exec(url);
-  const store = await getStore();
-  if (detailMatch) {
-    const id = Number(detailMatch[1]);
-    const project = await store.getProject(id);
-    if (!project || !isAllowed(project.guildId)) {
-      return res.status(404).json({ error: "Not found" });
-    }
-    const [tasks, rawProjectItems] = await Promise.all([
-      store.getTasks(id),
-      store.getProjectItems(id)
-    ]);
-    const userIds = [project.createdBy, ...tasks.map((t) => t.assigneeId).filter((id2) => id2 != null)];
-    const userNames2 = await resolveNames(project.guildId, userIds);
-    const projectItems = rawProjectItems.map(({ itemName, qty }) => ({ itemName, qty }));
-    return res.status(200).json({
-      project: {
-        id: project.id,
-        name: project.name,
-        targetItemId: project.targetItemId,
-        targetQty: project.targetQty,
-        createdBy: project.createdBy,
-        threadId: project.threadId,
-        status: project.status,
-        createdAt: project.createdAt
-      },
-      tasks,
-      userNames: userNames2,
-      projectItems
-    });
-  }
-  const guildId = req.query?.guild ?? "";
-  if (!guildId) return res.status(400).json({ error: "Missing guild query param" });
-  if (!isAllowed(guildId)) return res.status(403).json({ error: "Guild not in allow-list" });
-  const statusFilter = req.query?.status ?? "open";
+async function listProjectSummaries(store, guildId, statusFilter) {
   let projects = await store.listOpenProjects(guildId);
   if (statusFilter === "closed") projects = [];
   const userIdSet = /* @__PURE__ */ new Set();
@@ -539,7 +490,64 @@ async function handler(req, res) {
     };
   }));
   const userNames = await resolveNames(guildId, userIdSet);
-  return res.status(200).json({ projects: summaries, userNames });
+  return { projects: summaries, userNames };
+}
+async function getProjectDetail(store, id) {
+  const project = await store.getProject(id);
+  if (!project || !isAllowed(project.guildId)) return null;
+  const [tasks, rawProjectItems] = await Promise.all([
+    store.getTasks(id),
+    store.getProjectItems(id)
+  ]);
+  const userIds = [project.createdBy, ...tasks.map((t) => t.assigneeId).filter((x) => x != null)];
+  const userNames = await resolveNames(project.guildId, userIds);
+  const projectItems = rawProjectItems.map(({ itemName, qty }) => ({ itemName, qty }));
+  return {
+    project: {
+      id: project.id,
+      name: project.name,
+      targetItemId: project.targetItemId,
+      targetQty: project.targetQty,
+      createdBy: project.createdBy,
+      threadId: project.threadId,
+      status: project.status,
+      createdAt: project.createdAt
+    },
+    tasks,
+    userNames,
+    projectItems
+  };
+}
+
+// src/api/projects.ts
+var storePromise = null;
+function getStore() {
+  const injected = globalThis.__testCraftStore;
+  if (injected) return Promise.resolve(injected);
+  if (!storePromise) {
+    storePromise = openCraftStore(process.env.TURSO_DATABASE_URL, process.env.TURSO_AUTH_TOKEN);
+  }
+  return storePromise;
+}
+async function handler(req, res) {
+  if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
+  const session = await requireSession(req);
+  if (!session) return res.status(401).json({ error: "Not authenticated" });
+  res.setHeader("Cache-Control", "no-store");
+  const url = req.url ?? "";
+  const detailMatch = /\/api\/projects\/(\d+)/.exec(url);
+  const store = await getStore();
+  if (detailMatch) {
+    const detail = await getProjectDetail(store, Number(detailMatch[1]));
+    if (!detail) return res.status(404).json({ error: "Not found" });
+    return res.status(200).json(detail);
+  }
+  const guildId = req.query?.guild ?? "";
+  if (!guildId) return res.status(400).json({ error: "Missing guild query param" });
+  if (!isAllowed(guildId)) return res.status(403).json({ error: "Guild not in allow-list" });
+  const statusFilter = req.query?.status ?? "open";
+  const payload = await listProjectSummaries(store, guildId, statusFilter);
+  return res.status(200).json(payload);
 }
 var config = { api: { bodyParser: false } };
 export {

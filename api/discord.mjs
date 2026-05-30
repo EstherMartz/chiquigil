@@ -1292,6 +1292,9 @@ function buildBreakdown(targetId, targetQty, market, deps, opts = {}) {
 }
 
 // src/bot/craftStrings.ts
+function mentionOrName(value) {
+  return /^\d{17,20}$/.test(value) ? `<@${value}>` : value;
+}
 var BOARD_TITLE = "\u{1F4CB} Proyectos de crafteo activos";
 var BOARD_FOOTER = "Se actualiza autom\xE1ticamente";
 var BOARD_EMPTY = "No hay proyectos de crafteo activos ahora mismo. \xA1Empieza uno con `/craft new`!";
@@ -1342,7 +1345,7 @@ var NO_CLAIMED_TASKS = "No tienes tareas reclamadas en este proyecto.";
 var NO_PENDING_TASKS = "No tienes tareas pendientes en este proyecto.";
 var NO_TASKS_TO_UNCLAIM = "No tienes tareas que soltar.";
 var PROGRESS_FAILED = "No pude actualizar \u2014 \xBFes tu tarea?";
-var THREAD_PROJECT_CREATED = (userId, taskCount) => `\u{1F4CB} Proyecto creado por <@${userId}> \u2014 ${taskCount} tareas. \xA1Reclama las tuyas arriba!`;
+var THREAD_PROJECT_CREATED = (userId, taskCount) => `\u{1F4CB} Proyecto creado por ${mentionOrName(userId)} \u2014 ${taskCount} tareas. \xA1Reclama las tuyas arriba!`;
 var THREAD_PROGRESS = (userId, item, done, needed, isDone) => `<@${userId}> avanz\xF3 **${item}** \u2192 ${done}/${needed}${isDone ? " \u2705" : ""}`;
 var THREAD_DONE = (userId, count) => `<@${userId}> marc\xF3 ${count} tarea(s) como completadas \u2705`;
 var EMPTY_PROJECT_CREATED = (id) => `Kyah~! Proyecto **#${id}** creado, nyeh. Usa \`/craft add-item id:${id}\` para a\xF1adir piezas, kukuru~!`;
@@ -1391,7 +1394,7 @@ function fmtPrice(n) {
 }
 function taskLine(t) {
   const done = t.status === "done" ? "\u2705" : "";
-  const assignee = t.assigneeId ? `<@${t.assigneeId}>` : `_${UNCLAIMED}_`;
+  const assignee = t.assigneeId ? mentionOrName(t.assigneeId) : `_${UNCLAIMED}_`;
   const progress = `(${t.qtyDone}/${t.qtyNeeded})`;
   let detail = "";
   if (t.source === "craft" && t.meta?.job) {
@@ -1668,7 +1671,7 @@ function buildBoardMessage(openProjects) {
       const pct = total > 0 ? Math.round(done / total * 100) : 0;
       const bar = "\u2588".repeat(Math.round(pct / 10)) + "\u2591".repeat(10 - Math.round(pct / 10));
       const thread = project.threadId ? ` \xB7 <#${project.threadId}>` : "";
-      const requester = ` \xB7 <@${project.createdBy}>`;
+      const requester = ` \xB7 ${mentionOrName(project.createdBy)}`;
       return `**#${project.id}** ${project.name}
 ${bar} ${pct}% (${done}/${total} ${PROJECT_TASKS_SUFFIX})${thread}${requester}`;
     });
@@ -1769,7 +1772,7 @@ function initialDisplayPhase(tasks) {
   return null;
 }
 async function handleCraftNew(opts, guildId, channelId, userId, deps) {
-  if (!opts.item) {
+  if (!opts.item && opts.itemId == null) {
     if (!opts.name) {
       return { content: "Nyeh~! Se requiere un nombre cuando no se especifica objeto, kukuru.", flags: 64 };
     }
@@ -1793,12 +1796,19 @@ async function handleCraftNew(opts, guildId, channelId, userId, deps) {
     return { content: EMPTY_PROJECT_CREATED(projectId2), flags: 64 };
   }
   const qty = opts.qty ?? 1;
-  const matches = searchItems(deps.nameIndex, opts.item, 1);
-  if (matches.length === 0) {
-    return { content: ITEM_NOT_FOUND(opts.item), flags: 64 };
+  let itemId;
+  let itemName;
+  if (opts.itemId != null) {
+    itemId = opts.itemId;
+    itemName = deps.snapshots.namesById.get(opts.itemId) ?? `Item #${opts.itemId}`;
+  } else {
+    const matches = searchItems(deps.nameIndex, opts.item, 1);
+    if (matches.length === 0) {
+      return { content: ITEM_NOT_FOUND(opts.item), flags: 64 };
+    }
+    itemId = matches[0].id;
+    itemName = matches[0].name;
   }
-  const itemId = matches[0].id;
-  const itemName = matches[0].name;
   const projectName = opts.name ?? `${qty}\xD7 ${itemName}`;
   const craftIntermediates = opts.intermediates ?? true;
   console.log(`[craft] new project: ${projectName} (item ${itemId}, qty ${qty})`);
@@ -1914,7 +1924,9 @@ async function handleCraftNew(opts, guildId, channelId, userId, deps) {
   console.log(`[craft] project #${projectId} created with ${storedTasks.length} tasks`);
   return {
     content: PROJECT_CREATED(projectId, targetChannelId, storedTasks.length),
-    flags: 64
+    flags: 64,
+    projectId,
+    taskCount: storedTasks.length
   };
 }
 function mergeTasks(tasks) {
