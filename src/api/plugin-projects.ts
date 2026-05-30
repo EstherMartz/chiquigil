@@ -2,7 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { openCraftStore, type CraftStore } from '../bot/craftStore';
 import { loadSnapshots } from '../bot/loadSnapshots';
 import { buildNameIndex } from '../bot/nameIndex';
-import { handleCraftNew, type CraftCommandDeps } from '../bot/craftCommands';
+import { handleCraftNew, handleCraftNewFromList, type CraftCommandDeps } from '../bot/craftCommands';
 import { isAllowed, listProjectSummaries, getProjectDetail } from './_projects-core';
 
 let storePromise: Promise<CraftStore> | null = null;
@@ -27,6 +27,32 @@ async function loadMarketCache(): Promise<Record<string, Record<string, unknown>
   }
 }
 
+async function buildCreateDeps(req: VercelRequest): Promise<CraftCommandDeps> {
+  const proto = (req.headers['x-forwarded-proto'] as string) ?? 'https';
+  const host = (req.headers['x-forwarded-host'] as string) ?? req.headers.host ?? 'qiqirn.tools';
+  const baseUrl = `${proto}://${host}`;
+
+  const [store, snapshots, cache] = await Promise.all([
+    getStore(),
+    loadSnapshots(baseUrl),
+    loadMarketCache(),
+  ]);
+  const nameIndex = buildNameIndex(snapshots.namesById);
+  const marketBundle = { phantom: cache.phantom ?? {}, dc: cache.dc ?? {}, region: cache.region ?? {} };
+
+  return {
+    store, snapshots, nameIndex,
+    marketBundle: marketBundle as any,
+    botToken: process.env.DISCORD_BOT_TOKEN ?? '',
+    appId: process.env.DISCORD_APP_ID ?? '',
+    world: process.env.HOME_WORLD ?? 'Phantom',
+    dc: process.env.HOME_DC ?? 'Chaos',
+    region: process.env.REGION ?? 'Europe',
+    craftChannelId: process.env.CRAFT_CHANNEL_ID || undefined,
+    crafterRoleId: process.env.CRAFTER_ROLE_ID || undefined,
+  };
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Cache-Control', 'no-store');
   const url = req.url ?? '';
@@ -49,9 +75,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // ── POST: create ─────────────────────────────────────────────────────────
   if (req.method === 'POST') {
-    const { guildId, itemId, qty, name, characterName, intermediates } = req.body ?? {};
+    const { guildId, itemId, qty, name, characterName, intermediates, items } = req.body ?? {};
 
-    // Validate BEFORE assembling create deps (so bad requests never load snapshots).
+    // ── Multi-item list import ───────────────────────────────────────────────
+    if (Array.isArray(items)) {
+      if (!guildId || !characterName || !name) {
+        return res.status(400).json({ error: 'Missing required fields: guildId, name, characterName' });
+      }
+      if (!isAllowed(String(guildId))) {
+        return res.status(403).json({ error: 'Guild not in allow-list' });
+      }
+      const validItems = items
+        .map((it: any) => ({ name: String(it?.name ?? '').trim(), qty: Number(it?.qty) }))
+        .filter((it) => it.name.length > 0 && Number.isInteger(it.qty) && it.qty >= 1 && it.qty <= 99999);
+      if (validItems.length === 0) {
+        return res.status(400).json({ error: 'No valid items in list' });
+      }
+
+      const deps = await buildCreateDeps(req);
+      const result = await handleCraftNewFromList(
+        { name: String(name), items: validItems },
+        String(guildId), '', String(characterName), deps,
+      );
+      if (typeof result.projectId === 'number') {
+        return res.status(200).json({ ok: true, projectId: result.projectId, taskCount: result.taskCount ?? 0, unmatched: result.unmatched ?? [] });
+      }
+      return res.status(200).json({ ok: false, error: result.content ?? 'Could not create project', unmatched: result.unmatched ?? [] });
+    }
+
+    // ── Single-item create (existing) ────────────────────────────────────────
     if (!guildId || itemId == null || qty == null || !characterName) {
       return res.status(400).json({ error: 'Missing required fields: guildId, itemId, qty, characterName' });
     }
@@ -67,40 +119,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'qty must be between 1 and 99999' });
     }
 
-    const proto = (req.headers['x-forwarded-proto'] as string) ?? 'https';
-    const host = (req.headers['x-forwarded-host'] as string) ?? req.headers.host ?? 'qiqirn.tools';
-    const baseUrl = `${proto}://${host}`;
-
-    const [store, snapshots, cache] = await Promise.all([
-      getStore(),
-      loadSnapshots(baseUrl),
-      loadMarketCache(),
-    ]);
-    const nameIndex = buildNameIndex(snapshots.namesById);
-    const marketBundle = { phantom: cache.phantom ?? {}, dc: cache.dc ?? {}, region: cache.region ?? {} };
-
-    const deps: CraftCommandDeps = {
-      store,
-      snapshots,
-      nameIndex,
-      marketBundle: marketBundle as any,
-      botToken: process.env.DISCORD_BOT_TOKEN ?? '',
-      appId: process.env.DISCORD_APP_ID ?? '',
-      world: process.env.HOME_WORLD ?? 'Phantom',
-      dc: process.env.HOME_DC ?? 'Chaos',
-      region: process.env.REGION ?? 'Europe',
-      craftChannelId: process.env.CRAFT_CHANNEL_ID || undefined,
-      crafterRoleId: process.env.CRAFTER_ROLE_ID || undefined,
-    };
-
-    // channelId '' → handleCraftNew falls back to the guild's configured craft channel.
-    // characterName is the createdBy/userId (rendered mention-safe downstream).
+    const deps = await buildCreateDeps(req);
     const result = await handleCraftNew(
       { itemId: itemIdNum, qty: qtyNum, name: name ?? null, intermediates: intermediates ?? true },
-      String(guildId),
-      '',
-      String(characterName),
-      deps,
+      String(guildId), '', String(characterName), deps,
     );
 
     if (typeof result.projectId === 'number') {

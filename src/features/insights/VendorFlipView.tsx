@@ -20,12 +20,23 @@ interface RunResult {
   filterAtRun: VendorFlipFilter;
 }
 
+function scanParamsChanged(a: VendorFlipFilter, b: VendorFlipFilter): boolean {
+  return a.minProfit !== b.minProfit
+    || a.minMarkup !== b.minMarkup
+    || a.minVelocity !== b.minVelocity
+    || a.maxListings !== b.maxListings
+    || a.hq !== b.hq
+    || a.searchCategories.length !== b.searchCategories.length
+    || a.searchCategories.some((v, i) => v !== b.searchCategories[i]);
+}
+
 export function VendorFlipView() {
   const { world, hideCrystals } = useSettingsStore();
   const snapshot = useItemSnapshot();
   const vendors = useVendorShopSnapshot();
   const refreshVendors = useRefreshVendorShopSnapshot();
   const [filter, setFilter] = useState<VendorFlipFilter>(defaultVendorFlipFilter());
+  const [sort, setSort] = useState<VendorFlipSort>(defaultVendorFlipFilter().sort);
 
   const candidateIds = useMemo(() => {
     if (!snapshot.data || !vendors.data) return [];
@@ -55,17 +66,13 @@ export function VendorFlipView() {
 
   const rows = useMemo(() => {
     if (!snapshot.data || !vendors.data || !run.data) return [];
-    return runVendorFlip(snapshot.data.items, vendors.data.snapshot, run.data.saleMap, run.data.filterAtRun);
-  }, [snapshot.data, vendors.data, run.data]);
+    return runVendorFlip(snapshot.data.items, vendors.data.snapshot, run.data.saleMap, { ...run.data.filterAtRun, sort });
+  }, [snapshot.data, vendors.data, run.data, sort]);
 
   const ready = snapshot.data != null && vendors.data != null;
-  const stale = run.data != null && run.data.filterAtRun !== filter;
+  const stale = run.data != null && scanParamsChanged(run.data.filterAtRun, filter);
 
   useInitialScan(ready, () => { run.reset(); run.mutate(); });
-
-  function onSortChange(next: VendorFlipSort) {
-    setFilter({ ...filter, sort: next });
-  }
 
   return (
     <div className="space-y-4">
@@ -109,8 +116,8 @@ export function VendorFlipView() {
           rows={rows}
           totalCandidates={candidateIds.length}
           skippedChunks={run.data.skipped}
-          sort={run.data.filterAtRun.sort}
-          onSortChange={onSortChange}
+          sort={sort}
+          onSortChange={setSort}
         />
       )}
     </div>
@@ -180,20 +187,6 @@ function FilterBar({ value, onChange, onRun, onRefreshVendors, busy, notReady, s
           ))}
         </div>
       </div>
-      <label className="block">
-        <span className="font-mono text-[13px] tracking-widest text-text-low uppercase">Sort</span>
-        <select
-          value={value.sort}
-          onChange={(e) => onChange({ ...value, sort: e.target.value as VendorFlipSort })}
-          className="mt-1 block bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
-        >
-          <option value="profitPerDay">Profit/day</option>
-          <option value="markup">Markup</option>
-          <option value="profitPerUnit">Profit/unit</option>
-          <option value="salePrice">Sale price</option>
-          <option value="velocity">Velocity</option>
-        </select>
-      </label>
       <div className="flex gap-2 w-full sm:w-auto sm:ml-auto order-last">
         <button
           type="button"

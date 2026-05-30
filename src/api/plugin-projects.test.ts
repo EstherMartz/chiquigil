@@ -11,10 +11,15 @@ vi.mock('../bot/craftCommands', () => ({
       ? { content: 'ok', flags: 64, projectId: 7, taskCount: 3 }
       : { content: 'No recipe', flags: 64 },
   ),
+  handleCraftNewFromList: vi.fn(async (opts: any) =>
+    opts.items?.length
+      ? { content: 'ok', flags: 64, projectId: 9, taskCount: 5, unmatched: ['Ghost Item'] }
+      : { content: 'No items matched', flags: 64, unmatched: [] },
+  ),
 }));
 
 import handler from './plugin-projects';
-import { handleCraftNew } from '../bot/craftCommands';
+import { handleCraftNew, handleCraftNewFromList } from '../bot/craftCommands';
 import { openCraftStore, type CraftStore } from '../bot/craftStore';
 
 let store: CraftStore;
@@ -139,5 +144,46 @@ describe('POST /api/plugin/projects', () => {
     await handler(req, res);
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json.mock.calls[0][0]).toMatchObject({ ok: false });
+  });
+});
+
+describe('POST /api/plugin/projects (items[] import)', () => {
+  it('creates a project from a list and returns projectId/taskCount/unmatched', async () => {
+    const req = { method: 'POST', url: '/api/plugin/projects', query: {}, headers: { host: 'qiqirn.tools' },
+      body: { guildId: 'G1', name: 'My List', characterName: 'Esther', items: [{ name: 'Iron Ore', qty: 6 }, { name: 'Ghost Item', qty: 2 }] } } as any;
+    const res = mockRes();
+    await handler(req, res);
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.json.mock.calls[0][0]).toMatchObject({ ok: true, projectId: 9, taskCount: 5, unmatched: ['Ghost Item'] });
+    expect(handleCraftNewFromList).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'My List', items: [{ name: 'Iron Ore', qty: 6 }, { name: 'Ghost Item', qty: 2 }] }),
+      'G1', '', 'Esther', expect.anything(),
+    );
+    expect(handleCraftNew).not.toHaveBeenCalled();
+  });
+
+  it('403s when guild not allow-listed (before deps)', async () => {
+    const req = { method: 'POST', url: '/api/plugin/projects', query: {}, headers: {},
+      body: { guildId: 'OTHER', name: 'X', characterName: 'E', items: [{ name: 'Iron Ore', qty: 1 }] } } as any;
+    const res = mockRes();
+    await handler(req, res);
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(handleCraftNewFromList).not.toHaveBeenCalled();
+  });
+
+  it('400s when items entries are all invalid', async () => {
+    const req = { method: 'POST', url: '/api/plugin/projects', query: {}, headers: {},
+      body: { guildId: 'G1', name: 'X', characterName: 'E', items: [{ name: '', qty: 0 }] } } as any;
+    const res = mockRes();
+    await handler(req, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
+
+  it('400s when name missing for an items import', async () => {
+    const req = { method: 'POST', url: '/api/plugin/projects', query: {}, headers: {},
+      body: { guildId: 'G1', characterName: 'E', items: [{ name: 'Iron Ore', qty: 1 }] } } as any;
+    const res = mockRes();
+    await handler(req, res);
+    expect(res.status).toHaveBeenCalledWith(400);
   });
 });

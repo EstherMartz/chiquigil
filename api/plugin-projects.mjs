@@ -1266,6 +1266,148 @@ async function handleCraftNew(opts, guildId, channelId, userId, deps) {
     taskCount: storedTasks.length
   };
 }
+async function handleCraftNewFromList(opts, guildId, channelId, userId, deps) {
+  const { resolved, unmatched } = resolveItemsByName(deps.nameIndex, opts.items);
+  if (resolved.length === 0) {
+    return { content: ITEM_NOT_FOUND(opts.items.map((i) => i.name).join(", ")), flags: 64, unmatched };
+  }
+  let targetChannelId = deps.craftChannelId ?? channelId;
+  try {
+    const guildConfig = await deps.store.getGuildConfig(guildId);
+    if (guildConfig) targetChannelId = guildConfig.craftChannelId;
+  } catch (e) {
+    console.warn("[craft] failed to fetch guild config, using fallback", e instanceof Error ? e.message : e);
+  }
+  const projectId = await deps.store.createProject({
+    guildId,
+    channelId: targetChannelId,
+    name: opts.name,
+    targetItemId: 0,
+    targetQty: 0,
+    createdBy: userId
+  });
+  for (const r of resolved) {
+    await deps.store.addProjectItem(projectId, r.itemId, r.itemName, r.qty);
+  }
+  const projectItems = await deps.store.getProjectItems(projectId);
+  const tasks = buildTasksForProjectItems(projectItems, deps);
+  if (tasks.length === 0) {
+    return { content: NO_RECIPE(resolved[0].itemName), flags: 64, unmatched };
+  }
+  await deps.store.addTasks(projectId, tasks);
+  const initial = initialDisplayPhase(tasks);
+  if (initial) {
+    await deps.store.setProjectDisplayPhase(projectId, initial.partKey, initial.phaseIndex);
+  }
+  const project = await deps.store.getProject(projectId);
+  if (!project) return { content: "Failed to create project", flags: 64, unmatched };
+  const storedTasks = await deps.store.getTasks(projectId);
+  const piSummary = projectItems.map((pi) => ({ itemName: pi.itemName, qty: pi.qty }));
+  const { embeds, components } = buildProjectMessage(project, storedTasks, piSummary);
+  const roleId = deps.crafterRoleId;
+  let content = "";
+  if (roleId) content = `<@&${roleId}> `;
+  content += NEW_PROJECT_CONTENT(projectId);
+  const channelInfo = await getChannel(deps.botToken, targetChannelId);
+  const isForumChannel = channelInfo?.type === 15;
+  if (isForumChannel) {
+    let forumPost = null;
+    try {
+      forumPost = await createForumPost(deps.botToken, targetChannelId, opts.name.slice(0, 100), {
+        content,
+        embeds,
+        components,
+        allowed_mentions: roleId ? { roles: [roleId] } : void 0
+      });
+    } catch (e) {
+      return { content: `No se pudo crear el post en el foro \u2014 ${e instanceof Error ? e.message : String(e)}`, flags: 64, projectId, taskCount: storedTasks.length, unmatched };
+    }
+    if (forumPost) {
+      const threadId = String(forumPost.id);
+      await deps.store.setProjectThreadId(projectId, threadId);
+      try {
+        await sendToChannel(deps.botToken, threadId, { content: THREAD_PROJECT_CREATED(userId, storedTasks.length) });
+      } catch (e) {
+        console.error("[craft] failed to send forum post message:", e instanceof Error ? e.message : e);
+      }
+    }
+  } else {
+    const announcementMsg = await sendToChannel(deps.botToken, targetChannelId, {
+      content,
+      embeds,
+      components,
+      allowed_mentions: roleId ? { roles: [roleId] } : void 0
+    });
+    if (!announcementMsg) {
+      return { content: CHANNEL_NOT_FOUND, flags: 64, projectId, taskCount: storedTasks.length, unmatched };
+    }
+    const messageId = String(announcementMsg.id);
+    await deps.store.setProjectMessageId(projectId, messageId);
+    try {
+      const thread = await createThread(deps.botToken, targetChannelId, messageId, opts.name.slice(0, 100));
+      if (thread) {
+        const threadId = String(thread.id);
+        await deps.store.setProjectThreadId(projectId, threadId);
+        await sendToChannel(deps.botToken, threadId, { content: THREAD_PROJECT_CREATED(userId, storedTasks.length) });
+      }
+    } catch (e) {
+      console.error("[craft] failed to create thread:", e instanceof Error ? e.message : e);
+    }
+  }
+  if (!isForumChannel) {
+    await refreshBoard(deps, guildId);
+  }
+  console.log(`[craft] list project #${projectId} created with ${storedTasks.length} tasks (${unmatched.length} unmatched)`);
+  return {
+    content: PROJECT_CREATED(projectId, targetChannelId, storedTasks.length),
+    flags: 64,
+    projectId,
+    taskCount: storedTasks.length,
+    unmatched
+  };
+}
+function mergeTasks(tasks) {
+  const map = /* @__PURE__ */ new Map();
+  for (const t of tasks) {
+    const key = `${t.itemId}|${t.source}`;
+    const existing = map.get(key);
+    if (existing) {
+      existing.qtyNeeded += t.qtyNeeded;
+    } else {
+      map.set(key, { ...t });
+    }
+  }
+  return [...map.values()];
+}
+function buildTasksForProjectItems(projectItems, deps) {
+  const { recipes, namesById, vendorMap, specialShop, gatheringCatalog, companyCraft } = deps.snapshots;
+  const market = deps.marketBundle;
+  const raw = [];
+  for (const pi of projectItems) {
+    const bd = buildBreakdown(
+      pi.itemId,
+      pi.qty,
+      market,
+      { recipes, namesById, vendorMap, specialShop, gatheringCatalog, companyCraft },
+      { craftIntermediates: true }
+    );
+    raw.push(...bd.crafts, ...bd.acquire);
+  }
+  return mergeTasks(raw);
+}
+function resolveItemsByName(nameIndex, items) {
+  const resolved = [];
+  const unmatched = [];
+  for (const it of items) {
+    const matches = searchItems(nameIndex, it.name, 1);
+    if (matches.length === 0) {
+      unmatched.push(it.name);
+      continue;
+    }
+    resolved.push({ itemId: matches[0].id, itemName: matches[0].name, qty: it.qty });
+  }
+  return { resolved, unmatched };
+}
 async function refreshBoard(deps, guildId) {
   let channelId = deps.craftChannelId;
   try {
@@ -1447,6 +1589,31 @@ async function loadMarketCache() {
     return { phantom: {}, dc: {}, region: {} };
   }
 }
+async function buildCreateDeps(req) {
+  const proto = req.headers["x-forwarded-proto"] ?? "https";
+  const host = req.headers["x-forwarded-host"] ?? req.headers.host ?? "qiqirn.tools";
+  const baseUrl = `${proto}://${host}`;
+  const [store, snapshots, cache] = await Promise.all([
+    getStore(),
+    loadSnapshots(baseUrl),
+    loadMarketCache()
+  ]);
+  const nameIndex = buildNameIndex(snapshots.namesById);
+  const marketBundle = { phantom: cache.phantom ?? {}, dc: cache.dc ?? {}, region: cache.region ?? {} };
+  return {
+    store,
+    snapshots,
+    nameIndex,
+    marketBundle,
+    botToken: process.env.DISCORD_BOT_TOKEN ?? "",
+    appId: process.env.DISCORD_APP_ID ?? "",
+    world: process.env.HOME_WORLD ?? "Phantom",
+    dc: process.env.HOME_DC ?? "Chaos",
+    region: process.env.REGION ?? "Europe",
+    craftChannelId: process.env.CRAFT_CHANNEL_ID || void 0,
+    crafterRoleId: process.env.CRAFTER_ROLE_ID || void 0
+  };
+}
 async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
   const url = req.url ?? "";
@@ -1465,7 +1632,31 @@ async function handler(req, res) {
     return res.status(200).json(await listProjectSummaries(store, guildId, statusFilter));
   }
   if (req.method === "POST") {
-    const { guildId, itemId, qty, name, characterName, intermediates } = req.body ?? {};
+    const { guildId, itemId, qty, name, characterName, intermediates, items } = req.body ?? {};
+    if (Array.isArray(items)) {
+      if (!guildId || !characterName || !name) {
+        return res.status(400).json({ error: "Missing required fields: guildId, name, characterName" });
+      }
+      if (!isAllowed(String(guildId))) {
+        return res.status(403).json({ error: "Guild not in allow-list" });
+      }
+      const validItems = items.map((it) => ({ name: String(it?.name ?? "").trim(), qty: Number(it?.qty) })).filter((it) => it.name.length > 0 && Number.isInteger(it.qty) && it.qty >= 1 && it.qty <= 99999);
+      if (validItems.length === 0) {
+        return res.status(400).json({ error: "No valid items in list" });
+      }
+      const deps2 = await buildCreateDeps(req);
+      const result2 = await handleCraftNewFromList(
+        { name: String(name), items: validItems },
+        String(guildId),
+        "",
+        String(characterName),
+        deps2
+      );
+      if (typeof result2.projectId === "number") {
+        return res.status(200).json({ ok: true, projectId: result2.projectId, taskCount: result2.taskCount ?? 0, unmatched: result2.unmatched ?? [] });
+      }
+      return res.status(200).json({ ok: false, error: result2.content ?? "Could not create project", unmatched: result2.unmatched ?? [] });
+    }
     if (!guildId || itemId == null || qty == null || !characterName) {
       return res.status(400).json({ error: "Missing required fields: guildId, itemId, qty, characterName" });
     }
@@ -1480,29 +1671,7 @@ async function handler(req, res) {
     if (!Number.isInteger(qtyNum) || qtyNum < 1 || qtyNum > 99999) {
       return res.status(400).json({ error: "qty must be between 1 and 99999" });
     }
-    const proto = req.headers["x-forwarded-proto"] ?? "https";
-    const host = req.headers["x-forwarded-host"] ?? req.headers.host ?? "qiqirn.tools";
-    const baseUrl = `${proto}://${host}`;
-    const [store, snapshots, cache] = await Promise.all([
-      getStore(),
-      loadSnapshots(baseUrl),
-      loadMarketCache()
-    ]);
-    const nameIndex = buildNameIndex(snapshots.namesById);
-    const marketBundle = { phantom: cache.phantom ?? {}, dc: cache.dc ?? {}, region: cache.region ?? {} };
-    const deps = {
-      store,
-      snapshots,
-      nameIndex,
-      marketBundle,
-      botToken: process.env.DISCORD_BOT_TOKEN ?? "",
-      appId: process.env.DISCORD_APP_ID ?? "",
-      world: process.env.HOME_WORLD ?? "Phantom",
-      dc: process.env.HOME_DC ?? "Chaos",
-      region: process.env.REGION ?? "Europe",
-      craftChannelId: process.env.CRAFT_CHANNEL_ID || void 0,
-      crafterRoleId: process.env.CRAFTER_ROLE_ID || void 0
-    };
+    const deps = await buildCreateDeps(req);
     const result = await handleCraftNew(
       { itemId: itemIdNum, qty: qtyNum, name: name ?? null, intermediates: intermediates ?? true },
       String(guildId),

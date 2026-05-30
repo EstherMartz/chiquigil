@@ -27,6 +27,14 @@ function isCurrencyId(v: string | null): v is CurrencyId {
   return v != null && CURRENCIES.some((c) => c.id === v);
 }
 
+function scanParamsChanged(a: CurrencyFlipFilter, b: CurrencyFlipFilter): boolean {
+  return a.currency !== b.currency
+    || a.minGilPerUnit !== b.minGilPerUnit
+    || a.minVelocity !== b.minVelocity
+    || a.maxListings !== b.maxListings
+    || a.hq !== b.hq;
+}
+
 export function CurrencyFlipView() {
   const { world, hideCrystals } = useSettingsStore();
   const snapshot = useItemSnapshot();
@@ -37,6 +45,7 @@ export function CurrencyFlipView() {
   const urlCurrency = searchParams.get('currency');
   const initialCurrency: CurrencyId = isCurrencyId(urlCurrency) ? urlCurrency : 'poetics';
   const [filter, setFilter] = useState<CurrencyFlipFilter>({ ...defaultCurrencyFlipFilter(), currency: initialCurrency });
+  const [sort, setSort] = useState<CurrencyFlipSort>(defaultCurrencyFlipFilter().sort);
 
   const currency = getCurrencyById(filter.currency)!;
 
@@ -83,17 +92,13 @@ export function CurrencyFlipView() {
 
   const rows = useMemo(() => {
     if (!snapshot.data || !shop.data || !run.data) return [];
-    return runCurrencyFlip(snapshot.data.items, shop.data.snapshot, run.data.saleMap, run.data.filterAtRun);
-  }, [snapshot.data, shop.data, run.data]);
+    return runCurrencyFlip(snapshot.data.items, shop.data.snapshot, run.data.saleMap, { ...run.data.filterAtRun, sort });
+  }, [snapshot.data, shop.data, run.data, sort]);
 
   const ready = snapshot.data != null && shop.data != null;
-  const stale = run.data != null && run.data.filterAtRun !== filter;
+  const stale = run.data != null && scanParamsChanged(run.data.filterAtRun, filter);
 
   useInitialScan(ready, () => { run.reset(); run.mutate(undefined); });
-
-  function onSortChange(next: CurrencyFlipSort) {
-    setFilter({ ...filter, sort: next });
-  }
 
   return (
     <div className="space-y-4">
@@ -142,8 +147,8 @@ export function CurrencyFlipView() {
           currency={currency}
           totalCandidates={candidateIds.length}
           skippedChunks={run.data.skipped}
-          sort={run.data.filterAtRun.sort}
-          onSortChange={onSortChange}
+          sort={sort}
+          onSortChange={setSort}
         />
       )}
     </div>
@@ -259,19 +264,6 @@ function FilterBar({ value, onChange }: {
           ))}
         </div>
       </div>
-      <label className="block">
-        <span className="font-mono text-[13px] tracking-widest text-text-low uppercase">Sort</span>
-        <select
-          value={value.sort}
-          onChange={(e) => onChange({ ...value, sort: e.target.value as CurrencyFlipSort })}
-          className="mt-1 block bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
-        >
-          <option value="gilPerUnit">Gil/unit</option>
-          <option value="salePrice">Sale price</option>
-          <option value="velocity">Velocity</option>
-          <option value="costPerUnit">Cost per unit</option>
-        </select>
-      </label>
     </div>
   );
 }

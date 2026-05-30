@@ -28,10 +28,20 @@ interface RunResult {
   filterAtRun: MaterialFlipFilter;
 }
 
+function scanParamsChanged(a: MaterialFlipFilter, b: MaterialFlipFilter): boolean {
+  return a.minVelocity !== b.minVelocity
+    || a.maxListings !== b.maxListings
+    || a.minSavings !== b.minSavings
+    || a.includeLightDc !== b.includeLightDc
+    || a.searchCategories.length !== b.searchCategories.length
+    || a.searchCategories.some((v, i) => v !== b.searchCategories[i]);
+}
+
 export function MaterialFlipView() {
   const { world, hideCrystals } = useSettingsStore();
   const snapshot = useItemSnapshot();
   const [filter, setFilter] = useState<MaterialFlipFilter>(defaultMaterialFlipFilter());
+  const [sort, setSort] = useState<MaterialFlipSort>(defaultMaterialFlipFilter().sort);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
 
   const candidateIds = useMemo(() => {
@@ -142,23 +152,19 @@ export function MaterialFlipView() {
     if (ingFetch.data) {
       return runMaterialFlip(
         snapshot.data.items, run.data.saleMap, ingFetch.data.ingMap,
-        recipes.data, world, run.data.filterAtRun,
+        recipes.data, world, { ...run.data.filterAtRun, sort },
       );
     }
-    // Streaming view: sort what we have so far by current filter.sort.
+    // Streaming view: sort what we have so far by the current sort state.
     const sorted = [...streamedRows];
-    sorted.sort((a, b) => MATERIAL_FLIP_COMPARATORS[run.data!.filterAtRun.sort](a, b));
+    sorted.sort((a, b) => MATERIAL_FLIP_COMPARATORS[sort](a, b));
     return sorted;
-  }, [snapshot.data, run.data, recipes.data, ingFetch.data, world, streamedRows]);
+  }, [snapshot.data, run.data, recipes.data, ingFetch.data, world, streamedRows, sort]);
 
   const ready = snapshot.data != null;
-  const stale = run.data != null && run.data.filterAtRun !== filter;
+  const stale = run.data != null && scanParamsChanged(run.data.filterAtRun, filter);
 
   useInitialScan(ready, () => { run.reset(); ingFetch.reset(); setProgress(null); run.mutate(); });
-
-  function onSortChange(next: MaterialFlipSort) {
-    setFilter({ ...filter, sort: next });
-  }
 
   return (
     <div className="space-y-4">
@@ -191,8 +197,8 @@ export function MaterialFlipView() {
           rows={rows}
           totalCandidates={run.data.narrowedIds.length}
           skippedChunks={run.data.skipped + (ingFetch.data?.skipped ?? 0)}
-          sort={filter.sort}
-          onSortChange={onSortChange}
+          sort={sort}
+          onSortChange={setSort}
         />
       )}
     </div>
