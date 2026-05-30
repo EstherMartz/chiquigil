@@ -81,6 +81,15 @@ describe('cookies', () => {
     expect(parseCookies(undefined)).toEqual({});
   });
 
+  // A malformed percent-escape in any cookie must not throw (this parser sits
+  // in the auth request path; an attacker-supplied Cookie header reaches it).
+  it('does not throw on a malformed percent-escape', async () => {
+    const { parseCookies } = await import('./_auth');
+    const jar = parseCookies('bad=%E0%A4%A; ok=1');
+    expect(jar.ok).toBe('1');
+    expect(jar.bad).toBe('%E0%A4%A');
+  });
+
   it('serializes an httpOnly session cookie', async () => {
     const { serializeSessionCookie, SESSION_COOKIE } = await import('./_auth');
     const c = serializeSessionCookie('TOKEN');
@@ -113,5 +122,28 @@ describe('guild allow-list', () => {
   it('returns [] when no overlap', async () => {
     const { allowedGuildsFor } = await import('./_auth');
     expect(allowedGuildsFor(['789'])).toEqual([]);
+  });
+});
+
+describe('requireSession', () => {
+  function reqWithCookie(cookie?: string) {
+    return { headers: cookie ? { cookie } : {} };
+  }
+
+  it('returns the user for a valid session cookie', async () => {
+    const { requireSession, SESSION_COOKIE } = await import('./_auth');
+    const token = await signSession(USER);
+    const user = await requireSession(reqWithCookie(`${SESSION_COOKIE}=${token}`));
+    expect(user?.sub).toBe('111');
+  });
+
+  it('returns null when no cookie present', async () => {
+    const { requireSession } = await import('./_auth');
+    expect(await requireSession(reqWithCookie())).toBeNull();
+  });
+
+  it('returns null for a garbage cookie', async () => {
+    const { requireSession, SESSION_COOKIE } = await import('./_auth');
+    expect(await requireSession(reqWithCookie(`${SESSION_COOKIE}=garbage`))).toBeNull();
   });
 });

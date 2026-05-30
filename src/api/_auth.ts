@@ -1,3 +1,4 @@
+import type { VercelRequest } from '@vercel/node';
 import { SignJWT, jwtVerify } from 'jose';
 
 export interface SessionUser {
@@ -82,7 +83,12 @@ export function parseCookies(header: string | undefined): Record<string, string>
     if (idx === -1) continue;
     const k = part.slice(0, idx).trim();
     const v = part.slice(idx + 1).trim();
-    if (k) jar[k] = decodeURIComponent(v);
+    // decodeURIComponent throws on a malformed escape (e.g. "%E0%A4%A"); fall
+    // back to the raw value so a junk cookie can't 500 the auth path.
+    if (k) {
+      try { jar[k] = decodeURIComponent(v); }
+      catch { jar[k] = v; }
+    }
   }
   return jar;
 }
@@ -104,4 +110,11 @@ export function getAllowList(): string[] {
 export function allowedGuildsFor(userGuildIds: string[]): string[] {
   const allow = new Set(getAllowList());
   return userGuildIds.filter((id) => allow.has(id));
+}
+
+export async function requireSession(req: VercelRequest): Promise<SessionUser | null> {
+  const jar = parseCookies(req.headers?.cookie);
+  const token = jar[SESSION_COOKIE];
+  if (!token) return null;
+  return verifySession(token);
 }
