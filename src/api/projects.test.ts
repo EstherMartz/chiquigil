@@ -1,6 +1,8 @@
+// @vitest-environment node
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import handler from './projects';
 import { openCraftStore, type CraftStore } from '../bot/craftStore';
+import { signSession, SESSION_COOKIE } from './_auth';
 
 let store: CraftStore;
 
@@ -28,6 +30,7 @@ beforeEach(async () => {
   store = await openCraftStore(':memory:');
   process.env.GUILD_ALLOWLIST = 'G1';
   process.env.TURSO_DATABASE_URL = ':memory:';
+  process.env.AUTH_SESSION_SECRET = 'test-secret-test-secret-test-secret-123';
   delete process.env.DISCORD_BOT_TOKEN; // skip Discord name lookups under test
   (globalThis as any).__testCraftStore = store;
 });
@@ -35,7 +38,11 @@ beforeEach(async () => {
 describe('GET /api/projects', () => {
   it('lists open projects for an allowed guild with task counts', async () => {
     await seedProject(store);
-    const req = { method: 'GET', url: '/api/projects?guild=G1', query: { guild: 'G1' } } as any;
+    const token = await signSession({ sub: '1', username: 'E', avatar: null, guilds: ['G1'] });
+    const req = {
+      method: 'GET', url: '/api/projects?guild=G1', query: { guild: 'G1' },
+      headers: { cookie: `${SESSION_COOKIE}=${token}` },
+    } as any;
     const res = mockRes();
     await handler(req, res);
     expect(res.status).toHaveBeenCalledWith(200);
@@ -51,14 +58,22 @@ describe('GET /api/projects', () => {
   });
 
   it('403s when guild is not in the allow-list', async () => {
-    const req = { method: 'GET', url: '/api/projects?guild=OTHER', query: { guild: 'OTHER' } } as any;
+    const token = await signSession({ sub: '1', username: 'E', avatar: null, guilds: ['G1'] });
+    const req = {
+      method: 'GET', url: '/api/projects?guild=OTHER', query: { guild: 'OTHER' },
+      headers: { cookie: `${SESSION_COOKIE}=${token}` },
+    } as any;
     const res = mockRes();
     await handler(req, res);
     expect(res.status).toHaveBeenCalledWith(403);
   });
 
   it('400s when guild query param is missing', async () => {
-    const req = { method: 'GET', url: '/api/projects', query: {} } as any;
+    const token = await signSession({ sub: '1', username: 'E', avatar: null, guilds: ['G1'] });
+    const req = {
+      method: 'GET', url: '/api/projects', query: {},
+      headers: { cookie: `${SESSION_COOKIE}=${token}` },
+    } as any;
     const res = mockRes();
     await handler(req, res);
     expect(res.status).toHaveBeenCalledWith(400);
@@ -68,7 +83,11 @@ describe('GET /api/projects', () => {
 describe('GET /api/projects/:id', () => {
   it('returns project + tasks for allowed guild', async () => {
     const id = await seedProject(store);
-    const req = { method: 'GET', url: `/api/projects/${id}`, query: { id: String(id) } } as any;
+    const token = await signSession({ sub: '1', username: 'E', avatar: null, guilds: ['G1'] });
+    const req = {
+      method: 'GET', url: `/api/projects/${id}`, query: { id: String(id) },
+      headers: { cookie: `${SESSION_COOKIE}=${token}` },
+    } as any;
     const res = mockRes();
     await handler(req, res);
     expect(res.status).toHaveBeenCalledWith(200);
@@ -81,9 +100,34 @@ describe('GET /api/projects/:id', () => {
     const id = await store.createProject({
       guildId: 'OTHER', channelId: 'C', name: 'X', targetItemId: 1, targetQty: 1, createdBy: 'U',
     });
-    const req = { method: 'GET', url: `/api/projects/${id}`, query: { id: String(id) } } as any;
+    const token = await signSession({ sub: '1', username: 'E', avatar: null, guilds: ['G1'] });
+    const req = {
+      method: 'GET', url: `/api/projects/${id}`, query: { id: String(id) },
+      headers: { cookie: `${SESSION_COOKIE}=${token}` },
+    } as any;
     const res = mockRes();
     await handler(req, res);
     expect(res.status).toHaveBeenCalledWith(404);
+  });
+});
+
+describe('projects API auth gate', () => {
+  it('returns 401 when there is no session cookie', async () => {
+    const req = { method: 'GET', url: '/api/projects?guild=G1', query: { guild: 'G1' }, headers: {} } as any;
+    const res = mockRes();
+    await handler(req, res);
+    expect(res.status).toHaveBeenCalledWith(401);
+  });
+
+  it('proceeds past the gate (200) with a valid session cookie', async () => {
+    await seedProject(store);
+    const token = await signSession({ sub: '1', username: 'E', avatar: null, guilds: ['G1'] });
+    const req = {
+      method: 'GET', url: '/api/projects?guild=G1', query: { guild: 'G1' },
+      headers: { cookie: `${SESSION_COOKIE}=${token}` },
+    } as any;
+    const res = mockRes();
+    await handler(req, res);
+    expect(res.status).toHaveBeenCalledWith(200);
   });
 });

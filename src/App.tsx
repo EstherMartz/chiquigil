@@ -5,6 +5,10 @@ import { ContentBar } from './components/layout/ContentBar';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { OnboardingWizard } from './features/onboarding/OnboardingWizard';
 import { usePluginConnection } from './features/plugin/usePluginConnection';
+import { AuthProvider } from './features/auth/AuthProvider';
+import { RequireAuth } from './features/auth/RequireAuth';
+import { UserMenu } from './features/auth/UserMenu';
+import Login from './routes/Login';
 import Home from './routes/Home';
 import Watchlist from './routes/Watchlist';
 import Crafts from './routes/Crafts';
@@ -77,46 +81,59 @@ export default function App() {
   usePluginConnection();
 
   return (
-    <div className="flex min-h-screen">
-      <DocumentTitle />
-      <Sidebar />
-      {showOnboarding && (
-        <OnboardingWizard onComplete={() => setShowOnboarding(false)} />
-      )}
-      <main className="flex-1 min-w-0 pt-16 md:pt-8 px-4 pb-[max(5rem,env(safe-area-inset-bottom))]">
-        <ContentBar />
-        <ErrorBoundary>
-        <Routes>
-            <Route path="/" element={<Navigate to="/trading" replace />} />
-            <Route path="/home" element={<Home />} />
-            <Route path="/watchlist" element={<Watchlist />} />
-            <Route path="/crafts" element={<Crafts />} />
-            <Route path="/trading" element={<Trading />} />
-            <Route path="/gathering" element={<Gathering />} />
-            <Route path="/gathering/plan" element={<GatheringPlan />} />
-            <Route path="/leves" element={<LevePlan />} />
-            <Route path="/shopping-list" element={<ShoppingList />} />
-            <Route path="/vendor-flip" element={<VendorFlip />} />
-            <Route path="/housing" element={<Housing />} />
-            <Route path="/currency-flip" element={<CurrencyFlip />} />
-            <Route path="/gc-seals" element={<GcSeals />} />
-            <Route path="/craft-batch" element={<CraftBatch />} />
-            <Route path="/batch-history" element={<BatchHistory />} />
-            <Route path="/cleanup" element={<Cleanup />} />
-            <Route path="/craft-from-inventory" element={<CraftFromInventory />} />
-            <Route path="/quest-items" element={<QuestItems />} />
-            <Route path="/heatmap" element={<Heatmap />} />
-            <Route path="/item/:id" element={<Item />} />
-            <Route path="/queries" element={<Navigate to="/crafts" replace />} />
-            <Route path="/insights" element={<Navigate to="/trading" replace />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/submarines" element={<Submarines />} />
-            <Route path="/planner" element={<Planner />} />
-            <Route path="/projects" element={<Projects />} />
-            <Route path="/projects/:id" element={<Project />} />
-          </Routes>
-        </ErrorBoundary>
-      </main>
-    </div>
+    <AuthProvider>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route
+          path="*"
+          element={
+            <RequireAuth>
+              <div className="flex min-h-screen">
+                <DocumentTitle />
+                <Sidebar />
+                {showOnboarding && (
+                  <OnboardingWizard onComplete={() => setShowOnboarding(false)} />
+                )}
+                <main className="flex-1 min-w-0 pt-16 md:pt-8 px-4 pb-[max(5rem,env(safe-area-inset-bottom))]">
+                  <div className="flex justify-end"><UserMenu /></div>
+                  <ContentBar />
+                  <ErrorBoundary>
+                    <Routes>
+                      <Route path="/" element={<Navigate to="/trading" replace />} />
+                      <Route path="/home" element={<Home />} />
+                      <Route path="/watchlist" element={<Watchlist />} />
+                      <Route path="/crafts" element={<Crafts />} />
+                      <Route path="/trading" element={<Trading />} />
+                      <Route path="/gathering" element={<Gathering />} />
+                      <Route path="/gathering/plan" element={<GatheringPlan />} />
+                      <Route path="/leves" element={<LevePlan />} />
+                      <Route path="/shopping-list" element={<ShoppingList />} />
+                      <Route path="/vendor-flip" element={<VendorFlip />} />
+                      <Route path="/housing" element={<Housing />} />
+                      <Route path="/currency-flip" element={<CurrencyFlip />} />
+                      <Route path="/gc-seals" element={<GcSeals />} />
+                      <Route path="/craft-batch" element={<CraftBatch />} />
+                      <Route path="/batch-history" element={<BatchHistory />} />
+                      <Route path="/cleanup" element={<Cleanup />} />
+                      <Route path="/craft-from-inventory" element={<CraftFromInventory />} />
+                      <Route path="/quest-items" element={<QuestItems />} />
+                      <Route path="/heatmap" element={<Heatmap />} />
+                      <Route path="/item/:id" element={<Item />} />
+                      <Route path="/queries" element={<Navigate to="/crafts" replace />} />
+                      <Route path="/insights" element={<Navigate to="/trading" replace />} />
+                      <Route path="/settings" element={<Settings />} />
+                      <Route path="/submarines" element={<Submarines />} />
+                      <Route path="/planner" element={<Planner />} />
+                      <Route path="/projects" element={<Projects />} />
+                      <Route path="/projects/:id" element={<Project />} />
+                    </Routes>
+                  </ErrorBoundary>
+                </main>
+              </div>
+            </RequireAuth>
+          }
+        />
+      </Routes>
+    </AuthProvider>
   );
 }

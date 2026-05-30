@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { openCraftStore, type CraftStore } from '../bot/craftStore';
 import type { StoredTask, TaskSource } from '../bot/craftTypes';
+import { requireSession } from './_auth';
 
 function getAllowList(): string[] {
   return (process.env.GUILD_ALLOWLIST ?? '').split(',').map((s) => s.trim()).filter(Boolean);
@@ -87,6 +88,9 @@ async function resolveNames(guildId: string, userIds: Iterable<string>): Promise
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+
+  const session = await requireSession(req);
+  if (!session) return res.status(401).json({ error: 'Not authenticated' });
 
   res.setHeader('Cache-Control', 'no-store');
 
