@@ -141,6 +141,39 @@ describe('priceHistoryStats', () => {
     const stats = priceHistoryStats([], 100, 30, NOW_MS);
     expect(stats.daily).toEqual([]);
     expect(stats.maxVolume).toBe(0);
+    expect(stats.thinSpikes).toEqual([]);
+  });
+
+  it('flags a high-price low-volume day as a thin spike', () => {
+    const DAY = 24 * 60 * 60 * 1000;
+    // 6 normal days around price 100 with healthy volume, plus one day with a
+    // price of 300 (3x) on a single unit → a thin spike.
+    const entries: HistoryEntry[] = [];
+    for (let d = 10; d >= 5; d--) {
+      const ts = Math.floor((NOW_MS - d * DAY) / 1000);
+      entries.push({ timestamp: ts, pricePerUnit: 100, quantity: 10, hq: false });
+    }
+    const spikeTs = Math.floor((NOW_MS - 4 * DAY) / 1000);
+    entries.push({ timestamp: spikeTs, pricePerUnit: 300, quantity: 1, hq: false });
+
+    const stats = priceHistoryStats(entries, 100, 90, NOW_MS);
+    expect(stats.thinSpikes).toHaveLength(1);
+    expect(stats.thinSpikes[0].price).toBe(300);
+  });
+
+  it('does not flag a high-price day when volume is healthy', () => {
+    const DAY = 24 * 60 * 60 * 1000;
+    const entries: HistoryEntry[] = [];
+    for (let d = 10; d >= 5; d--) {
+      const ts = Math.floor((NOW_MS - d * DAY) / 1000);
+      entries.push({ timestamp: ts, pricePerUnit: 100, quantity: 10, hq: false });
+    }
+    // High price but with full volume → a real move, not a thin spike.
+    const ts = Math.floor((NOW_MS - 4 * DAY) / 1000);
+    entries.push({ timestamp: ts, pricePerUnit: 300, quantity: 10, hq: false });
+
+    const stats = priceHistoryStats(entries, 300, 90, NOW_MS);
+    expect(stats.thinSpikes).toEqual([]);
   });
 
   it('returns null deltaPct when oldest price is 0', () => {

@@ -74,6 +74,7 @@ export function MarketSnapshotRow({ itemId, homeWorld, dcLabel, phantom, dc, reg
           entries={entries}
           loading={historyLoading}
           market={bulkMarket}
+          listings={bulkMarket?.worldListings}
           canHq={canHq}
           scopeLabel={historyScopeLabel}
         />

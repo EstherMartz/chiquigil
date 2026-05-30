@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
 import {
-  ComposedChart, Area, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  ComposedChart, Area, Bar, Scatter, XAxis, YAxis, Tooltip, ReferenceArea, ResponsiveContainer,
 } from 'recharts';
 import type { HistoryEntry } from '../../lib/universalisHistory';
-import type { MarketItem } from '../../lib/universalis';
+import type { MarketItem, WorldListing } from '../../lib/universalis';
 import { fmtGil } from '../../lib/format';
 import { Spinner } from '../../components/Spinner';
 
@@ -19,6 +19,8 @@ export interface PriceHistoryStats {
   points: Array<{ ts: number; nq: number | null; hq: number | null }>;
   daily: DailyPoint[];
   maxVolume: number;
+  /** Days whose price jumped well above typical on little volume (hollow spikes). */
+  thinSpikes: Array<{ ts: number; price: number }>;
   deltaPct: number | null;
   oldestAgeDays: number;
   salesInRange: number;
@@ -68,6 +70,23 @@ export function priceHistoryStats(
     }));
   const maxVolume = daily.reduce((m, d) => Math.max(m, d.volume), 0);
 
+  // Thin spikes: days whose price sits well above the typical daily price but
+  // on little volume — a hollow listing that happened to sell, not a real move.
+  const dailyPrices = daily
+    .map((d) => d.priceNQ ?? d.priceHQ ?? 0)
+    .filter((p) => p > 0)
+    .sort((a, b) => a - b);
+  const medianDaily = dailyPrices.length ? dailyPrices[Math.floor(dailyPrices.length / 2)] : 0;
+  const thinSpikes =
+    daily.length >= 5 && medianDaily > 0 && maxVolume > 0
+      ? daily
+          .filter((d) => {
+            const p = d.priceNQ ?? d.priceHQ ?? 0;
+            return p > medianDaily * 1.3 && d.volume <= maxVolume * 0.2;
+          })
+          .map((d) => ({ ts: d.ts, price: d.priceNQ ?? d.priceHQ ?? 0 }))
+      : [];
+
   // Compute delta: current vs oldest in range
   let deltaPct: number | null = null;
   let oldestAgeDays = 0;
@@ -84,6 +103,7 @@ export function priceHistoryStats(
     points,
     daily,
     maxVolume,
+    thinSpikes,
     deltaPct,
     oldestAgeDays,
     salesInRange: inRange.length,
@@ -95,12 +115,27 @@ interface Props {
   entries: HistoryEntry[];
   loading: boolean;
   market?: MarketItem;
+  /** Current marketboard listings (asks) for the active scope. */
+  listings?: WorldListing[];
   canHq: boolean;
   scopeLabel: string;
 }
 
-export function PriceHistoryCard({ entries, loading, market, canHq, scopeLabel }: Props) {
+export function PriceHistoryCard({ entries, loading, market, listings, canHq, scopeLabel }: Props) {
   const [rangeDays, setRangeDays] = useState<7 | 30 | 90 | null>(30);
+
+  // Current asks (offers): floor + a "typical" upper bound (median of listings)
+  // so we can shade where current offers sit against what actually sold.
+  const askBand = useMemo(() => {
+    const all = listings ?? [];
+    // Prefer NQ asks (what the price line tracks); fall back to HQ-only books.
+    let prices = all.filter((l) => !l.hq).map((l) => l.price).sort((a, b) => a - b);
+    if (prices.length === 0) prices = all.map((l) => l.price).sort((a, b) => a - b);
+    if (prices.length === 0) return null;
+    const floor = prices[0];
+    const typical = prices[Math.floor(prices.length / 2)];
+    return { floor, typical, count: prices.length };
+  }, [listings]);
 
   // Headline price: current cheapest listing, falling back to the most recent
   // recorded sale so the card always leads with a number.
@@ -214,6 +249,22 @@ export function PriceHistoryCard({ entries, loading, market, canHq, scopeLabel }
                     occupy only the bottom quarter of the plot). */}
                 <YAxis yAxisId="price" hide domain={['auto', 'auto']} />
                 <YAxis yAxisId="vol" hide orientation="right" domain={[0, Math.max(1, stats.maxVolume) * 4]} />
+                {/* Current asks: shade the band from the cheapest offer up to the
+                    typical (median) offer, so it's clear where sellers are pricing
+                    relative to what actually sold. */}
+                {askBand && (
+                  <ReferenceArea
+                    yAxisId="price"
+                    y1={askBand.floor}
+                    y2={Math.max(askBand.typical, askBand.floor)}
+                    fill="#b98cc4"
+                    fillOpacity={0.1}
+                    stroke="#b98cc4"
+                    strokeOpacity={0.35}
+                    strokeDasharray="3 3"
+                    ifOverflow="hidden"
+                  />
+                )}
                 <Tooltip
                   labelFormatter={(ts) => new Date(ts as number).toLocaleDateString('en-GB', { dateStyle: 'medium' })}
                   formatter={(value, name) => {
@@ -236,12 +287,33 @@ export function PriceHistoryCard({ entries, loading, market, canHq, scopeLabel }
                     dot={false} connectNulls isAnimationActive={false}
                   />
                 )}
+                {/* Thin spikes: high price on low volume — flag, don't trust. */}
+                {stats.thinSpikes.length > 0 && (
+                  <Scatter
+                    yAxisId="price" data={stats.thinSpikes} dataKey="price"
+                    fill="#d9534f" shape="diamond" isAnimationActive={false}
+                  />
+                )}
               </ComposedChart>
             </ResponsiveContainer>
           </div>
-          <div className="mt-1 flex items-center gap-1.5 font-mono text-[9px] tracking-widest uppercase text-text-low">
-            <span className="inline-block w-2 h-2" style={{ background: '#6ec5ce', opacity: 0.35 }} />
-            bars = units sold / day
+          <div className="mt-1 flex items-center gap-x-3 gap-y-1 flex-wrap font-mono text-[9px] tracking-widest uppercase text-text-low">
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block w-2 h-2" style={{ background: '#6ec5ce', opacity: 0.4 }} />
+              units sold / day
+            </span>
+            {askBand && (
+              <span className="flex items-center gap-1.5">
+                <span className="inline-block w-2 h-2" style={{ background: '#b98cc4', opacity: 0.5 }} />
+                current asks
+              </span>
+            )}
+            {stats.thinSpikes.length > 0 && (
+              <span className="flex items-center gap-1.5">
+                <span style={{ color: '#d9534f' }}>◆</span>
+                thin spike
+              </span>
+            )}
           </div>
         </>
       ) : (
