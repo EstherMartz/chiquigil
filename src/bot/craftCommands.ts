@@ -269,6 +269,44 @@ function mergeTasks(tasks: CraftTask[]): CraftTask[] {
   return [...map.values()];
 }
 
+/** Build the merged task list for a set of project target items: run buildBreakdown
+ *  for each and merge by (itemId, source). Shared by add-item and list-import. */
+export function buildTasksForProjectItems(
+  projectItems: Array<{ itemId: number; qty: number }>,
+  deps: CraftCommandDeps,
+): CraftTask[] {
+  const { recipes, namesById, vendorMap, specialShop, gatheringCatalog, companyCraft } = deps.snapshots;
+  const market = deps.marketBundle;
+  const raw: CraftTask[] = [];
+  for (const pi of projectItems) {
+    const bd = buildBreakdown(
+      pi.itemId,
+      pi.qty,
+      market,
+      { recipes, namesById, vendorMap, specialShop, gatheringCatalog, companyCraft },
+      { craftIntermediates: true },
+    );
+    raw.push(...bd.crafts, ...bd.acquire);
+  }
+  return mergeTasks(raw);
+}
+
+/** Resolve a list of {name, qty} to item IDs via the name index. Names with no
+ *  fuzzy match are returned in `unmatched`. */
+export function resolveItemsByName(
+  nameIndex: NameIndex,
+  items: Array<{ name: string; qty: number }>,
+): { resolved: Array<{ itemId: number; itemName: string; qty: number }>; unmatched: string[] } {
+  const resolved: Array<{ itemId: number; itemName: string; qty: number }> = [];
+  const unmatched: string[] = [];
+  for (const it of items) {
+    const matches = searchItems(nameIndex, it.name, 1);
+    if (matches.length === 0) { unmatched.push(it.name); continue; }
+    resolved.push({ itemId: matches[0].id, itemName: matches[0].name, qty: it.qty });
+  }
+  return { resolved, unmatched };
+}
+
 /**
  * Handle /craft add-item — add an item to an existing (possibly empty) project
  */
@@ -300,22 +338,7 @@ export async function handleCraftAddItem(
 
   // 4. Load all project items and rebuild merged task list
   const projectItems = await deps.store.getProjectItems(opts.projectId);
-  const { recipes, namesById, vendorMap, specialShop, gatheringCatalog, companyCraft } = deps.snapshots;
-  const market = deps.marketBundle;
-
-  const allRawTasks: CraftTask[] = [];
-  for (const pi of projectItems) {
-    const bd = buildBreakdown(
-      pi.itemId,
-      pi.qty,
-      market,
-      { recipes, namesById, vendorMap, specialShop, gatheringCatalog, companyCraft },
-      { craftIntermediates: true },
-    );
-    allRawTasks.push(...bd.crafts, ...bd.acquire);
-  }
-
-  const mergedTasks = mergeTasks(allRawTasks);
+  const mergedTasks = buildTasksForProjectItems(projectItems, deps);
   if (mergedTasks.length === 0) {
     return { content: S.NO_RECIPE(itemName), flags: 64 };
   }
