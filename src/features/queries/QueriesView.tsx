@@ -14,6 +14,7 @@ import { useRecipes } from '../profit/useRecipes';
 import { useGatheringCatalog } from './useGatheringCatalog';
 import { QueryBuilder } from './QueryBuilder';
 import { QueryResults } from './QueryResults';
+import { useInitialScan } from './useInitialScan';
 import { CraftFlipResults } from './CraftFlipResults';
 import { RepostResults } from './RepostResults';
 import type { QueryFilter, QueryResultRow, CraftFlipRow, RepostRow, PresetCategory } from './types';
@@ -54,49 +55,65 @@ export function QueriesView({ category, heading, onRowsChange, initialPresetId }
   const [activePresetId, setActivePresetId] = useState<string | null>(initialPreset.id);
   const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
 
-  const candidateIds = useMemo(() => {
-    if (!snapshot.data) return [];
-    const catSet = filter.searchCategories.length ? new Set(filter.searchCategories) : null;
-    const gatherSet = isGathering ? gatheringCatalog.data : null;
-    const out: number[] = [];
-    for (const item of snapshot.data.items) {
-      if (hideCrystals && item.sc === CRYSTALS_SEARCH_CATEGORY) continue;
-      if (catSet && !catSet.has(item.sc)) continue;
-      if (filter.hq === 'hq' && !item.canHq) continue;
-      if (gatherSet && !gatherSet.has(item.id)) continue;
-      out.push(item.id);
-    }
-    return out;
-  }, [snapshot.data, filter.searchCategories, filter.hq, isGathering, gatheringCatalog.data, hideCrystals]);
+  const candidateIdsFor = useMemo(() => {
+    return (f: QueryFilter): number[] => {
+      if (!snapshot.data) return [];
+      const catSet = f.searchCategories.length ? new Set(f.searchCategories) : null;
+      const gatherSet = isGathering ? gatheringCatalog.data : null;
+      const out: number[] = [];
+      for (const item of snapshot.data.items) {
+        if (hideCrystals && item.sc === CRYSTALS_SEARCH_CATEGORY) continue;
+        if (catSet && !catSet.has(item.sc)) continue;
+        if (f.hq === 'hq' && !item.canHq) continue;
+        if (gatherSet && !gatherSet.has(item.id)) continue;
+        out.push(item.id);
+      }
+      return out;
+    };
+  }, [snapshot.data, isGathering, gatheringCatalog.data, hideCrystals]);
 
-  const run = useMutation<PriceFetchResult>({
-    mutationFn: async () => {
+  const candidateIds = useMemo(
+    () => candidateIdsFor(filter),
+    [candidateIdsFor, filter],
+  );
+
+  const run = useMutation<PriceFetchResult, Error, QueryFilter | undefined>({
+    mutationFn: async (override?: QueryFilter) => {
       if (!snapshot.data) throw new Error('Item snapshot not ready');
-      const target = filter.scope === 'home' ? world : dc;
-      setProgress({ current: 0, total: candidateIds.length });
+      const f = override ?? filter;
+      const ids = override ? candidateIdsFor(override) : candidateIds;
+      const target = f.scope === 'home' ? world : dc;
+      setProgress({ current: 0, total: ids.length });
       const result = await fetchInBatches<MarketData[string]>(
-        candidateIds,
+        ids,
         async (chunk) => fetchMarketData(target, chunk),
         {
           chunkSize: 25,
           concurrency: 4,
-          onProgress: (done) => setProgress({ current: Math.min(done * 25, candidateIds.length), total: candidateIds.length }),
+          onProgress: (done) => setProgress({ current: Math.min(done * 25, ids.length), total: ids.length }),
         },
       );
-      const narrowedIds = filter.mode === 'craft'
-        ? narrowForCraftFlip(snapshot.data.items, result.data, filter)
+      const narrowedIds = f.mode === 'craft'
+        ? narrowForCraftFlip(snapshot.data.items, result.data, f)
         : [];
       return {
         priceMap: result.data,
-        candidateIds: [...candidateIds],
+        candidateIds: [...ids],
         narrowedIds,
         skipped: result.errors.length,
-        filterAtRun: filter,
+        filterAtRun: f,
       };
     },
   });
 
   const recipes = useRecipes(run.data?.narrowedIds ?? []);
+
+  const ready = snapshot.data != null && catalogReady;
+
+  // Results are stale when the live filter no longer matches the last run.
+  const stale = run.data != null && run.data.filterAtRun !== filter;
+
+  useInitialScan(ready, () => run.mutate(undefined));
 
   const derived = useMemo(() => {
     if (!run.data || !snapshot.data) return null;
@@ -145,6 +162,8 @@ export function QueriesView({ category, heading, onRowsChange, initialPresetId }
     setActivePresetId(id);
     run.reset();
     setProgress(null);
+    // A preset is a curated default — show its results immediately.
+    run.mutate(p.filter);
   }
 
   function onFilterChange(next: QueryFilter) {
@@ -195,8 +214,9 @@ export function QueriesView({ category, heading, onRowsChange, initialPresetId }
           <QueryBuilder
             value={filter}
             onChange={onFilterChange}
-            onRun={() => run.mutate()}
+            onRun={() => run.mutate(undefined)}
             busy={run.isPending || (filter.mode === 'craft' && recipes.isLoading)}
+            stale={stale}
           />
           <div className="font-mono text-[10px] text-text-low">
             {candidateIds.length.toLocaleString()} items in scope

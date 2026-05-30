@@ -15,6 +15,7 @@ import type { Recipe } from '../../lib/recipes';
 import { CRYSTALS_SEARCH_CATEGORY } from '../queries/commonFilters';
 import { Spinner } from '../../components/Spinner';
 import { StatusBanner } from '../../components/StatusBanner';
+import { useInitialScan } from '../queries/useInitialScan';
 
 const REGION = 'Europe';
 const CHUNK_SIZE = 25;
@@ -150,13 +151,18 @@ export function MaterialFlipView() {
     return sorted;
   }, [snapshot.data, run.data, recipes.data, ingFetch.data, world, streamedRows]);
 
+  const ready = snapshot.data != null;
+  const stale = run.data != null && run.data.filterAtRun !== filter;
+
+  useInitialScan(ready, () => { run.reset(); ingFetch.reset(); setProgress(null); run.mutate(); });
+
   function onSortChange(next: MaterialFlipSort) {
     setFilter({ ...filter, sort: next });
   }
 
   return (
     <div className="space-y-4">
-      <FilterBar value={filter} onChange={setFilter} onRun={() => { run.reset(); ingFetch.reset(); setProgress(null); run.mutate(); }} busy={run.isPending} notReady={!snapshot.data} />
+      <FilterBar value={filter} onChange={setFilter} onRun={() => { run.reset(); ingFetch.reset(); setProgress(null); run.mutate(); }} busy={run.isPending} notReady={!snapshot.data} stale={stale} />
 
       <div className="font-mono text-[10px] text-text-low">
         {candidateIds.length.toLocaleString()} candidate items
@@ -232,9 +238,9 @@ function runMaterialFlipForReady(
   return rows;
 }
 
-function FilterBar({ value, onChange, onRun, busy, notReady }: {
+function FilterBar({ value, onChange, onRun, busy, notReady, stale }: {
   value: MaterialFlipFilter; onChange: (f: MaterialFlipFilter) => void;
-  onRun: () => void; busy: boolean; notReady: boolean;
+  onRun: () => void; busy: boolean; notReady: boolean; stale: boolean;
 }) {
   return (
     <div className="flex flex-wrap items-end gap-3 p-3 border border-border-base bg-bg-card">
@@ -269,13 +275,20 @@ function FilterBar({ value, onChange, onRun, busy, notReady }: {
         />
         <span className="font-mono text-[10px] tracking-widest text-text-low uppercase">Include Light DC</span>
       </label>
-      <button
-        onClick={onRun} disabled={busy || notReady}
-        title={notReady ? 'Loading item catalog…' : undefined}
-        className="font-mono text-[10px] tracking-widest uppercase border border-gold text-gold px-4 py-2 hover:bg-gold hover:text-bg-deep disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        {busy ? 'Running…' : 'Run scan'}
-      </button>
+      <div className="flex flex-col items-stretch gap-1">
+        {stale && !busy && (
+          <span className="font-mono text-[10px] tracking-widest uppercase text-gold/80">
+            Filters changed — Run scan to refresh
+          </span>
+        )}
+        <button
+          onClick={onRun} disabled={busy || notReady}
+          title={notReady ? 'Loading item catalog…' : undefined}
+          className="font-mono text-[10px] tracking-widest uppercase border border-gold text-gold px-4 py-2 hover:bg-gold hover:text-bg-deep disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {busy ? 'Running…' : 'Run scan'}
+        </button>
+      </div>
     </div>
   );
 }

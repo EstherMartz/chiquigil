@@ -15,6 +15,7 @@ import { CRYSTALS_SEARCH_CATEGORY } from '../queries/commonFilters';
 import { Spinner, SpinGlyph } from '../../components/Spinner';
 import { StatusBanner } from '../../components/StatusBanner';
 import { EmptyState } from '../../components/EmptyState';
+import { useInitialScan } from '../queries/useInitialScan';
 
 interface RunResult {
   saleMap: MarketData;
@@ -40,31 +41,43 @@ export function CurrencyFlipView() {
   const currency = getCurrencyById(filter.currency)!;
 
   function setCurrency(id: CurrencyId) {
-    setFilter({ ...filter, currency: id });
+    const next = { ...filter, currency: id };
+    setFilter(next);
     setSearchParams((p) => { p.set('currency', id); return p; });
+    run.reset();
+    run.mutate(next);
   }
 
-  const candidateIds = useMemo(() => {
-    if (!snapshot.data || !shop.data) return [];
-    const entries = shop.data.snapshot.byCurrency.get(filter.currency) ?? [];
-    const itemIds = new Set(entries.map((e) => e.itemId));
-    return [...itemIds].filter((id) => {
-      const it = snapshot.data!.items.find((i) => i.id === id);
-      if (!it) return false;
-      if (hideCrystals && it.sc === CRYSTALS_SEARCH_CATEGORY) return false;
-      return true;
-    });
-  }, [snapshot.data, shop.data, filter.currency, hideCrystals]);
+  const candidateIdsFor = useMemo(() => {
+    return (f: CurrencyFlipFilter): number[] => {
+      if (!snapshot.data || !shop.data) return [];
+      const entries = shop.data.snapshot.byCurrency.get(f.currency) ?? [];
+      const itemIds = new Set(entries.map((e) => e.itemId));
+      return [...itemIds].filter((id) => {
+        const it = snapshot.data!.items.find((i) => i.id === id);
+        if (!it) return false;
+        if (hideCrystals && it.sc === CRYSTALS_SEARCH_CATEGORY) return false;
+        return true;
+      });
+    };
+  }, [snapshot.data, shop.data, hideCrystals]);
 
-  const run = useMutation<RunResult>({
-    mutationFn: async () => {
+  const candidateIds = useMemo(
+    () => candidateIdsFor(filter),
+    [candidateIdsFor, filter],
+  );
+
+  const run = useMutation<RunResult, Error, CurrencyFlipFilter | undefined>({
+    mutationFn: async (override?: CurrencyFlipFilter) => {
       if (!snapshot.data || !shop.data) throw new Error('Snapshot not ready');
+      const f = override ?? filter;
+      const ids = override ? candidateIdsFor(override) : candidateIds;
       const sale = await fetchInBatches<MarketData[string]>(
-        candidateIds,
+        ids,
         (chunk) => fetchMarketData(world, chunk),
         { chunkSize: 100, concurrency: 4 },
       );
-      return { saleMap: sale.data, skipped: sale.errors.length, filterAtRun: filter };
+      return { saleMap: sale.data, skipped: sale.errors.length, filterAtRun: f };
     },
   });
 
@@ -72,6 +85,11 @@ export function CurrencyFlipView() {
     if (!snapshot.data || !shop.data || !run.data) return [];
     return runCurrencyFlip(snapshot.data.items, shop.data.snapshot, run.data.saleMap, run.data.filterAtRun);
   }, [snapshot.data, shop.data, run.data]);
+
+  const ready = snapshot.data != null && shop.data != null;
+  const stale = run.data != null && run.data.filterAtRun !== filter;
+
+  useInitialScan(ready, () => { run.reset(); run.mutate(undefined); });
 
   function onSortChange(next: CurrencyFlipSort) {
     setFilter({ ...filter, sort: next });
@@ -82,13 +100,14 @@ export function CurrencyFlipView() {
       <TopStrip
         currencyId={filter.currency}
         onChangeCurrency={setCurrency}
-        onRun={() => { run.reset(); run.mutate(); }}
+        onRun={() => { run.reset(); run.mutate(undefined); }}
         onRefreshCatalog={async () => { await refreshShop(); }}
         busy={run.isPending}
         notReady={!snapshot.data || !shop.data}
+        stale={stale}
       />
 
-      {run.data && (
+      {ready && (
         <FilterBar value={filter} onChange={setFilter} />
       )}
 
@@ -111,8 +130,9 @@ export function CurrencyFlipView() {
       {!run.data && !run.isPending && (
         <EmptyState
           icon="❖"
-          message="Find the best gil return for your earned currency (scrips, poetics, etc.)."
-          action={snapshot.data && shop.data ? { label: 'Run Scan', onClick: () => { run.reset(); run.mutate(); } } : undefined}
+          message={ready
+            ? 'Find the best gil return for your earned currency (scrips, poetics, etc.).'
+            : 'Loading currency catalog…'}
         />
       )}
 
@@ -130,13 +150,14 @@ export function CurrencyFlipView() {
   );
 }
 
-function TopStrip({ currencyId, onChangeCurrency, onRun, onRefreshCatalog, busy, notReady }: {
+function TopStrip({ currencyId, onChangeCurrency, onRun, onRefreshCatalog, busy, notReady, stale }: {
   currencyId: CurrencyId;
   onChangeCurrency: (id: CurrencyId) => void;
   onRun: () => void;
   onRefreshCatalog: () => Promise<void>;
   busy: boolean;
   notReady: boolean;
+  stale: boolean;
 }) {
   return (
     <div className="flex flex-wrap items-end gap-3 p-3 border border-border-base bg-bg-card justify-between">
@@ -168,14 +189,21 @@ function TopStrip({ currencyId, onChangeCurrency, onRun, onRefreshCatalog, busy,
         >
           ⟳ Catalog
         </button>
-        <button
-          type="button"
-          onClick={onRun} disabled={busy || notReady}
-          title={notReady ? 'Loading currency catalog…' : undefined}
-          className="font-mono text-[10px] tracking-widest uppercase bg-gold text-bg-deep px-4 py-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity flex-1 sm:flex-initial"
-        >
-          {busy ? <>Running…<SpinGlyph /></> : 'Run scan'}
-        </button>
+        <div className="flex flex-col items-stretch gap-1 flex-1 sm:flex-initial">
+          {stale && !busy && (
+            <span className="font-mono text-[10px] tracking-widest uppercase text-gold/80 text-right">
+              Filters changed — Run scan to refresh
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={onRun} disabled={busy || notReady}
+            title={notReady ? 'Loading currency catalog…' : undefined}
+            className="font-mono text-[10px] tracking-widest uppercase bg-gold text-bg-deep px-4 py-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+          >
+            {busy ? <>Running…<SpinGlyph /></> : 'Run scan'}
+          </button>
+        </div>
       </div>
     </div>
   );
