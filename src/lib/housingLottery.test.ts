@@ -39,4 +39,24 @@ describe('lotteryStatus', () => {
     expect(s.currentEndsAt).toBe(LOTTERY_ANCHOR_UTC + 5 * DAY);
     expect(s.nextStartsAt).toBe(s.currentEndsAt);
   });
+
+  it('exposes the current cycle dated windows (entry 5d, results 4d, contiguous)', () => {
+    const s = lotteryStatus(LOTTERY_ANCHOR_UTC + 2 * DAY); // mid entry of the first cycle
+    expect(s.entryStart).toBe(LOTTERY_ANCHOR_UTC);
+    expect(s.entryEnd).toBe(LOTTERY_ANCHOR_UTC + 5 * DAY);
+    expect(s.resultsStart).toBe(s.entryEnd);
+    expect(s.resultsEnd).toBe(LOTTERY_ANCHOR_UTC + 9 * DAY);
+  });
+
+  it('windows track the current cycle when in the results phase', () => {
+    const s = lotteryStatus(LOTTERY_ANCHOR_UTC + 7 * DAY); // results of the first cycle
+    expect(s.entryStart).toBe(LOTTERY_ANCHOR_UTC);
+    expect(s.resultsEnd).toBe(LOTTERY_ANCHOR_UTC + 9 * DAY);
+  });
+
+  it('windows advance to the active cycle far in the future', () => {
+    const s = lotteryStatus(LOTTERY_ANCHOR_UTC + 100 * 9 * DAY + 3 * DAY);
+    expect(s.entryStart).toBe(LOTTERY_ANCHOR_UTC + 100 * 9 * DAY);
+    expect(s.resultsEnd).toBe(LOTTERY_ANCHOR_UTC + 101 * 9 * DAY);
+  });
 });

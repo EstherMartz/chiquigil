@@ -15,4 +15,10 @@ describe('LotteryClockBanner', () => {
     render(<LotteryClockBanner now={LOTTERY_ANCHOR_UTC + 6 * DAY} />);
     expect(screen.getByText(/Results period/i)).toBeInTheDocument();
   });
+  it('shows the dated entry and results windows for the current cycle', () => {
+    render(<LotteryClockBanner now={LOTTERY_ANCHOR_UTC + DAY} />);
+    // Anchor is Apr 26 2026; entry Apr 26 – May 1, results May 1 – May 5 (UTC).
+    expect(screen.getByText('Apr 26 – May 1')).toBeInTheDocument();
+    expect(screen.getByText('May 1 – May 5')).toBeInTheDocument();
+  });
 });

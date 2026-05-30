@@ -8,6 +8,12 @@ export interface LotteryStatus {
   nextStartsAt: number;   // === currentEndsAt
   msRemaining: number;
   daysRemaining: number;
+  // Dated windows for the current cycle (epoch ms). entryEnd === resultsStart,
+  // and resultsEnd === the next cycle's entryStart.
+  entryStart: number;
+  entryEnd: number;
+  resultsStart: number;
+  resultsEnd: number;
 }
 
 const DAY_MS = 86_400_000;
@@ -27,6 +33,9 @@ export function lotteryStatus(now: number): LotteryStatus {
   const boundaryDay = phase === 'entry' ? ENTRY_DAYS : CYCLE_DAYS;
   const currentEndsAt = cycleStart + boundaryDay * DAY_MS;
   const msRemaining = currentEndsAt - now;
+  const entryStart = cycleStart;
+  const entryEnd = cycleStart + ENTRY_DAYS * DAY_MS;
+  const resultsEnd = cycleStart + CYCLE_DAYS * DAY_MS;
   return {
     phase,
     dayInCycle,
@@ -35,5 +44,9 @@ export function lotteryStatus(now: number): LotteryStatus {
     nextStartsAt: currentEndsAt,
     msRemaining,
     daysRemaining: Math.ceil(msRemaining / DAY_MS),
+    entryStart,
+    entryEnd,
+    resultsStart: entryEnd,
+    resultsEnd,
   };
 }
