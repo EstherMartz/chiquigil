@@ -1942,6 +1942,22 @@ function mergeTasks(tasks) {
   }
   return [...map.values()];
 }
+function buildTasksForProjectItems(projectItems, deps) {
+  const { recipes, namesById, vendorMap, specialShop, gatheringCatalog, companyCraft } = deps.snapshots;
+  const market = deps.marketBundle;
+  const raw = [];
+  for (const pi of projectItems) {
+    const bd = buildBreakdown(
+      pi.itemId,
+      pi.qty,
+      market,
+      { recipes, namesById, vendorMap, specialShop, gatheringCatalog, companyCraft },
+      { craftIntermediates: true }
+    );
+    raw.push(...bd.crafts, ...bd.acquire);
+  }
+  return mergeTasks(raw);
+}
 async function handleCraftAddItem(opts, guildId, userId, deps) {
   const matches = searchItems(deps.nameIndex, opts.item, 1);
   if (matches.length === 0) {
@@ -1958,20 +1974,7 @@ async function handleCraftAddItem(opts, guildId, userId, deps) {
   }
   await deps.store.addProjectItem(opts.projectId, itemId, itemName, opts.qty);
   const projectItems = await deps.store.getProjectItems(opts.projectId);
-  const { recipes, namesById, vendorMap, specialShop, gatheringCatalog, companyCraft } = deps.snapshots;
-  const market = deps.marketBundle;
-  const allRawTasks = [];
-  for (const pi of projectItems) {
-    const bd = buildBreakdown(
-      pi.itemId,
-      pi.qty,
-      market,
-      { recipes, namesById, vendorMap, specialShop, gatheringCatalog, companyCraft },
-      { craftIntermediates: true }
-    );
-    allRawTasks.push(...bd.crafts, ...bd.acquire);
-  }
-  const mergedTasks = mergeTasks(allRawTasks);
+  const mergedTasks = buildTasksForProjectItems(projectItems, deps);
   if (mergedTasks.length === 0) {
     return { content: NO_RECIPE(itemName), flags: 64 };
   }
