@@ -1,9 +1,19 @@
 export function fmtGil(n: number | null | undefined): string {
   if (n == null) return '—';
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(2).replace(/\.?0+$/, '') + 'M';
-  if (n >= 10_000) return Math.round(n / 1000) + 'k';
-  if (n >= 1000) return (n / 1000).toFixed(1) + 'k';
-  return n.toLocaleString();
+  // Format the magnitude with the scale rules, then reapply the sign. Without
+  // this, negative values fell through every `>=` branch to a raw
+  // `toLocaleString()`, which (a) used the viewer's locale separators — e.g.
+  // es-ES renders -13863.45 as "-13.863,45" — and (b) leaked fractional gil
+  // (a 247.175 gil/day value showed as "247,175", misread as 247k).
+  const sign = n < 0 ? '-' : '';
+  const abs = Math.abs(n);
+  if (abs >= 1_000_000) return sign + (abs / 1_000_000).toFixed(2).replace(/\.?0+$/, '') + 'M';
+  if (abs >= 10_000) return sign + Math.round(abs / 1000) + 'k';
+  if (abs >= 1000) return sign + (abs / 1000).toFixed(1) + 'k';
+  // Gil is a whole-number currency; round derived fractions and pin the locale
+  // so the output never depends on the viewer's regional separators.
+  const rounded = Math.round(abs);
+  return rounded === 0 ? '0' : sign + rounded.toLocaleString('en-US');
 }
 
 export function fmtGilFull(n: number | null | undefined): string {
