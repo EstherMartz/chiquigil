@@ -20,6 +20,7 @@
     "@vercel/functions": "^3.6.0",
     "discord-interactions": "^4.4.0",
     "idb": "^8.0.3",
+    "jose": "^5.10.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^7.15.0",
