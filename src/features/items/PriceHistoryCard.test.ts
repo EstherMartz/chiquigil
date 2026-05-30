@@ -120,6 +120,29 @@ describe('priceHistoryStats', () => {
     expect(stats.points[1].hq).toBe(120);
   });
 
+  it('buckets sales by day with quantity-weighted price and total volume', () => {
+    const day1 = NOW_MS - 2 * 24 * 60 * 60 * 1000;
+    const day2 = NOW_MS - 1 * 24 * 60 * 60 * 1000;
+    const entries: HistoryEntry[] = [
+      // Day 1: NQ 100 x2 and NQ 200 x8 → weighted mean (100*2+200*8)/10 = 180, vol 10
+      { timestamp: Math.floor(day1 / 1000), pricePerUnit: 100, quantity: 2, hq: false },
+      { timestamp: Math.floor((day1 + 5000) / 1000), pricePerUnit: 200, quantity: 8, hq: false },
+      // Day 2: HQ 500 x1, vol 1
+      { timestamp: Math.floor(day2 / 1000), pricePerUnit: 500, quantity: 1, hq: true },
+    ];
+    const stats = priceHistoryStats(entries, 500, 30, NOW_MS);
+    expect(stats.daily).toHaveLength(2);
+    expect(stats.daily[0]).toMatchObject({ priceNQ: 180, priceHQ: null, volume: 10 });
+    expect(stats.daily[1]).toMatchObject({ priceNQ: null, priceHQ: 500, volume: 1 });
+    expect(stats.maxVolume).toBe(10);
+  });
+
+  it('returns empty daily + zero maxVolume when no sales in range', () => {
+    const stats = priceHistoryStats([], 100, 30, NOW_MS);
+    expect(stats.daily).toEqual([]);
+    expect(stats.maxVolume).toBe(0);
+  });
+
   it('returns null deltaPct when oldest price is 0', () => {
     const oneMonthAgo = NOW_MS - 30 * 24 * 60 * 60 * 1000;
     const entries: HistoryEntry[] = [

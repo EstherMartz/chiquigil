@@ -1,19 +1,31 @@
 import { useMemo, useState } from 'react';
 import {
-  AreaChart, Area, XAxis, Tooltip, ResponsiveContainer,
+  ComposedChart, Area, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from 'recharts';
 import type { HistoryEntry } from '../../lib/universalisHistory';
 import type { MarketItem } from '../../lib/universalis';
 import { fmtGil } from '../../lib/format';
 import { Spinner } from '../../components/Spinner';
 
+/** One calendar day: quantity-weighted mean price per quality + total units sold. */
+export interface DailyPoint {
+  ts: number;
+  priceNQ: number | null;
+  priceHQ: number | null;
+  volume: number;
+}
+
 export interface PriceHistoryStats {
   points: Array<{ ts: number; nq: number | null; hq: number | null }>;
+  daily: DailyPoint[];
+  maxVolume: number;
   deltaPct: number | null;
   oldestAgeDays: number;
   salesInRange: number;
   salesIn30d: number;
 }
+
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 export function priceHistoryStats(
   entries: HistoryEntry[],
@@ -21,13 +33,13 @@ export function priceHistoryStats(
   rangeDays: number | null,
   nowMs: number = Date.now(),
 ): PriceHistoryStats {
-  const cutoffMs = nowMs - (rangeDays ?? 90) * 24 * 60 * 60 * 1000;
-  const cutoff30Ms = nowMs - 30 * 24 * 60 * 60 * 1000;
+  const cutoffMs = nowMs - (rangeDays ?? 90) * DAY_MS;
+  const cutoff30Ms = nowMs - 30 * DAY_MS;
 
   const inRange = entries.filter((e) => e.timestamp * 1000 >= cutoffMs);
   const in30d = entries.filter((e) => e.timestamp * 1000 >= cutoff30Ms);
 
-  // Build chart points sorted by timestamp
+  // Per-sale points (kept for callers/tests).
   const points = [...inRange]
     .sort((a, b) => a.timestamp - b.timestamp)
     .map((e) => ({
@@ -35,6 +47,26 @@ export function priceHistoryStats(
       nq: e.hq ? null : e.pricePerUnit,
       hq: e.hq ? e.pricePerUnit : null,
     }));
+
+  // Daily buckets: quantity-weighted mean price (per quality) + units sold/day.
+  const byDay = new Map<number, { nqSum: number; nqQty: number; hqSum: number; hqQty: number; vol: number }>();
+  for (const e of inRange) {
+    const day = Math.floor((e.timestamp * 1000) / DAY_MS) * DAY_MS;
+    const b = byDay.get(day) ?? { nqSum: 0, nqQty: 0, hqSum: 0, hqQty: 0, vol: 0 };
+    if (e.hq) { b.hqSum += e.pricePerUnit * e.quantity; b.hqQty += e.quantity; }
+    else { b.nqSum += e.pricePerUnit * e.quantity; b.nqQty += e.quantity; }
+    b.vol += e.quantity;
+    byDay.set(day, b);
+  }
+  const daily: DailyPoint[] = [...byDay.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([ts, b]) => ({
+      ts,
+      priceNQ: b.nqQty ? Math.round(b.nqSum / b.nqQty) : null,
+      priceHQ: b.hqQty ? Math.round(b.hqSum / b.hqQty) : null,
+      volume: b.vol,
+    }));
+  const maxVolume = daily.reduce((m, d) => Math.max(m, d.volume), 0);
 
   // Compute delta: current vs oldest in range
   let deltaPct: number | null = null;
@@ -44,12 +76,14 @@ export function priceHistoryStats(
     const oldestPrice = oldest.pricePerUnit;
     if (oldestPrice > 0) {
       deltaPct = Math.round(((currentPrice - oldestPrice) / oldestPrice) * 100);
-      oldestAgeDays = Math.floor((nowMs - oldest.timestamp * 1000) / (24 * 60 * 60 * 1000));
+      oldestAgeDays = Math.floor((nowMs - oldest.timestamp * 1000) / DAY_MS);
     }
   }
 
   return {
     points,
+    daily,
+    maxVolume,
     deltaPct,
     oldestAgeDays,
     salesInRange: inRange.length,
@@ -147,62 +181,69 @@ export function PriceHistoryCard({ entries, loading, market, canHq, scopeLabel }
       {/* Range toggle — directly under the headline, above the chart */}
       <div className="mb-2">{Toggle}</div>
 
-      {/* Chart */}
+      {/* Chart: daily price line + daily volume bars (units sold/day) so a
+          price move can be read against the trade volume behind it. */}
       {stats.salesInRange > 0 ? (
-        <div className="mb-3" style={{ height: 140 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={stats.points} margin={{ top: 4, right: 8, bottom: 4, left: 0 }}>
-              <defs>
-                <linearGradient id="areaGradientNQ" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#7fb3d5" stopOpacity={0.15} />
-                  <stop offset="100%" stopColor="#7fb3d5" stopOpacity={0} />
-                </linearGradient>
-                {canHq && (
-                  <linearGradient id="areaGradientHQ" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#e8c547" stopOpacity={0.15} />
-                    <stop offset="100%" stopColor="#e8c547" stopOpacity={0} />
+        <>
+          <div style={{ height: 140 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={stats.daily} margin={{ top: 4, right: 8, bottom: 4, left: 0 }}>
+                <defs>
+                  <linearGradient id="areaGradientNQ" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#7fb3d5" stopOpacity={0.15} />
+                    <stop offset="100%" stopColor="#7fb3d5" stopOpacity={0} />
                   </linearGradient>
-                )}
-              </defs>
-              <XAxis
-                dataKey="ts"
-                type="number"
-                domain={['dataMin', 'dataMax']}
-                tickFormatter={(ts) => new Date(ts as number).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
-                stroke="#666"
-                tick={{ fontSize: 9, fontFamily: 'monospace' }}
-                height={20}
-              />
-              <Tooltip
-                labelFormatter={(ts) => new Date(ts as number).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' })}
-                formatter={(value) => (value != null ? fmtGil(value as number) : null)}
-                contentStyle={{ background: '#111', border: '1px solid #2a2a2a', fontSize: 11 }}
-              />
-              <Area
-                type="monotone"
-                dataKey="nq"
-                stroke="#7fb3d5"
-                fill="url(#areaGradientNQ)"
-                strokeWidth={1.5}
-                dot={false}
-                connectNulls
-                isAnimationActive={false}
-              />
-              {canHq && (
-                <Area
-                  type="monotone"
-                  dataKey="hq"
-                  stroke="#e8c547"
-                  fill="url(#areaGradientHQ)"
-                  strokeWidth={1.5}
-                  dot={false}
-                  connectNulls
-                  isAnimationActive={false}
+                  {canHq && (
+                    <linearGradient id="areaGradientHQ" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#e8c547" stopOpacity={0.15} />
+                      <stop offset="100%" stopColor="#e8c547" stopOpacity={0} />
+                    </linearGradient>
+                  )}
+                </defs>
+                <XAxis
+                  dataKey="ts"
+                  type="number"
+                  scale="time"
+                  domain={['dataMin', 'dataMax']}
+                  tickFormatter={(ts) => new Date(ts as number).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                  stroke="#666"
+                  tick={{ fontSize: 9, fontFamily: 'monospace' }}
+                  height={20}
                 />
-              )}
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
+                {/* Hidden axes: price (left) and volume (right, scaled so bars
+                    occupy only the bottom quarter of the plot). */}
+                <YAxis yAxisId="price" hide domain={['auto', 'auto']} />
+                <YAxis yAxisId="vol" hide orientation="right" domain={[0, Math.max(1, stats.maxVolume) * 4]} />
+                <Tooltip
+                  labelFormatter={(ts) => new Date(ts as number).toLocaleDateString('en-GB', { dateStyle: 'medium' })}
+                  formatter={(value, name) => {
+                    if (value == null) return [null, null] as [null, null];
+                    if (name === 'volume') return [`${value} sold`, 'Volume'];
+                    return [fmtGil(value as number), name === 'priceHQ' ? 'HQ' : 'NQ'];
+                  }}
+                  contentStyle={{ background: '#111', border: '1px solid #2a2a2a', fontSize: 11 }}
+                />
+                <Bar yAxisId="vol" dataKey="volume" fill="#6ec5ce" fillOpacity={0.22} isAnimationActive={false} />
+                <Area
+                  yAxisId="price" type="monotone" dataKey="priceNQ" name="priceNQ"
+                  stroke="#7fb3d5" fill="url(#areaGradientNQ)" strokeWidth={1.5}
+                  dot={false} connectNulls isAnimationActive={false}
+                />
+                {canHq && (
+                  <Area
+                    yAxisId="price" type="monotone" dataKey="priceHQ" name="priceHQ"
+                    stroke="#e8c547" fill="url(#areaGradientHQ)" strokeWidth={1.5}
+                    dot={false} connectNulls isAnimationActive={false}
+                  />
+                )}
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="mt-1 flex items-center gap-1.5 font-mono text-[9px] tracking-widest uppercase text-text-low">
+            <span className="inline-block w-2 h-2" style={{ background: '#6ec5ce', opacity: 0.35 }} />
+            bars = units sold / day
+          </div>
+        </>
       ) : (
         <div className="mb-3 flex items-center justify-center text-text-low text-sm italic" style={{ height: 140 }}>
           No sales in the last {rangeLabel}.
