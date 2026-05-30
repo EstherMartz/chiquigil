@@ -25,8 +25,8 @@ function withProviders(node: React.ReactNode) {
 }
 
 describe('QueriesView', () => {
-  it('fires onRowsChange with an empty array before a query runs', async () => {
-    // Seed snapshot + gathering catalog so the view renders the QueryBuilder.
+  it('auto-runs the default scan and reports rows without a manual click', async () => {
+    // Seed snapshot + gathering catalog so the view becomes ready.
     await putCachedItems([]);
     await putCachedGatheringCatalog([]);
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
@@ -37,7 +37,7 @@ describe('QueriesView', () => {
     const onRowsChange = vi.fn();
     render(withProviders(<QueriesView category="gathering" onRowsChange={onRowsChange} />));
 
-    // When derived is null (before a query runs), the effect fires onRowsChange([]).
+    // Auto-run fires on ready; with an empty snapshot the derived query rows are [].
     await waitFor(() => {
       expect(onRowsChange).toHaveBeenCalledWith([]);
     });
