@@ -30,9 +30,9 @@ const THIRTY_DAYS_SEC = 30 * 24 * 60 * 60;
 const HISTORY_CHUNK = 100;
 const SCAN_STALE_MS = 5 * 60 * 1000; // re-opening a tab within 5 min serves cache
 
-interface ScanResult {
+interface MarketScanResult {
   market: MarketData;
-  history: Map<number, HistoryEntry[]>;
+  ids: number[];
   skipped: number;
 }
 
@@ -74,10 +74,11 @@ export function HousingMarketView() {
 
   const notReady = !items.data || !recipes.data;
 
-  // Per-tab cached scan: auto-runs when the tab (or world/dc/category filter) changes,
-  // and serves cache when switching back within the stale window — no manual button needed.
-  const scan = useQuery<ScanResult>({
-    queryKey: ['housing-scan', tab, world, dc, housingCats.join(','), candidateIds.length],
+  // Two-phase scan: market data first (served from blob cache in-memory, fast),
+  // history second (live Universalis call, slow — non-blocking so Momentum just
+  // shows "—" if it fails or is still loading rather than blocking the whole table).
+  const marketScan = useQuery<MarketScanResult>({
+    queryKey: ['housing-market', tab, world, dc, housingCats.join(','), candidateIds.length],
     enabled: !notReady,
     staleTime: SCAN_STALE_MS,
     queryFn: async () => {
@@ -85,8 +86,19 @@ export function HousingMarketView() {
       const market = await fetchInBatches<MarketItem>(
         ids, (chunk) => fetchMarketData(world, chunk), { chunkSize: 100, concurrency: 4 },
       );
+      return { market: market.data, ids, skipped: market.errors.length };
+    },
+  });
+
+  const historyScan = useQuery<Map<number, HistoryEntry[]>>({
+    queryKey: ['housing-history', tab, world, dc, housingCats.join(','), candidateIds.length],
+    enabled: marketScan.data != null,
+    staleTime: SCAN_STALE_MS,
+    retry: false,  // don't retry if Universalis history is down — show "—" instead
+    queryFn: async () => {
+      const { market, ids } = marketScan.data!;
       const topIds = [...ids]
-        .sort((a, b) => (market.data[String(b)]?.velocity ?? 0) - (market.data[String(a)]?.velocity ?? 0))
+        .sort((a, b) => (market[String(b)]?.velocity ?? 0) - (market[String(a)]?.velocity ?? 0))
         .slice(0, TOP_N_HISTORY);
       const history = new Map<number, HistoryEntry[]>();
       for (let i = 0; i < topIds.length; i += HISTORY_CHUNK) {
@@ -94,22 +106,23 @@ export function HousingMarketView() {
         const got = await fetchHistoryWithin(dc, chunk, THIRTY_DAYS_SEC);
         for (const [id, entries] of got) history.set(id, entries);
       }
-      return { market: market.data, history, skipped: market.errors.length };
+      return history;
     },
   });
 
   const rows = useMemo<HousingRow[]>(() => {
-    if (!items.data || !recipes.data || !scan.data) return [];
-    const built = candidateIds.slice(0, MAX_CANDIDATES).flatMap((id) => {
+    if (!items.data || !recipes.data || !marketScan.data) return [];
+    const history = historyScan.data ?? new Map<number, HistoryEntry[]>();
+    const built = marketScan.data.ids.flatMap((id) => {
       const item = itemById.get(id);
       if (!item) return [];
-      const market = scan.data!.market[String(id)];
+      const market = marketScan.data!.market[String(id)];
       const recipe = recipes.data!.get(id);
-      const materialCost = recipe ? housingMaterialCost(recipe, scan.data!.market) : 0;
-      return [buildHousingRow({ item, market, recipe, materialCost, history: scan.data!.history.get(id), now })];
+      const materialCost = recipe ? housingMaterialCost(recipe, marketScan.data!.market) : 0;
+      return [buildHousingRow({ item, market, recipe, materialCost, history: history.get(id), now })];
     });
     return sortHousingRows(built, sortKey);
-  }, [items.data, recipes.data, scan.data, candidateIds, itemById, sortKey, now]);
+  }, [items.data, recipes.data, marketScan.data, historyScan.data, itemById, sortKey, now]);
 
   return (
     <div className="space-y-4">
@@ -127,12 +140,12 @@ export function HousingMarketView() {
         ))}
         <button
           type="button"
-          onClick={() => { void scan.refetch(); }}
-          disabled={scan.isFetching || notReady}
+          onClick={() => { void marketScan.refetch(); void historyScan.refetch(); }}
+          disabled={marketScan.isFetching || notReady}
           title="Re-fetch prices & recent sales for this tab"
           className="font-mono text-[10px] tracking-widest uppercase border border-border-base text-text-dim px-3 py-2 hover:text-aether disabled:opacity-50 sm:ml-auto"
         >
-          {scan.isFetching ? <>Refreshing…<SpinGlyph /></> : '⟳ Refresh'}
+          {marketScan.isFetching ? <>Refreshing…<SpinGlyph /></> : '⟳ Refresh'}
         </button>
       </div>
 
@@ -152,14 +165,20 @@ export function HousingMarketView() {
         {candidateIds.length > MAX_CANDIDATES && <span className="text-gold"> · showing first {MAX_CANDIDATES} — narrow with the filter</span>}
       </div>
 
-      {scan.isLoading && <Spinner label="Fetching prices & recent sales…" />}
-      {scan.isError && <StatusBanner kind="error">Universalis fetch failed: {(scan.error as Error).message}</StatusBanner>}
+      {marketScan.isLoading && <Spinner label="Fetching prices…" />}
+      {marketScan.isError && <StatusBanner kind="error">Universalis fetch failed: {(marketScan.error as Error).message}</StatusBanner>}
+      {historyScan.isFetching && marketScan.data && (
+        <p className="font-mono text-[10px] text-text-low">Loading momentum data…</p>
+      )}
+      {historyScan.isError && (
+        <StatusBanner kind="error">Momentum data unavailable (Universalis history timed out) — all other columns are unaffected.</StatusBanner>
+      )}
 
-      {scan.data && (
+      {marketScan.data && (
         <ResultTableScaffold<HousingRow>
           rows={rows}
           totalCandidates={Math.min(candidateIds.length, MAX_CANDIDATES)}
-          skippedChunks={scan.data.skipped}
+          skippedChunks={marketScan.data.skipped}
           emptyState={<EmptyResults>No housing items matched. Try another tab or refresh.</EmptyResults>}
           renderTable={(visible) => (
             <table className="w-full text-sm">
