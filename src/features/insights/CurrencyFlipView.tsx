@@ -45,30 +45,39 @@ export function CurrencyFlipView() {
     setFilter(next);
     setSearchParams((p) => { p.set('currency', id); return p; });
     run.reset();
-    run.mutate();
+    run.mutate(next);
   }
 
-  const candidateIds = useMemo(() => {
-    if (!snapshot.data || !shop.data) return [];
-    const entries = shop.data.snapshot.byCurrency.get(filter.currency) ?? [];
-    const itemIds = new Set(entries.map((e) => e.itemId));
-    return [...itemIds].filter((id) => {
-      const it = snapshot.data!.items.find((i) => i.id === id);
-      if (!it) return false;
-      if (hideCrystals && it.sc === CRYSTALS_SEARCH_CATEGORY) return false;
-      return true;
-    });
-  }, [snapshot.data, shop.data, filter.currency, hideCrystals]);
+  const candidateIdsFor = useMemo(() => {
+    return (f: CurrencyFlipFilter): number[] => {
+      if (!snapshot.data || !shop.data) return [];
+      const entries = shop.data.snapshot.byCurrency.get(f.currency) ?? [];
+      const itemIds = new Set(entries.map((e) => e.itemId));
+      return [...itemIds].filter((id) => {
+        const it = snapshot.data!.items.find((i) => i.id === id);
+        if (!it) return false;
+        if (hideCrystals && it.sc === CRYSTALS_SEARCH_CATEGORY) return false;
+        return true;
+      });
+    };
+  }, [snapshot.data, shop.data, hideCrystals]);
 
-  const run = useMutation<RunResult>({
-    mutationFn: async () => {
+  const candidateIds = useMemo(
+    () => candidateIdsFor(filter),
+    [candidateIdsFor, filter],
+  );
+
+  const run = useMutation<RunResult, Error, CurrencyFlipFilter | undefined>({
+    mutationFn: async (override?: CurrencyFlipFilter) => {
       if (!snapshot.data || !shop.data) throw new Error('Snapshot not ready');
+      const f = override ?? filter;
+      const ids = override ? candidateIdsFor(override) : candidateIds;
       const sale = await fetchInBatches<MarketData[string]>(
-        candidateIds,
+        ids,
         (chunk) => fetchMarketData(world, chunk),
         { chunkSize: 100, concurrency: 4 },
       );
-      return { saleMap: sale.data, skipped: sale.errors.length, filterAtRun: filter };
+      return { saleMap: sale.data, skipped: sale.errors.length, filterAtRun: f };
     },
   });
 
@@ -80,7 +89,7 @@ export function CurrencyFlipView() {
   const ready = snapshot.data != null && shop.data != null;
   const stale = run.data != null && run.data.filterAtRun !== filter;
 
-  useInitialScan(ready, () => { run.reset(); run.mutate(); });
+  useInitialScan(ready, () => { run.reset(); run.mutate(undefined); });
 
   function onSortChange(next: CurrencyFlipSort) {
     setFilter({ ...filter, sort: next });
@@ -91,7 +100,7 @@ export function CurrencyFlipView() {
       <TopStrip
         currencyId={filter.currency}
         onChangeCurrency={setCurrency}
-        onRun={() => { run.reset(); run.mutate(); }}
+        onRun={() => { run.reset(); run.mutate(undefined); }}
         onRefreshCatalog={async () => { await refreshShop(); }}
         busy={run.isPending}
         notReady={!snapshot.data || !shop.data}
