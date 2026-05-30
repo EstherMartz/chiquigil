@@ -24,6 +24,17 @@ export interface MarketItem {
 
 export type MarketData = Record<string, MarketItem>;
 
+/**
+ * How many listings the bot fetches per item. Universalis only counts the
+ * listings it returns (`listingsCount` is capped by this), so this is also the
+ * ceiling on the "true" listing count we can show — items at/above it read as
+ * "{cap}+". We keep only the cheapest few rows in the cache; the bump is just
+ * so the count is accurate.
+ */
+export const LISTINGS_CAP = 50;
+/** Listing rows actually kept in the cache (cheapest-first, for the cross-world view). */
+const LISTINGS_KEPT = 10;
+
 interface RawListing { hq: boolean; pricePerUnit: number; worldName?: string }
 interface RawHistory { hq: boolean; pricePerUnit: number }
 interface RawItem {
@@ -33,6 +44,7 @@ interface RawItem {
   lastUploadTime?: number;
   averagePriceNQ?: number;
   averagePriceHQ?: number;
+  listingsCount?: number;
 }
 interface RawResponse {
   items?: Record<string, RawItem>;
@@ -82,8 +94,12 @@ export function parseMarketResponse(raw: RawResponse): MarketData {
       recentSalesHQ: hqHist.length,
       velocity: item.regularSaleVelocity ?? 0,
       lastUploadTime: item.lastUploadTime ?? 0,
-      listingCount: listings.length,
-      worldListings: listings.map((l) => ({
+      // True total listings (Universalis' count, capped at the fetch cap), not
+      // just the rows we keep. Falls back to the row count if absent.
+      listingCount: item.listingsCount ?? listings.length,
+      // Keep only the cheapest rows (API returns cheapest-first) so the cache
+      // stays small even when many listings are fetched for the count.
+      worldListings: listings.slice(0, LISTINGS_KEPT).map((l) => ({
         world: l.worldName ?? '',
         price: l.pricePerUnit,
         hq: l.hq,

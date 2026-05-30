@@ -65,6 +65,32 @@ describe('parseMarketResponse', () => {
     });
   });
 
+  it('uses the true listingsCount and keeps only the cheapest 10 rows', () => {
+    const listings = Array.from({ length: 14 }, (_, i) => ({
+      hq: false, pricePerUnit: 100 + i, worldName: 'Phantom',
+    }));
+    const raw = {
+      items: {
+        '300': {
+          listings,
+          recentHistory: [],
+          regularSaleVelocity: 1,
+          lastUploadTime: 0,
+          listingsCount: 47, // true total (capped at the fetch cap)
+        },
+      },
+    };
+    const out = parseMarketResponse(raw);
+    expect(out['300'].listingCount).toBe(47);          // true total, not 14 or 10
+    expect(out['300'].worldListings).toHaveLength(10);  // only cheapest rows kept
+    expect(out['300'].minNQ).toBe(100);                 // min still over all rows
+  });
+
+  it('falls back to the row count when listingsCount is absent', () => {
+    const raw = { items: { '301': { listings: [{ hq: false, pricePerUnit: 5, worldName: 'Phantom' }], recentHistory: [], regularSaleVelocity: 0, lastUploadTime: 0 } } };
+    expect(parseMarketResponse(raw)['301'].listingCount).toBe(1);
+  });
+
   it('returns null prices when no matching listings', () => {
     const out = parseMarketResponse({ items: { '7': { listings: [], recentHistory: [], regularSaleVelocity: 0, lastUploadTime: 0 } } });
     expect(out['7']).toEqual({

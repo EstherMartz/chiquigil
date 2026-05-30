@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import type { HistoryEntry } from '../../lib/universalisHistory';
-import type { MarketItem } from '../../lib/universalis';
+import { LISTINGS_CAP, type MarketItem } from '../../lib/universalis';
 
 interface Props {
   /** Market item for the active scope (home world, or DC if home is quiet). */
@@ -80,7 +80,11 @@ export function ActivityCard({ primary, compare, compareLabel, entries, loading 
           label="Velocity"
           sub={stats.compareVelocity > 0 ? `vs ${stats.compareVelocity.toFixed(1)}/day on ${compareLabel}` : undefined}
         />
-        <Stat value={String(stats.listings)} label="Listings" sub={listingsNote} />
+        <Stat
+          value={stats.listings >= LISTINGS_CAP ? `${stats.listings}+` : String(stats.listings)}
+          label="Listings"
+          sub={listingsNote}
+        />
       </div>
     </div>
   );
