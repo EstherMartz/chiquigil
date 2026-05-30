@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useSettingsStore } from '../settings/store';
 import { useItemSnapshot } from '../queries/useItemSnapshot';
 import { useRecipeSnapshot } from '../queries/useRecipeSnapshot';
@@ -13,7 +13,7 @@ import { buildHousingRow, housingMaterialCost, sortHousingRows, type HousingRow,
 import { ResultTableScaffold, EmptyResults } from '../queries/ResultTableScaffold';
 import { ItemNameLinks } from '../../components/ItemNameLinks';
 import { CategorySelect } from '../../components/CategorySelect';
-import { Spinner } from '../../components/Spinner';
+import { Spinner, SpinGlyph } from '../../components/Spinner';
 import { StatusBanner } from '../../components/StatusBanner';
 import { fmtGil } from '../../lib/format';
 
@@ -28,6 +28,7 @@ const MAX_CANDIDATES = 400;
 const TOP_N_HISTORY = 100;
 const THIRTY_DAYS_SEC = 30 * 24 * 60 * 60;
 const HISTORY_CHUNK = 100;
+const SCAN_STALE_MS = 5 * 60 * 1000; // re-opening a tab within 5 min serves cache
 
 interface ScanResult {
   market: MarketData;
@@ -41,7 +42,13 @@ export function HousingMarketView() {
   const recipes = useRecipeSnapshot();
   const [tab, setTab] = useState<Tab>('furnishings');
   const [housingCats, setHousingCats] = useState<number[]>([]);
+  const [sortKey, setSortKey] = useState<HousingSortKey>('craftGilPerDay');
   const now = Date.now();
+
+  function selectTab(next: Tab) {
+    setTab(next);
+    setSortKey(TABS.find((t) => t.id === next)!.sort);
+  }
 
   const itemById = useMemo(() => {
     if (!items.data) return new Map<number, SnapshotItem>();
@@ -58,7 +65,6 @@ export function HousingMarketView() {
     // tab === 'all'
     const all = allHousingCandidates(items.data.items);
     if (housingCats.length === 0) return all;
-    // Filter by selected housing categories
     const catSet = new Set(housingCats);
     return all.filter((id) => {
       const item = itemById.get(id);
@@ -66,9 +72,15 @@ export function HousingMarketView() {
     });
   }, [items.data, recipes.data, tab, housingCats, itemById]);
 
-  const run = useMutation<ScanResult>({
-    mutationFn: async () => {
-      if (!items.data || !recipes.data) throw new Error('Snapshot not ready');
+  const notReady = !items.data || !recipes.data;
+
+  // Per-tab cached scan: auto-runs when the tab (or world/dc/category filter) changes,
+  // and serves cache when switching back within the stale window — no manual button needed.
+  const scan = useQuery<ScanResult>({
+    queryKey: ['housing-scan', tab, world, dc, housingCats.join(','), candidateIds.length],
+    enabled: !notReady,
+    staleTime: SCAN_STALE_MS,
+    queryFn: async () => {
       const ids = candidateIds.slice(0, MAX_CANDIDATES);
       const market = await fetchInBatches<MarketItem>(
         ids, (chunk) => fetchMarketData(world, chunk), { chunkSize: 100, concurrency: 4 },
@@ -87,20 +99,17 @@ export function HousingMarketView() {
   });
 
   const rows = useMemo<HousingRow[]>(() => {
-    if (!items.data || !recipes.data || !run.data) return [];
-    const sortKey = TABS.find((t) => t.id === tab)!.sort;
+    if (!items.data || !recipes.data || !scan.data) return [];
     const built = candidateIds.slice(0, MAX_CANDIDATES).flatMap((id) => {
       const item = itemById.get(id);
       if (!item) return [];
-      const market = run.data!.market[String(id)];
+      const market = scan.data!.market[String(id)];
       const recipe = recipes.data!.get(id);
-      const materialCost = recipe ? housingMaterialCost(recipe, run.data!.market) : 0;
-      return [buildHousingRow({ item, market, recipe, materialCost, history: run.data!.history.get(id), now })];
+      const materialCost = recipe ? housingMaterialCost(recipe, scan.data!.market) : 0;
+      return [buildHousingRow({ item, market, recipe, materialCost, history: scan.data!.history.get(id), now })];
     });
     return sortHousingRows(built, sortKey);
-  }, [items.data, recipes.data, run.data, candidateIds, itemById, tab, now]);
-
-  const notReady = !items.data || !recipes.data;
+  }, [items.data, recipes.data, scan.data, candidateIds, itemById, sortKey, now]);
 
   return (
     <div className="space-y-4">
@@ -108,7 +117,7 @@ export function HousingMarketView() {
         {TABS.map((t) => (
           <button
             key={t.id} type="button"
-            onClick={() => { setTab(t.id); run.reset(); }}
+            onClick={() => selectTab(t.id)}
             className={`font-mono text-[10px] tracking-widest uppercase px-3 py-2 border ${
               tab === t.id ? 'border-gold text-gold' : 'border-border-base text-text-dim hover:text-aether'
             }`}
@@ -118,11 +127,12 @@ export function HousingMarketView() {
         ))}
         <button
           type="button"
-          onClick={() => { run.reset(); run.mutate(); }}
-          disabled={run.isPending || notReady}
-          className="font-mono text-[10px] tracking-widest uppercase bg-gold text-bg-deep px-4 py-2 hover:opacity-90 disabled:opacity-50 sm:ml-auto"
+          onClick={() => { void scan.refetch(); }}
+          disabled={scan.isFetching || notReady}
+          title="Re-fetch prices & recent sales for this tab"
+          className="font-mono text-[10px] tracking-widest uppercase border border-border-base text-text-dim px-3 py-2 hover:text-aether disabled:opacity-50 sm:ml-auto"
         >
-          {run.isPending ? 'Scanning…' : 'Scan prices'}
+          {scan.isFetching ? <>Refreshing…<SpinGlyph /></> : '⟳ Refresh'}
         </button>
       </div>
 
@@ -142,25 +152,25 @@ export function HousingMarketView() {
         {candidateIds.length > MAX_CANDIDATES && <span className="text-gold"> · showing first {MAX_CANDIDATES} — narrow with the filter</span>}
       </div>
 
-      {run.isPending && <Spinner label="Fetching prices & recent sales…" />}
-      {run.isError && <StatusBanner kind="error">Universalis fetch failed: {(run.error as Error).message}</StatusBanner>}
+      {scan.isLoading && <Spinner label="Fetching prices & recent sales…" />}
+      {scan.isError && <StatusBanner kind="error">Universalis fetch failed: {(scan.error as Error).message}</StatusBanner>}
 
-      {run.data && (
+      {scan.data && (
         <ResultTableScaffold<HousingRow>
           rows={rows}
           totalCandidates={Math.min(candidateIds.length, MAX_CANDIDATES)}
-          skippedChunks={run.data.skipped}
-          emptyState={<EmptyResults>No housing items matched. Try another tab or scan again.</EmptyResults>}
+          skippedChunks={scan.data.skipped}
+          emptyState={<EmptyResults>No housing items matched. Try another tab or refresh.</EmptyResults>}
           renderTable={(visible) => (
             <table className="w-full text-sm">
               <thead>
                 <tr className="font-mono text-[10px] tracking-widest uppercase text-text-low text-left border-b border-border-base">
                   <th className="px-3 py-2">Item</th>
-                  <th className="px-3 py-2 text-right">Price</th>
-                  <th className="px-3 py-2 text-right">Sales/day</th>
-                  <th className="px-3 py-2 text-right">Momentum</th>
-                  <th className="px-3 py-2 text-right">Craft margin</th>
-                  <th className="px-3 py-2 text-right">Gil/day</th>
+                  <SortableHeader active={sortKey === 'price'} onClick={() => setSortKey('price')}>Price</SortableHeader>
+                  <SortableHeader active={sortKey === 'velocity'} onClick={() => setSortKey('velocity')}>Sales/day</SortableHeader>
+                  <SortableHeader active={sortKey === 'momentumPct'} onClick={() => setSortKey('momentumPct')}>Momentum</SortableHeader>
+                  <SortableHeader active={sortKey === 'craftMargin'} onClick={() => setSortKey('craftMargin')}>Craft margin</SortableHeader>
+                  <SortableHeader active={sortKey === 'craftGilPerDay'} onClick={() => setSortKey('craftGilPerDay')}>Gil/day</SortableHeader>
                 </tr>
               </thead>
               <tbody>
@@ -181,10 +191,22 @@ export function HousingMarketView() {
           )}
         />
       )}
-
-      {!run.data && !run.isPending && (
-        <EmptyResults>Pick a tab and hit "Scan prices" to rank housing items by craft opportunity and recent momentum.</EmptyResults>
-      )}
     </div>
+  );
+}
+
+function SortableHeader({ active, onClick, children }: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <th
+      className={`px-3 py-2 cursor-pointer select-none text-right ${active ? 'text-gold' : 'text-text-dim hover:text-aether'}`}
+      onClick={onClick}
+      aria-sort={active ? 'descending' : 'none'}
+    >
+      {children}{active ? ' ▼' : ''}
+    </th>
   );
 }
