@@ -845,7 +845,7 @@ git commit -m "build(auth): bundle and configure the /api/auth/* functions"
 
 - [ ] **Step 1: Write the failing test (append)**
 
-Append to `src/api/projects.test.ts`:
+Append to `src/api/projects.test.ts`. This reuses the file's existing helpers (`mockRes`, the `store` seeded by the top-level `beforeEach`, `seedProject`, and `GUILD_ALLOWLIST='G1'`); the only new setup is `AUTH_SESSION_SECRET`:
 ```ts
 import { signSession, SESSION_COOKIE } from './_auth';
 
@@ -853,25 +853,22 @@ describe('projects API auth gate', () => {
   beforeEach(() => { process.env.AUTH_SESSION_SECRET = 'test-secret-test-secret-test-secret-123'; });
 
   it('returns 401 when there is no session cookie', async () => {
-    const req = { method: 'GET', url: '/api/projects', query: { guild: '123' }, headers: {} } as unknown as VercelRequest;
-    const res = makeRes();
-    process.env.GUILD_ALLOWLIST = '123';
+    const req = { method: 'GET', url: '/api/projects?guild=G1', query: { guild: 'G1' }, headers: {} } as any;
+    const res = mockRes();
     await handler(req, res);
-    expect(res.statusCode).toBe(401);
+    expect(res.status).toHaveBeenCalledWith(401);
   });
 
-  it('proceeds past the gate with a valid session cookie', async () => {
-    const token = await signSession({ sub: '1', username: 'E', avatar: null, guilds: ['123'] });
+  it('proceeds past the gate (200) with a valid session cookie', async () => {
+    await seedProject(store);
+    const token = await signSession({ sub: '1', username: 'E', avatar: null, guilds: ['G1'] });
     const req = {
-      method: 'GET', url: '/api/projects', query: { guild: '123' },
+      method: 'GET', url: '/api/projects?guild=G1', query: { guild: 'G1' },
       headers: { cookie: `${SESSION_COOKIE}=${token}` },
-    } as unknown as VercelRequest;
-    const res = makeRes();
-    (globalThis as any).__testCraftStore = { listOpenProjects: async () => [] } as unknown as CraftStore;
-    process.env.GUILD_ALLOWLIST = '123';
-    process.env.DISCORD_BOT_TOKEN = '';
+    } as any;
+    const res = mockRes();
     await handler(req, res);
-    expect(res.statusCode).toBe(200);
+    expect(res.status).toHaveBeenCalledWith(200);
   });
 });
 ```
