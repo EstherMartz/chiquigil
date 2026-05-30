@@ -29,7 +29,11 @@
     },
     "api/plugin-cleanup.mjs": {
       "maxDuration": 60
-    }
+    },
+    "api/auth/login.mjs": { "maxDuration": 10 },
+    "api/auth/callback.mjs": { "maxDuration": 15 },
+    "api/auth/me.mjs": { "maxDuration": 10 },
+    "api/auth/logout.mjs": { "maxDuration": 10 }
   },
   "rewrites": [
     { "source": "/api/projects/:id", "destination": "/api/projects" },
