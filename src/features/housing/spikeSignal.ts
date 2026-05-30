@@ -18,6 +18,28 @@ export interface HousingRow {
 export type HousingSortKey = 'momentumPct' | 'craftGilPerDay' | 'craftMargin' | 'velocity' | 'price';
 
 /**
+ * Unique recipe-ingredient item ids for the given craftable items.
+ *
+ * The market scan only fetches prices for the candidate furnishings, but
+ * housingMaterialCost needs prices for their *ingredients* (which are not
+ * furnishings and so are never in the candidate set). Without fetching these,
+ * every material cost — and therefore every craft margin / gil-per-day — comes
+ * back null. Returns the ingredient ids so the scan can fetch them too.
+ */
+export function collectRecipeIngredientIds(
+  itemIds: number[],
+  recipes: Map<number, Recipe | null>,
+): number[] {
+  const out = new Set<number>();
+  for (const id of itemIds) {
+    const recipe = recipes.get(id);
+    if (!recipe) continue;
+    for (const ing of recipe.ingredients) out.add(ing.itemId);
+  }
+  return [...out];
+}
+
+/**
  * Total lowest-listing cost of a recipe's ingredients.
  *
  * Returns `null` if any ingredient has no usable market price (missing from the

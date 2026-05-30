@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildHousingRow, housingMaterialCost, sortHousingRows, type HousingRow } from './spikeSignal';
+import { buildHousingRow, housingMaterialCost, collectRecipeIngredientIds, sortHousingRows, type HousingRow } from './spikeSignal';
 import type { SnapshotItem } from '../../lib/itemSnapshot';
 import type { MarketItem, MarketData } from '../../lib/universalis';
 import type { Recipe } from '../../lib/recipes';
@@ -44,6 +44,25 @@ describe('housingMaterialCost', () => {
   it('returns 0 for a recipe with no ingredients (nothing to buy)', () => {
     const empty = { ...recipe, ingredients: [] } as Recipe;
     expect(housingMaterialCost(empty, {})).toBe(0);
+  });
+});
+
+describe('collectRecipeIngredientIds', () => {
+  const recipes = new Map<number, Recipe | null>([
+    [1, recipe],         // ingredient 10
+    [2, twoIngRecipe],   // ingredients 10, 11
+    [3, null],           // not craftable
+  ]);
+  it('returns the unique ingredient ids across the given craftable items', () => {
+    expect(collectRecipeIngredientIds([1, 2], recipes).sort((a, b) => a - b)).toEqual([10, 11]);
+  });
+  it('skips items with no recipe and ignores ids absent from the map', () => {
+    expect(collectRecipeIngredientIds([3, 999], recipes)).toEqual([]);
+  });
+  it('does not include the craftable items themselves, only their ingredients', () => {
+    const ids = collectRecipeIngredientIds([1], recipes);
+    expect(ids).toEqual([10]);
+    expect(ids).not.toContain(1);
   });
 });
 

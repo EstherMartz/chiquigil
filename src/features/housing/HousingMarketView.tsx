@@ -8,7 +8,7 @@ import type { SnapshotItem } from '../../lib/itemSnapshot';
 import { fetchMarketData, type MarketData, type MarketItem } from '../../lib/universalis';
 import { furnishingCandidates, materialCandidates, allHousingCandidates, housingCategoryIds } from '../../lib/housingItems';
 import { categoryLabel } from '../../lib/itemSearchCategories';
-import { buildHousingRow, housingMaterialCost, sortHousingRows, type HousingRow, type HousingSortKey } from './spikeSignal';
+import { buildHousingRow, housingMaterialCost, collectRecipeIngredientIds, sortHousingRows, type HousingRow, type HousingSortKey } from './spikeSignal';
 import { ResultTableScaffold, EmptyResults } from '../queries/ResultTableScaffold';
 import { ItemNameLinks } from '../../components/ItemNameLinks';
 import { CategorySelect } from '../../components/CategorySelect';
@@ -79,8 +79,13 @@ export function HousingMarketView() {
     staleTime: SCAN_STALE_MS,
     queryFn: async () => {
       const ids = candidateIds.slice(0, MAX_CANDIDATES);
+      // Also fetch prices for each candidate's recipe ingredients — they aren't
+      // furnishings, so they're absent from `ids`, and without them
+      // housingMaterialCost can't price any recipe (every craft margin null).
+      const ingredientIds = recipes.data ? collectRecipeIngredientIds(ids, recipes.data) : [];
+      const fetchIds = [...new Set([...ids, ...ingredientIds])];
       const market = await fetchInBatches<MarketItem>(
-        ids, (chunk) => fetchMarketData(world, chunk), { chunkSize: 100, concurrency: 4 },
+        fetchIds, (chunk) => fetchMarketData(world, chunk), { chunkSize: 100, concurrency: 4 },
       );
       return { market: market.data, ids, skipped: market.errors.length };
     },
