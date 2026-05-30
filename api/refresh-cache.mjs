@@ -15,6 +15,8 @@ function trimmedMedian(prices) {
 }
 
 // src/lib/universalis.ts
+var LISTINGS_CAP = 50;
+var LISTINGS_KEPT = 10;
 function minPrice(arr, hq) {
   const v = arr.filter((l) => l.hq === hq).map((l) => l.pricePerUnit);
   return v.length ? Math.min(...v) : null;
@@ -43,8 +45,12 @@ function parseMarketResponse(raw) {
       recentSalesHQ: hqHist.length,
       velocity: item.regularSaleVelocity ?? 0,
       lastUploadTime: item.lastUploadTime ?? 0,
-      listingCount: listings.length,
-      worldListings: listings.map((l) => ({
+      // True total listings (Universalis' count, capped at the fetch cap), not
+      // just the rows we keep. Falls back to the row count if absent.
+      listingCount: item.listingsCount ?? listings.length,
+      // Keep only the cheapest rows (API returns cheapest-first) so the cache
+      // stays small even when many listings are fetched for the count.
+      worldListings: listings.slice(0, LISTINGS_KEPT).map((l) => ({
         world: l.worldName ?? "",
         price: l.pricePerUnit,
         hq: l.hq
@@ -60,7 +66,7 @@ function parseMarketResponse(raw) {
 var BATCH_SIZE = 100;
 var MAX_CONCURRENT = 8;
 async function fetchBatch(scope, ids) {
-  const url = `https://universalis.app/api/v2/${scope}/${ids.join(",")}?listings=10&entries=15`;
+  const url = `https://universalis.app/api/v2/${scope}/${ids.join(",")}?listings=${LISTINGS_CAP}&entries=15`;
   let res = await fetch(url);
   if (!res.ok) {
     await new Promise((r) => setTimeout(r, 400));
