@@ -42,6 +42,6 @@
     { "source": "/api/plugin/craft-breakdown", "destination": "/api/plugin-craft-breakdown" },
     { "source": "/api/plugin/trading/query", "destination": "/api/plugin-trading-query" },
     { "source": "/api/plugin/cleanup", "destination": "/api/plugin-cleanup" },
-    { "source": "/(.*)", "destination": "/" }
+    { "source": "/((?!api/|@|src/|node_modules/|.*\\.).*)", "destination": "/" }
   ]
 }
