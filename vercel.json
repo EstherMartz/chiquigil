@@ -30,13 +30,11 @@
     "api/plugin-cleanup.mjs": {
       "maxDuration": 60
     },
-    "api/auth/login.mjs": { "maxDuration": 10 },
-    "api/auth/callback.mjs": { "maxDuration": 15 },
-    "api/auth/me.mjs": { "maxDuration": 10 },
-    "api/auth/logout.mjs": { "maxDuration": 10 }
+    "api/auth.mjs": { "maxDuration": 15 }
   },
   "rewrites": [
     { "source": "/api/projects/:id", "destination": "/api/projects" },
+    { "source": "/api/auth/:action", "destination": "/api/auth" },
     { "source": "/api/plugin/claim", "destination": "/api/plugin-claim" },
     { "source": "/api/plugin/craftable", "destination": "/api/plugin-craftable" },
     { "source": "/api/plugin/items", "destination": "/api/plugin-items" },
