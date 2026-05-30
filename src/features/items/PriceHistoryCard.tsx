@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import {
-  ComposedChart, Area, Bar, Scatter, XAxis, YAxis, Tooltip, ReferenceLine, ResponsiveContainer,
+  ComposedChart, Area, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from 'recharts';
 import type { HistoryEntry } from '../../lib/universalisHistory';
 import type { MarketItem, WorldListing } from '../../lib/universalis';
@@ -241,23 +241,10 @@ export function PriceHistoryCard({ entries, loading, market, listings, canHq, sc
                   tick={{ fontSize: 9, fontFamily: 'monospace' }}
                   height={20}
                 />
-                {/* Hidden axes: price (left) and volume (right, scaled so bars
-                    occupy only the bottom quarter of the plot). */}
+                {/* Hidden axes: price (left) and volume (right, scaled so the
+                    sales-volume bars occupy roughly the bottom third). */}
                 <YAxis yAxisId="price" hide domain={['auto', 'auto']} />
-                <YAxis yAxisId="vol" hide orientation="right" domain={[0, Math.max(1, stats.maxVolume) * 4]} />
-                {/* Cheapest current ask: a single dashed line at the price you'd
-                    pay to buy now / the floor you compete with to sell. */}
-                {ask && (
-                  <ReferenceLine
-                    yAxisId="price"
-                    y={ask.floor}
-                    stroke="#b98cc4"
-                    strokeDasharray="4 3"
-                    strokeOpacity={0.7}
-                    ifOverflow="extendDomain"
-                    label={{ value: 'cheapest ask', position: 'insideTopLeft', fill: '#b98cc4', fontSize: 9, fontFamily: 'monospace' }}
-                  />
-                )}
+                <YAxis yAxisId="vol" hide orientation="right" domain={[0, Math.max(1, stats.maxVolume) * 3]} />
                 <Tooltip
                   labelFormatter={(ts) => new Date(ts as number).toLocaleDateString('en-GB', { dateStyle: 'medium' })}
                   formatter={(value, name) => {
@@ -267,7 +254,7 @@ export function PriceHistoryCard({ entries, loading, market, listings, canHq, sc
                   }}
                   contentStyle={{ background: '#111', border: '1px solid #2a2a2a', fontSize: 11 }}
                 />
-                <Bar yAxisId="vol" dataKey="volume" fill="#6ec5ce" fillOpacity={0.22} isAnimationActive={false} />
+                <Bar yAxisId="vol" dataKey="volume" fill="#6ec5ce" fillOpacity={0.55} isAnimationActive={false} />
                 <Area
                   yAxisId="price" type="monotone" dataKey="priceNQ" name="priceNQ"
                   stroke="#7fb3d5" fill="url(#areaGradientNQ)" strokeWidth={1.5}
@@ -280,33 +267,15 @@ export function PriceHistoryCard({ entries, loading, market, listings, canHq, sc
                     dot={false} connectNulls isAnimationActive={false}
                   />
                 )}
-                {/* Thin spikes: high price on low volume — flag, don't trust. */}
-                {stats.thinSpikes.length > 0 && (
-                  <Scatter
-                    yAxisId="price" data={stats.thinSpikes} dataKey="price"
-                    fill="#d9534f" shape="diamond" isAnimationActive={false}
-                  />
-                )}
               </ComposedChart>
             </ResponsiveContainer>
           </div>
           <div className="mt-1 flex items-center gap-x-3 gap-y-1 flex-wrap font-mono text-[9px] tracking-widest uppercase text-text-low">
             <span className="flex items-center gap-1.5">
-              <span className="inline-block w-2 h-2" style={{ background: '#6ec5ce', opacity: 0.4 }} />
+              <span className="inline-block w-2 h-2" style={{ background: '#6ec5ce', opacity: 0.6 }} />
               units sold / day
             </span>
-            {ask && (
-              <span className="flex items-center gap-1.5">
-                <span className="inline-block w-3 h-0" style={{ borderTop: '1.5px dashed #b98cc4' }} />
-                {ask.count} offer{ask.count === 1 ? '' : 's'} from {fmtGil(ask.floor)}
-              </span>
-            )}
-            {stats.thinSpikes.length > 0 && (
-              <span className="flex items-center gap-1.5">
-                <span style={{ color: '#d9534f' }}>◆</span>
-                thin spike
-              </span>
-            )}
+            {ask && <span>{ask.count} offer{ask.count === 1 ? '' : 's'} listed</span>}
           </div>
         </>
       ) : (
