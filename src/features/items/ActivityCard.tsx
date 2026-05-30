@@ -13,6 +13,22 @@ interface Props {
   loading: boolean;
 }
 
+/**
+ * "Offer vs real sales": how the current listings (supply) compare to how fast
+ * the item actually sells (demand). `days` is how long the current listings
+ * would take to clear at the recent sale rate.
+ */
+export function supplyDepth(listings: number, velocity: number): { days: number | null; note: string } {
+  if (velocity <= 0) {
+    return { days: null, note: listings > 0 ? 'listed but not selling' : 'no recent sales' };
+  }
+  if (listings === 0) return { days: 0, note: 'sold out — none listed' };
+  const days = listings / velocity;
+  if (days < 1) return { days, note: 'clears in under a day' };
+  if (days < 14) return { days, note: `~${Math.round(days)}d to clear` };
+  return { days, note: `oversupplied · ~${Math.round(days)}d to clear` };
+}
+
 export function ActivityCard({ primary, compare, compareLabel, entries, loading }: Props) {
   const stats = useMemo(() => {
     const cutoff30Ms = Date.now() - 30 * 24 * 60 * 60 * 1000;
@@ -42,10 +58,8 @@ export function ActivityCard({ primary, compare, compareLabel, entries, loading 
     );
   }
 
-  const listingsNote =
-    stats.listings === 0 ? 'no active listings'
-    : stats.listings === 1 ? 'thin book — single supplier'
-    : `${stats.listings} active listings`;
+  // Offer-vs-sales read: are the listed offers actually moving?
+  const listingsNote = supplyDepth(stats.listings, stats.velocity).note;
 
   return (
     <div className="border border-border-base bg-bg-card p-4">
