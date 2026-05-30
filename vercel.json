@@ -30,6 +30,9 @@
     "api/plugin-cleanup.mjs": {
       "maxDuration": 60
     },
+    "api/plugin-projects.mjs": {
+      "maxDuration": 30
+    },
     "api/auth.mjs": { "maxDuration": 15 }
   },
   "rewrites": [
@@ -42,6 +45,8 @@
     { "source": "/api/plugin/craft-breakdown", "destination": "/api/plugin-craft-breakdown" },
     { "source": "/api/plugin/trading/query", "destination": "/api/plugin-trading-query" },
     { "source": "/api/plugin/cleanup", "destination": "/api/plugin-cleanup" },
+    { "source": "/api/plugin/projects/:id", "destination": "/api/plugin-projects" },
+    { "source": "/api/plugin/projects", "destination": "/api/plugin-projects" },
     { "source": "/((?!api/|@|src/|node_modules/|.*\\.).*)", "destination": "/" }
   ]
 }
