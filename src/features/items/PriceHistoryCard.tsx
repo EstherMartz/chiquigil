@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import {
-  ComposedChart, Area, Bar, Scatter, XAxis, YAxis, Tooltip, ReferenceArea, ResponsiveContainer,
+  ComposedChart, Area, Bar, Scatter, XAxis, YAxis, Tooltip, ReferenceLine, ResponsiveContainer,
 } from 'recharts';
 import type { HistoryEntry } from '../../lib/universalisHistory';
 import type { MarketItem, WorldListing } from '../../lib/universalis';
@@ -124,26 +124,22 @@ interface Props {
 export function PriceHistoryCard({ entries, loading, market, listings, canHq, scopeLabel }: Props) {
   const [rangeDays, setRangeDays] = useState<7 | 30 | 90 | null>(30);
 
-  // Current asks (offers): floor + a "typical" upper bound (median of listings)
-  // so we can shade where current offers sit against what actually sold.
-  const askBand = useMemo(() => {
-    const all = listings ?? [];
-    // Prefer NQ asks (what the price line tracks); fall back to HQ-only books.
-    let prices = all.filter((l) => !l.hq).map((l) => l.price).sort((a, b) => a - b);
-    if (prices.length === 0) prices = all.map((l) => l.price).sort((a, b) => a - b);
+  // Current asks (offers): the cheapest current listing + how many are up, so we
+  // can mark the floor on the chart and state the count plainly.
+  const ask = useMemo(() => {
+    const prices = (listings ?? []).map((l) => l.price).filter((p) => p > 0).sort((a, b) => a - b);
     if (prices.length === 0) return null;
-    const floor = prices[0];
-    const typical = prices[Math.floor(prices.length / 2)];
-    return { floor, typical, count: prices.length };
+    return { floor: prices[0], count: prices.length };
   }, [listings]);
 
-  // Headline price: current cheapest listing, falling back to the most recent
-  // recorded sale so the card always leads with a number.
+  // Headline price: the cheapest current ask (what you'd pay right now), then the
+  // parsed min, then the most recent sale — so it always leads with a real number
+  // and stays consistent with the ask line drawn on the chart.
   const mostRecentSale = useMemo(() => {
     if (!entries.length) return null;
     return entries.reduce((a, b) => (a.timestamp > b.timestamp ? a : b)).pricePerUnit;
   }, [entries]);
-  const currentPrice = market?.minHQ ?? market?.minNQ ?? mostRecentSale ?? null;
+  const currentPrice = ask?.floor ?? market?.minHQ ?? market?.minNQ ?? mostRecentSale ?? null;
 
   const stats = useMemo(
     () => priceHistoryStats(entries, currentPrice, rangeDays),
@@ -249,20 +245,17 @@ export function PriceHistoryCard({ entries, loading, market, listings, canHq, sc
                     occupy only the bottom quarter of the plot). */}
                 <YAxis yAxisId="price" hide domain={['auto', 'auto']} />
                 <YAxis yAxisId="vol" hide orientation="right" domain={[0, Math.max(1, stats.maxVolume) * 4]} />
-                {/* Current asks: shade the band from the cheapest offer up to the
-                    typical (median) offer, so it's clear where sellers are pricing
-                    relative to what actually sold. */}
-                {askBand && (
-                  <ReferenceArea
+                {/* Cheapest current ask: a single dashed line at the price you'd
+                    pay to buy now / the floor you compete with to sell. */}
+                {ask && (
+                  <ReferenceLine
                     yAxisId="price"
-                    y1={askBand.floor}
-                    y2={Math.max(askBand.typical, askBand.floor)}
-                    fill="#b98cc4"
-                    fillOpacity={0.1}
+                    y={ask.floor}
                     stroke="#b98cc4"
-                    strokeOpacity={0.35}
-                    strokeDasharray="3 3"
-                    ifOverflow="hidden"
+                    strokeDasharray="4 3"
+                    strokeOpacity={0.7}
+                    ifOverflow="extendDomain"
+                    label={{ value: 'cheapest ask', position: 'insideTopLeft', fill: '#b98cc4', fontSize: 9, fontFamily: 'monospace' }}
                   />
                 )}
                 <Tooltip
@@ -302,10 +295,10 @@ export function PriceHistoryCard({ entries, loading, market, listings, canHq, sc
               <span className="inline-block w-2 h-2" style={{ background: '#6ec5ce', opacity: 0.4 }} />
               units sold / day
             </span>
-            {askBand && (
+            {ask && (
               <span className="flex items-center gap-1.5">
-                <span className="inline-block w-2 h-2" style={{ background: '#b98cc4', opacity: 0.5 }} />
-                current asks
+                <span className="inline-block w-3 h-0" style={{ borderTop: '1.5px dashed #b98cc4' }} />
+                {ask.count} offer{ask.count === 1 ? '' : 's'} from {fmtGil(ask.floor)}
               </span>
             )}
             {stats.thinSpikes.length > 0 && (
