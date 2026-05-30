@@ -17,11 +17,21 @@ export interface HousingRow {
 
 export type HousingSortKey = 'momentumPct' | 'craftGilPerDay' | 'craftMargin' | 'velocity' | 'price';
 
-export function housingMaterialCost(recipe: Recipe, market: MarketData): number {
+/**
+ * Total lowest-listing cost of a recipe's ingredients.
+ *
+ * Returns `null` if any ingredient has no usable market price (missing from the
+ * cache, or both minNQ/minHQ null). A real listing is never 0 gil, so treating a
+ * missing ingredient as free would silently understate the total and overstate
+ * the displayed craft margin — better to surface "can't compute" (rendered as "—")
+ * than a fabricated profit. An empty ingredient list returns 0 (nothing to buy).
+ */
+export function housingMaterialCost(recipe: Recipe, market: MarketData): number | null {
   let total = 0;
   for (const ing of recipe.ingredients) {
     const m = market[String(ing.itemId)];
-    const px = m ? (m.minNQ ?? m.minHQ ?? 0) : 0;
+    const px = m ? (m.minNQ ?? m.minHQ ?? null) : null;
+    if (px == null) return null;
     total += px * ing.amount;
   }
   return total;
@@ -31,7 +41,7 @@ export function buildHousingRow(input: {
   item: SnapshotItem;
   market: MarketItem | undefined;
   recipe: Recipe | undefined;
-  materialCost: number;
+  materialCost: number | null;
   history: HistoryEntry[] | undefined;
   now: number;
 }): HousingRow {
@@ -43,7 +53,7 @@ export function buildHousingRow(input: {
 
   let craftMargin: number | null = null;
   let craftGilPerDay: number | null = null;
-  if (recipe && materialCost > 0 && price != null) {
+  if (recipe && materialCost != null && materialCost > 0 && price != null) {
     craftMargin = applyTax(price) - materialCost;
     const units = market ? effectiveUnitsPerDay(market.velocity, market.listingCount) : 0;
     craftGilPerDay = craftMargin * units;
