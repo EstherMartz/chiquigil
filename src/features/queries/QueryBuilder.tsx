@@ -10,6 +10,8 @@ interface Props {
   onChange: (next: QueryFilter) => void;
   onRun: () => void;
   busy?: boolean;
+  /** True when the live filter differs from the last run — shows a refresh hint. */
+  stale?: boolean;
 }
 
 const SORTS: { id: QuerySort; label: string }[] = [
@@ -19,7 +21,7 @@ const SORTS: { id: QuerySort; label: string }[] = [
   { id: 'unitPrice', label: 'Unit price' },
 ];
 
-export function QueryBuilder({ value, onChange, onRun, busy }: Props) {
+export function QueryBuilder({ value, onChange, onRun, busy, stale }: Props) {
   const [copied, setCopied] = useState(false);
 
   function patch(p: Partial<QueryFilter>) { onChange({ ...value, ...p }); }
@@ -125,13 +127,20 @@ export function QueryBuilder({ value, onChange, onRun, busy }: Props) {
         </label>
 
         <div className="flex items-end gap-2">
-          <button
-            onClick={onRun}
-            disabled={busy}
-            className={`${btnPrimary} w-full`}
-          >
-            {busy ? 'Running…' : 'Run scan'}
-          </button>
+          <div className="flex-1 flex flex-col gap-1">
+            {stale && !busy && (
+              <span className="font-mono text-[10px] tracking-widest uppercase text-gold/80">
+                Filters changed — Run scan to refresh
+              </span>
+            )}
+            <button
+              onClick={onRun}
+              disabled={busy}
+              className={`${btnPrimary} w-full`}
+            >
+              {busy ? 'Running…' : 'Run scan'}
+            </button>
+          </div>
           <button
             onClick={handleCopyLink}
             className="font-mono text-[10px] tracking-widest uppercase border border-border-hi text-text-cream px-3 py-2 hover:border-aether hover:text-aether transition-colors whitespace-nowrap"
