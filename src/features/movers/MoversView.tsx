@@ -16,6 +16,7 @@ import { ProgressBar } from '../../components/ProgressBar';
 import { StatusBanner } from '../../components/StatusBanner';
 import { EmptyState } from '../../components/EmptyState';
 import { useUiStore, rowPadClass } from '../ui/uiStore';
+import { useInitialScan } from '../queries/useInitialScan';
 
 type SortKey = 'name' | 'price' | 'avg' | 'devPct' | 'velocity' | 'gilPerDay';
 type SortDir = 'asc' | 'desc';
@@ -48,7 +49,7 @@ export function MoversView() {
     return [...ids];
   }, [snapshot.data, watchlistItems]);
 
-  const run = useMutation<{ market: MarketData; skipped: number }>({
+  const run = useMutation<{ market: MarketData; skipped: number; ranWith: { minVelocity: number; minDevPct: number; minPrice: number } }>({
     mutationFn: async () => {
       if (!snapshot.data) throw new Error('Item snapshot not ready');
       setProgress({ current: 0, total: candidateIds.length });
@@ -61,7 +62,7 @@ export function MoversView() {
         },
       );
       setProgress(null);
-      return { market: res.data, skipped: res.errors.length };
+      return { market: res.data, skipped: res.errors.length, ranWith: { minVelocity, minDevPct, minPrice } };
     },
   });
 
@@ -87,6 +88,13 @@ export function MoversView() {
 
   const notReady = !snapshot.data;
 
+  useInitialScan(!notReady, () => { run.reset(); run.mutate(); });
+
+  const stale = run.data != null &&
+    (run.data.ranWith.minVelocity !== minVelocity ||
+     run.data.ranWith.minDevPct !== minDevPct ||
+     run.data.ranWith.minPrice !== minPrice);
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-end gap-3 p-3 border border-border-base bg-bg-card justify-between">
@@ -110,15 +118,22 @@ export function MoversView() {
               className="mt-1 block w-32 bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors" />
           </label>
         </div>
-        <button
-          type="button"
-          onClick={() => { run.reset(); run.mutate(); }}
-          disabled={run.isPending || notReady}
-          title={notReady ? 'Loading item catalog…' : undefined}
-          className="font-mono text-[10px] tracking-widest uppercase bg-gold text-bg-deep px-4 py-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity w-full sm:w-auto"
-        >
-          {run.isPending ? <>Scanning…<span aria-hidden className="ml-1 inline-block animate-spin">❖</span></> : 'Run scan'}
-        </button>
+        <div className="flex flex-col items-end gap-1 w-full sm:w-auto">
+          {stale && !run.isPending && (
+            <span className="font-mono text-[10px] tracking-widest uppercase text-gold/80">
+              Filters changed — Run scan to refresh
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={() => { run.reset(); run.mutate(); }}
+            disabled={run.isPending || notReady}
+            title={notReady ? 'Loading item catalog…' : undefined}
+            className="font-mono text-[10px] tracking-widest uppercase bg-gold text-bg-deep px-4 py-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity w-full sm:w-auto"
+          >
+            {run.isPending ? <>Scanning…<span aria-hidden className="ml-1 inline-block animate-spin">❖</span></> : 'Run scan'}
+          </button>
+        </div>
       </div>
 
       <p className="font-mono text-[10px] text-text-low">
@@ -138,8 +153,9 @@ export function MoversView() {
       {!run.data && !run.isPending && (
         <EmptyState
           icon="📈"
-          message={`Scan ${dc} for items whose price is spiking or crashing right now.`}
-          action={!notReady ? { label: 'Run Scan', onClick: () => { run.reset(); run.mutate(); } } : undefined}
+          message={notReady
+            ? 'Loading item catalog…'
+            : `Scan ${dc} for items whose price is spiking or crashing right now.`}
         />
       )}
       {run.data && sortedRows.length === 0 && (
