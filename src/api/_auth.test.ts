@@ -32,4 +32,86 @@ describe('session token', () => {
     process.env.AUTH_SESSION_SECRET = 'completely-different-secret-value-000';
     expect(await verifySession(token)).toBeNull();
   });
+
+  // Token-confusion guard: a validly-signed token from a different audience
+  // (e.g. a short-lived OAuth `state` token, which is exposed in the public
+  // /api/auth/login redirect URL) must NOT be accepted as a session.
+  it('rejects a validly-signed token with the wrong audience', async () => {
+    const { SignJWT } = await import('jose');
+    const wrongAud = await new SignJWT({})
+      .setProtectedHeader({ alg: 'HS256' })
+      .setAudience('state')
+      .setExpirationTime('10m')
+      .sign(new TextEncoder().encode(process.env.AUTH_SESSION_SECRET!));
+    expect(await verifySession(wrongAud)).toBeNull();
+  });
+});
+
+describe('oauth state', () => {
+  it('round-trips state with a return path', async () => {
+    const { signState, verifyState } = await import('./_auth');
+    const token = await signState('/projects');
+    expect(await verifyState(token)).toBe('/projects');
+  });
+
+  it('rejects tampered state', async () => {
+    const { signState, verifyState } = await import('./_auth');
+    const token = await signState('/projects');
+    expect(await verifyState(token.slice(0, -2) + 'zz')).toBeNull();
+  });
+
+  // Token-confusion guard: a real session token must NOT be accepted as state.
+  it('rejects a session token used as state', async () => {
+    const { verifyState } = await import('./_auth');
+    const sessionToken = await signSession(USER);
+    expect(await verifyState(sessionToken)).toBeNull();
+  });
+});
+
+describe('cookies', () => {
+  it('parses a cookie header', async () => {
+    const { parseCookies, SESSION_COOKIE } = await import('./_auth');
+    const jar = parseCookies(`${SESSION_COOKIE}=abc; other=1`);
+    expect(jar[SESSION_COOKIE]).toBe('abc');
+    expect(jar.other).toBe('1');
+  });
+
+  it('returns {} for no header', async () => {
+    const { parseCookies } = await import('./_auth');
+    expect(parseCookies(undefined)).toEqual({});
+  });
+
+  it('serializes an httpOnly session cookie', async () => {
+    const { serializeSessionCookie, SESSION_COOKIE } = await import('./_auth');
+    const c = serializeSessionCookie('TOKEN');
+    expect(c).toContain(`${SESSION_COOKIE}=TOKEN`);
+    expect(c).toContain('HttpOnly');
+    expect(c).toContain('Secure');
+    expect(c).toContain('SameSite=Lax');
+    expect(c).toContain('Path=/');
+  });
+
+  it('clear cookie has Max-Age=0', async () => {
+    const { clearSessionCookie } = await import('./_auth');
+    expect(clearSessionCookie()).toContain('Max-Age=0');
+  });
+});
+
+describe('guild allow-list', () => {
+  beforeEach(() => { process.env.GUILD_ALLOWLIST = '123, 456'; });
+
+  it('parses the allow-list', async () => {
+    const { getAllowList } = await import('./_auth');
+    expect(getAllowList()).toEqual(['123', '456']);
+  });
+
+  it('returns the intersection of user guilds and the allow-list', async () => {
+    const { allowedGuildsFor } = await import('./_auth');
+    expect(allowedGuildsFor(['456', '789'])).toEqual(['456']);
+  });
+
+  it('returns [] when no overlap', async () => {
+    const { allowedGuildsFor } = await import('./_auth');
+    expect(allowedGuildsFor(['789'])).toEqual([]);
+  });
 });
