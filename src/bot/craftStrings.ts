@@ -1,5 +1,11 @@
 /** All user-facing Spanish copy for the craft coordinator. */
 
+/** Discord snowflakes are 17–20 digit numeric strings. Plugin-created projects
+ *  store a character name instead — render that as plain text, not a broken mention. */
+export function mentionOrName(value: string): string {
+  return /^\d{17,20}$/.test(value) ? `<@${value}>` : value;
+}
+
 // ── Board ──
 export const BOARD_TITLE = '📋 Proyectos de crafteo activos';
 export const BOARD_FOOTER = 'Se actualiza automáticamente';
@@ -76,9 +82,9 @@ export const PROGRESS_FAILED = 'No pude actualizar — ¿es tu tarea?';
 
 // ── Thread notes ──
 export const THREAD_PROJECT_CREATED = (userId: string, taskCount: number) =>
-  `📋 Proyecto creado por <@${userId}> — ${taskCount} tareas. ¡Reclama las tuyas arriba!`;
+  `📋 Proyecto creado por ${mentionOrName(userId)} — ${taskCount} tareas. ¡Reclama las tuyas arriba!`;
 export const THREAD_PROJECT_REQUESTED = (userId: string, taskCount: number) =>
-  `📋 Proyecto solicitado por <@${userId}> — ${taskCount} tareas. ¡Reclama las tuyas arriba!`;
+  `📋 Proyecto solicitado por ${mentionOrName(userId)} — ${taskCount} tareas. ¡Reclama las tuyas arriba!`;
 export const THREAD_CLAIMED = (userId: string, qty: number, item: string) =>
   `<@${userId}> ha reclamado ${qty}× **${item}**`;
 export const THREAD_PROGRESS = (userId: string, item: string, done: number, needed: number, isDone: boolean) =>

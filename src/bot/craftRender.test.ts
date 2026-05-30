@@ -195,3 +195,16 @@ describe('findNextIncompletePhase', () => {
     expect(findNextIncompletePhase(phases, 'Wall', 0)).toBeNull();
   });
 });
+
+describe('buildProjectMessage (assignee mention safety)', () => {
+  it('renders character names as plain text, not broken Discord mentions', () => {
+    const p = project();
+    const tasks = [
+      task({ id: 1, itemName: 'Iron Ore', assigneeId: 'Esther Martz', status: 'claimed' }),
+    ];
+    const { embeds } = buildProjectMessage(p, tasks);
+    const desc = (embeds as any[])[0].description as string;
+    expect(desc).toContain('Esther Martz');
+    expect(desc).not.toContain('<@Esther Martz>');
+  });
+});

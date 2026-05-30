@@ -1,5 +1,6 @@
 import type { CraftProject, StoredTask } from './craftTypes';
 import * as S from './craftStrings';
+import { mentionOrName } from './craftStrings';
 
 // Browser-safe (imported by ProjectDetail.tsx); `process` is undefined in the browser.
 const ITEMS_BASE_URL =
@@ -22,7 +23,7 @@ function fmtPrice(n: number): string {
 
 function taskLine(t: StoredTask): string {
   const done = t.status === 'done' ? '✅' : '';
-  const assignee = t.assigneeId ? `<@${t.assigneeId}>` : `_${S.UNCLAIMED}_`;
+  const assignee = t.assigneeId ? mentionOrName(t.assigneeId) : `_${S.UNCLAIMED}_`;
   const progress = `(${t.qtyDone}/${t.qtyNeeded})`;
   let detail = '';
 
@@ -371,7 +372,7 @@ export function buildBoardMessage(
       const pct = total > 0 ? Math.round((done / total) * 100) : 0;
       const bar = '█'.repeat(Math.round(pct / 10)) + '░'.repeat(10 - Math.round(pct / 10));
       const thread = project.threadId ? ` · <#${project.threadId}>` : '';
-      const requester = ` · <@${project.createdBy}>`;
+      const requester = ` · ${mentionOrName(project.createdBy)}`;
       return `**#${project.id}** ${project.name}\n${bar} ${pct}% (${done}/${total} ${S.PROJECT_TASKS_SUFFIX})${thread}${requester}`;
     });
     description = lines.join('\n\n');

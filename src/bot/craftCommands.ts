@@ -38,6 +38,8 @@ export interface CommandResponse {
   embeds?: unknown[];
   components?: unknown[];
   flags?: number;
+  projectId?: number;
+  taskCount?: number;
 }
 
 /**
@@ -45,14 +47,14 @@ export interface CommandResponse {
  * When `item` is omitted, creates an empty multi-item project (no announcement yet).
  */
 export async function handleCraftNew(
-  opts: { item?: string | null; qty?: number | null; name?: string | null; intermediates?: boolean; pingRole?: string | null },
+  opts: { item?: string | null; itemId?: number | null; qty?: number | null; name?: string | null; intermediates?: boolean; pingRole?: string | null },
   guildId: string,
   channelId: string,
   userId: string,
   deps: CraftCommandDeps,
 ): Promise<CommandResponse> {
   // ── Empty project (no item provided) ──────────────────────────────────────
-  if (!opts.item) {
+  if (!opts.item && opts.itemId == null) {
     if (!opts.name) {
       return { content: 'Nyeh~! Se requiere un nombre cuando no se especifica objeto, kukuru.', flags: 64 };
     }
@@ -79,14 +81,21 @@ export async function handleCraftNew(
   // ── Single-item project (existing flow) ───────────────────────────────────
   const qty = opts.qty ?? 1;
 
-  // Resolve item name
-  const matches = searchItems(deps.nameIndex, opts.item, 1);
-  if (matches.length === 0) {
-    return { content: S.ITEM_NOT_FOUND(opts.item), flags: 64 };
+  // Resolve the target item. The plugin passes an exact itemId; the bot passes a
+  // name to fuzzy-search.
+  let itemId: number;
+  let itemName: string;
+  if (opts.itemId != null) {
+    itemId = opts.itemId;
+    itemName = deps.snapshots.namesById.get(opts.itemId) ?? `Item #${opts.itemId}`;
+  } else {
+    const matches = searchItems(deps.nameIndex, opts.item!, 1);
+    if (matches.length === 0) {
+      return { content: S.ITEM_NOT_FOUND(opts.item!), flags: 64 };
+    }
+    itemId = matches[0].id;
+    itemName = matches[0].name;
   }
-
-  const itemId = matches[0].id;
-  const itemName = matches[0].name;
   const projectName = opts.name ?? `${qty}× ${itemName}`;
   const craftIntermediates = opts.intermediates ?? true;
 
@@ -240,6 +249,8 @@ export async function handleCraftNew(
   return {
     content: S.PROJECT_CREATED(projectId, targetChannelId, storedTasks.length),
     flags: 64,
+    projectId,
+    taskCount: storedTasks.length,
   };
 }
 
