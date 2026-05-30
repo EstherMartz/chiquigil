@@ -16,6 +16,7 @@ import { ProgressBar } from '../../components/ProgressBar';
 import { StatusBanner } from '../../components/StatusBanner';
 import { EmptyState } from '../../components/EmptyState';
 import { useUiStore, rowPadClass } from '../ui/uiStore';
+import { useInitialScan } from '../queries/useInitialScan';
 
 type SortKey = 'name' | 'buyWorld' | 'dcPrice' | 'phantomPrice' | 'spread' | 'velocity';
 type SortDir = 'asc' | 'desc';
@@ -26,6 +27,7 @@ interface RunResult {
   dcMarket: MarketData;
   homeMarket: MarketData;
   skipped: number;
+  ranWith: { minSpread: number; minVelocity: number };
 }
 
 export function DcFlipView() {
@@ -85,6 +87,7 @@ export function DcFlipView() {
         dcMarket: dcResult.data,
         homeMarket: homeResult.data,
         skipped: dcResult.errors.length + homeResult.errors.length,
+        ranWith: { minSpread, minVelocity },
       };
     },
   });
@@ -121,6 +124,11 @@ export function DcFlipView() {
 
   const notReady = !snapshot.data;
 
+  useInitialScan(!notReady, () => { run.reset(); run.mutate(); });
+
+  const stale = run.data != null &&
+    (run.data.ranWith.minSpread !== minSpread || run.data.ranWith.minVelocity !== minVelocity);
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-end gap-3 p-3 border border-border-base bg-bg-card justify-between">
@@ -144,15 +152,22 @@ export function DcFlipView() {
             />
           </label>
         </div>
-        <button
-          type="button"
-          onClick={() => { run.reset(); run.mutate(); }}
-          disabled={run.isPending || notReady}
-          title={notReady ? 'Loading item catalog…' : undefined}
-          className="font-mono text-[10px] tracking-widest uppercase bg-gold text-bg-deep px-4 py-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity w-full sm:w-auto"
-        >
-          {run.isPending ? <>Scanning…<span aria-hidden className="ml-1 inline-block animate-spin">❖</span></> : 'Run scan'}
-        </button>
+        <div className="flex flex-col items-end gap-1 w-full sm:w-auto">
+          {stale && !run.isPending && (
+            <span className="font-mono text-[10px] tracking-widest uppercase text-gold/80">
+              Filters changed — Run scan to refresh
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={() => { run.reset(); run.mutate(); }}
+            disabled={run.isPending || notReady}
+            title={notReady ? 'Loading item catalog…' : undefined}
+            className="font-mono text-[10px] tracking-widest uppercase bg-gold text-bg-deep px-4 py-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity w-full sm:w-auto"
+          >
+            {run.isPending ? <>Scanning…<span aria-hidden className="ml-1 inline-block animate-spin">❖</span></> : 'Run scan'}
+          </button>
+        </div>
       </div>
 
       <p className="font-mono text-[10px] text-text-low">
@@ -172,8 +187,9 @@ export function DcFlipView() {
       {!run.data && !run.isPending && (
         <EmptyState
           icon="⇄"
-          message={`Scan ${dc} for items you can buy cheap and flip on ${world}.`}
-          action={!notReady ? { label: 'Run Scan', onClick: () => { run.reset(); run.mutate(); } } : undefined}
+          message={notReady
+            ? 'Loading item catalog…'
+            : `Scan ${dc} for items you can buy cheap and flip on ${world}.`}
         />
       )}
 
