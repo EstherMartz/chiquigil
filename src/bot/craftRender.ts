@@ -23,7 +23,7 @@ function fmtPrice(n: number): string {
 
 function taskLine(t: StoredTask): string {
   const done = t.status === 'done' ? '✅' : '';
-  const assignee = t.assigneeId ? `<@${t.assigneeId}>` : `_${S.UNCLAIMED}_`;
+  const assignee = t.assigneeId ? mentionOrName(t.assigneeId) : `_${S.UNCLAIMED}_`;
   const progress = `(${t.qtyDone}/${t.qtyNeeded})`;
   let detail = '';
 

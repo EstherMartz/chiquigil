@@ -84,7 +84,7 @@ export const PROGRESS_FAILED = 'No pude actualizar — ¿es tu tarea?';
 export const THREAD_PROJECT_CREATED = (userId: string, taskCount: number) =>
   `📋 Proyecto creado por ${mentionOrName(userId)} — ${taskCount} tareas. ¡Reclama las tuyas arriba!`;
 export const THREAD_PROJECT_REQUESTED = (userId: string, taskCount: number) =>
-  `📋 Proyecto solicitado por <@${userId}> — ${taskCount} tareas. ¡Reclama las tuyas arriba!`;
+  `📋 Proyecto solicitado por ${mentionOrName(userId)} — ${taskCount} tareas. ¡Reclama las tuyas arriba!`;
 export const THREAD_CLAIMED = (userId: string, qty: number, item: string) =>
   `<@${userId}> ha reclamado ${qty}× **${item}**`;
 export const THREAD_PROGRESS = (userId: string, item: string, done: number, needed: number, isDone: boolean) =>
