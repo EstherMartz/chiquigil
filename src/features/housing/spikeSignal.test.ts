@@ -19,14 +19,31 @@ function item(id: number, canHq = true): SnapshotItem {
   return { id, name: `i${id}`, sc: 56, ui: 0, ilvl: 1, canHq } as SnapshotItem;
 }
 const recipe = { itemResultId: 1, classJob: 'CRP', recipeLevel: 1, ingredients: [{ itemId: 10, amount: 2 }] } as Recipe;
+const twoIngRecipe = { itemResultId: 1, classJob: 'CRP', recipeLevel: 1, ingredients: [{ itemId: 10, amount: 2 }, { itemId: 11, amount: 3 }] } as Recipe;
 
 describe('housingMaterialCost', () => {
   it('sums lowest ingredient prices times amount', () => {
     const market: MarketData = { '10': mkt({ minNQ: 50 }) };
     expect(housingMaterialCost(recipe, market)).toBe(100);
   });
-  it('treats missing ingredient market as zero', () => {
-    expect(housingMaterialCost(recipe, {})).toBe(0);
+  it('falls back to minHQ when minNQ is null', () => {
+    const market: MarketData = { '10': mkt({ minNQ: null, minHQ: 70 }) };
+    expect(housingMaterialCost(recipe, market)).toBe(140);
+  });
+  it('returns null when an ingredient is missing from the market cache', () => {
+    expect(housingMaterialCost(recipe, {})).toBeNull();
+  });
+  it('returns null when an ingredient has no usable price (all fields null)', () => {
+    const market: MarketData = { '10': mkt({ minNQ: null, minHQ: null }) };
+    expect(housingMaterialCost(recipe, market)).toBeNull();
+  });
+  it('returns null when only some ingredients are priced (never counts the missing one as free)', () => {
+    const market: MarketData = { '10': mkt({ minNQ: 50 }) }; // itemId 11 absent
+    expect(housingMaterialCost(twoIngRecipe, market)).toBeNull();
+  });
+  it('returns 0 for a recipe with no ingredients (nothing to buy)', () => {
+    const empty = { ...recipe, ingredients: [] } as Recipe;
+    expect(housingMaterialCost(empty, {})).toBe(0);
   });
 });
 
@@ -40,6 +57,15 @@ describe('buildHousingRow', () => {
     expect(r.craftMargin).toBe(550);
     expect(r.craftGilPerDay).toBe(1100);
     expect(r.momentumPct).toBeNull();
+  });
+  it('leaves craft fields null when material cost is null (a missing ingredient price)', () => {
+    const r = buildHousingRow({
+      item: item(1), market: mkt({ minHQ: 1000, avgHQ: 1000, recentSalesHQ: 10, velocity: 8, listingCount: 3 }),
+      recipe, materialCost: null, history: undefined, now: NOW,
+    });
+    expect(r.price).toBe(1000);
+    expect(r.craftMargin).toBeNull();
+    expect(r.craftGilPerDay).toBeNull();
   });
   it('leaves craft fields null with no recipe and computes momentum from history', () => {
     const history: HistoryEntry[] = [
