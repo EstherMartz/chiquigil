@@ -19,6 +19,7 @@ import CurrencyFlip from './routes/CurrencyFlip';
 import Cleanup from './routes/Cleanup';
 import CraftFromInventory from './routes/CraftFromInventory';
 import QuestItems from './routes/QuestItems';
+import Housing from './routes/Housing';
 import Heatmap from './routes/Heatmap';
 import CraftBatch from './routes/CraftBatch';
 import BatchHistory from './routes/BatchHistory';
@@ -39,6 +40,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/leves': 'Leves',
   '/shopping-list': 'Shopping List',
   '/vendor-flip': 'Vendor Flip',
+  '/housing': 'Housing',
   '/currency-flip': 'Currencies',
   '/gc-seals': 'GC Seals',
   '/craft-batch': 'Craft Batch',
@@ -95,6 +97,7 @@ export default function App() {
             <Route path="/leves" element={<LevePlan />} />
             <Route path="/shopping-list" element={<ShoppingList />} />
             <Route path="/vendor-flip" element={<VendorFlip />} />
+            <Route path="/housing" element={<Housing />} />
             <Route path="/currency-flip" element={<CurrencyFlip />} />
             <Route path="/gc-seals" element={<GcSeals />} />
             <Route path="/craft-batch" element={<CraftBatch />} />
