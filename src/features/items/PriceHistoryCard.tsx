@@ -369,6 +369,8 @@ export function PriceHistoryCard({ entries, loading, market, listings, canHq, sc
                     return [fmtGil(value as number), name === 'priceHQ' ? 'HQ' : 'NQ'];
                   }}
                   contentStyle={{ background: '#111', border: '1px solid #2a2a2a', fontSize: 11 }}
+                  labelStyle={{ color: '#e8e0d0' }}
+                  itemStyle={{ color: '#cfc7b8' }}
                 />
                 <Bar yAxisId="vol" dataKey="volume" fill="#6ec5ce" fillOpacity={0.55} isAnimationActive={false} />
                 <Area

@@ -8,7 +8,7 @@ function MoverRow({ row, kind }: { row: WatchlistRow; kind: 'up' | 'down' | 'sta
   const right =
     kind === 'stale'
       ? `${(row.staleDays ?? 0).toFixed(0)}d old`
-      : `${(row.delta ?? 0) >= 0 ? '+' : ''}${row.delta}%`;
+      : `${(row.delta ?? 0) >= 0 ? '+' : ''}${Math.round(row.delta ?? 0)}%`;
   const rightColor = kind === 'up' ? 'text-jade' : kind === 'down' ? 'text-crimson' : 'text-gold';
   return (
     <li className="flex items-center justify-between gap-2 py-1 border-b border-border-base/40 last:border-b-0">
