@@ -8,6 +8,7 @@
  */
 
 import { createClient } from '@libsql/client';
+import { writeFileSync } from 'node:fs';
 
 // Curated jokes. Each entry is one row in the `joke` TEXT column. Question and
 // answer are separated by " / "; multi-line dialogue jokes keep their turns
@@ -78,6 +79,17 @@ async function main() {
       joke    TEXT NOT NULL
     )
   `);
+
+  // Back up the existing jokes to a timestamped file before wiping — the
+  // DELETE below is irreversible, so this keeps the old set recoverable.
+  const existing = await client.execute('SELECT joke FROM chistes ORDER BY id');
+  if (existing.rows.length > 0) {
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const backupPath = `chistes-backup-${stamp}.txt`;
+    const dump = existing.rows.map((r) => String(r.joke)).join('\n');
+    writeFileSync(backupPath, dump, 'utf8');
+    console.log(`💾 Backed up ${existing.rows.length} existing jokes → ${backupPath}`);
+  }
 
   // Clear existing data so re-runs are idempotent.
   console.log('🧹 Clearing existing jokes…');

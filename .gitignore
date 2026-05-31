@@ -21,6 +21,9 @@ test_output.txt
 public/data/market-cache.json
 .env*
 
+# Local chistes backups dumped by scripts/seed-chistes.ts before a wipe
+chistes-backup-*.txt
+
 # Locally-saved wiki reference pages
 Dictionary of Icons - Gamer Escape's Final Fantasy XIV (FFXIV, FF14) wiki.html
 Dictionary of Icons - Gamer Escape's Final Fantasy XIV (FFXIV, FF14) wiki_files/
