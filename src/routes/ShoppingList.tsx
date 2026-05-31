@@ -11,6 +11,7 @@ import { aggregateIngredients } from '../features/shoppingList/aggregateIngredie
 import { surveyIngredients } from '../features/shoppingList/shoppingListSurvey';
 import { ShoppingListPanel } from '../features/shoppingList/ShoppingListPanel';
 import { ShoppingListPlan } from '../features/shoppingList/ShoppingListPlan';
+import { PluginShoppingSend } from '../features/plugin/PluginShoppingSend';
 import { Spinner } from '../components/Spinner';
 import { StatusBanner } from '../components/StatusBanner';
 
@@ -77,6 +78,12 @@ export default function ShoppingList() {
     return m;
   }, [snapshot.data]);
 
+  // Ingredient demand (name + qty) to push into the in-game plugin window.
+  const pluginShoppingItems = useMemo(() => {
+    if (!aggregate) return [];
+    return [...aggregate.demand].map(([id, qty]) => ({ name: nameById.get(id) ?? `#${id}`, qty }));
+  }, [aggregate, nameById]);
+
   return (
     <div className="max-w-[100rem] mx-auto px-4 space-y-4">
       <div>
@@ -90,6 +97,8 @@ export default function ShoppingList() {
         searchableItems={searchableItems}
         onPlan={() => setPlanRequested(true)}
       />
+
+      <PluginShoppingSend items={pluginShoppingItems} />
 
       {planRequested && (market.isLoading || recipes.isLoading) && (
         <Spinner label="Fetching prices + recipes…" />

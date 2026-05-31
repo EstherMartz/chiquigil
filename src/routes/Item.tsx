@@ -23,6 +23,7 @@ import { MarketSnapshotRow } from '../features/items/MarketSnapshotRow';
 import { findItemCurrencyOffers } from '../features/items/currencyOffers';
 import { AddToWatchlistButton } from '../features/items/AddToWatchlistButton';
 import { AddToShoppingListButton } from '../features/shoppingList/AddToShoppingListButton';
+import { PluginItemActions } from '../features/plugin/PluginItemActions';
 import { fmtGil, fmtRelative, garlandItemUrl, gamerEscapeItemUrl, universalisItemUrl } from '../lib/format';
 import { Gil } from '../components/Gil';
 import { rarityBorderLeftClass, rarityLabel, rarityTextClass } from '../features/items/rarity';
@@ -335,6 +336,7 @@ function HeaderBlock({ name, ilvl, sc, canHq, rarity, itemId, recipe, world, dc,
         <div className="flex flex-wrap gap-2">
           <AddToWatchlistButton itemId={itemId} itemName={name} ilvl={ilvl} recipe={recipe} />
           <AddToShoppingListButton itemId={itemId} hasRecipe={recipe != null} />
+          <PluginItemActions itemId={itemId} />
           <Link
             to="/projects"
             className="font-mono text-[10px] tracking-widest uppercase bg-gold text-bg-deep px-3 py-2 hover:opacity-90 transition-opacity"
