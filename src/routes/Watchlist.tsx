@@ -9,7 +9,8 @@ import { useRecipes } from '../features/profit/useRecipes';
 import { useItemNames } from '../features/profit/useItemNames';
 import { useSelectedItems } from '../features/items/useSelectedItems';
 import { buildRows } from '../features/watchlist/buildRows';
-import { classifyValue, type Valuation } from '../features/fairvalue/fairValue';
+import { valuationMap } from '../features/dashboard/aggregate';
+import type { HistorySummary } from '../features/fairvalue/fairValue';
 import { filterAndSort } from '../features/watchlist/filterSort';
 import { WatchlistTable } from '../features/watchlist/WatchlistTable';
 import { FilterBar } from '../features/watchlist/FilterBar';
@@ -63,22 +64,13 @@ export default function Watchlist() {
   const filtered = useMemo(() => filterAndSort(rowsWithDelta, ui), [rowsWithDelta, ui]);
 
   // Fair-value chip per row: cheap/rich (confident only), from the same history
-  // fetch used for the trend delta. fair/unknown are omitted to keep it quiet.
-  const valuationById = useMemo(() => {
-    const m = new Map<number, Valuation>();
-    if (!history.data) return m;
-    for (const r of filtered) {
-      const summary = history.data.get(r.id)?.summary;
-      if (!summary) continue;
-      const current = r.dcMinHQ ?? r.dcMinNQ ?? (r.refPrice > 0 ? r.refPrice : null);
-      if (current == null) continue;
-      const sig = classifyValue({
-        current, mean: summary.mean, stdev: summary.stdev, count: summary.count, floor: r.materialCost,
-      });
-      if (sig.confident && (sig.valuation === 'cheap' || sig.valuation === 'rich')) m.set(r.id, sig.valuation);
-    }
+  // fetch used for the trend delta. Shared with the dashboard so they agree.
+  const summaryById = useMemo(() => {
+    const m = new Map<number, HistorySummary>();
+    if (history.data) for (const [id, h] of history.data) m.set(id, h.summary);
     return m;
-  }, [filtered, history.data]);
+  }, [history.data]);
+  const valuationById = useMemo(() => valuationMap(filtered, summaryById), [filtered, summaryById]);
 
   const selected = selectedItemId != null ? items.find((i) => i.id === selectedItemId) : undefined;
   const selectedRecipe = selected && recipes.data?.get(selected.id);

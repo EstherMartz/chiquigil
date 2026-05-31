@@ -6,12 +6,14 @@ import type { MarketData } from '../../../lib/universalis';
 import type { Recipe } from '../../../lib/recipes';
 
 type Scope = 'all' | 'craft';
+type SizeMode = 'velocity' | 'opportunity';
 
 /**
- * Full-width treemap of the watchlist — size = velocity, brightness = margin
- * tier, hue = play kind. Reuses the /heatmap building blocks (buildHeatmapCells
- * + HeatmapChart) so it stays in lockstep with that page. A scope toggle shows
- * the whole watchlist or just the craftable subset.
+ * Full-width treemap of the watchlist — brightness = margin tier, hue = play
+ * kind. Reuses the /heatmap building blocks so it stays in lockstep with that
+ * page. Two toggles: scope (all vs craftable) and what tile size encodes —
+ * Velocity (raw sales/day) or Opportunity (margin × velocity), so the best
+ * plays rise visually instead of just the highest-volume ones.
  */
 export function WatchlistHeatmapTile({ items, market, recipes }: {
   items: SnapshotItem[];
@@ -19,15 +21,22 @@ export function WatchlistHeatmapTile({ items, market, recipes }: {
   recipes: Map<number, Recipe>;
 }) {
   const [scope, setScope] = useState<Scope>('all');
+  const [sizeMode, setSizeMode] = useState<SizeMode>('velocity');
 
   const allCells = useMemo(
     () => buildHeatmapCells(items, market, recipes),
     [items, market, recipes],
   );
-  const cells = useMemo(
-    () => (scope === 'craft' ? allCells.filter((c) => c.craftable) : allCells),
-    [allCells, scope],
-  );
+  const cells = useMemo(() => {
+    const scoped = scope === 'craft' ? allCells.filter((c) => c.craftable) : allCells;
+    if (sizeMode === 'velocity') return scoped;
+    // Opportunity = margin × velocity. Re-derive area; floor margin at a small
+    // positive so non-craftables (margin null) still show, sized by velocity.
+    return scoped.map((c) => {
+      const score = Math.max(0.01, (c.margin ?? 0.05)) * c.velocity;
+      return { ...c, area: score };
+    });
+  }, [allCells, scope, sizeMode]);
 
   return (
     <div className="border border-border-base bg-bg-card p-4">
@@ -35,18 +44,35 @@ export function WatchlistHeatmapTile({ items, market, recipes }: {
         <div className="font-mono text-[10px] tracking-widest uppercase text-text-low">
           Watchlist heatmap
         </div>
-        <div className="flex gap-1">
-          {([['all', 'All'], ['craft', 'Craftable']] as [Scope, string][]).map(([id, label]) => (
-            <button
-              key={id}
-              onClick={() => setScope(id)}
-              className={`font-mono text-[10px] tracking-widest uppercase px-2 py-1 transition-colors ${
-                scope === id ? 'text-gold' : 'text-text-dim hover:text-aether'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex gap-1">
+            {([['velocity', 'Velocity'], ['opportunity', 'Best ratio']] as [SizeMode, string][]).map(([id, label]) => (
+              <button
+                key={id}
+                onClick={() => setSizeMode(id)}
+                title={id === 'opportunity' ? 'Size by margin × velocity' : 'Size by sales/day'}
+                className={`font-mono text-[10px] tracking-widest uppercase px-2 py-1 transition-colors ${
+                  sizeMode === id ? 'text-aether' : 'text-text-dim hover:text-aether'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <span className="text-text-low">·</span>
+          <div className="flex gap-1">
+            {([['all', 'All'], ['craft', 'Craftable']] as [Scope, string][]).map(([id, label]) => (
+              <button
+                key={id}
+                onClick={() => setScope(id)}
+                className={`font-mono text-[10px] tracking-widest uppercase px-2 py-1 transition-colors ${
+                  scope === id ? 'text-gold' : 'text-text-dim hover:text-aether'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
       {cells.length === 0 ? (

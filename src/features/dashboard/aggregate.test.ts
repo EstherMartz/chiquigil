@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   portfolioTotals, marginBuckets, gilPerDayLeaders, concentration,
-  moversDigest, spreadByWorld, rowMargin, valuePlays, topPick,
+  moversDigest, spreadByWorld, rowMargin, valuePlays, topPick, valuationMap,
 } from './aggregate';
 import type { WatchlistRow } from '../watchlist/buildRows';
 import type { WorldListing } from '../../lib/universalis';
@@ -68,6 +68,33 @@ describe('marginBuckets', () => {
     expect(b.map((x) => x.count)).toEqual([1, 1, 1, 1, 1, 1, 1, 1]);
     expect(b[0].gilPerDay).toBe(10);
     expect(b[7].gilPerDay).toBe(80);
+  });
+});
+
+describe('valuationMap', () => {
+  const hist = (mean: number): HistoryEntry[] =>
+    Array.from({ length: MIN_SALES + 2 }, (_, i) => ({
+      timestamp: 0, quantity: 1, hq: false, pricePerUnit: mean + (i % 2 === 0 ? 50 : -50),
+    }));
+
+  it('marks confident cheap/rich rows and omits fair/thin ones', () => {
+    const rows = [
+      mkRow({ id: 1, dcMinNQ: 700 }),   // well under 1000 → cheap
+      mkRow({ id: 2, dcMinNQ: 1300 }),  // well over → rich
+      mkRow({ id: 3, dcMinNQ: 1000 }),  // ~fair → omitted
+      mkRow({ id: 4, dcMinNQ: 700 }),   // thin history → omitted
+    ];
+    const summaries = new Map([
+      [1, summarizeHistory(hist(1000))],
+      [2, summarizeHistory(hist(1000))],
+      [3, summarizeHistory(hist(1000))],
+      [4, summarizeHistory([{ timestamp: 0, pricePerUnit: 1000, quantity: 1, hq: false }])],
+    ]);
+    const m = valuationMap(rows, summaries);
+    expect(m.get(1)).toBe('cheap');
+    expect(m.get(2)).toBe('rich');
+    expect(m.has(3)).toBe(false);
+    expect(m.has(4)).toBe(false);
   });
 });
 

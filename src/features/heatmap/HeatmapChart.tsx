@@ -103,7 +103,7 @@ export function HeatmapChart({ cells }: { cells: HeatmapCell[] }) {
                 backgroundColor: bg,
               }}
               onClick={() => setSelectedId(r.id === selectedId ? null : r.id)}
-              title={`${cell.name} · ${KIND_LABEL[cell.kind]} · ${fmtGil(Math.round(cell.salePrice * cell.velocity))} gil/day`}
+              title={`${cell.name} · ${KIND_LABEL[cell.kind]}\n${cell.velocity.toFixed(1)}/day · ${fmtGil(Math.round(cell.salePrice * cell.velocity))} gil/day${cell.margin != null ? ` · ${(cell.margin * 100).toFixed(0)}% margin` : ''}`}
             >
               {showLabel && (
                 <span className="text-[10px] font-mono leading-tight text-white/90 truncate drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)]">

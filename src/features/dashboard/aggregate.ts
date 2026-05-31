@@ -99,6 +99,31 @@ export function marginBuckets(rows: WatchlistRow[]): MarginBucket[] {
   return buckets;
 }
 
+// ── Per-row valuation (cheap/rich chip + movers tag) ─────────────────────────
+
+/**
+ * Map of itemId → 'cheap' | 'rich' for rows where the fair-value call is
+ * confident and decisive (fair/unknown omitted to stay quiet). Shared by the
+ * watchlist chip and the dashboard "what changed" tags so they never disagree.
+ */
+export function valuationMap(
+  rows: WatchlistRow[],
+  summaryById: Map<number, HistorySummary>,
+): Map<number, 'cheap' | 'rich'> {
+  const m = new Map<number, 'cheap' | 'rich'>();
+  for (const r of rows) {
+    const summary = summaryById.get(r.id);
+    if (!summary) continue;
+    const current = r.dcMinHQ ?? r.dcMinNQ ?? (r.refPrice > 0 ? r.refPrice : null);
+    if (current == null) continue;
+    const sig = classifyValue({
+      current, mean: summary.mean, stdev: summary.stdev, count: summary.count, floor: r.materialCost,
+    });
+    if (sig.confident && (sig.valuation === 'cheap' || sig.valuation === 'rich')) m.set(r.id, sig.valuation);
+  }
+  return m;
+}
+
 // ── Top pick (the single best action right now) ──────────────────────────────
 
 export interface TopPick {

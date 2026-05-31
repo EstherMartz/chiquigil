@@ -14,7 +14,7 @@ import { Spinner } from '../../components/Spinner';
 import { StatusBanner } from '../../components/StatusBanner';
 import { FreshnessChip } from '../../components/FreshnessChip';
 import {
-  portfolioTotals, marginBuckets, moversDigest, spreadByWorld, valuePlays, topPick,
+  portfolioTotals, marginBuckets, moversDigest, spreadByWorld, valuePlays, topPick, valuationMap,
 } from './aggregate';
 import type { HistorySummary } from '../fairvalue/fairValue';
 import { KpiStrip } from './tiles/KpiStrip';
@@ -90,6 +90,7 @@ export function DashboardView() {
     movers: moversDigest(rowsWithDelta),
     spreads: spreadByWorld(rowsWithDelta, listingsById, world, 6),
     valuePlays: valuePlays(rowsWithDelta, summaryById, 8),
+    valuation: valuationMap(rowsWithDelta, summaryById),
   }), [rowsWithDelta, listingsById, world, summaryById]);
 
   // Live "now" tick so the freshness stamp updates without a refetch.
@@ -152,7 +153,7 @@ export function DashboardView() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <MarginHistogram buckets={agg.buckets} />
             <GilLeaderboard rows={rowsWithDelta} />
-            <ChangedDigest digest={agg.movers} />
+            <ChangedDigest digest={agg.movers} valuationById={agg.valuation} />
             <SpreadBars spreads={agg.spreads} homeWorld={world} />
             <ValuePlays plays={agg.valuePlays} />
           </div>
