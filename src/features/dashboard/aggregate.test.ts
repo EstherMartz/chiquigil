@@ -53,14 +53,17 @@ describe('portfolioTotals', () => {
 describe('marginBuckets', () => {
   it('bins net margins and ignores non-craftables', () => {
     const rows = [
-      mkRow({ id: 1, profit: -50, salePrice: 1000 }),  // -5% → <0
-      mkRow({ id: 2, profit: 50, salePrice: 1000 }),   // 5% → 0–10
-      mkRow({ id: 3, profit: 200, salePrice: 1000 }),  // 20% → 10–25
-      mkRow({ id: 4, profit: 500, salePrice: 1000 }),  // 50% → 40+
-      mkRow({ id: 5, craftable: false, profit: null }),
+      mkRow({ id: 1, profit: -50, salePrice: 1000 }),   // -5%  → <0
+      mkRow({ id: 2, profit: 50, salePrice: 1000 }),    // 5%   → 0–10
+      mkRow({ id: 3, profit: 200, salePrice: 1000 }),   // 20%  → 10–25
+      mkRow({ id: 4, profit: 500, salePrice: 1000 }),   // 50%  → 40–75
+      mkRow({ id: 5, profit: 1000, salePrice: 1000 }),  // 100% → 75–150
+      mkRow({ id: 6, profit: 2000, salePrice: 1000 }),  // 200% → 150+
+      mkRow({ id: 7, craftable: false, profit: null }),
     ];
     const b = marginBuckets(rows);
-    expect(b.map((x) => x.count)).toEqual([1, 1, 1, 0, 1]);
+    // <0, 0–10, 10–25, 25–40, 40–75, 75–150, 150+
+    expect(b.map((x) => x.count)).toEqual([1, 1, 1, 0, 1, 1, 1]);
   });
 });
 
