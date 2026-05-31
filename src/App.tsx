@@ -104,7 +104,7 @@ export default function App() {
                   <ContentBar />
                   <ErrorBoundary>
                     <Routes>
-                      <Route path="/" element={<Navigate to="/trading" replace />} />
+                      <Route path="/" element={<Navigate to="/dashboard" replace />} />
                       <Route path="/home" element={<Home />} />
                       <Route path="/dashboard" element={<Dashboard />} />
                       <Route path="/watchlist" element={<Watchlist />} />
