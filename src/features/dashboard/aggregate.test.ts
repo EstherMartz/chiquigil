@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   portfolioTotals, marginBuckets, gilPerDayLeaders, concentration,
-  moversDigest, spreadByWorld, rowMargin, valuePlays,
+  moversDigest, spreadByWorld, rowMargin, valuePlays, topPick,
 } from './aggregate';
 import type { WatchlistRow } from '../watchlist/buildRows';
 import type { WorldListing } from '../../lib/universalis';
@@ -51,19 +51,40 @@ describe('portfolioTotals', () => {
 });
 
 describe('marginBuckets', () => {
-  it('bins net margins and ignores non-craftables', () => {
+  it('bins net margins (8 bands), ignores non-craftables, and sums gil/day per band', () => {
     const rows = [
-      mkRow({ id: 1, profit: -50, salePrice: 1000 }),   // -5%  → <0
-      mkRow({ id: 2, profit: 50, salePrice: 1000 }),    // 5%   → 0–10
-      mkRow({ id: 3, profit: 200, salePrice: 1000 }),   // 20%  → 10–25
-      mkRow({ id: 4, profit: 500, salePrice: 1000 }),   // 50%  → 40–75
-      mkRow({ id: 5, profit: 1000, salePrice: 1000 }),  // 100% → 75–150
-      mkRow({ id: 6, profit: 2000, salePrice: 1000 }),  // 200% → 150+
-      mkRow({ id: 7, craftable: false, profit: null }),
+      mkRow({ id: 1, profit: -50, salePrice: 1000, gilPerDay: 10 }),    // -5%   → <0
+      mkRow({ id: 2, profit: 200, salePrice: 1000, gilPerDay: 20 }),    // 20%   → 0–25
+      mkRow({ id: 3, profit: 400, salePrice: 1000, gilPerDay: 30 }),    // 40%   → 25–50
+      mkRow({ id: 4, profit: 600, salePrice: 1000, gilPerDay: 40 }),    // 60%   → 50–75
+      mkRow({ id: 5, profit: 900, salePrice: 1000, gilPerDay: 50 }),    // 90%   → 75–100
+      mkRow({ id: 6, profit: 1200, salePrice: 1000, gilPerDay: 60 }),   // 120%  → 100–150
+      mkRow({ id: 7, profit: 2000, salePrice: 1000, gilPerDay: 70 }),   // 200%  → 150–250
+      mkRow({ id: 8, profit: 3000, salePrice: 1000, gilPerDay: 80 }),   // 300%  → 250+
+      mkRow({ id: 9, craftable: false, profit: null }),
     ];
     const b = marginBuckets(rows);
-    // <0, 0–10, 10–25, 25–40, 40–75, 75–150, 150+
-    expect(b.map((x) => x.count)).toEqual([1, 1, 1, 0, 1, 1, 1]);
+    // <0, 0–25, 25–50, 50–75, 75–100, 100–150, 150–250, 250+
+    expect(b.map((x) => x.count)).toEqual([1, 1, 1, 1, 1, 1, 1, 1]);
+    expect(b[0].gilPerDay).toBe(10);
+    expect(b[7].gilPerDay).toBe(80);
+  });
+});
+
+describe('topPick', () => {
+  it('picks the highest gil/day craftable that is makeable and moving', () => {
+    const rows = [
+      mkRow({ id: 1, craftable: true, craftStatus: 'ok', gilPerDay: 5000, dcSpd: 4, profit: 500, salePrice: 1000 }),
+      mkRow({ id: 2, craftable: true, craftStatus: 'ok', gilPerDay: 9000, dcSpd: 0.2 }), // too slow → skip
+      mkRow({ id: 3, craftable: false, gilPerDay: 99999, dcSpd: 9 }),                    // sale-only → skip
+    ];
+    const pick = topPick(rows);
+    expect(pick?.row.id).toBe(1);
+    expect(pick?.margin).toBeCloseTo(0.5);
+  });
+
+  it('returns null when nothing qualifies', () => {
+    expect(topPick([mkRow({ id: 1, craftable: true, craftStatus: 'short', gilPerDay: 5000, dcSpd: 4 })])).toBeNull();
   });
 });
 

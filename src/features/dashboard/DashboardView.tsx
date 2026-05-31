@@ -14,7 +14,7 @@ import { Spinner } from '../../components/Spinner';
 import { StatusBanner } from '../../components/StatusBanner';
 import { FreshnessChip } from '../../components/FreshnessChip';
 import {
-  portfolioTotals, marginBuckets, moversDigest, spreadByWorld, valuePlays,
+  portfolioTotals, marginBuckets, moversDigest, spreadByWorld, valuePlays, topPick,
 } from './aggregate';
 import type { HistorySummary } from '../fairvalue/fairValue';
 import { KpiStrip } from './tiles/KpiStrip';
@@ -85,6 +85,7 @@ export function DashboardView() {
 
   const agg = useMemo(() => ({
     totals: portfolioTotals(rowsWithDelta),
+    pick: topPick(rowsWithDelta),
     buckets: marginBuckets(rowsWithDelta),
     movers: moversDigest(rowsWithDelta),
     spreads: spreadByWorld(rowsWithDelta, listingsById, world, 6),
@@ -147,7 +148,7 @@ export function DashboardView() {
 
       {!loading && items.length > 0 && (
         <>
-          <KpiStrip totals={agg.totals} applyMarketTax={applyMarketTax} />
+          <KpiStrip totals={agg.totals} applyMarketTax={applyMarketTax} pick={agg.pick} />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <MarginHistogram buckets={agg.buckets} />
             <GilLeaderboard rows={rowsWithDelta} />

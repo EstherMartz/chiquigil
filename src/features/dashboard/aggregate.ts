@@ -71,29 +71,57 @@ export interface MarginBucket {
   min: number;
   max: number;
   count: number;
+  /** Σ gil/day of the items in this bin — the velocity-weighted "so what". */
+  gilPerDay: number;
   /** Hex fill for a Recharts <Cell>. */
   fill: string;
 }
 
-const BUCKET_DEFS: Omit<MarginBucket, 'count'>[] = [
-  { label: '< 0%',    min: -Infinity, max: 0,        fill: '#b5524e' },
-  { label: '0–10%',   min: 0,         max: 0.1,      fill: '#9a8f7a' },
-  { label: '10–25%',  min: 0.1,       max: 0.25,     fill: '#d4a857' },
-  { label: '25–40%',  min: 0.25,      max: 0.4,      fill: '#b9b06a' },
-  { label: '40–75%',  min: 0.4,       max: 0.75,     fill: '#8fb86a' },
-  { label: '75–150%', min: 0.75,      max: 1.5,      fill: '#7ab06f' },
-  { label: '150%+',   min: 1.5,       max: Infinity, fill: '#5fa37a' },
+const BUCKET_DEFS: Omit<MarginBucket, 'count' | 'gilPerDay'>[] = [
+  { label: '< 0%',     min: -Infinity, max: 0,        fill: '#b5524e' },
+  { label: '0–25%',    min: 0,         max: 0.25,     fill: '#9a8f7a' },
+  { label: '25–50%',   min: 0.25,      max: 0.5,      fill: '#d4a857' },
+  { label: '50–75%',   min: 0.5,       max: 0.75,     fill: '#c2b15a' },
+  { label: '75–100%',  min: 0.75,      max: 1.0,      fill: '#a9b86a' },
+  { label: '100–150%', min: 1.0,       max: 1.5,      fill: '#8fb86a' },
+  { label: '150–250%', min: 1.5,       max: 2.5,      fill: '#7ab06f' },
+  { label: '250%+',    min: 2.5,       max: Infinity, fill: '#5fa37a' },
 ];
 
 export function marginBuckets(rows: WatchlistRow[]): MarginBucket[] {
-  const buckets = BUCKET_DEFS.map((b) => ({ ...b, count: 0 }));
+  const buckets = BUCKET_DEFS.map((b) => ({ ...b, count: 0, gilPerDay: 0 }));
   for (const r of rows) {
     const m = rowMargin(r);
     if (m == null) continue;
     const bucket = buckets.find((b) => m >= b.min && m < b.max);
-    if (bucket) bucket.count++;
+    if (bucket) { bucket.count++; bucket.gilPerDay += r.gilPerDay ?? 0; }
   }
   return buckets;
+}
+
+// ── Top pick (the single best action right now) ──────────────────────────────
+
+export interface TopPick {
+  row: WatchlistRow;
+  margin: number | null;
+  gilPerDay: number;
+}
+
+/**
+ * The one craftable to make right now: highest gil/day among items that are
+ * actually craftable at the user's levels, move (velocity ≥ 1/day), and turn a
+ * profit. gil/day already blends net margin × velocity, so this is the single
+ * combined-score "what should I do" answer for the header. null if nothing
+ * qualifies.
+ */
+export function topPick(rows: WatchlistRow[]): TopPick | null {
+  let best: WatchlistRow | null = null;
+  for (const r of rows) {
+    if (r.craftable !== true || r.craftStatus !== 'ok') continue;
+    if (r.dcSpd < 1 || (r.gilPerDay ?? 0) <= 0) continue;
+    if (!best || (r.gilPerDay ?? 0) > (best.gilPerDay ?? 0)) best = r;
+  }
+  return best ? { row: best, margin: rowMargin(best), gilPerDay: best.gilPerDay ?? 0 } : null;
 }
 
 // ── Leaderboards ─────────────────────────────────────────────────────────

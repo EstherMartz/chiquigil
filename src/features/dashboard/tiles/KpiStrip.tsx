@@ -1,8 +1,13 @@
+import { Link } from 'react-router-dom';
 import { fmtGil } from '../../../lib/format';
-import type { PortfolioTotals } from '../aggregate';
+import type { PortfolioTotals, TopPick } from '../aggregate';
 
 /** Top-of-dashboard KPI strip — the "is my watchlist worth my time?" answer. */
-export function KpiStrip({ totals, applyMarketTax }: { totals: PortfolioTotals; applyMarketTax: boolean }) {
+export function KpiStrip({ totals, applyMarketTax, pick }: {
+  totals: PortfolioTotals;
+  applyMarketTax: boolean;
+  pick: TopPick | null;
+}) {
   const cells = [
     {
       k: 'Daily gil potential',
@@ -36,14 +41,34 @@ export function KpiStrip({ totals, applyMarketTax }: { totals: PortfolioTotals; 
     },
   ];
   return (
-    <div className="grid grid-cols-2 md:grid-cols-5 border border-border-base">
-      {cells.map((s, i) => (
-        <div key={s.k} className={`p-3 ${i < cells.length - 1 ? 'border-r border-border-base' : ''} bg-bg-card`}>
-          <div className="font-mono text-[9px] tracking-widest uppercase text-text-low">{s.k}</div>
-          <div className={`font-display text-xl tabular-nums leading-none mt-1.5 ${s.tone}`}>{s.v}</div>
-          <div className="font-mono text-[9px] text-text-low mt-1.5">{s.sub}</div>
-        </div>
-      ))}
+    <div className="border border-border-base">
+      {/* Top pick — the single best action right now, auto-calculated. */}
+      {pick && (
+        <Link
+          to={`/item/${pick.row.id}`}
+          className="flex items-baseline gap-3 flex-wrap px-3 py-2.5 bg-gold/10 border-b border-gold/30 hover:bg-gold/15 transition-colors"
+        >
+          <span className="font-mono text-[9px] tracking-widest uppercase text-gold">★ Top pick</span>
+          <span className="font-display text-base text-text-cream">{pick.row.name}</span>
+          <span className="font-mono text-[10px] text-text-low">{pick.row.crafter}</span>
+          <span className="font-mono text-[11px] text-gold tabular-nums ml-auto">
+            {fmtGil(Math.round(pick.gilPerDay))}/day
+          </span>
+          <span className="font-mono text-[10px] text-jade tabular-nums">
+            {pick.margin != null ? `${Math.round(pick.margin * 100)}% margin` : ''}
+          </span>
+          <span className="font-mono text-[10px] text-text-low tabular-nums">{pick.row.dcSpd.toFixed(1)}/day</span>
+        </Link>
+      )}
+      <div className="grid grid-cols-2 md:grid-cols-5">
+        {cells.map((s, i) => (
+          <div key={s.k} className={`p-3 ${i < cells.length - 1 ? 'border-r border-border-base' : ''} bg-bg-card`}>
+            <div className="font-mono text-[9px] tracking-widest uppercase text-text-low">{s.k}</div>
+            <div className={`font-display text-xl tabular-nums leading-none mt-1.5 ${s.tone}`}>{s.v}</div>
+            <div className="font-mono text-[9px] text-text-low mt-1.5">{s.sub}</div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
