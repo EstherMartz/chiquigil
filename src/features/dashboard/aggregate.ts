@@ -188,9 +188,12 @@ function rowCurrent(r: WatchlistRow): number | null {
 
 /**
  * Watched items trading below their own fair value (most negative z-score
- * first), gated on enough liquidity to be confident. A flipper's "buy low" list.
- * Uses the per-item distribution summary derived from sale history.
+ * first), gated on enough liquidity to be confident AND enough velocity that
+ * the item actually moves — a deep discount on something nobody buys is not a
+ * play. A flipper's "buy low" list. Uses the per-item distribution summary.
  */
+export const VALUE_MIN_VELOCITY = 1;
+
 export function valuePlays(
   rows: WatchlistRow[],
   summaryById: Map<number, HistorySummary>,
@@ -200,6 +203,7 @@ export function valuePlays(
   for (const r of rows) {
     const summary = summaryById.get(r.id);
     if (!summary) continue;
+    if (r.dcSpd < VALUE_MIN_VELOCITY) continue; // skip stagnant items
     const current = rowCurrent(r);
     if (current == null || current <= 0) continue;
     const signal = classifyValue({
@@ -225,8 +229,13 @@ function cheapestByWorld(listings: WorldListing[]): Map<string, number> {
 /**
  * Items worth buying on a cheaper world inside the DC and reselling at home.
  * `listingsById` is the DC-scope worldListings per item; `homeWorld` is the
- * seller's world. Returns the top-N by absolute spread, positive spread only.
+ * seller's world. Ranks by spread **percentage** (not absolute gil) and drops
+ * noise below the minimum gil/percent thresholds, so a +1 gil (0%) row never
+ * outranks a small-but-meaningful margin.
  */
+export const SPREAD_MIN_GIL = 100;
+export const SPREAD_MIN_PCT = 0.02;
+
 export function spreadByWorld(
   rows: WatchlistRow[],
   listingsById: Map<number, WorldListing[]>,
@@ -250,10 +259,10 @@ export function spreadByWorld(
     if (!bestWorld || bestPrice >= homeFloor) continue;
 
     const spread = homeFloor - bestPrice;
-    out.push({
-      id: r.id, name: r.name, homeFloor, bestWorld, bestPrice,
-      spread, spreadPct: spread / homeFloor, velocity: r.dcSpd,
-    });
+    const spreadPct = spread / homeFloor;
+    // Drop noise: tiny absolute gaps or sub-2% margins aren't worth a trip.
+    if (spread < SPREAD_MIN_GIL || spreadPct < SPREAD_MIN_PCT) continue;
+    out.push({ id: r.id, name: r.name, homeFloor, bestWorld, bestPrice, spread, spreadPct, velocity: r.dcSpd });
   }
-  return out.sort((a, b) => b.spread - a.spread).slice(0, n);
+  return out.sort((a, b) => b.spreadPct - a.spreadPct).slice(0, n);
 }

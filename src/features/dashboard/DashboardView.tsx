@@ -14,8 +14,7 @@ import { Spinner } from '../../components/Spinner';
 import { StatusBanner } from '../../components/StatusBanner';
 import { FreshnessChip } from '../../components/FreshnessChip';
 import {
-  portfolioTotals, marginBuckets, gilPerDayLeaders, concentration,
-  moversDigest, spreadByWorld, valuePlays,
+  portfolioTotals, marginBuckets, moversDigest, spreadByWorld, valuePlays,
 } from './aggregate';
 import type { HistorySummary } from '../fairvalue/fairValue';
 import { KpiStrip } from './tiles/KpiStrip';
@@ -87,8 +86,6 @@ export function DashboardView() {
   const agg = useMemo(() => ({
     totals: portfolioTotals(rowsWithDelta),
     buckets: marginBuckets(rowsWithDelta),
-    leaders: gilPerDayLeaders(rowsWithDelta, 8),
-    conc: concentration(rowsWithDelta, 3),
     movers: moversDigest(rowsWithDelta),
     spreads: spreadByWorld(rowsWithDelta, listingsById, world, 6),
     valuePlays: valuePlays(rowsWithDelta, summaryById, 8),
@@ -153,7 +150,7 @@ export function DashboardView() {
           <KpiStrip totals={agg.totals} applyMarketTax={applyMarketTax} />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <MarginHistogram buckets={agg.buckets} />
-            <GilLeaderboard leaders={agg.leaders} concentration={agg.conc} />
+            <GilLeaderboard rows={rowsWithDelta} />
             <ChangedDigest digest={agg.movers} />
             <SpreadBars spreads={agg.spreads} homeWorld={world} />
             <ValuePlays plays={agg.valuePlays} />

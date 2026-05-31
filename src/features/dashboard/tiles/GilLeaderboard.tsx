@@ -1,23 +1,57 @@
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fmtGil } from '../../../lib/format';
-import { rowMargin } from '../aggregate';
+import { rowMargin, gilPerDayLeaders, concentration } from '../aggregate';
 import type { WatchlistRow } from '../../watchlist/buildRows';
-import type { Concentration } from '../aggregate';
 
-/** Top gil/day earners on your watchlist, with the concentration headline. */
-export function GilLeaderboard({ leaders, concentration }: { leaders: WatchlistRow[]; concentration: Concentration }) {
+type Tab = 'craft' | 'flip';
+
+/**
+ * Top gil/day earners, split into Craft (recipes — your craft decisions) and
+ * Flip (sale-only holds/resells) so high-gil dyes don't crowd out the craftable
+ * items where you actually decide what to make.
+ */
+export function GilLeaderboard({ rows }: { rows: WatchlistRow[] }) {
+  const [tab, setTab] = useState<Tab>('craft');
+
+  const { craft, flip } = useMemo(() => ({
+    craft: rows.filter((r) => r.craftable === true),
+    flip: rows.filter((r) => r.craftable === false),
+  }), [rows]);
+
+  const active = tab === 'craft' ? craft : flip;
+  const leaders = useMemo(() => gilPerDayLeaders(active, 8), [active]);
+  const conc = useMemo(() => concentration(active, 3), [active]);
+
   return (
     <div className="border border-border-base bg-bg-card p-4">
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between mb-2 gap-3 flex-wrap">
         <div className="font-mono text-[10px] tracking-widest uppercase text-gold">✦ Top gil/day</div>
-        {concentration.topN > 0 && concentration.total > 0 && (
-          <div className="font-mono text-[9px] tracking-widest uppercase text-text-low">
-            top {concentration.topN} = {(concentration.topShare * 100).toFixed(0)}% of potential
+        <div className="flex items-center gap-3">
+          {conc.topN > 0 && conc.total > 0 && (
+            <div className="font-mono text-[9px] tracking-widest uppercase text-text-low">
+              top {conc.topN} = {(conc.topShare * 100).toFixed(0)}%
+            </div>
+          )}
+          <div className="flex gap-1">
+            {([['craft', 'Craft'], ['flip', 'Flip']] as [Tab, string][]).map(([id, label]) => (
+              <button
+                key={id}
+                onClick={() => setTab(id)}
+                className={`font-mono text-[10px] tracking-widest uppercase px-2 py-1 transition-colors ${
+                  tab === id ? 'text-gold' : 'text-text-dim hover:text-aether'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
-        )}
+        </div>
       </div>
       {leaders.length === 0 ? (
-        <div className="text-text-low text-sm italic py-6 text-center">No earners with positive gil/day yet.</div>
+        <div className="text-text-low text-sm italic py-6 text-center">
+          {tab === 'craft' ? 'No craftable earners yet.' : 'No sale-only items moving yet.'}
+        </div>
       ) : (
         <ol className="space-y-0.5">
           {leaders.map((r, i) => {

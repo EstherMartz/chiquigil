@@ -120,9 +120,9 @@ describe('valuePlays', () => {
 
   it('lists items trading under fair value, cheapest-z first, skips thin items', () => {
     const rows = [
-      mkRow({ id: 1, dcMinNQ: 700, materialCost: 400 }),  // way under 1000 → cheap
-      mkRow({ id: 2, dcMinNQ: 990, materialCost: 400 }),  // ~fair
-      mkRow({ id: 3, dcMinNQ: 600, materialCost: 400 }),  // thin history → excluded
+      mkRow({ id: 1, dcMinNQ: 700, materialCost: 400, dcSpd: 4 }),  // way under 1000 → cheap
+      mkRow({ id: 2, dcMinNQ: 990, materialCost: 400, dcSpd: 4 }),  // ~fair
+      mkRow({ id: 3, dcMinNQ: 600, materialCost: 400, dcSpd: 4 }),  // thin history → excluded
     ];
     const summaries = new Map([
       [1, summarizeHistory(hist(1000))],
@@ -135,8 +135,14 @@ describe('valuePlays', () => {
     expect(out[0].signal.valuation).toBe('cheap');
   });
 
+  it('skips stagnant items below the velocity gate even when deeply discounted', () => {
+    const rows = [mkRow({ id: 1, dcMinNQ: 100, materialCost: 50, dcSpd: 0.2 })]; // huge discount, but dead
+    const summaries = new Map([[1, summarizeHistory(hist(1000))]]);
+    expect(valuePlays(rows, summaries, 5)).toEqual([]);
+  });
+
   it('returns nothing without summaries', () => {
-    expect(valuePlays([mkRow({ id: 1, dcMinNQ: 700 })], new Map(), 5)).toEqual([]);
+    expect(valuePlays([mkRow({ id: 1, dcMinNQ: 700, dcSpd: 4 })], new Map(), 5)).toEqual([]);
   });
 });
 
@@ -167,5 +173,19 @@ describe('spreadByWorld', () => {
       { world: 'Moogle', price: 700, hq: false },
     ]]]);
     expect(spreadByWorld(rows, homeCheapest, 'Phantom', 5)).toHaveLength(0);
+  });
+
+  it('drops sub-threshold noise and ranks by percentage, not absolute gil', () => {
+    const rows = [mkRow({ id: 1, name: 'BigAbs' }), mkRow({ id: 2, name: 'BigPct' }), mkRow({ id: 3, name: 'Noise' })];
+    const listings = new Map<number, WorldListing[]>([
+      // +20k on a 1M item = 2% — large absolute, small percent
+      [1, [{ world: 'Home', price: 1_000_000, hq: false }, { world: 'Away', price: 980_000, hq: false }]],
+      // +600 on a 2k item = 30% — small absolute, big percent → should rank first
+      [2, [{ world: 'Home', price: 2_000, hq: false }, { world: 'Away', price: 1_400, hq: false }]],
+      // +1 gil (≈0%) → filtered out as noise
+      [3, [{ world: 'Home', price: 5_000, hq: false }, { world: 'Away', price: 4_999, hq: false }]],
+    ]);
+    const out = spreadByWorld(rows, listings, 'Home', 5);
+    expect(out.map((s) => s.id)).toEqual([2, 1]); // BigPct first, Noise excluded
   });
 });

@@ -19,7 +19,7 @@ export function ValuePlays({ plays }: { plays: ValuePlay[] }) {
           {plays.map((p, i) => {
             const pct = p.signal.pctVsFair != null ? Math.round(Math.abs(p.signal.pctVsFair) * 100) : null;
             return (
-              <li key={p.row.id} className="grid grid-cols-[20px_1fr_70px_52px] gap-2 items-center py-1 border-b border-border-base/40 last:border-b-0">
+              <li key={p.row.id} className="grid grid-cols-[20px_1fr_64px_44px_46px] gap-2 items-center py-1 border-b border-border-base/40 last:border-b-0">
                 <span className="font-mono text-[10px] text-text-low tabular-nums">{String(i + 1).padStart(2, '0')}</span>
                 <div className="min-w-0">
                   <Link
@@ -35,6 +35,9 @@ export function ValuePlays({ plays }: { plays: ValuePlay[] }) {
                 <span className="font-mono text-[11px] text-text-cream tabular-nums text-right">{fmtGil(p.current)}</span>
                 <span className="font-mono text-[11px] text-jade tabular-nums text-right">
                   {pct != null ? `−${pct}%` : '—'}
+                </span>
+                <span className="font-mono text-[10px] text-text-low tabular-nums text-right" title="Sales per day">
+                  {p.row.dcSpd.toFixed(1)}/d
                 </span>
               </li>
             );
