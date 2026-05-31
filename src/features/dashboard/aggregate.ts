@@ -133,20 +133,22 @@ export interface TopPick {
 }
 
 /**
- * The one craftable to make right now: highest gil/day among items that are
- * actually craftable at the user's levels, move (velocity ≥ 1/day), and turn a
- * profit. gil/day already blends net margin × velocity, so this is the single
- * combined-score "what should I do" answer for the header. null if nothing
- * qualifies.
+ * The craftables to make right now, best first: highest gil/day among items
+ * that are actually craftable at the user's levels, move (velocity ≥ 1/day), and
+ * turn a profit. gil/day already blends net margin × velocity. Returns up to `n`
+ * so the header can cycle through the top few.
  */
+export function topPicks(rows: WatchlistRow[], n: number): TopPick[] {
+  return rows
+    .filter((r) => r.craftable === true && r.craftStatus === 'ok' && r.dcSpd >= 1 && (r.gilPerDay ?? 0) > 0)
+    .sort((a, b) => (b.gilPerDay ?? 0) - (a.gilPerDay ?? 0))
+    .slice(0, n)
+    .map((r) => ({ row: r, margin: rowMargin(r), gilPerDay: r.gilPerDay ?? 0 }));
+}
+
+/** The single best craftable action right now, or null. (Convenience over topPicks.) */
 export function topPick(rows: WatchlistRow[]): TopPick | null {
-  let best: WatchlistRow | null = null;
-  for (const r of rows) {
-    if (r.craftable !== true || r.craftStatus !== 'ok') continue;
-    if (r.dcSpd < 1 || (r.gilPerDay ?? 0) <= 0) continue;
-    if (!best || (r.gilPerDay ?? 0) > (best.gilPerDay ?? 0)) best = r;
-  }
-  return best ? { row: best, margin: rowMargin(best), gilPerDay: best.gilPerDay ?? 0 } : null;
+  return topPicks(rows, 1)[0] ?? null;
 }
 
 // ── Leaderboards ─────────────────────────────────────────────────────────

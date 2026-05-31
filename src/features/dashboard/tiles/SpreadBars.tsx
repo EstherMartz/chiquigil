@@ -30,8 +30,8 @@ export function SpreadBars({ spreads, homeWorld }: { spreads: WorldSpread[]; hom
                   +{fmtGil(s.spread)} <span className="text-text-low">({(s.spreadPct * 100).toFixed(0)}%)</span>
                 </span>
               </div>
-              <div className="mt-1 h-1.5 bg-bg-deep overflow-hidden">
-                <div className="h-full bg-aether/70" style={{ width: `${max > 0 ? (s.spread / max) * 100 : 0}%` }} />
+              <div className="mt-1 h-2 bg-bg-deep overflow-hidden rounded-sm">
+                <div className="h-full bg-aether" style={{ width: `${max > 0 ? Math.max(6, (s.spread / max) * 100) : 0}%` }} />
               </div>
               <div className="mt-1 font-mono text-[9px] tracking-widest uppercase text-text-low">
                 {s.bestWorld} {fmtGil(s.bestPrice)} → home {fmtGil(s.homeFloor)} · {s.velocity.toFixed(1)}/day

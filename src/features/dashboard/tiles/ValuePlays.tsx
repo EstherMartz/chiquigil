@@ -15,7 +15,15 @@ export function ValuePlays({ plays }: { plays: ValuePlay[] }) {
           Nothing trading clearly under fair value (with enough sales to be sure).
         </div>
       ) : (
-        <ol className="space-y-0.5">
+        <>
+          <div className="grid grid-cols-[20px_1fr_64px_44px_46px] gap-2 items-center pb-1 mb-0.5 border-b border-border-base/60 font-mono text-[8px] tracking-widest uppercase text-text-low">
+            <span />
+            <span>item</span>
+            <span className="text-right">price</span>
+            <span className="text-right" title="Discount vs fair value">disc</span>
+            <span className="text-right" title="Sales per day">vel</span>
+          </div>
+          <ol className="space-y-0.5">
           {plays.map((p, i) => {
             const pct = p.signal.pctVsFair != null ? Math.round(Math.abs(p.signal.pctVsFair) * 100) : null;
             return (
@@ -42,7 +50,8 @@ export function ValuePlays({ plays }: { plays: ValuePlay[] }) {
               </li>
             );
           })}
-        </ol>
+          </ol>
+        </>
       )}
     </div>
   );

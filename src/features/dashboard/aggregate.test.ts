@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   portfolioTotals, marginBuckets, gilPerDayLeaders, concentration,
-  moversDigest, spreadByWorld, rowMargin, valuePlays, topPick, valuationMap,
+  moversDigest, spreadByWorld, rowMargin, valuePlays, topPick, topPicks, valuationMap,
 } from './aggregate';
 import type { WatchlistRow } from '../watchlist/buildRows';
 import type { WorldListing } from '../../lib/universalis';
@@ -112,6 +112,17 @@ describe('topPick', () => {
 
   it('returns null when nothing qualifies', () => {
     expect(topPick([mkRow({ id: 1, craftable: true, craftStatus: 'short', gilPerDay: 5000, dcSpd: 4 })])).toBeNull();
+  });
+
+  it('topPicks returns up to n qualifying craftables, best gil/day first', () => {
+    const rows = [
+      mkRow({ id: 1, craftable: true, craftStatus: 'ok', gilPerDay: 5000, dcSpd: 4 }),
+      mkRow({ id: 2, craftable: true, craftStatus: 'ok', gilPerDay: 9000, dcSpd: 4 }),
+      mkRow({ id: 3, craftable: true, craftStatus: 'ok', gilPerDay: 1000, dcSpd: 4 }),
+      mkRow({ id: 4, craftable: true, craftStatus: 'ok', gilPerDay: 7000, dcSpd: 0.2 }), // slow → excluded
+    ];
+    expect(topPicks(rows, 3).map((p) => p.row.id)).toEqual([2, 1, 3]);
+    expect(topPicks(rows, 2).map((p) => p.row.id)).toEqual([2, 1]);
   });
 });
 

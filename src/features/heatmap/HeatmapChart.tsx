@@ -90,6 +90,9 @@ export function HeatmapChart({ cells }: { cells: HeatmapCell[] }) {
           const bg = tileColor(cell.kind, cell.tier);
           const showLabel = r.w > 50 && r.h > 28;
           const showPrice = r.w > 70 && r.h > 44;
+          // Tiny tiles still get a label (smaller, single line) so the
+          // bottom-right of the map isn't a field of blank squares.
+          const showTinyLabel = !showLabel && r.w > 26 && r.h > 13;
           const isSelected = r.id === selectedId;
           return (
             <div
@@ -105,6 +108,11 @@ export function HeatmapChart({ cells }: { cells: HeatmapCell[] }) {
               onClick={() => setSelectedId(r.id === selectedId ? null : r.id)}
               title={`${cell.name} · ${KIND_LABEL[cell.kind]}\n${cell.velocity.toFixed(1)}/day · ${fmtGil(Math.round(cell.salePrice * cell.velocity))} gil/day${cell.margin != null ? ` · ${(cell.margin * 100).toFixed(0)}% margin` : ''}`}
             >
+              {showTinyLabel && (
+                <span className="text-[7px] font-mono leading-none text-white/80 truncate drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)]">
+                  {cell.name}
+                </span>
+              )}
               {showLabel && (
                 <span className="text-[10px] font-mono leading-tight text-white/90 truncate drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)]">
                   {cell.name}

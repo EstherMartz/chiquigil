@@ -17,6 +17,11 @@ export function MarginHistogram({ buckets }: { buckets: MarginBucket[] }) {
   // dim next to one that moves, rather than every bar looking the same shade.
   const opacityFor = (gpd: number) => (maxGil > 0 ? 0.12 + 0.88 * Math.sqrt(gpd / maxGil) : 0.6);
 
+  // When one band holds most of the items, say so plainly — a flat-looking
+  // single bar is actually a "your whole list sits in one margin tier" signal.
+  const dominant = total > 0 ? buckets.reduce((a, b) => (b.count > a.count ? b : a)) : null;
+  const concentrated = dominant != null && dominant.count / total >= 0.8;
+
   return (
     <div className="border border-border-base bg-bg-card p-4">
       <div className="flex items-center justify-between mb-1">
@@ -26,6 +31,11 @@ export function MarginHistogram({ buckets }: { buckets: MarginBucket[] }) {
       <p className="font-mono text-[10px] text-text-low mb-3">
         Bar height = item count per net-margin band. Brightness = gil/day flowing through it (dim = high margin but barely sells).
       </p>
+      {concentrated && dominant && (
+        <div className="mb-3 font-mono text-[10px] text-jade">
+          ✓ {dominant.count}/{total} of your craftables sit in the {dominant.label} margin band.
+        </div>
+      )}
       {total === 0 ? (
         <div className="flex items-center justify-center text-text-low text-sm italic" style={{ height: 160 }}>
           No craftable items priced yet.

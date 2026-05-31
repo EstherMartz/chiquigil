@@ -29,11 +29,11 @@ function MoverRow({ row, kind, valuation }: { row: WatchlistRow; kind: 'up' | 'd
   const tag = moverTag(row, valuation);
   return (
     <li className="flex items-center justify-between gap-2 py-1 border-b border-border-base/40 last:border-b-0">
-      <span className="flex items-center gap-1.5 min-w-0">
+      <span className="flex items-start gap-1.5 min-w-0 flex-1">
         <Link
           to={`/item/${row.id}`}
           title={row.name}
-          className="font-display text-[12px] text-text-cream hover:text-aether hover:underline decoration-1 underline-offset-4 leading-tight line-clamp-2 break-words"
+          className="font-display text-[12px] text-text-cream hover:text-aether hover:underline decoration-1 underline-offset-4 leading-tight line-clamp-2 break-words min-w-0"
         >
           {row.name}
         </Link>

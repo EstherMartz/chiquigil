@@ -14,7 +14,7 @@ import { Spinner } from '../../components/Spinner';
 import { StatusBanner } from '../../components/StatusBanner';
 import { FreshnessChip } from '../../components/FreshnessChip';
 import {
-  portfolioTotals, marginBuckets, moversDigest, spreadByWorld, valuePlays, topPick, valuationMap,
+  portfolioTotals, marginBuckets, moversDigest, spreadByWorld, valuePlays, topPicks, valuationMap,
 } from './aggregate';
 import type { HistorySummary } from '../fairvalue/fairValue';
 import { KpiStrip } from './tiles/KpiStrip';
@@ -85,7 +85,7 @@ export function DashboardView() {
 
   const agg = useMemo(() => ({
     totals: portfolioTotals(rowsWithDelta),
-    pick: topPick(rowsWithDelta),
+    picks: topPicks(rowsWithDelta, 3),
     buckets: marginBuckets(rowsWithDelta),
     movers: moversDigest(rowsWithDelta),
     spreads: spreadByWorld(rowsWithDelta, listingsById, world, 6),
@@ -111,18 +111,20 @@ export function DashboardView() {
             Your whole watchlist at a glance — daily gil potential, margin spread, top earners, and what moved.
             Pulled live from {world} / {dc} prices. {applyMarketTax ? 'Net of the 5% marketboard tax.' : 'Gross (tax off).'}
           </p>
+          {market.data && (
+            <div className="opacity-70 scale-90 origin-left">
+              <FreshnessChip ts={market.dataUpdatedAt} now={now} />
+            </div>
+          )}
         </div>
-        <div className="flex items-center gap-3">
-          {market.data && <FreshnessChip ts={market.dataUpdatedAt} now={now} />}
-          <button
-            type="button"
-            onClick={() => { market.refetch(); history.refetch(); recipes.refetch(); }}
-            disabled={market.isFetching || recipes.isFetching}
-            className="font-mono text-[10px] tracking-widest uppercase bg-gold text-bg-deep px-4 py-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
-          >
-            ↻ Refresh
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => { market.refetch(); history.refetch(); recipes.refetch(); }}
+          disabled={market.isFetching || recipes.isFetching}
+          className="font-mono text-[10px] tracking-widest uppercase bg-gold text-bg-deep px-4 py-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+        >
+          ↻ Refresh
+        </button>
       </div>
 
       {market.isError && (
@@ -149,7 +151,7 @@ export function DashboardView() {
 
       {!loading && items.length > 0 && (
         <>
-          <KpiStrip totals={agg.totals} applyMarketTax={applyMarketTax} pick={agg.pick} />
+          <KpiStrip totals={agg.totals} applyMarketTax={applyMarketTax} picks={agg.picks} />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <MarginHistogram buckets={agg.buckets} />
             <GilLeaderboard rows={rowsWithDelta} />
