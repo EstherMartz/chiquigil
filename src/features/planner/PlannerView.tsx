@@ -5,6 +5,7 @@ import { HeroBlock } from './HeroBlock';
 import { LaneCard } from './LaneCard';
 import { DailyRhythm } from './DailyRhythm';
 import { SalesInsights } from './SalesInsights';
+import { UndercutPanel } from '../plugin/UndercutPanel';
 
 export function PlannerView() {
   const lanes = usePlannerStore((s) => s.lanes);
@@ -28,6 +29,8 @@ export function PlannerView() {
   return (
     <div className="space-y-8">
       <HeroBlock />
+
+      <UndercutPanel />
 
       <SalesInsights />
 

@@ -7,6 +7,7 @@ import { LANE_ORDER } from './seedPlanner';
 import { EditGoalModal } from './EditGoalModal';
 import { LedgerDrawer } from './LedgerDrawer';
 import { SalesImport } from './SalesImport';
+import { PluginGilSync } from '../plugin/PluginGilSync';
 
 export function HeroBlock() {
   const goal = usePlannerStore((s) => s.goal);
@@ -75,6 +76,7 @@ export function HeroBlock() {
             {' · '}
             <span>{abbr(stats.remaining)} gil to go</span>
           </div>
+          <PluginGilSync onSync={(gil) => setGoal({ current: gil })} />
         </div>
         <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
           <StatTile label="Today" value={(stats.today >= 0 ? '+' : '') + abbr(stats.today)} accent="gold" />
