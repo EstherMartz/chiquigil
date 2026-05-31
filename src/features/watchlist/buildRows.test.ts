@@ -77,12 +77,17 @@ describe('buildRows with recipes', () => {
     const levels = { CRP: 100, BSM: 100, ARM: 100, GSM: 100, LTW: 100, WVR: 100, ALC: 100, CUL: 100 };
     const recipeMap = new Map([[1, recipe1]]);
     const rows = buildRows(items, phantom, dc, levels, recipeMap, {}, Date.now());
-    // material = 100 × 2 = 200; sale = 1000 (HQ); profit = 800; gil/day = 800 × 4 = 3200
+    // material = 100 × 2 = 200; sale = 1000 (HQ); net sale = 950; profit = 750; gil/day = 750 × 4 = 3000
     expect(rows[0].craftable).toBe(true);
     expect(rows[0].materialCost).toBe(200);
     expect(rows[0].salePrice).toBe(1000);
-    expect(rows[0].profit).toBe(800);
-    expect(rows[0].gilPerDay).toBe(3200);
+    expect(rows[0].profit).toBe(750);
+    expect(rows[0].gilPerDay).toBe(3000);
+
+    // With tax disabled the numbers stay gross.
+    const gross = buildRows(items, phantom, dc, levels, recipeMap, {}, Date.now(), false);
+    expect(gross[0].profit).toBe(800);
+    expect(gross[0].gilPerDay).toBe(3200);
   });
 
   it('marks rows as sale-only when recipeMap returns null and computes gilPerDay from unit × velocity', () => {
@@ -99,8 +104,11 @@ describe('buildRows with recipes', () => {
     expect(rows[0].craftable).toBe(false);
     expect(rows[0].profit).toBeNull();
     expect(rows[0].materialCost).toBeNull();
-    // 50_000 × 2 = 100_000
-    expect(rows[0].gilPerDay).toBe(100_000);
+    // net 50_000 → 47_500 × 2 = 95_000
+    expect(rows[0].gilPerDay).toBe(95_000);
+    // gross: 50_000 × 2 = 100_000
+    const gross = buildRows(items, phantom, dc, levels, recipeMap, {}, Date.now(), false);
+    expect(gross[0].gilPerDay).toBe(100_000);
   });
 
   it('sale-only with zero velocity or no price keeps gilPerDay null', () => {

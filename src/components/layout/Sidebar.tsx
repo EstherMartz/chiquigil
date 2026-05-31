@@ -16,7 +16,10 @@ interface NavGroup {
 const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Dashboard',
-    items: [{ label: 'What Now?', path: '/home' }],
+    items: [
+      { label: 'What Now?', path: '/home' },
+      { label: 'Dashboard', path: '/dashboard' },
+    ],
   },
   {
     label: 'Gil-Making',

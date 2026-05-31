@@ -1,10 +1,13 @@
 import { useMemo, useState } from 'react';
 import {
   ComposedChart, Area, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  ReferenceLine, ReferenceArea,
 } from 'recharts';
 import type { HistoryEntry } from '../../lib/universalisHistory';
 import type { MarketItem, WorldListing } from '../../lib/universalis';
 import { fmtGil } from '../../lib/format';
+import { formatClearDays } from './supplyDepth';
+import { captureShare } from './verdict/pricing';
 import { Spinner } from '../../components/Spinner';
 
 /** One calendar day: quantity-weighted mean price per quality + total units sold. */
@@ -25,6 +28,20 @@ export interface PriceHistoryStats {
   oldestAgeDays: number;
   salesInRange: number;
   salesIn30d: number;
+  /** Quantity-weighted average sale price across the range (both qualities). */
+  vwap: number | null;
+  /** Median of the daily mean prices. */
+  medianDaily: number | null;
+  /** 25th/75th percentile of daily mean prices — a "usual range" band. */
+  bandLo: number | null;
+  bandHi: number | null;
+}
+
+/** Value at percentile p (0–1) of an ascending-sorted numeric array. */
+function percentile(sortedAsc: number[], p: number): number | null {
+  if (sortedAsc.length === 0) return null;
+  const idx = Math.min(sortedAsc.length - 1, Math.max(0, Math.round((sortedAsc.length - 1) * p)));
+  return sortedAsc[idx];
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -77,6 +94,19 @@ export function priceHistoryStats(
     .filter((p) => p > 0)
     .sort((a, b) => a - b);
   const medianDaily = dailyPrices.length ? dailyPrices[Math.floor(dailyPrices.length / 2)] : 0;
+
+  // Quantity-weighted average price across every sale in range, and a 25–75
+  // percentile band of the daily means — the "usual range" for the item.
+  let vwapSum = 0;
+  let vwapQty = 0;
+  for (const e of inRange) {
+    vwapSum += e.pricePerUnit * e.quantity;
+    vwapQty += e.quantity;
+  }
+  const vwap = vwapQty > 0 ? Math.round(vwapSum / vwapQty) : null;
+  const bandLo = percentile(dailyPrices, 0.25);
+  const bandHi = percentile(dailyPrices, 0.75);
+
   const thinSpikes =
     daily.length >= 5 && medianDaily > 0 && maxVolume > 0
       ? daily
@@ -108,6 +138,10 @@ export function priceHistoryStats(
     oldestAgeDays,
     salesInRange: inRange.length,
     salesIn30d: in30d.length,
+    vwap,
+    medianDaily: medianDaily || null,
+    bandLo,
+    bandHi,
   };
 }
 
@@ -145,6 +179,12 @@ export function PriceHistoryCard({ entries, loading, market, listings, canHq, sc
     () => priceHistoryStats(entries, currentPrice, rangeDays),
     [entries, currentPrice, rangeDays],
   );
+
+  // Supply depth + competition for the active scope — "how crowded is this?"
+  const velocity = market?.velocity ?? 0;
+  const listingCount = market?.listingCount ?? ask?.count ?? 0;
+  const clearLabel = velocity > 0 && listingCount > 0 ? formatClearDays(listingCount, velocity) : null;
+  const capturePct = listingCount > 0 ? Math.round(captureShare(listingCount) * 100) : null;
 
   const rangeLabel = rangeDays === null ? 'ALL' : `${rangeDays}D`;
   const Toggle = (
@@ -207,6 +247,13 @@ export function PriceHistoryCard({ entries, loading, market, listings, canHq, sc
             </div>
           )}
         </div>
+        {(stats.vwap != null || stats.medianDaily != null) && (
+          <div className="mt-1 font-mono text-[10px] tracking-widest uppercase text-text-low flex items-center gap-3 flex-wrap">
+            {stats.vwap != null && <span>VWAP {fmtGil(stats.vwap)}</span>}
+            {stats.medianDaily != null && <span>median {fmtGil(stats.medianDaily)}</span>}
+            {clearLabel && <span className="text-aether/80">clears {clearLabel}</span>}
+          </div>
+        )}
       </div>
 
       {/* Range toggle — directly under the headline, above the chart */}
@@ -245,6 +292,20 @@ export function PriceHistoryCard({ entries, loading, market, listings, canHq, sc
                     sales-volume bars occupy roughly the bottom third). */}
                 <YAxis yAxisId="price" hide domain={['auto', 'auto']} />
                 <YAxis yAxisId="vol" hide orientation="right" domain={[0, Math.max(1, stats.maxVolume) * 3]} />
+                {/* "Usual range" band (25–75 pct of daily means) + VWAP line,
+                    so a price can be read against where it normally sits. */}
+                {stats.bandLo != null && stats.bandHi != null && stats.bandHi > stats.bandLo && (
+                  <ReferenceArea
+                    yAxisId="price" y1={stats.bandLo} y2={stats.bandHi}
+                    fill="#7fb3d5" fillOpacity={0.07} stroke="none" ifOverflow="extendDomain"
+                  />
+                )}
+                {stats.vwap != null && (
+                  <ReferenceLine
+                    yAxisId="price" y={stats.vwap}
+                    stroke="#9a8f7a" strokeDasharray="3 3" strokeOpacity={0.7} ifOverflow="extendDomain"
+                  />
+                )}
                 <Tooltip
                   labelFormatter={(ts) => new Date(ts as number).toLocaleDateString('en-GB', { dateStyle: 'medium' })}
                   formatter={(value, name) => {
@@ -276,6 +337,12 @@ export function PriceHistoryCard({ entries, loading, market, listings, canHq, sc
               units sold / day
             </span>
             {ask && <span>{ask.count} offer{ask.count === 1 ? '' : 's'} listed</span>}
+            {clearLabel && <span>clears {clearLabel}</span>}
+            {capturePct != null && (
+              <span title="Rough share of sales you'd capture against the current sellers">
+                ~{capturePct}% capture
+              </span>
+            )}
           </div>
         </>
       ) : (

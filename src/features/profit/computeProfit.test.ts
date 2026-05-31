@@ -92,18 +92,19 @@ describe('computeProfit', () => {
     expect(computeProfit({ id: 100 } as never, null, new Map(), market, market, {})).toBeNull();
   });
 
-  it('returns profit = salePrice - materialCost', () => {
+  it('nets the 5% marketboard tax out of profit by default', () => {
     const dcMarket = mkMarket({ 100: { dcMin: 500 }, 1: { dcMin: 50 }, 2: { dcMin: 30 } });
     const phantomMarket = mkMarket({});
-    const result = computeProfit(
-      { id: 100 } as never,
-      recipeA,
-      new Map(),
-      phantomMarket,
-      dcMarket,
-      {},
-    );
-    // material = 50×2 + 30×3 = 190; sale = 500; profit = 310
-    expect(result).toEqual({ materialCost: 190, salePrice: 500, profit: 310 });
+    const result = computeProfit({ id: 100 } as never, recipeA, new Map(), phantomMarket, dcMarket, {});
+    // material = 50×2 + 30×3 = 190; sale = 500; net sale = 475; profit = 285
+    expect(result).toEqual({ materialCost: 190, salePrice: 500, netSalePrice: 475, profit: 285 });
+  });
+
+  it('returns gross profit = salePrice - materialCost when tax is disabled', () => {
+    const dcMarket = mkMarket({ 100: { dcMin: 500 }, 1: { dcMin: 50 }, 2: { dcMin: 30 } });
+    const phantomMarket = mkMarket({});
+    const result = computeProfit({ id: 100 } as never, recipeA, new Map(), phantomMarket, dcMarket, {}, false);
+    // material = 190; sale = 500; profit = 310 (no tax)
+    expect(result).toEqual({ materialCost: 190, salePrice: 500, netSalePrice: 500, profit: 310 });
   });
 });

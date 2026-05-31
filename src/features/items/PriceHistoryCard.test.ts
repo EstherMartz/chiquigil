@@ -186,6 +186,42 @@ describe('priceHistoryStats', () => {
     expect(stats.deltaPct).toBeNull();
   });
 
+  it('computes VWAP, median and a 25–75 band from daily means', () => {
+    const DAY = 24 * 60 * 60 * 1000;
+    // Five days of single-unit NQ sales at 100, 200, 300, 400, 500.
+    const prices = [100, 200, 300, 400, 500];
+    const entries: HistoryEntry[] = prices.map((p, i) => ({
+      timestamp: Math.floor((NOW_MS - (5 - i) * DAY) / 1000),
+      pricePerUnit: p, quantity: 1, hq: false,
+    }));
+    const stats = priceHistoryStats(entries, 500, 30, NOW_MS);
+    // equal quantities → VWAP = simple mean = 300
+    expect(stats.vwap).toBe(300);
+    expect(stats.medianDaily).toBe(300);
+    // sorted daily means [100,200,300,400,500]; 25th≈200, 75th≈400
+    expect(stats.bandLo).toBe(200);
+    expect(stats.bandHi).toBe(400);
+  });
+
+  it('quantity-weights VWAP toward the heavier-traded price', () => {
+    const DAY = 24 * 60 * 60 * 1000;
+    const entries: HistoryEntry[] = [
+      { timestamp: Math.floor((NOW_MS - 2 * DAY) / 1000), pricePerUnit: 100, quantity: 9, hq: false },
+      { timestamp: Math.floor((NOW_MS - 1 * DAY) / 1000), pricePerUnit: 200, quantity: 1, hq: false },
+    ];
+    const stats = priceHistoryStats(entries, 200, 30, NOW_MS);
+    // (100*9 + 200*1) / 10 = 110
+    expect(stats.vwap).toBe(110);
+  });
+
+  it('returns null VWAP/band when there are no sales', () => {
+    const stats = priceHistoryStats([], 100, 30, NOW_MS);
+    expect(stats.vwap).toBeNull();
+    expect(stats.medianDaily).toBeNull();
+    expect(stats.bandLo).toBeNull();
+    expect(stats.bandHi).toBeNull();
+  });
+
   it('handles empty points array when no sales in range', () => {
     const twoMonthsAgo = NOW_MS - 60 * 24 * 60 * 60 * 1000;
     const entries: HistoryEntry[] = [

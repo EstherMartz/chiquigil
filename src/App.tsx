@@ -11,6 +11,7 @@ import { RequireAuth } from './features/auth/RequireAuth';
 import { UserMenu } from './features/auth/UserMenu';
 import Login from './routes/Login';
 import Home from './routes/Home';
+import Dashboard from './routes/Dashboard';
 import Watchlist from './routes/Watchlist';
 import Crafts from './routes/Crafts';
 import Trading from './routes/Trading';
@@ -37,6 +38,7 @@ import Project from './routes/Project';
 
 const PAGE_TITLES: Record<string, string> = {
   '/home': 'What Now?',
+  '/dashboard': 'Dashboard',
   '/watchlist': 'Watchlist',
   '/crafts': 'Crafts',
   '/trading': 'Trading',
@@ -102,6 +104,7 @@ export default function App() {
                     <Routes>
                       <Route path="/" element={<Navigate to="/trading" replace />} />
                       <Route path="/home" element={<Home />} />
+                      <Route path="/dashboard" element={<Dashboard />} />
                       <Route path="/watchlist" element={<Watchlist />} />
                       <Route path="/crafts" element={<Crafts />} />
                       <Route path="/trading" element={<Trading />} />

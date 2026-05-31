@@ -4,6 +4,8 @@ import { craftStatus, type CraftStatus, type CrafterLevels } from '../items/craf
 import { computeRawScore, normalizeScores } from '../../lib/score';
 import type { Recipe } from '../../lib/recipes';
 import { computeProfit, type FlagMap } from '../profit/computeProfit';
+import { applyTax } from '../items/verdict/pricing';
+import { clearsInDays } from '../items/supplyDepth';
 
 export interface WatchlistRow extends TrackedItem {
   pMinNQ: number | null;
@@ -26,12 +28,21 @@ export interface WatchlistRow extends TrackedItem {
   salePrice: number | null;
   profit: number | null;
   gilPerDay: number | null;
+  /** Days to clear the current DC listing depth at the current velocity. */
+  clearDays: number | null;
   // Trend column:
   delta: number | null;
 }
 
 function refPrice(p: MarketItem | undefined, d: MarketItem | undefined): number {
   return d?.minHQ ?? d?.minNQ ?? p?.avgHQ ?? p?.avgNQ ?? 0;
+}
+
+// Sale-only items (Materia, dyes — no recipe) earn unit price × velocity, net of
+// the marketboard tax when applied. Returns null when there's no real flow.
+function saleOnlyGilPerDay(unitPrice: number, velocity: number, applyMarketTax: boolean): number | null {
+  const net = applyMarketTax ? applyTax(unitPrice) : unitPrice;
+  return net * velocity || null;
 }
 
 export function buildRows(
@@ -42,6 +53,7 @@ export function buildRows(
   recipeMap: Map<number, Recipe | null>,
   flags: FlagMap,
   now: number,
+  applyMarketTax = true,
 ): WatchlistRow[] {
   const partial = items.map((item) => {
     const p = phantom[item.id];
@@ -53,7 +65,10 @@ export function buildRows(
 
     const recipeEntry = recipeMap.has(item.id) ? recipeMap.get(item.id)! : undefined;
     const craftable = recipeEntry === undefined ? null : recipeEntry !== null;
-    const profitResult = recipeEntry ? computeProfit(item, recipeEntry, recipeMap, phantom, dc, flags) : null;
+    const profitResult = recipeEntry
+      ? computeProfit(item, recipeEntry, recipeMap, phantom, dc, flags, applyMarketTax)
+      : null;
+    const dcVelocity = d?.velocity ?? 0;
 
     return {
       ...item,
@@ -77,8 +92,9 @@ export function buildRows(
       gilPerDay: profitResult
         ? profitResult.profit * velocity
         : recipeEntry === null
-          ? (d?.minHQ ?? d?.minNQ ?? 0) * velocity || null
+          ? saleOnlyGilPerDay(d?.minHQ ?? d?.minNQ ?? 0, velocity, applyMarketTax)
           : null,
+      clearDays: clearsInDays(d?.listingCount ?? 0, dcVelocity),
       delta: null,
     };
   });

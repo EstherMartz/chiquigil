@@ -14,6 +14,7 @@ export interface SettingsState {
   defaultCraftTimeSeconds: number;
   hideCrystals: boolean;
   showSparklines: boolean;
+  applyMarketTax: boolean;
   submarineRank: number;
   submarineSlots: number;
   setWorld: (w: string) => void;
@@ -24,11 +25,12 @@ export interface SettingsState {
   setDefaultCraftTimeSeconds: (n: number) => void;
   setHideCrystals: (v: boolean) => void;
   setShowSparklines: (v: boolean) => void;
+  setApplyMarketTax: (v: boolean) => void;
   setSubmarineRank: (n: number) => void;
   setSubmarineSlots: (n: number) => void;
 }
 
-export function defaultSettings(): Pick<SettingsState, '_v' | 'world' | 'dc' | 'retainerLevels' | 'overheadMinutes' | 'batchCapDays' | 'defaultCraftTimeSeconds' | 'hideCrystals' | 'showSparklines' | 'submarineRank' | 'submarineSlots'> {
+export function defaultSettings(): Pick<SettingsState, '_v' | 'world' | 'dc' | 'retainerLevels' | 'overheadMinutes' | 'batchCapDays' | 'defaultCraftTimeSeconds' | 'hideCrystals' | 'showSparklines' | 'applyMarketTax' | 'submarineRank' | 'submarineSlots'> {
   return {
     _v: 1,
     world: 'Phantom',
@@ -41,6 +43,7 @@ export function defaultSettings(): Pick<SettingsState, '_v' | 'world' | 'dc' | '
     defaultCraftTimeSeconds: 60,
     hideCrystals: true,
     showSparklines: true,
+    applyMarketTax: true,
     submarineRank: 1,
     submarineSlots: 1,
   };
@@ -58,6 +61,7 @@ export const useSettingsStore = create<SettingsState>()(
       setDefaultCraftTimeSeconds: (defaultCraftTimeSeconds) => set({ defaultCraftTimeSeconds }),
       setHideCrystals: (hideCrystals) => set({ hideCrystals }),
       setShowSparklines: (showSparklines) => set({ showSparklines }),
+      setApplyMarketTax: (applyMarketTax) => set({ applyMarketTax }),
       setSubmarineRank: (submarineRank) => set({ submarineRank }),
       setSubmarineSlots: (submarineSlots) => set({ submarineSlots }),
     }),

@@ -15,31 +15,7 @@ import { SparklineShimmer } from '../../components/SparklineShimmer';
 import { InfoTooltip } from '../../components/InfoTooltip';
 import { colorFromDelta } from '../../features/sparklines/sparklineColor';
 import { formatSparklineTooltip } from '../../features/sparklines/sparklineTooltip';
-
-type AlertKind = 'crashed' | 'spike' | 'stale' | null;
-
-// Detect alert state from price movement + freshness. Thresholds are chosen
-// to surface real movement (>20% week-over-week) without being noisy.
-function detectAlert(row: WatchlistRow): AlertKind {
-  if (row.delta != null) {
-    if (row.delta <= -20) return 'crashed';
-    if (row.delta >= 20) return 'spike';
-  }
-  if (row.staleDays != null && row.staleDays > 7) return 'stale';
-  return null;
-}
-
-const ALERT_LABEL: Record<Exclude<AlertKind, null>, string> = {
-  crashed: 'crashed',
-  spike: 'spike',
-  stale: 'stale',
-};
-
-const ALERT_CLASS: Record<Exclude<AlertKind, null>, string> = {
-  crashed: 'text-crimson border-crimson/40',
-  spike: 'text-jade border-jade/40',
-  stale: 'text-gold border-gold/40',
-};
+import { detectAlert, ALERT_LABEL, ALERT_CLASS } from './alerts';
 
 // 4-tier profit color ramp, mirroring the design's watchlist proposal:
 //   ≥ 50k → jade (strong play)
@@ -54,18 +30,9 @@ function profitTone(profit: number | null): { text: string; bar: string } {
   return { text: 'text-crimson', bar: 'bg-crimson' };
 }
 
-const COLS_BASE: { key: SortKey | null; label: string; align?: 'right'; hideOnMobile?: boolean }[] = [
-  { key: 'name', label: 'Item' },
-  { key: 'crafter', label: 'Craft' },
-  { key: 'lvl', label: 'Lvl', align: 'right', hideOnMobile: true },
-  { key: 'dc', label: 'Sale', align: 'right' },
-  { key: 'trend', label: 'Trend', hideOnMobile: true },
-  { key: 'profit', label: 'Profit', align: 'right' },
-  { key: 'gilDay', label: 'Gil/day', align: 'right' },
-  { key: 'spd', label: 'Velocity', align: 'right', hideOnMobile: true },
-];
+interface Col { key: SortKey | null; label: string; align?: 'right'; hideOnMobile?: boolean; tip?: string }
 
-const WATCHLIST_CSV_COLUMNS: CsvColumn<WatchlistRow>[] = [
+const csvColumns = (applyMarketTax: boolean): CsvColumn<WatchlistRow>[] => [
   { key: 'id', label: 'Item ID' },
   { key: 'name', label: 'Item' },
   { key: 'crafter', label: 'Crafter' },
@@ -80,29 +47,35 @@ const WATCHLIST_CSV_COLUMNS: CsvColumn<WatchlistRow>[] = [
   { key: 'dcSpd', label: 'DC Velocity' },
   { key: 'delta', label: 'Trend', value: (r) => r.delta ?? 'N/A' },
   { key: 'materialCost', label: 'Material Cost', value: (r) => r.materialCost ?? 'N/A' },
-  { key: 'profit', label: 'Profit', value: (r) => r.profit ?? 'N/A' },
+  { key: 'profit', label: applyMarketTax ? 'Profit (net of tax)' : 'Profit (gross)', value: (r) => r.profit ?? 'N/A' },
   { key: 'gilPerDay', label: 'Gil/day', value: (r) => r.gilPerDay ?? 'N/A' },
 ];
 
-export function WatchlistTable({ rows, onSelect, sparklineMap, sparklineLoading }: {
+export function WatchlistTable({ rows, onSelect, sparklineMap, sparklineLoading, applyMarketTax = true }: {
   rows: WatchlistRow[];
   onSelect: (id: number) => void;
   sparklineMap?: Map<number, (number | null)[]>;
   sparklineLoading?: boolean;
+  applyMarketTax?: boolean;
 }) {
   const { catFilter, sortKey, sortDir, setSort, density } = useUiStore();
   const lm = useLoadMore(rows, 25);
   const rowY = rowPadClass(density);
   const showSparkline = sparklineMap != null;
 
-  const cols: typeof COLS_BASE = [
+  const cols: Col[] = [
     { key: 'name', label: 'Item' },
     { key: 'crafter', label: 'Craft' },
     { key: 'lvl', label: 'Lvl', align: 'right', hideOnMobile: true },
     { key: 'dc', label: 'Sale', align: 'right' },
     ...(showSparkline ? [{ key: null as SortKey | null, label: '', hideOnMobile: true }] : []),
     { key: 'trend', label: 'Trend', hideOnMobile: true },
-    { key: 'profit', label: 'Profit', align: 'right' },
+    {
+      key: 'profit', label: 'Profit', align: 'right',
+      tip: applyMarketTax
+        ? 'Profit per craft, net of the 5% marketboard tax. Turn off in Settings → Display.'
+        : 'Gross profit per craft (sale − materials). Marketboard tax not applied — toggle in Settings → Display.',
+    },
     { key: 'gilDay', label: 'Gil/day', align: 'right' },
     { key: 'spd', label: 'Velocity', align: 'right', hideOnMobile: true },
   ];
@@ -139,7 +112,7 @@ export function WatchlistTable({ rows, onSelect, sparklineMap, sparklineLoading 
             </span>
           )}
         </div>
-        <ExportCsvButton rows={rows} columns={WATCHLIST_CSV_COLUMNS} filename={`watchlist-${new Date().toISOString().slice(0, 10)}.csv`} />
+        <ExportCsvButton rows={rows} columns={csvColumns(applyMarketTax)} filename={`watchlist-${new Date().toISOString().slice(0, 10)}.csv`} />
       </div>
 
       {/* Mobile card list */}
@@ -223,7 +196,11 @@ export function WatchlistTable({ rows, onSelect, sparklineMap, sparklineLoading 
                     sorted ? 'text-gold' : isClickable ? 'text-text-dim hover:text-aether' : 'text-text-dim'
                   } ${c.align === 'right' ? 'text-right' : 'text-left'} ${c.hideOnMobile ? 'hidden md:table-cell' : ''}`}
                 >
-                  {c.label}{arrow}
+                  {c.tip ? (
+                    <InfoTooltip label={c.tip}>
+                      <span className="border-b border-dotted border-text-low/50">{c.label}</span>
+                    </InfoTooltip>
+                  ) : c.label}{arrow}
                 </th>
               );
             })}
@@ -307,7 +284,14 @@ export function WatchlistTable({ rows, onSelect, sparklineMap, sparklineLoading 
               <td className={`px-3 ${rowY} font-mono text-right`}>
                 {r.gilPerDay != null ? fmtGil(Math.round(r.gilPerDay)) : <span className="text-text-low">—</span>}
               </td>
-              <td className={`px-3 ${rowY} font-mono text-right hidden md:table-cell`}>{r.dcSpd.toFixed(1)}</td>
+              <td className={`px-3 ${rowY} font-mono text-right hidden md:table-cell`}>
+                {r.dcSpd.toFixed(1)}
+                {r.clearDays != null && r.clearDays > 0 && (
+                  <div className="text-[9px] text-text-low" title="Days to clear current listings at this velocity">
+                    {r.clearDays < 10 ? r.clearDays.toFixed(1) : Math.round(r.clearDays)}d clear
+                  </div>
+                )}
+              </td>
             </tr>
             );
           })}

@@ -8,7 +8,7 @@ const baseRow: WatchlistRow = {
   dcMinNQ: null, dcMinHQ: null, dcSpd: 5,
   refPrice: 0, rawScore: 0, score: 0, staleDays: null, craftStatus: 'ok',
   craftable: true, materialCost: 100, salePrice: 1000, profit: 900, gilPerDay: 4500,
-  delta: null,
+  clearDays: null, delta: null,
 };
 
 describe('buildCandidates', () => {

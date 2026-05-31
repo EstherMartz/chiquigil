@@ -54,6 +54,8 @@ export default function Settings() {
   const setHideCrystals = useSettingsStore((s) => s.setHideCrystals);
   const showSparklines = useSettingsStore((s) => s.showSparklines);
   const setShowSparklines = useSettingsStore((s) => s.setShowSparklines);
+  const applyMarketTax = useSettingsStore((s) => s.applyMarketTax);
+  const setApplyMarketTax = useSettingsStore((s) => s.setApplyMarketTax);
 
   const [showRedo, setShowRedo] = useState(false);
 
@@ -183,6 +185,20 @@ export default function Settings() {
         </label>
         <p className="font-mono text-[10px] text-text-low mt-1 ml-6">
           Loads 7-day sale history for items in Watchlist and Crafts results. Uses additional Universalis API calls.
+        </p>
+        <label className="flex items-center gap-2 cursor-pointer mt-3">
+          <input
+            type="checkbox"
+            checked={applyMarketTax}
+            onChange={(e) => setApplyMarketTax(e.target.checked)}
+            className="accent-gold w-4 h-4"
+          />
+          <span className="font-mono text-[10px] tracking-widest uppercase text-text-dim">
+            Subtract 5% marketboard tax from profit
+          </span>
+        </label>
+        <p className="font-mono text-[10px] text-text-low mt-1 ml-6">
+          Nets the marketboard retainer fee out of profit and gil/day on the Watchlist and Dashboard, so the numbers match what you actually keep.
         </p>
       </section>
       <section>

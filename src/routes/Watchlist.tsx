@@ -18,7 +18,7 @@ import { StatusBanner } from '../components/StatusBanner';
 import { btnPrimaryLarge } from '../components/buttonStyles';
 
 export default function Watchlist() {
-  const { world, dc, retainerLevels, defaultCraftTimeSeconds, showSparklines } = useSettingsStore();
+  const { world, dc, retainerLevels, defaultCraftTimeSeconds, showSparklines, applyMarketTax } = useSettingsStore();
   const { perItemFlags, setCraftIntermediates, setCraftTime } = useWatchlistStore();
   const ui = useUiStore();
   const [selectedItemId, setSelectedItemId] = useState<number | null>(null);
@@ -51,9 +51,9 @@ export default function Watchlist() {
     if (!market.data || !recipes.data) return [];
     return buildRows(
       items, market.data.phantom, market.data.dc,
-      retainerLevels, recipes.data, perItemFlags, Date.now(),
+      retainerLevels, recipes.data, perItemFlags, Date.now(), applyMarketTax,
     );
-  }, [items, market.data, recipes.data, retainerLevels, perItemFlags]);
+  }, [items, market.data, recipes.data, retainerLevels, perItemFlags, applyMarketTax]);
 
   const rowsWithDelta = useMemo(() =>
     rows.map((r) => ({ ...r, delta: history.data?.get(r.id) ?? null })),
@@ -91,6 +91,7 @@ export default function Watchlist() {
           onSelect={setSelectedItemId}
           sparklineMap={showSparklines ? sparklineHistory.data : undefined}
           sparklineLoading={sparklineHistory.isLoading}
+          applyMarketTax={applyMarketTax}
         />
       )}
 

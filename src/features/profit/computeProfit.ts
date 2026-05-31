@@ -1,5 +1,6 @@
 import type { Recipe, Ingredient } from '../../lib/recipes';
 import type { MarketData } from '../../lib/universalis';
+import { applyTax } from '../items/verdict/pricing';
 
 export interface PerItemFlags {
   craftIntermediates?: boolean;
@@ -48,7 +49,11 @@ function ingredientCost(
 
 export interface ProfitResult {
   materialCost: number;
+  /** Gross marketboard sale price (what a buyer pays), before tax. */
   salePrice: number;
+  /** Sale price the seller actually keeps — net of the 5% MB tax when applied. */
+  netSalePrice: number;
+  /** netSalePrice − materialCost. Net of tax unless applyMarketTax is false. */
   profit: number;
 }
 
@@ -69,9 +74,11 @@ export function computeProfit(
   phantom: MarketData,
   dc: MarketData,
   flags: FlagMap,
+  applyMarketTax = true,
 ): ProfitResult | null {
   if (!recipe) return null;
   const materialCost = computeMaterialCost(recipe, recipeMap, dc, flags, phantom);
   const salePrice = salePriceFor(item.id, phantom, dc);
-  return { materialCost, salePrice, profit: salePrice - materialCost };
+  const netSalePrice = applyMarketTax ? applyTax(salePrice) : salePrice;
+  return { materialCost, salePrice, netSalePrice, profit: netSalePrice - materialCost };
 }

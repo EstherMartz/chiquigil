@@ -107,7 +107,9 @@ describe('Watchlist route', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getAllByText(/245k/).length).toBeGreaterThanOrEqual(1);
+      // Profit is net of the 5% marketboard tax by default:
+      // applyTax(250000) − 5000 (5 × 1000 material) = 232,500 → "233k".
+      expect(screen.getAllByText(/233k/).length).toBeGreaterThanOrEqual(1);
     }, { timeout: 3000 });
   });
 });
