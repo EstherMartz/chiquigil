@@ -35,6 +35,9 @@ export interface PriceHistoryStats {
   /** 25th/75th percentile of daily mean prices — a "usual range" band. */
   bandLo: number | null;
   bandHi: number | null;
+  /** Simple mean and population stdev of the daily mean prices (for z-scores). */
+  meanDaily: number | null;
+  stdevDaily: number | null;
 }
 
 /** Value at percentile p (0–1) of an ascending-sorted numeric array. */
@@ -107,6 +110,14 @@ export function priceHistoryStats(
   const bandLo = percentile(dailyPrices, 0.25);
   const bandHi = percentile(dailyPrices, 0.75);
 
+  // Mean + population stdev of the daily means — the basis for a z-score.
+  const meanDaily = dailyPrices.length
+    ? dailyPrices.reduce((a, b) => a + b, 0) / dailyPrices.length
+    : null;
+  const stdevDaily = meanDaily != null && dailyPrices.length
+    ? Math.sqrt(dailyPrices.reduce((s, p) => s + (p - meanDaily) ** 2, 0) / dailyPrices.length)
+    : null;
+
   const thinSpikes =
     daily.length >= 5 && medianDaily > 0 && maxVolume > 0
       ? daily
@@ -142,6 +153,8 @@ export function priceHistoryStats(
     medianDaily: medianDaily || null,
     bandLo,
     bandHi,
+    meanDaily,
+    stdevDaily,
   };
 }
 
