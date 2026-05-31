@@ -76,11 +76,13 @@ export interface MarginBucket {
 }
 
 const BUCKET_DEFS: Omit<MarginBucket, 'count'>[] = [
-  { label: '< 0%',   min: -Infinity, max: 0,        fill: '#b5524e' },
-  { label: '0–10%',  min: 0,         max: 0.1,      fill: '#9a8f7a' },
-  { label: '10–25%', min: 0.1,       max: 0.25,     fill: '#d4a857' },
-  { label: '25–40%', min: 0.25,      max: 0.4,      fill: '#b9b06a' },
-  { label: '40%+',   min: 0.4,       max: Infinity, fill: '#7ab06f' },
+  { label: '< 0%',    min: -Infinity, max: 0,        fill: '#b5524e' },
+  { label: '0–10%',   min: 0,         max: 0.1,      fill: '#9a8f7a' },
+  { label: '10–25%',  min: 0.1,       max: 0.25,     fill: '#d4a857' },
+  { label: '25–40%',  min: 0.25,      max: 0.4,      fill: '#b9b06a' },
+  { label: '40–75%',  min: 0.4,       max: 0.75,     fill: '#8fb86a' },
+  { label: '75–150%', min: 0.75,      max: 1.5,      fill: '#7ab06f' },
+  { label: '150%+',   min: 1.5,       max: Infinity, fill: '#5fa37a' },
 ];
 
 export function marginBuckets(rows: WatchlistRow[]): MarginBucket[] {
