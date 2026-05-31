@@ -166,7 +166,7 @@ describe('valuePlays', () => {
       pricePerUnit: mean + (i % 2 === 0 ? 50 : -50),
     }));
 
-  it('lists items trading under fair value, cheapest-z first, skips thin items', () => {
+  it('lists items trading under fair value, skips ~fair and thin-history items', () => {
     const rows = [
       mkRow({ id: 1, dcMinNQ: 700, materialCost: 400, dcSpd: 4 }),  // way under 1000 → cheap
       mkRow({ id: 2, dcMinNQ: 990, materialCost: 400, dcSpd: 4 }),  // ~fair
@@ -181,6 +181,22 @@ describe('valuePlays', () => {
     expect(out.map((p) => p.row.id)).toEqual([1]);
     expect(out[0].current).toBe(700);
     expect(out[0].signal.valuation).toBe('cheap');
+  });
+
+  it('ranks by opportunity size (gap × velocity), not raw % discount', () => {
+    const rows = [
+      // Tiny item, huge % discount, slow: 200 → fair 1000 is unrealistic, so use
+      // its own history. Cheap by %, but little gil and only 2/day.
+      mkRow({ id: 1, name: 'Popoto', dcMinNQ: 88, materialCost: 10, dcSpd: 2 }),
+      // Pricier item, smaller % discount, fast mover — the better play.
+      mkRow({ id: 2, name: 'Gemsap', dcMinNQ: 850, materialCost: 100, dcSpd: 70 }),
+    ];
+    const summaries = new Map([
+      [1, summarizeHistory(hist(200))],   // 88 vs ~200 mean → deep % discount, low gil
+      [2, summarizeHistory(hist(1000))],  // 850 vs ~1000 → ~15%, but big & fast
+    ]);
+    const out = valuePlays(rows, summaries, 5);
+    expect(out.map((p) => p.row.id)).toEqual([2, 1]); // Gemsap ranks first
   });
 
   it('skips stagnant items below the velocity gate even when deeply discounted', () => {

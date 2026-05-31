@@ -32,7 +32,8 @@ function MoverRow({ row, kind, valuation }: { row: WatchlistRow; kind: 'up' | 'd
       <span className="flex items-center gap-1.5 min-w-0">
         <Link
           to={`/item/${row.id}`}
-          className="font-display text-[12px] text-text-cream hover:text-aether hover:underline decoration-1 underline-offset-4 truncate"
+          title={row.name}
+          className="font-display text-[12px] text-text-cream hover:text-aether hover:underline decoration-1 underline-offset-4 leading-tight line-clamp-2 break-words"
         >
           {row.name}
         </Link>

@@ -12,8 +12,8 @@ type SizeMode = 'velocity' | 'opportunity';
  * Full-width treemap of the watchlist — brightness = margin tier, hue = play
  * kind. Reuses the /heatmap building blocks so it stays in lockstep with that
  * page. Two toggles: scope (all vs craftable) and what tile size encodes —
- * Velocity (raw sales/day) or Opportunity (margin × velocity), so the best
- * plays rise visually instead of just the highest-volume ones.
+ * Velocity (raw sales/day) or Best ratio (gil/day money-flow = sale × margin ×
+ * velocity), so the best plays rise visually instead of just the busiest ones.
  */
 export function WatchlistHeatmapTile({ items, market, recipes }: {
   items: SnapshotItem[];
@@ -30,11 +30,13 @@ export function WatchlistHeatmapTile({ items, market, recipes }: {
   const cells = useMemo(() => {
     const scoped = scope === 'craft' ? allCells.filter((c) => c.craftable) : allCells;
     if (sizeMode === 'velocity') return scoped;
-    // Opportunity = margin × velocity. Re-derive area; floor margin at a small
-    // positive so non-craftables (margin null) still show, sized by velocity.
+    // Best ratio = money flow. Sizing by margin × velocity alone is a near
+    // no-op when margins cluster (e.g. all ~95%), so weight by sale price too:
+    // gil/day ≈ salePrice × margin × velocity (profit flow). Non-craftables
+    // (margin null) fall back to revenue flow salePrice × velocity.
     return scoped.map((c) => {
-      const score = Math.max(0.01, (c.margin ?? 0.05)) * c.velocity;
-      return { ...c, area: score };
+      const flow = c.salePrice * (c.margin ?? 1) * c.velocity;
+      return { ...c, area: Math.max(0.01, flow) };
     });
   }, [allCells, scope, sizeMode]);
 

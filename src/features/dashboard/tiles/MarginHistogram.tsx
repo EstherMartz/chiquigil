@@ -12,8 +12,10 @@ export function MarginHistogram({ buckets }: { buckets: MarginBucket[] }) {
   const total = buckets.reduce((s, b) => s + b.count, 0);
   const maxGil = buckets.reduce((m, b) => Math.max(m, b.gilPerDay), 0);
 
-  // Brightness ramp per band by its share of the busiest band's gil/day.
-  const opacityFor = (gpd: number) => (maxGil > 0 ? 0.3 + 0.7 * (gpd / maxGil) : 0.6);
+  // Brightness ramp per band by its share of the busiest band's gil/day. Gamma
+  // (sqrt) + a wide 0.12→1.0 range so a band that barely sells reads clearly
+  // dim next to one that moves, rather than every bar looking the same shade.
+  const opacityFor = (gpd: number) => (maxGil > 0 ? 0.12 + 0.88 * Math.sqrt(gpd / maxGil) : 0.6);
 
   return (
     <div className="border border-border-base bg-bg-card p-4">

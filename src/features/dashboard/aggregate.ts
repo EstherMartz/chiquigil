@@ -266,7 +266,14 @@ export function valuePlays(
     if (signal.valuation !== 'cheap') continue;
     out.push({ row: r, current, signal });
   }
-  return out.sort((a, b) => (a.signal.zScore ?? 0) - (b.signal.zScore ?? 0)).slice(0, n);
+  // Rank by opportunity SIZE, not raw % discount: gil you'd capture reverting
+  // to fair ≈ (mean − current) × daily velocity. A 56% discount on a 200-gil
+  // item that sells 2/day loses to a 20% discount on a 5k item selling 70/day.
+  const opportunity = (p: ValuePlay) => {
+    const gap = (p.signal.pctVsFair != null ? -p.signal.pctVsFair : 0) * p.current; // gil under fair / unit
+    return Math.max(0, gap) * p.row.dcSpd;
+  };
+  return out.sort((a, b) => opportunity(b) - opportunity(a)).slice(0, n);
 }
 
 function cheapestByWorld(listings: WorldListing[]): Map<string, number> {
