@@ -72,14 +72,20 @@ export function Sidebar() {
   // Desktop sidebar
   const desktopContent = (
     <aside className="hidden md:flex md:flex-col fixed md:relative w-[220px] min-w-[220px] h-screen md:h-full sticky top-0 bg-bg-card border-r border-border-base z-20">
-      {/* Branding */}
-      <div className="px-4 pb-3 border-b border-border-base flex-shrink-0">
-        <div className="font-mono text-[13px] tracking-widest text-aether uppercase mb-1">
-          Mone a fer dinerets
+      {/* Branding — qiqirn banner art behind the title, darkened for legibility */}
+      <div
+        className="relative px-4 pt-3 pb-3 border-b border-border-base flex-shrink-0 bg-bg-card bg-cover bg-center"
+        style={{ backgroundImage: 'url(/qiqirn-banner.png)' }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-r from-bg-card via-bg-card/80 to-bg-card/30" aria-hidden />
+        <div className="relative">
+          <div className="font-mono text-[13px] tracking-widest text-aether uppercase mb-1 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
+            Mone a fer dinerets
+          </div>
+          <h1 className="font-display font-semibold text-xl tracking-wide leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
+            <span className="text-gold italic">qiqirn.tools</span>
+          </h1>
         </div>
-        <h1 className="font-display font-semibold text-xl tracking-wide leading-tight">
-          <span className="text-gold italic">qiqirn.tools</span>
-        </h1>
       </div>
 
       {/* Nav groups */}
@@ -137,13 +143,17 @@ export function Sidebar() {
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="h-12 px-4 flex items-center justify-between border-b border-border-base">
-          <span className="font-mono text-[13px] tracking-widest text-aether uppercase">
+        <div
+          className="relative h-12 px-4 flex items-center justify-between border-b border-border-base bg-cover bg-center"
+          style={{ backgroundImage: 'url(/qiqirn-banner.png)' }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-bg-card via-bg-card/80 to-bg-card/30" aria-hidden />
+          <span className="relative font-mono text-[13px] tracking-widest text-aether uppercase drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
             qiqirn.tools
           </span>
           <button
             onClick={closeMobileMenu}
-            className="w-11 h-11 flex items-center justify-center text-xl text-text-cream hover:text-aether active:text-aether transition-colors -mr-2"
+            className="relative w-11 h-11 flex items-center justify-center text-xl text-text-cream hover:text-aether active:text-aether transition-colors -mr-2"
             aria-label="Close menu"
           >
             ✕
