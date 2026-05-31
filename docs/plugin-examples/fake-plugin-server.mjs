@@ -99,7 +99,10 @@ wss.on('connection', (ws, req) => {
   ws.on('close', () => { clearInterval(pulse); console.log('✗ web client disconnected'); });
 });
 
+const WEB_ORIGIN = process.env.FAKE_PLUGIN_WEB_ORIGIN ?? 'http://localhost:5173';
 console.log('Fake QiqirnCompanion plugin (v2 live-sync) listening:');
 console.log(`  URL:   ws://127.0.0.1:${PORT}${PATH}`);
 console.log(`  Token: ${TOKEN}`);
-console.log('Paste both into the web app → Settings → In-game plugin, then enable.');
+console.log('Paste both into the web app → Settings → In-game plugin, then enable, OR');
+console.log('one-click pair by opening this deep link in the browser:');
+console.log(`  ${WEB_ORIGIN}/settings#pair=${encodeURIComponent(TOKEN)}&url=${encodeURIComponent(`ws://127.0.0.1:${PORT}${PATH}`)}`);

@@ -63,10 +63,15 @@ export function PluginPanel() {
           type="password"
           value={token}
           onChange={(e) => setToken(e.target.value)}
-          placeholder="paste from the Dalamud plugin config window"
+          placeholder="paste, or use the plugin's one-click Pair button"
           className="font-mono text-xs bg-bg-card-hi border border-border-base px-2 py-1.5 text-text-cream focus:border-aether outline-none"
         />
       </div>
+
+      <p className="font-mono text-[10px] text-text-low -mt-1">
+        Tip: the plugin's <span className="text-aether">Pair with web</span> button opens this page with a one-click
+        link — no token to copy. The link drops off the address bar automatically once applied.
+      </p>
 
       <label className="flex items-center gap-2 cursor-pointer">
         <input

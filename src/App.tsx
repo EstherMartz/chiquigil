@@ -6,6 +6,7 @@ import { ContentBar } from './components/layout/ContentBar';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { OnboardingWizard } from './features/onboarding/OnboardingWizard';
 import { usePluginConnection } from './features/plugin/usePluginConnection';
+import { usePluginPairing } from './features/plugin/usePluginPairing';
 import { AuthProvider } from './features/auth/AuthProvider';
 import { RequireAuth } from './features/auth/RequireAuth';
 import { UserMenu } from './features/auth/UserMenu';
@@ -82,6 +83,7 @@ export default function App() {
   );
 
   usePluginConnection();
+  usePluginPairing();
 
   return (
     <AuthProvider>
