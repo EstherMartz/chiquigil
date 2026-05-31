@@ -5,8 +5,11 @@ import { useMarketData } from '../watchlist/useMarketData';
 import { useWatchlistHistory } from '../watchlist/useWatchlistHistory';
 import { useRecipes } from '../profit/useRecipes';
 import { useSelectedItems } from '../items/useSelectedItems';
+import { useItemSnapshot } from '../queries/useItemSnapshot';
 import { buildRows } from '../watchlist/buildRows';
 import type { WorldListing } from '../../lib/universalis';
+import type { SnapshotItem } from '../../lib/itemSnapshot';
+import type { Recipe } from '../../lib/recipes';
 import { Spinner } from '../../components/Spinner';
 import { StatusBanner } from '../../components/StatusBanner';
 import { FreshnessChip } from '../../components/FreshnessChip';
@@ -19,6 +22,7 @@ import { MarginHistogram } from './tiles/MarginHistogram';
 import { GilLeaderboard } from './tiles/GilLeaderboard';
 import { ChangedDigest } from './tiles/ChangedDigest';
 import { SpreadBars } from './tiles/SpreadBars';
+import { WatchlistHeatmapTile } from './tiles/WatchlistHeatmapTile';
 
 export function DashboardView() {
   const { world, dc, retainerLevels, applyMarketTax } = useSettingsStore();
@@ -28,6 +32,7 @@ export function DashboardView() {
   const market = useMarketData(ids, world, dc);
   const history = useWatchlistHistory(ids, dc);
   const recipes = useRecipes(ids);
+  const snapshot = useItemSnapshot();
 
   const rows = useMemo(() => {
     if (!market.data || !recipes.data) return [];
@@ -53,6 +58,23 @@ export function DashboardView() {
     }
     return m;
   }, [market.data, ids]);
+
+  // Heatmap inputs: resolve each tracked id to its SnapshotItem (for sc/name)
+  // and narrow recipes to the non-null entries buildHeatmapCells expects.
+  const heatmapItems = useMemo<SnapshotItem[]>(() => {
+    if (!snapshot.data) return [];
+    const byId = new Map<number, SnapshotItem>();
+    for (const it of snapshot.data.items) byId.set(it.id, it);
+    const out: SnapshotItem[] = [];
+    for (const id of ids) { const s = byId.get(id); if (s) out.push(s); }
+    return out;
+  }, [snapshot.data, ids]);
+
+  const heatmapRecipes = useMemo<Map<number, Recipe>>(() => {
+    const m = new Map<number, Recipe>();
+    if (recipes.data) for (const [id, r] of recipes.data) if (r) m.set(id, r);
+    return m;
+  }, [recipes.data]);
 
   const agg = useMemo(() => ({
     totals: portfolioTotals(rowsWithDelta),
@@ -126,6 +148,7 @@ export function DashboardView() {
             <ChangedDigest digest={agg.movers} />
             <SpreadBars spreads={agg.spreads} homeWorld={world} />
           </div>
+          <WatchlistHeatmapTile items={heatmapItems} market={market.data?.dc ?? {}} recipes={heatmapRecipes} />
         </>
       )}
     </div>
