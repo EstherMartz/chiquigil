@@ -6,6 +6,7 @@ import { useMarketData, type MarketBundle } from '../watchlist/useMarketData';
 import { useUserStore } from '../user/userStore';
 import type { SnapshotItem } from '../../lib/itemSnapshot';
 import { AllaganPasteBox } from './AllaganPasteBox';
+import { PluginInventoryButton } from '../plugin/PluginInventoryButton';
 import { CleanupResults } from './CleanupResults';
 import { CleanupProgressBar } from './CleanupProgressBar';
 import { parseAllaganInventory } from './parseAllaganInventory';
@@ -169,6 +170,7 @@ export function CleanupView() {
 
   return (
     <div className="max-w-[100rem] mx-auto px-4 space-y-8 pt-4">
+      <PluginInventoryButton namesById={namesById} onLoaded={(r) => { setParseError(null); setParsed(r); }} />
       <AllaganPasteBox
         onParse={handleParse}
         onClear={handleClear}

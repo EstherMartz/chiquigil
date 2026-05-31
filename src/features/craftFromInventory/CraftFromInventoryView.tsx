@@ -8,6 +8,7 @@ import { useUserStore } from '../user/userStore';
 import { CRYSTALS_SEARCH_CATEGORY } from '../queries/commonFilters';
 import { AllaganPasteBox } from '../cleanup/AllaganPasteBox';
 import { parseAllaganInventory, type ParseResult } from '../cleanup/parseAllaganInventory';
+import { PluginInventoryButton } from '../plugin/PluginInventoryButton';
 import { findCraftableFromInventory, type CraftableRow } from './findCraftable';
 import { useMarketData } from '../watchlist/useMarketData';
 import { SectionHeader } from '../../components/SectionHeader';
@@ -145,12 +146,15 @@ export function CraftFromInventoryView() {
       {!ready && <Spinner label="Loading snapshots..." />}
 
       {ready && (
-        <AllaganPasteBox
-          onParse={handleParse}
-          onClear={handleClear}
-          parseError={parseError}
-          parsedSummary={parsedSummary}
-        />
+        <>
+          <PluginInventoryButton namesById={namesById} onLoaded={(r) => { setParseError(null); setParsed(r); }} />
+          <AllaganPasteBox
+            onParse={handleParse}
+            onClear={handleClear}
+            parseError={parseError}
+            parsedSummary={parsedSummary}
+          />
+        </>
       )}
 
       {parsed && (
