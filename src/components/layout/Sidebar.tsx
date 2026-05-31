@@ -80,7 +80,7 @@ export function Sidebar() {
         <div className="absolute inset-0 bg-gradient-to-r from-bg-card via-bg-card/80 to-bg-card/30" aria-hidden />
         <div className="relative">
           <div className="font-mono text-[13px] tracking-widest text-aether uppercase mb-1 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
-            Mone a fer dinerets
+            clink-clink
           </div>
           <h1 className="font-display font-semibold text-xl tracking-wide leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
             <span className="text-gold italic">qiqirn.tools</span>

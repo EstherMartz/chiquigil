@@ -13,7 +13,7 @@ export function Header() {
       <div className="max-w-[100rem] mx-auto px-4 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
         <div>
           <div className="font-mono text-[11px] tracking-widest text-aether uppercase mb-1">
-            Mone a fer dinerets
+            clink-clink
           </div>
           <h1 className="font-display font-semibold text-3xl tracking-wide leading-tight">
             <span className="text-gold italic">qiqirn.tools</span>
