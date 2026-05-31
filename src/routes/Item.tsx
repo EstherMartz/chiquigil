@@ -221,6 +221,8 @@ export default function Item() {
         dc={dcMarket}
         region={regionMarket}
         canHq={canHq}
+        floor={recipe && recipeMaterialCost > 0 ? recipeMaterialCost : null}
+        ceiling={vendorPrice || null}
       />
 
       {vendorPrice ? (

@@ -17,6 +17,9 @@ interface Props {
   dc?: MarketItem;
   region?: MarketItem;
   canHq: boolean;
+  /** Crafting material cost (support) + vendor price (ceiling) for fair value. */
+  floor?: number | null;
+  ceiling?: number | null;
 }
 
 /** Does this market item show any real activity (price, listings, or velocity)? */
@@ -25,7 +28,7 @@ function hasMarketPresence(m?: MarketItem): boolean {
   return (m.minNQ != null || m.minHQ != null) || (m.listingCount ?? 0) > 0 || (m.velocity ?? 0) > 0;
 }
 
-export function MarketSnapshotRow({ itemId, homeWorld, dcLabel, phantom, dc, region, canHq }: Props) {
+export function MarketSnapshotRow({ itemId, homeWorld, dcLabel, phantom, dc, region, canHq, floor, ceiling }: Props) {
   const [showAllWorlds, setShowAllWorlds] = useState(false);
 
   // ONE active scope drives the whole card: the player's home world, or the DC
@@ -62,6 +65,8 @@ export function MarketSnapshotRow({ itemId, homeWorld, dcLabel, phantom, dc, reg
           listings={activeMarket?.worldListings}
           canHq={canHq}
           scopeLabel={activeLabel}
+          floor={floor}
+          ceiling={ceiling}
         />
 
         <CrossWorldArbCard

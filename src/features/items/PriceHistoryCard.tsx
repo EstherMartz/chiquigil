@@ -8,6 +8,7 @@ import type { MarketItem, WorldListing } from '../../lib/universalis';
 import { fmtGil } from '../../lib/format';
 import { formatClearDays } from './supplyDepth';
 import { captureShare } from './verdict/pricing';
+import { classifyValue, type Valuation } from '../fairvalue/fairValue';
 import { Spinner } from '../../components/Spinner';
 
 /** One calendar day: quantity-weighted mean price per quality + total units sold. */
@@ -166,9 +167,13 @@ interface Props {
   listings?: WorldListing[];
   canHq: boolean;
   scopeLabel: string;
+  /** Crafting material cost — drawn as a support line and used for the verdict. */
+  floor?: number | null;
+  /** Vendor price — drawn as a resistance line and used for the verdict. */
+  ceiling?: number | null;
 }
 
-export function PriceHistoryCard({ entries, loading, market, listings, canHq, scopeLabel }: Props) {
+export function PriceHistoryCard({ entries, loading, market, listings, canHq, scopeLabel, floor, ceiling }: Props) {
   const [rangeDays, setRangeDays] = useState<7 | 30 | 90 | null>(30);
 
   // Current asks (offers): the cheapest current listing + how many are up, so we
@@ -198,6 +203,25 @@ export function PriceHistoryCard({ entries, loading, market, listings, canHq, sc
   const listingCount = market?.listingCount ?? ask?.count ?? 0;
   const clearLabel = velocity > 0 && listingCount > 0 ? formatClearDays(listingCount, velocity) : null;
   const capturePct = listingCount > 0 ? Math.round(captureShare(listingCount) * 100) : null;
+
+  // Fair-value signal: where the current price sits vs the item's own range,
+  // bounded by craft cost (floor) and vendor price (ceiling). The timing layer.
+  const fair = useMemo(
+    () => classifyValue({
+      current: currentPrice,
+      mean: stats.meanDaily,
+      stdev: stats.stdevDaily,
+      count: stats.salesInRange,
+      bandLo: stats.bandLo,
+      bandHi: stats.bandHi,
+      floor: floor ?? null,
+      ceiling: ceiling ?? null,
+    }),
+    [currentPrice, stats, floor, ceiling],
+  );
+  const fairTone: Record<Valuation, string> = {
+    cheap: 'text-jade', rich: 'text-gold', fair: 'text-text-dim', unknown: 'text-text-low',
+  };
 
   const rangeLabel = rangeDays === null ? 'ALL' : `${rangeDays}D`;
   const Toggle = (
@@ -267,6 +291,11 @@ export function PriceHistoryCard({ entries, loading, market, listings, canHq, sc
             {clearLabel && <span className="text-aether/80">clears {clearLabel}</span>}
           </div>
         )}
+        {/* Fair-value verdict — the "cheap/fair/rich now" timing read. */}
+        <div className={`mt-1.5 text-[12px] leading-snug ${fairTone[fair.valuation]}`}>
+          <span className="font-mono text-[9px] tracking-widest uppercase text-text-low mr-2">Fair value</span>
+          {fair.verdict}
+        </div>
       </div>
 
       {/* Range toggle — directly under the headline, above the chart */}
@@ -317,6 +346,19 @@ export function PriceHistoryCard({ entries, loading, market, listings, canHq, sc
                   <ReferenceLine
                     yAxisId="price" y={stats.vwap}
                     stroke="#9a8f7a" strokeDasharray="3 3" strokeOpacity={0.7} ifOverflow="extendDomain"
+                  />
+                )}
+                {/* Fundamental bounds: craft cost (support) + vendor price (ceiling). */}
+                {floor != null && floor > 0 && (
+                  <ReferenceLine
+                    yAxisId="price" y={floor} stroke="#c2683a" strokeDasharray="2 4" strokeOpacity={0.7} ifOverflow="extendDomain"
+                    label={{ value: 'craft cost', position: 'insideBottomLeft', fontSize: 8, fill: '#c2683a', fontFamily: 'monospace' }}
+                  />
+                )}
+                {ceiling != null && ceiling > 0 && (
+                  <ReferenceLine
+                    yAxisId="price" y={ceiling} stroke="#7ab06f" strokeDasharray="2 4" strokeOpacity={0.7} ifOverflow="extendDomain"
+                    label={{ value: 'vendor', position: 'insideTopLeft', fontSize: 8, fill: '#7ab06f', fontFamily: 'monospace' }}
                   />
                 )}
                 <Tooltip
