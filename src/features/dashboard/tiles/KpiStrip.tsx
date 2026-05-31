@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fmtGil } from '../../../lib/format';
+import { useDashboardStore } from '../dashboardStore';
 import type { PortfolioTotals, TopPick } from '../aggregate';
 
 /** Top-of-dashboard KPI strip — the "is my watchlist worth my time?" answer. */
@@ -58,15 +59,39 @@ export function KpiStrip({ totals, applyMarketTax, picks }: {
 }
 
 /**
- * The single best action right now, with ‹ › to cycle through the top few so a
- * pick already in rotation isn't permanent noise. Clamps the index if the picks
- * list shrinks between renders.
+ * The single best action right now. ‹ › cycle the top few; "got it" permanently
+ * dismisses a pick (persisted) so something already in rotation stops being the
+ * headline — the banner then falls through to the next-best. Clamps the index
+ * if the live list shrinks.
  */
 function TopPickBanner({ picks }: { picks: TopPick[] }) {
   const [idx, setIdx] = useState(0);
-  if (picks.length === 0) return null;
-  const i = Math.min(idx, picks.length - 1);
-  const pick = picks[i];
+  const dismissedPickIds = useDashboardStore((s) => s.dismissedPickIds);
+  const dismissPick = useDashboardStore((s) => s.dismissPick);
+  const resetDismissedPicks = useDashboardStore((s) => s.resetDismissedPicks);
+
+  const dismissed = new Set(dismissedPickIds);
+  const visible = picks.filter((p) => !dismissed.has(p.row.id));
+
+  // All current picks waved off — offer a one-tap reset instead of an empty bar.
+  if (picks.length > 0 && visible.length === 0) {
+    return (
+      <div className="flex items-center justify-between gap-3 px-3 py-2.5 bg-gold/5 border-b border-gold/20">
+        <span className="font-mono text-[10px] text-text-low">All top picks dismissed.</span>
+        <button
+          type="button"
+          onClick={resetDismissedPicks}
+          className="font-mono text-[9px] tracking-widest uppercase text-aether hover:text-gold transition-colors"
+        >
+          ↺ reset
+        </button>
+      </div>
+    );
+  }
+  if (visible.length === 0) return null;
+
+  const i = Math.min(idx, visible.length - 1);
+  const pick = visible[i];
 
   return (
     <div className="flex items-baseline gap-3 flex-wrap px-3 py-2.5 bg-gold/10 border-b border-gold/30">
@@ -75,21 +100,29 @@ function TopPickBanner({ picks }: { picks: TopPick[] }) {
         {pick.row.name}
       </Link>
       <span className="font-mono text-[10px] text-text-low">{pick.row.crafter}</span>
-      {picks.length > 1 && (
+      {visible.length > 1 && (
         <span className="flex items-center gap-1.5">
           <button
             type="button" aria-label="Previous pick"
-            onClick={() => setIdx((i + picks.length - 1) % picks.length)}
+            onClick={() => setIdx((i + visible.length - 1) % visible.length)}
             className="font-mono text-[11px] text-text-low hover:text-gold transition-colors px-1"
           >‹</button>
-          <span className="font-mono text-[9px] text-text-low tabular-nums">{i + 1}/{picks.length}</span>
+          <span className="font-mono text-[9px] text-text-low tabular-nums">{i + 1}/{visible.length}</span>
           <button
             type="button" aria-label="Next pick"
-            onClick={() => setIdx((i + 1) % picks.length)}
+            onClick={() => setIdx((i + 1) % visible.length)}
             className="font-mono text-[11px] text-text-low hover:text-gold transition-colors px-1"
           >›</button>
         </span>
       )}
+      <button
+        type="button"
+        onClick={() => { dismissPick(pick.row.id); setIdx(0); }}
+        title="Got it — stop suggesting this pick"
+        className="font-mono text-[9px] tracking-widest uppercase text-text-low hover:text-crimson transition-colors"
+      >
+        got it ✕
+      </button>
       <span className="font-mono text-[11px] text-gold tabular-nums ml-auto">
         {fmtGil(Math.round(pick.gilPerDay))}/day
       </span>

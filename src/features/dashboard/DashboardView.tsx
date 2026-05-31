@@ -85,7 +85,7 @@ export function DashboardView() {
 
   const agg = useMemo(() => ({
     totals: portfolioTotals(rowsWithDelta),
-    picks: topPicks(rowsWithDelta, 3),
+    picks: topPicks(rowsWithDelta, 8),
     buckets: marginBuckets(rowsWithDelta),
     movers: moversDigest(rowsWithDelta),
     spreads: spreadByWorld(rowsWithDelta, listingsById, world, 6),
