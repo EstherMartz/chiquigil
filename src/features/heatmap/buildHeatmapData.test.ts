@@ -29,6 +29,14 @@ describe('buildHeatmapCells', () => {
     expect(cells[0].name).toBe('Iron Ore');
   });
 
+  it('tags items in specific material subcategories (not just the umbrella id 7)', () => {
+    // 48 = Metal, 50 = Cloth — real mats carry these, not the umbrella 7.
+    const items = [mkItem(100, 'Iron Ingot', 48), mkItem(101, 'Cotton Cloth', 50)];
+    const market = { '100': mkMarket(), '101': mkMarket() };
+    const cells = buildHeatmapCells(items, market, new Map());
+    expect(cells.every((c) => c.tags.has('material'))).toBe(true);
+  });
+
   it('filters out items with no market data', () => {
     const items = [mkItem(100, 'Iron Ore')];
     const cells = buildHeatmapCells(items, {}, new Map());

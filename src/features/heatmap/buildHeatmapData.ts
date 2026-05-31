@@ -75,8 +75,12 @@ function velocityTier(velocity: number, p90: number): CellTier {
 }
 
 // Item search category groups for tagging
-const MATERIAL_SCS = new Set([7, 58]); // Materials + Crystals
-const CONSUMABLE_SCS = new Set([6]);   // Medicines & Meals
+// Crafting-material search categories. The umbrella "Materials" (7) is barely
+// used — real mats carry their specific subcategory id, so we list them all:
+// Stone/Metal/Lumber/Cloth/Leather/Bone/Reagents (47–53), Crystals (58),
+// Catalysts (59), plus the umbrella (7) and Dyes (54) for completeness.
+const MATERIAL_SCS = new Set([7, 47, 48, 49, 50, 51, 52, 53, 54, 58, 59]);
+const CONSUMABLE_SCS = new Set([6, 44, 45, 46]); // Medicines & Meals (incl. subcats)
 const EQUIPMENT_SCS = new Set([1, 2, 3, 4, 5]); // Weapons, Tools, Armor, Accessories
 
 export function buildHeatmapCells(
