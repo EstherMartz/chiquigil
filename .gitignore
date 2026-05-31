@@ -13,6 +13,7 @@ coverage
 .playwright-mcp/
 *.png
 !public/icons/**/*.png
+!public/*.png
 test-results.txt
 test_output.txt
 
