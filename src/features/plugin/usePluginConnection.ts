@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { useSettingsStore } from '../settings/store';
 import { usePluginStore } from './pluginStore';
-import { parseInboundMessage, type HelloMessage } from './protocol';
+import { parseInboundMessage, buildHello } from './protocol';
+import { attachSocket, handleInbound } from './pluginBridge';
 
 const BACKOFF_MS = [1000, 2000, 5000, 10000, 15000] as const;
 
@@ -23,6 +24,7 @@ export function usePluginConnection(): void {
   useEffect(() => {
     const { setRuntime } = usePluginStore.getState();
     if (!enabled || !url || !token) {
+      attachSocket(null);
       setRuntime({ status: 'idle', lastError: null });
       return;
     }
@@ -49,9 +51,9 @@ export function usePluginConnection(): void {
       socket.addEventListener('open', () => {
         if (cancelled) return;
         attempt = 0;
+        attachSocket(socket);
         setRuntime({ status: 'open', lastError: null });
-        const hello: HelloMessage = { type: 'hello', v: 1, client: 'chiquigil-web' };
-        socket.send(JSON.stringify(hello));
+        socket.send(JSON.stringify(buildHello()));
       });
 
       socket.addEventListener('message', (ev) => {
@@ -69,6 +71,9 @@ export function usePluginConnection(): void {
             });
           }
         }
+        // Route every message through the bridge: resolves pending requests
+        // and folds welcome/inventory/gil/listings into the live data store.
+        handleInbound(msg);
       });
 
       socket.addEventListener('error', () => {
@@ -78,6 +83,7 @@ export function usePluginConnection(): void {
 
       socket.addEventListener('close', () => {
         if (cancelled) return;
+        attachSocket(null);
         setRuntime({ status: 'closed' });
         scheduleRetry();
       });
@@ -95,6 +101,7 @@ export function usePluginConnection(): void {
     return () => {
       cancelled = true;
       if (retryTimer) clearTimeout(retryTimer);
+      attachSocket(null);
       if (ws && ws.readyState <= WebSocket.OPEN) ws.close();
       setRuntime({ status: 'idle' });
     };
