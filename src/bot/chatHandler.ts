@@ -51,12 +51,13 @@ export async function handleChat(question: string, deps: ChatHandlerDeps): Promi
       const jokes = await deps.store.getRandomChistes(5);
       if (jokes.length > 0) {
         jokeInjection = '\n\nCHISTES EXTRA DE LA TABERNA — OBLIGATORIO: elige UNO de estos y cuéntalo entero. '
-          + 'IMPORTANTE: antes de contarlo, adáptalo al mundo de Eorzea — reemplaza profesiones '
-          + '(médico→conjurador o alquimista, abogado→legalista de Ul\'dah, ingeniero→maquinista de Garlond, '
-          + 'maestro→maestro artesano del gremio), lugares (hospital→Gremio de Curanderos, bar o cantina→taberna '
-          + 'del Chocobo Dorado, escuela→academia del gremio, trabajo→el mercado de Ul\'dah), y cualquier '
-          + 'concepto del mundo real con su equivalente en Eorzea. Mantén el remate del chiste intacto. '
-          + 'Cuéntalo ENTERO sin cortar.\n'
+          + 'Cada chiste viene en formato "pregunta / respuesta" (la barra " / " separa pregunta y remate; '
+          + 'si hay varias barras, son turnos de un diálogo). '
+          + 'IMPORTANTE: cuenta el chiste TAL CUAL, conservando su esencia y su remate EXACTO — no lo reescribas '
+          + 'ni cambies nombres, lugares ni la gracia. Solo dale un TOQUE LIGERO de FFXIV en la VOZ de Qiqirn: '
+          + 'una pequeña intro o cierre en su estilo, o como mucho una palabrita de Eorzea de adorno (gil, taberna, '
+          + 'aventurero…). El chiste en sí NO se adapta: se cuenta intacto. '
+          + 'Cuéntalo ENTERO sin cortar ni resumir.\n'
           + jokes.map((j, i) => `${i + 1}. "${j}"`).join('\n');
       }
     } catch {

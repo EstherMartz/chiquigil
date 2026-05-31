@@ -935,7 +935,7 @@ CHISTES DE QIQIRN \u2014 cuando alguien pida un chiste, sigue SIEMPRE esta estru
    - "\xA1Aventurero, Qiqirn tiene chiste chiste bueno bueno! \u2728"
    - "Jajaja Qiqirn se r\xEDe r\xEDe solo de este... mira mira:"
    - "Mercader viejo cont\xF3 este a Qiqirn en Ul'dah. Qiqirn no olvid\xF3 olvid\xF3 \u{1F400}"
-2. Cuenta el chiste ENTERO de la secci\xF3n "CHISTES EXTRA DE LA TABERNA" \u2014 con su estructura pregunta-respuesta o historia-golpe final. NUNCA lo cortes ni resumir.
+2. Cuenta el chiste ENTERO de la secci\xF3n "CHISTES EXTRA DE LA TABERNA" \u2014 con su estructura pregunta-respuesta o historia-golpe final, TAL CUAL y con su remate exacto. NUNCA lo cortes, resumas ni reescribas: el toque de FFXIV va solo en la voz de Qiqirn (la intro y el cierre), no dentro del chiste.
 3. Termina con una reacci\xF3n corta en estilo Qiqirn. Ejemplos:
    - "\u{1F400} Qiqirn entiende entiende mucho este chiste"
    - "\u2728 Jajaja Qiqirn r\xEDe r\xEDe. T\xFA tambi\xE9n r\xEDes r\xEDes, \xBFno no?"
@@ -970,7 +970,7 @@ async function handleChat(question, deps) {
     try {
       const jokes = await deps.store.getRandomChistes(5);
       if (jokes.length > 0) {
-        jokeInjection = "\n\nCHISTES EXTRA DE LA TABERNA \u2014 OBLIGATORIO: elige UNO de estos y cu\xE9ntalo entero. IMPORTANTE: antes de contarlo, ad\xE1ptalo al mundo de Eorzea \u2014 reemplaza profesiones (m\xE9dico\u2192conjurador o alquimista, abogado\u2192legalista de Ul'dah, ingeniero\u2192maquinista de Garlond, maestro\u2192maestro artesano del gremio), lugares (hospital\u2192Gremio de Curanderos, bar o cantina\u2192taberna del Chocobo Dorado, escuela\u2192academia del gremio, trabajo\u2192el mercado de Ul'dah), y cualquier concepto del mundo real con su equivalente en Eorzea. Mant\xE9n el remate del chiste intacto. Cu\xE9ntalo ENTERO sin cortar.\n" + jokes.map((j, i) => `${i + 1}. "${j}"`).join("\n");
+        jokeInjection = '\n\nCHISTES EXTRA DE LA TABERNA \u2014 OBLIGATORIO: elige UNO de estos y cu\xE9ntalo entero. Cada chiste viene en formato "pregunta / respuesta" (la barra " / " separa pregunta y remate; si hay varias barras, son turnos de un di\xE1logo). IMPORTANTE: cuenta el chiste TAL CUAL, conservando su esencia y su remate EXACTO \u2014 no lo reescribas ni cambies nombres, lugares ni la gracia. Solo dale un TOQUE LIGERO de FFXIV en la VOZ de Qiqirn: una peque\xF1a intro o cierre en su estilo, o como mucho una palabrita de Eorzea de adorno (gil, taberna, aventurero\u2026). El chiste en s\xED NO se adapta: se cuenta intacto. Cu\xE9ntalo ENTERO sin cortar ni resumir.\n' + jokes.map((j, i) => `${i + 1}. "${j}"`).join("\n");
       }
     } catch {
     }
