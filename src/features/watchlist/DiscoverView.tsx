@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { useCategorySuggestions } from './useCategorySuggestions';
 import { categorySupportsSuggestions } from './categorySearchCats';
 import { SuggestionRow } from './SuggestionRow';
+import { ModeToggle } from './ModeToggle';
 import { Spinner } from '../../components/Spinner';
 import type { ItemCategory } from '../items/types';
+import type { SuggestionMode } from './suggestions';
 
 const CATEGORIES: ItemCategory[] = ['Tincture', 'Food', 'Dye', 'Glamour', 'Housing', 'Materia', 'Minion'];
 
@@ -30,13 +32,19 @@ export function DiscoverView() {
 
 function DiscoverSection({ category }: { category: ItemCategory }) {
   const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<SuggestionMode>('craft');
   const { run, notReady } = useCategorySuggestions();
 
   // Fire the scan the first time the section opens.
   useEffect(() => {
-    if (open && !run.data && !run.isPending && !run.isError) run.mutate(category);
+    if (open && !run.data && !run.isPending && !run.isError) run.mutate({ cat: category, mode });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  function changeMode(m: SuggestionMode) {
+    setMode(m);
+    if (open) run.mutate({ cat: category, mode: m });
+  }
 
   return (
     <div className="border border-border-base bg-bg-card">
@@ -54,11 +62,14 @@ function DiscoverSection({ category }: { category: ItemCategory }) {
       </button>
       {open && (
         <div className="px-4 pb-3 border-t border-border-base">
-          {run.isPending && <div className="py-3"><Spinner label={`Scanning ${category} crafts…`} /></div>}
+          <div className="mt-2 mb-1">
+            <ModeToggle mode={mode} onChange={changeMode} />
+          </div>
+          {run.isPending && <div className="py-3"><Spinner label={`Scanning ${category} ${mode} plays…`} /></div>}
           {run.isError && <div className="font-mono text-[11px] text-crimson py-2">{run.error.message}</div>}
           {run.data && run.data.length === 0 && (
             <div className="font-mono text-[11px] text-text-low italic py-3">
-              No untracked {category.toLowerCase()} crafts worth suggesting right now.
+              No untracked {category.toLowerCase()} {mode} plays worth suggesting right now.
             </div>
           )}
           {run.data && run.data.length > 0 && (

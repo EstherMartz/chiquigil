@@ -34,26 +34,27 @@ const recipes = new Map<number, Recipe | null>([
   [2, { itemResultId: 2, classJob: 'ALC', recipeLevel: 90, ingredients: [{ itemId: 99, amount: 1 }] }],
 ]);
 
-describe('rankSuggestions', () => {
+describe('rankSuggestions — craft', () => {
   it('ranks untracked craftables in a category by gil/day, tagging cat + crafter', () => {
     const out = rankSuggestions({
-      cat: 'Materia', snapshot, market, recipes,
+      cat: 'Materia', mode: 'craft', snapshot, market, recipes,
       trackedIds: new Set(), excludedIds: new Set(), limit: 5,
     });
     expect(out.map((s) => s.id)).toEqual([1, 2]); // A before B; off-cat excluded
-    expect(out[0]).toMatchObject({ cat: 'Materia', crafter: 'ALC', lvl: 90 });
+    expect(out[0]).toMatchObject({ cat: 'Materia', mode: 'craft', crafter: 'ALC', lvl: 90 });
+    expect(out[0].acquireCost).toBe(100); // material cost
     expect(out[0].gilPerDay).toBeGreaterThan(out[1].gilPerDay);
   });
 
   it('excludes already-tracked and dismissed items', () => {
     const tracked = rankSuggestions({
-      cat: 'Materia', snapshot, market, recipes,
+      cat: 'Materia', mode: 'craft', snapshot, market, recipes,
       trackedIds: new Set([1]), excludedIds: new Set(), limit: 5,
     });
     expect(tracked.map((s) => s.id)).toEqual([2]);
 
     const dismissed = rankSuggestions({
-      cat: 'Materia', snapshot, market, recipes,
+      cat: 'Materia', mode: 'craft', snapshot, market, recipes,
       trackedIds: new Set(), excludedIds: new Set([1]), limit: 5,
     });
     expect(dismissed.map((s) => s.id)).toEqual([2]);
@@ -61,20 +62,58 @@ describe('rankSuggestions', () => {
 
   it('respects the limit', () => {
     const out = rankSuggestions({
-      cat: 'Materia', snapshot, market, recipes,
+      cat: 'Materia', mode: 'craft', snapshot, market, recipes,
       trackedIds: new Set(), excludedIds: new Set(), limit: 1,
     });
     expect(out).toHaveLength(1);
     expect(out[0].id).toBe(1);
   });
 
-  it('returns [] for an unsupported category', () => {
-    // (every current category is supported; guard the contract anyway via an
-    // empty search-cat path — Fish maps to [46], so use a snapshot with none.)
+  it('returns [] for a category with no items in the snapshot', () => {
     const out = rankSuggestions({
-      cat: 'Fish', snapshot, market, recipes,
+      cat: 'Fish', mode: 'craft', snapshot, market, recipes,
       trackedIds: new Set(), excludedIds: new Set(), limit: 5,
     });
     expect(out).toEqual([]); // no sc-46 items in the snapshot
+  });
+});
+
+describe('rankSuggestions — vendor', () => {
+  it('ranks vendor flips by profit/day and needs a vendorMap', () => {
+    // Materia A buyable from vendor @ 100, sells 1000 @ 5/day → 4500/day.
+    const vendorMap = new Map([[1, 100]]);
+    const out = rankSuggestions({
+      cat: 'Materia', mode: 'vendor', snapshot, market, recipes,
+      trackedIds: new Set(), excludedIds: new Set(), limit: 5, vendorMap,
+    });
+    expect(out.map((s) => s.id)).toEqual([1]);
+    expect(out[0]).toMatchObject({ mode: 'vendor', acquireCost: 100 });
+
+    // Without a vendorMap → nothing.
+    expect(rankSuggestions({
+      cat: 'Materia', mode: 'vendor', snapshot, market, recipes,
+      trackedIds: new Set(), excludedIds: new Set(), limit: 5,
+    })).toEqual([]);
+  });
+});
+
+describe('rankSuggestions — gather', () => {
+  it('ranks gatherable, non-craftable items by sale × velocity', () => {
+    // A gatherable raw mat: sc 57, no recipe, sells 500 @ 4/day → 2000/day.
+    const gSnap = [{ id: 10, name: 'Raw Mat', sc: 57, ui: 0, ilvl: 1, canHq: false }];
+    const gMarket: MarketData = { 10: mkPrice({ minNQ: 500, medianNQ: 500, velocity: 4 }) };
+    const out = rankSuggestions({
+      cat: 'Materia', mode: 'gather', snapshot: gSnap, market: gMarket, recipes: new Map(),
+      trackedIds: new Set(), excludedIds: new Set(), limit: 5, gatherableIds: new Set([10]),
+    });
+    expect(out.map((s) => s.id)).toEqual([10]);
+    expect(out[0]).toMatchObject({ mode: 'gather', acquireCost: 0 });
+    expect(out[0].gilPerDay).toBe(2000);
+
+    // Without gatherableIds → nothing.
+    expect(rankSuggestions({
+      cat: 'Materia', mode: 'gather', snapshot: gSnap, market: gMarket, recipes: new Map(),
+      trackedIds: new Set(), excludedIds: new Set(), limit: 5,
+    })).toEqual([]);
   });
 });

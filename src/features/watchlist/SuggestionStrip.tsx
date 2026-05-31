@@ -2,26 +2,35 @@ import { useState } from 'react';
 import { useCategorySuggestions } from './useCategorySuggestions';
 import { categorySupportsSuggestions } from './categorySearchCats';
 import { SuggestionRow } from './SuggestionRow';
+import { ModeToggle } from './ModeToggle';
 import { Spinner } from '../../components/Spinner';
 import type { ItemCategory } from '../items/types';
+import type { SuggestionMode } from './suggestions';
 
 /**
  * Collapsed "suggest items for {cat}" affordance shown above the watchlist when
  * a specific (supported) category is selected. Expanding fires the on-demand
- * scan and lists the top untracked craftables to add. Hidden for "All" and
+ * scan for the chosen source (craft / vendor / gather). Hidden for "All" and
  * categories with no clean search-category analogue.
  */
 export function SuggestionStrip({ category }: { category: string }) {
   const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<SuggestionMode>('craft');
   const { run, notReady } = useCategorySuggestions();
 
-  // Only supported watchlist categories get suggestions.
   if (category === 'All' || !categorySupportsSuggestions(category as ItemCategory)) return null;
 
+  function scan(m: SuggestionMode) {
+    run.mutate({ cat: category as ItemCategory, mode: m });
+  }
   function toggle() {
     const next = !open;
     setOpen(next);
-    if (next && !run.data && !run.isPending) run.mutate(category as ItemCategory);
+    if (next && !run.data && !run.isPending) scan(mode);
+  }
+  function changeMode(m: SuggestionMode) {
+    setMode(m);
+    if (open) scan(m);
   }
 
   return (
@@ -41,34 +50,26 @@ export function SuggestionStrip({ category }: { category: string }) {
 
       {open && (
         <div className="px-3 pb-3 border-t border-border-base">
-          {run.isPending && <div className="py-3"><Spinner label={`Scanning ${category} crafts…`} /></div>}
-          {run.isError && (
-            <div className="font-mono text-[11px] text-crimson py-2">{run.error.message}</div>
-          )}
+          <div className="flex items-center justify-between mt-2 mb-1 gap-3 flex-wrap">
+            <ModeToggle mode={mode} onChange={changeMode} />
+            <button
+              type="button"
+              onClick={() => scan(mode)}
+              disabled={run.isPending}
+              className="font-mono text-[9px] tracking-widest uppercase text-aether hover:text-gold transition-colors"
+            >
+              ↻ refresh
+            </button>
+          </div>
+          {run.isPending && <div className="py-3"><Spinner label={`Scanning ${category} ${mode} plays…`} /></div>}
+          {run.isError && <div className="font-mono text-[11px] text-crimson py-2">{run.error.message}</div>}
           {run.data && run.data.length === 0 && (
             <div className="font-mono text-[11px] text-text-low italic py-3">
-              No untracked {category.toLowerCase()} crafts worth suggesting right now.
+              No untracked {category.toLowerCase()} {mode} plays worth suggesting right now.
             </div>
           )}
           {run.data && run.data.length > 0 && (
-            <>
-              <div className="flex items-center justify-between mt-2 mb-1">
-                <span className="font-mono text-[9px] tracking-widest uppercase text-text-low">
-                  top untracked · by gil/day
-                </span>
-                <button
-                  type="button"
-                  onClick={() => run.mutate(category as ItemCategory)}
-                  disabled={run.isPending}
-                  className="font-mono text-[9px] tracking-widest uppercase text-aether hover:text-gold transition-colors"
-                >
-                  ↻ refresh
-                </button>
-              </div>
-              <ul>
-                {run.data.map((s) => <SuggestionRow key={s.id} s={s} />)}
-              </ul>
-            </>
+            <ul>{run.data.map((s) => <SuggestionRow key={s.id} s={s} />)}</ul>
           )}
         </div>
       )}

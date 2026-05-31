@@ -3,10 +3,16 @@ import { fmtGil } from '../../lib/format';
 import { useWatchlistStore } from '../items/watchlistStore';
 import type { Suggestion } from './suggestions';
 
+const MODE_META: Record<Suggestion['mode'], { sub: (s: Suggestion) => string }> = {
+  craft:  { sub: (s) => `${s.crafter} Lv${s.lvl} · mats ${fmtGil(s.acquireCost)}` },
+  vendor: { sub: (s) => `vendor ${fmtGil(s.acquireCost)}` },
+  gather: { sub: () => 'gather · no cost' },
+};
+
 /**
- * One suggestion row with + track / dismiss. Adds the item with its inferred
- * category (so it lands in the right FilterBar bucket), or dismisses it into
- * the excluded set so it won't be suggested again.
+ * One suggestion row with + track / dismiss. Adds the item with its category
+ * (so it lands in the right FilterBar bucket), or dismisses it into the
+ * excluded set so it won't be suggested again.
  */
 export function SuggestionRow({ s }: { s: Suggestion }) {
   const addCustomItem = useWatchlistStore((st) => st.addCustomItem);
@@ -23,8 +29,8 @@ export function SuggestionRow({ s }: { s: Suggestion }) {
         >
           {s.name}
         </Link>
-        <div className="font-mono text-[9px] tracking-widest uppercase text-text-low">
-          {s.crafter} Lv{s.lvl}
+        <div className="font-mono text-[9px] tracking-widest uppercase text-text-low truncate">
+          {MODE_META[s.mode].sub(s)}
         </div>
       </div>
       <span className="font-mono text-[11px] text-gold tabular-nums text-right w-16 shrink-0">
