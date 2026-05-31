@@ -216,6 +216,24 @@ async function openCraftStore(url, authToken) {
       });
       return rowToTask({ ...row, qty_done: newDone, status: newStatus, updated_at: now });
     },
+    async setProgress(taskId, userId, qtyDone) {
+      const result = await client.execute({
+        sql: "SELECT * FROM tasks WHERE id = ?",
+        args: [taskId]
+      });
+      const row = result.rows[0];
+      if (!row) return null;
+      if (String(row.assignee_id) !== userId) return null;
+      const qtyNeeded = Number(row.qty_needed);
+      const newDone = Math.max(0, Math.min(qtyNeeded, Math.trunc(qtyDone)));
+      const newStatus = newDone >= qtyNeeded ? "done" : "claimed";
+      const now = Date.now();
+      await client.execute({
+        sql: "UPDATE tasks SET qty_done = ?, status = ?, updated_at = ? WHERE id = ?",
+        args: [newDone, newStatus, now, taskId]
+      });
+      return rowToTask({ ...row, qty_done: newDone, status: newStatus, updated_at: now });
+    },
     async unclaimTask(taskId, userId) {
       const now = Date.now();
       const result = await client.execute({

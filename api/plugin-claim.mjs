@@ -216,6 +216,24 @@ async function openCraftStore(url, authToken) {
       });
       return rowToTask({ ...row, qty_done: newDone, status: newStatus, updated_at: now });
     },
+    async setProgress(taskId, userId, qtyDone) {
+      const result = await client.execute({
+        sql: "SELECT * FROM tasks WHERE id = ?",
+        args: [taskId]
+      });
+      const row = result.rows[0];
+      if (!row) return null;
+      if (String(row.assignee_id) !== userId) return null;
+      const qtyNeeded = Number(row.qty_needed);
+      const newDone = Math.max(0, Math.min(qtyNeeded, Math.trunc(qtyDone)));
+      const newStatus = newDone >= qtyNeeded ? "done" : "claimed";
+      const now = Date.now();
+      await client.execute({
+        sql: "UPDATE tasks SET qty_done = ?, status = ?, updated_at = ? WHERE id = ?",
+        args: [newDone, newStatus, now, taskId]
+      });
+      return rowToTask({ ...row, qty_done: newDone, status: newStatus, updated_at: now });
+    },
     async unclaimTask(taskId, userId) {
       const now = Date.now();
       const result = await client.execute({
@@ -376,9 +394,25 @@ async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
-  const { projectId, taskId, characterName, guildId } = req.body ?? {};
+  const { projectId, taskId, characterName, guildId, action, amount } = req.body ?? {};
   if (!projectId || !taskId || !characterName || !guildId) {
     return res.status(400).json({ error: "Missing required fields: projectId, taskId, characterName, guildId" });
+  }
+  const act = action == null ? "claim" : String(action);
+  if (act !== "claim" && act !== "progress" && act !== "complete" && act !== "set") {
+    return res.status(400).json({ error: "Invalid action: expected 'claim', 'progress', 'set', or 'complete'" });
+  }
+  if (act === "progress") {
+    const n = Number(amount);
+    if (!Number.isInteger(n) || n <= 0) {
+      return res.status(400).json({ error: "Progress requires a positive integer amount" });
+    }
+  }
+  if (act === "set") {
+    const n = Number(amount);
+    if (!Number.isInteger(n) || n < 0) {
+      return res.status(400).json({ error: "Set requires a non-negative integer amount" });
+    }
   }
   if (!isAllowed(String(guildId))) {
     return res.status(403).json({ error: "Guild not in allow-list" });
@@ -391,9 +425,25 @@ async function handler(req, res) {
   if (project.guildId !== String(guildId)) {
     return res.status(403).json({ error: "Project does not belong to this guild" });
   }
-  const task = await store.claimTaskByCharacter(Number(taskId), String(characterName));
+  if (act === "claim") {
+    const task2 = await store.claimTaskByCharacter(Number(taskId), String(characterName));
+    if (!task2) {
+      return res.status(409).json({ error: "Task not found or already claimed" });
+    }
+    return res.status(200).json({ ok: true, task: task2 });
+  }
+  const tasks = await store.getTasks(Number(projectId));
+  const current = tasks.find((t) => t.id === Number(taskId));
+  if (!current) {
+    return res.status(404).json({ error: "Task not found in project" });
+  }
+  const task = act === "set" ? await store.setProgress(Number(taskId), String(characterName), Number(amount)) : await store.logProgress(
+    Number(taskId),
+    String(characterName),
+    act === "complete" ? Math.max(0, current.qtyNeeded - current.qtyDone) : Number(amount)
+  );
   if (!task) {
-    return res.status(409).json({ error: "Task not found or already claimed" });
+    return res.status(409).json({ error: "Task not claimed by this character" });
   }
   return res.status(200).json({ ok: true, task });
 }

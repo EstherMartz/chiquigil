@@ -26,6 +26,8 @@ export interface CraftStore {
   claimTask(taskId: number, userId: string): Promise<boolean>;
   claimTaskByCharacter(taskId: number, characterName: string): Promise<StoredTask | null>;
   logProgress(taskId: number, userId: string, amount: number): Promise<StoredTask | null>;
+  /** Set qtyDone to an absolute value (clamped to 0..qtyNeeded). Used to correct mistakes. */
+  setProgress(taskId: number, userId: string, qtyDone: number): Promise<StoredTask | null>;
   unclaimTask(taskId: number, userId: string): Promise<boolean>;
   setProjectMessageId(projectId: number, messageId: string): Promise<void>;
   setProjectThreadId(projectId: number, threadId: string): Promise<void>;
@@ -276,6 +278,27 @@ export async function openCraftStore(url: string, authToken?: string): Promise<C
       const qtyNeeded = Number(row.qty_needed);
       const qtyDone = Number(row.qty_done);
       const newDone = Math.min(qtyNeeded, qtyDone + amount);
+      const newStatus = newDone >= qtyNeeded ? 'done' : 'claimed';
+      const now = Date.now();
+      await client.execute({
+        sql: 'UPDATE tasks SET qty_done = ?, status = ?, updated_at = ? WHERE id = ?',
+        args: [newDone, newStatus, now, taskId],
+      });
+      return rowToTask({ ...row, qty_done: newDone, status: newStatus, updated_at: now });
+    },
+
+    async setProgress(taskId, userId, qtyDone) {
+      const result = await client.execute({
+        sql: 'SELECT * FROM tasks WHERE id = ?',
+        args: [taskId],
+      });
+      const row = result.rows[0];
+      if (!row) return null;
+      if (String(row.assignee_id) !== userId) return null;
+
+      const qtyNeeded = Number(row.qty_needed);
+      const newDone = Math.max(0, Math.min(qtyNeeded, Math.trunc(qtyDone)));
+      // Stays claimed by this character even at 0; use unclaim to release entirely.
       const newStatus = newDone >= qtyNeeded ? 'done' : 'claimed';
       const now = Date.now();
       await client.execute({
