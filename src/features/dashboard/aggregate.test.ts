@@ -1,10 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import {
   portfolioTotals, marginBuckets, gilPerDayLeaders, concentration,
-  moversDigest, spreadByWorld, rowMargin,
+  moversDigest, spreadByWorld, rowMargin, valuePlays,
 } from './aggregate';
 import type { WatchlistRow } from '../watchlist/buildRows';
 import type { WorldListing } from '../../lib/universalis';
+import { summarizeHistory, MIN_SALES } from '../fairvalue/fairValue';
+import type { HistoryEntry } from '../../lib/universalisHistory';
 
 function mkRow(over: Partial<WatchlistRow>): WatchlistRow {
   return {
@@ -102,6 +104,36 @@ describe('moversDigest', () => {
     expect(d.gainers.map((r) => r.id)).toEqual([1, 2]);
     expect(d.losers.map((r) => r.id)).toEqual([3]);
     expect(d.stale.map((r) => r.id)).toEqual([4]);
+  });
+});
+
+describe('valuePlays', () => {
+  // A liquid history centered on 1000 with small spread.
+  const hist = (mean: number): HistoryEntry[] =>
+    Array.from({ length: MIN_SALES + 2 }, (_, i) => ({
+      timestamp: 0, quantity: 1, hq: false,
+      pricePerUnit: mean + (i % 2 === 0 ? 50 : -50),
+    }));
+
+  it('lists items trading under fair value, cheapest-z first, skips thin items', () => {
+    const rows = [
+      mkRow({ id: 1, dcMinNQ: 700, materialCost: 400 }),  // way under 1000 → cheap
+      mkRow({ id: 2, dcMinNQ: 990, materialCost: 400 }),  // ~fair
+      mkRow({ id: 3, dcMinNQ: 600, materialCost: 400 }),  // thin history → excluded
+    ];
+    const summaries = new Map([
+      [1, summarizeHistory(hist(1000))],
+      [2, summarizeHistory(hist(1000))],
+      [3, summarizeHistory([{ timestamp: 0, pricePerUnit: 1000, quantity: 1, hq: false }])], // 1 sale
+    ]);
+    const out = valuePlays(rows, summaries, 5);
+    expect(out.map((p) => p.row.id)).toEqual([1]);
+    expect(out[0].current).toBe(700);
+    expect(out[0].signal.valuation).toBe('cheap');
+  });
+
+  it('returns nothing without summaries', () => {
+    expect(valuePlays([mkRow({ id: 1, dcMinNQ: 700 })], new Map(), 5)).toEqual([]);
   });
 });
 

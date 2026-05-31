@@ -15,13 +15,15 @@ import { StatusBanner } from '../../components/StatusBanner';
 import { FreshnessChip } from '../../components/FreshnessChip';
 import {
   portfolioTotals, marginBuckets, gilPerDayLeaders, concentration,
-  moversDigest, spreadByWorld,
+  moversDigest, spreadByWorld, valuePlays,
 } from './aggregate';
+import type { HistorySummary } from '../fairvalue/fairValue';
 import { KpiStrip } from './tiles/KpiStrip';
 import { MarginHistogram } from './tiles/MarginHistogram';
 import { GilLeaderboard } from './tiles/GilLeaderboard';
 import { ChangedDigest } from './tiles/ChangedDigest';
 import { SpreadBars } from './tiles/SpreadBars';
+import { ValuePlays } from './tiles/ValuePlays';
 import { WatchlistHeatmapTile } from './tiles/WatchlistHeatmapTile';
 
 export function DashboardView() {
@@ -43,9 +45,15 @@ export function DashboardView() {
   }, [items, market.data, recipes.data, retainerLevels, applyMarketTax]);
 
   const rowsWithDelta = useMemo(
-    () => rows.map((r) => ({ ...r, delta: history.data?.get(r.id) ?? null })),
+    () => rows.map((r) => ({ ...r, delta: history.data?.get(r.id)?.delta ?? null })),
     [rows, history.data],
   );
+
+  const summaryById = useMemo(() => {
+    const m = new Map<number, HistorySummary>();
+    if (history.data) for (const [id, h] of history.data) m.set(id, h.summary);
+    return m;
+  }, [history.data]);
 
   // DC-scope per-item listings (carry world names for cross-world spread).
   const listingsById = useMemo(() => {
@@ -83,7 +91,8 @@ export function DashboardView() {
     conc: concentration(rowsWithDelta, 3),
     movers: moversDigest(rowsWithDelta),
     spreads: spreadByWorld(rowsWithDelta, listingsById, world, 6),
-  }), [rowsWithDelta, listingsById, world]);
+    valuePlays: valuePlays(rowsWithDelta, summaryById, 8),
+  }), [rowsWithDelta, listingsById, world, summaryById]);
 
   // Live "now" tick so the freshness stamp updates without a refetch.
   const [now, setNow] = useState(() => Date.now());
@@ -147,6 +156,7 @@ export function DashboardView() {
             <GilLeaderboard leaders={agg.leaders} concentration={agg.conc} />
             <ChangedDigest digest={agg.movers} />
             <SpreadBars spreads={agg.spreads} homeWorld={world} />
+            <ValuePlays plays={agg.valuePlays} />
           </div>
           <WatchlistHeatmapTile items={heatmapItems} market={market.data?.dc ?? {}} recipes={heatmapRecipes} />
         </>

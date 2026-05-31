@@ -9,6 +9,7 @@ import { useRecipes } from '../features/profit/useRecipes';
 import { useItemNames } from '../features/profit/useItemNames';
 import { useSelectedItems } from '../features/items/useSelectedItems';
 import { buildRows } from '../features/watchlist/buildRows';
+import { classifyValue, type Valuation } from '../features/fairvalue/fairValue';
 import { filterAndSort } from '../features/watchlist/filterSort';
 import { WatchlistTable } from '../features/watchlist/WatchlistTable';
 import { FilterBar } from '../features/watchlist/FilterBar';
@@ -56,10 +57,28 @@ export default function Watchlist() {
   }, [items, market.data, recipes.data, retainerLevels, perItemFlags, applyMarketTax]);
 
   const rowsWithDelta = useMemo(() =>
-    rows.map((r) => ({ ...r, delta: history.data?.get(r.id) ?? null })),
+    rows.map((r) => ({ ...r, delta: history.data?.get(r.id)?.delta ?? null })),
   [rows, history.data]);
 
   const filtered = useMemo(() => filterAndSort(rowsWithDelta, ui), [rowsWithDelta, ui]);
+
+  // Fair-value chip per row: cheap/rich (confident only), from the same history
+  // fetch used for the trend delta. fair/unknown are omitted to keep it quiet.
+  const valuationById = useMemo(() => {
+    const m = new Map<number, Valuation>();
+    if (!history.data) return m;
+    for (const r of filtered) {
+      const summary = history.data.get(r.id)?.summary;
+      if (!summary) continue;
+      const current = r.dcMinHQ ?? r.dcMinNQ ?? (r.refPrice > 0 ? r.refPrice : null);
+      if (current == null) continue;
+      const sig = classifyValue({
+        current, mean: summary.mean, stdev: summary.stdev, count: summary.count, floor: r.materialCost,
+      });
+      if (sig.confident && (sig.valuation === 'cheap' || sig.valuation === 'rich')) m.set(r.id, sig.valuation);
+    }
+    return m;
+  }, [filtered, history.data]);
 
   const selected = selectedItemId != null ? items.find((i) => i.id === selectedItemId) : undefined;
   const selectedRecipe = selected && recipes.data?.get(selected.id);
@@ -92,6 +111,7 @@ export default function Watchlist() {
           sparklineMap={showSparklines ? sparklineHistory.data : undefined}
           sparklineLoading={sparklineHistory.isLoading}
           applyMarketTax={applyMarketTax}
+          valuationById={valuationById}
         />
       )}
 

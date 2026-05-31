@@ -1,6 +1,7 @@
 import type { WatchlistRow } from '../watchlist/buildRows';
 import type { WorldListing } from '../../lib/universalis';
 import { detectAlert } from '../watchlist/alerts';
+import { classifyValue, type FairValueSignal, type HistorySummary } from '../fairvalue/fairValue';
 
 // ── Portfolio KPI strip ──────────────────────────────────────────────────
 
@@ -167,6 +168,46 @@ export interface WorldSpread {
   /** spread / homeFloor. */
   spreadPct: number;
   velocity: number;
+}
+
+// ── Value plays (mean-reversion "buy low") ───────────────────────────────────
+
+export interface ValuePlay {
+  row: WatchlistRow;
+  /** Current cheapest ask used as the price to judge. */
+  current: number;
+  signal: FairValueSignal;
+}
+
+/** Current cheapest ask for a row — what you'd pay to buy now. */
+function rowCurrent(r: WatchlistRow): number | null {
+  return r.dcMinHQ ?? r.dcMinNQ ?? (r.refPrice > 0 ? r.refPrice : null);
+}
+
+/**
+ * Watched items trading below their own fair value (most negative z-score
+ * first), gated on enough liquidity to be confident. A flipper's "buy low" list.
+ * Uses the per-item distribution summary derived from sale history.
+ */
+export function valuePlays(
+  rows: WatchlistRow[],
+  summaryById: Map<number, HistorySummary>,
+  n: number,
+): ValuePlay[] {
+  const out: ValuePlay[] = [];
+  for (const r of rows) {
+    const summary = summaryById.get(r.id);
+    if (!summary) continue;
+    const current = rowCurrent(r);
+    if (current == null || current <= 0) continue;
+    const signal = classifyValue({
+      current, mean: summary.mean, stdev: summary.stdev, count: summary.count,
+      floor: r.materialCost,
+    });
+    if (signal.valuation !== 'cheap') continue;
+    out.push({ row: r, current, signal });
+  }
+  return out.sort((a, b) => (a.signal.zScore ?? 0) - (b.signal.zScore ?? 0)).slice(0, n);
 }
 
 function cheapestByWorld(listings: WorldListing[]): Map<string, number> {

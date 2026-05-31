@@ -16,6 +16,24 @@ import { InfoTooltip } from '../../components/InfoTooltip';
 import { colorFromDelta } from '../../features/sparklines/sparklineColor';
 import { formatSparklineTooltip } from '../../features/sparklines/sparklineTooltip';
 import { detectAlert, ALERT_LABEL, ALERT_CLASS } from './alerts';
+import type { Valuation } from '../fairvalue/fairValue';
+
+// Valuation chip styling — only cheap/rich are surfaced (fair/unknown are hidden).
+const VALUATION_CLASS: Partial<Record<Valuation, string>> = {
+  cheap: 'text-jade border-jade/40',
+  rich: 'text-gold border-gold/40',
+};
+function ValuationChip({ valuation }: { valuation: Valuation | undefined }) {
+  if (!valuation || !VALUATION_CLASS[valuation]) return null;
+  return (
+    <span
+      className={`border ${VALUATION_CLASS[valuation]} px-1.5 py-0.5 leading-none text-[9px] tracking-widest uppercase rounded-sm`}
+      title="Fair-value read vs this item's own recent price range"
+    >
+      {valuation}
+    </span>
+  );
+}
 
 // 4-tier profit color ramp, mirroring the design's watchlist proposal:
 //   ≥ 50k → jade (strong play)
@@ -51,12 +69,13 @@ const csvColumns = (applyMarketTax: boolean): CsvColumn<WatchlistRow>[] => [
   { key: 'gilPerDay', label: 'Gil/day', value: (r) => r.gilPerDay ?? 'N/A' },
 ];
 
-export function WatchlistTable({ rows, onSelect, sparklineMap, sparklineLoading, applyMarketTax = true }: {
+export function WatchlistTable({ rows, onSelect, sparklineMap, sparklineLoading, applyMarketTax = true, valuationById }: {
   rows: WatchlistRow[];
   onSelect: (id: number) => void;
   sparklineMap?: Map<number, (number | null)[]>;
   sparklineLoading?: boolean;
   applyMarketTax?: boolean;
+  valuationById?: Map<number, Valuation>;
 }) {
   const { catFilter, sortKey, sortDir, setSort, density } = useUiStore();
   const lm = useLoadMore(rows, 25);
@@ -145,6 +164,7 @@ export function WatchlistTable({ rows, onSelect, sparklineMap, sparklineLoading,
                   <span>Lv {r.lvl}</span>
                   <span>·</span>
                   <span>{r.cat}{r.subcat ? ` · ${r.subcat}` : ''}</span>
+                  <ValuationChip valuation={valuationById?.get(r.id)} />
                   {alert && (
                     <span className={`border ${ALERT_CLASS[alert]} px-1.5 py-0.5 leading-none text-[9px] tracking-widest uppercase rounded-sm`}>
                       {ALERT_LABEL[alert]}
@@ -232,6 +252,7 @@ export function WatchlistTable({ rows, onSelect, sparklineMap, sparklineLoading,
                       >
                         ⚙
                       </button>
+                      <ValuationChip valuation={valuationById?.get(r.id)} />
                       {alert && (
                         <span className={`border ${ALERT_CLASS[alert]} px-1.5 py-0.5 leading-none text-[9px] tracking-widest uppercase rounded-sm`}>
                           {ALERT_LABEL[alert]}
