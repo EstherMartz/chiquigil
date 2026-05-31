@@ -1,5 +1,6 @@
 import { useWatchlistStore } from './watchlistStore';
 import { STARTER_PACKS } from './starterPacks';
+import { inferCategory } from '../watchlist/categorySearchCats';
 import { InfoTooltip } from '../../components/InfoTooltip';
 import type { Recipe } from '../../lib/recipes';
 import type { TrackedItem, CrafterCode } from './types';
@@ -9,6 +10,8 @@ interface Props {
   itemName: string;
   ilvl: number;
   recipe: Recipe | null;
+  /** Item search category, used to tag the watchlist category on add. */
+  sc?: number;
 }
 
 function findEnabledPackContaining(
@@ -26,7 +29,7 @@ function findEnabledPackContaining(
   return null;
 }
 
-export function AddToWatchlistButton({ itemId, itemName, ilvl, recipe }: Props) {
+export function AddToWatchlistButton({ itemId, itemName, ilvl, recipe, sc }: Props) {
   const { customItems, starterPacks, excludedItems, addCustomItem, removeCustomItem } = useWatchlistStore();
   const onList = customItems.some((i) => i.id === itemId);
   const enabledPack = findEnabledPackContaining(itemId, starterPacks, excludedItems);
@@ -34,7 +37,8 @@ export function AddToWatchlistButton({ itemId, itemName, ilvl, recipe }: Props) 
   function handleAdd() {
     const crafter: CrafterCode = recipe?.classJob ?? 'ANY';
     const lvl = recipe?.recipeLevel || ilvl || 1;
-    const item: TrackedItem = { id: itemId, name: itemName, crafter, lvl, cat: 'Glamour' };
+    const cat = sc != null ? inferCategory(sc) : 'Glamour';
+    const item: TrackedItem = { id: itemId, name: itemName, crafter, lvl, cat };
     addCustomItem(item);
   }
 

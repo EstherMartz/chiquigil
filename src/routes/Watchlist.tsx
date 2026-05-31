@@ -13,6 +13,7 @@ import { valuationMap } from '../features/dashboard/aggregate';
 import type { HistorySummary } from '../features/fairvalue/fairValue';
 import { filterAndSort } from '../features/watchlist/filterSort';
 import { WatchlistTable } from '../features/watchlist/WatchlistTable';
+import { SuggestionStrip } from '../features/watchlist/SuggestionStrip';
 import { FilterBar } from '../features/watchlist/FilterBar';
 import { RecipeModal } from '../features/profit/RecipeModal';
 import { Spinner } from '../components/Spinner';
@@ -97,14 +98,17 @@ export default function Watchlist() {
         <div className="py-6"><Spinner label="Fetching market data + recipes…" /></div>
       )}
       {!market.isLoading && !recipes.isLoading && (
-        <WatchlistTable
-          rows={filtered}
-          onSelect={setSelectedItemId}
-          sparklineMap={showSparklines ? sparklineHistory.data : undefined}
-          sparklineLoading={sparklineHistory.isLoading}
-          applyMarketTax={applyMarketTax}
-          valuationById={valuationById}
-        />
+        <>
+          <SuggestionStrip category={ui.catFilter} />
+          <WatchlistTable
+            rows={filtered}
+            onSelect={setSelectedItemId}
+            sparklineMap={showSparklines ? sparklineHistory.data : undefined}
+            sparklineLoading={sparklineHistory.isLoading}
+            applyMarketTax={applyMarketTax}
+            valuationById={valuationById}
+          />
+        </>
       )}
 
       {selected && selectedRecipe && market.data && (

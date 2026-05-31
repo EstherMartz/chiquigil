@@ -39,6 +39,7 @@ const NAV_GROUPS: NavGroup[] = [
       { label: 'Plan', path: '/planner' },
       { label: 'Projects', path: '/projects' },
       { label: 'Watchlist', path: '/watchlist' },
+      { label: 'Discover', path: '/discover' },
       { label: 'Batch', path: '/craft-batch' },
       { label: 'Shopping', path: '/shopping-list' },
       { label: 'Leves', path: '/leves' },

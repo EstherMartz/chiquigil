@@ -14,6 +14,7 @@ import Login from './routes/Login';
 import Home from './routes/Home';
 import Dashboard from './routes/Dashboard';
 import Watchlist from './routes/Watchlist';
+import Discover from './routes/Discover';
 import Crafts from './routes/Crafts';
 import Trading from './routes/Trading';
 import Gathering from './routes/Gathering';
@@ -41,6 +42,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/home': 'What Now?',
   '/dashboard': 'Dashboard',
   '/watchlist': 'Watchlist',
+  '/discover': 'Discover',
   '/crafts': 'Crafts',
   '/trading': 'Trading',
   '/gathering': 'Gathering',
@@ -108,6 +110,7 @@ export default function App() {
                       <Route path="/home" element={<Home />} />
                       <Route path="/dashboard" element={<Dashboard />} />
                       <Route path="/watchlist" element={<Watchlist />} />
+                      <Route path="/discover" element={<Discover />} />
                       <Route path="/crafts" element={<Crafts />} />
                       <Route path="/trading" element={<Trading />} />
                       <Route path="/gathering" element={<Gathering />} />
