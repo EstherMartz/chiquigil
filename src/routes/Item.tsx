@@ -19,6 +19,8 @@ import { useVendorShopSnapshot } from '../features/queries/useVendorShopSnapshot
 import { useSpecialShopSnapshot } from '../features/queries/useSpecialShopSnapshot';
 import { VendorSourceCard } from '../features/items/VendorSourceCard';
 import { CurrencySourceCard } from '../features/items/CurrencySourceCard';
+import { SupplyDepthBlock } from '../features/items/SupplyDepthBlock';
+import { ConcentrationBlock } from '../features/items/ConcentrationBlock';
 import { VerdictCard } from '../features/items/VerdictCard';
 import { MarketSnapshotRow } from '../features/items/MarketSnapshotRow';
 import { findItemCurrencyOffers } from '../features/items/currencyOffers';
@@ -266,6 +268,14 @@ export default function Item() {
           worldLabel={world}
           npcsByCurrencyItemId={currencyNpcsByItemId}
         />
+      )}
+
+      {phantomMarket && phantomMarket.worldListings.length > 0 && (
+        <SupplyDepthBlock listings={phantomMarket.worldListings} canHq={canHq} />
+      )}
+
+      {phantomMarket && phantomMarket.worldListings.length > 0 && (
+        <ConcentrationBlock listings={phantomMarket.worldListings} canHq={canHq} />
       )}
 
       {recipes.isLoading && !recipe && (

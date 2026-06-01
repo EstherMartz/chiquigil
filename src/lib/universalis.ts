@@ -3,7 +3,7 @@ import { trimmedMedian } from './priceTrust';
 
 export type Scope = string; // world or DC name, e.g. 'Phantom' | 'Chaos'
 
-export interface WorldListing { world: string; price: number; hq: boolean }
+export interface WorldListing { world: string; price: number; hq: boolean; quantity?: number; seller?: string }
 
 export interface MarketItem {
   minNQ: number | null;
@@ -32,10 +32,10 @@ export type MarketData = Record<string, MarketItem>;
  * so the count is accurate.
  */
 export const LISTINGS_CAP = 50;
-/** Listing rows actually kept in the cache (cheapest-first, for the cross-world view). */
-const LISTINGS_KEPT = 10;
+/** Listing rows kept in the cache (cheapest-first) for the cross-world + depth views. */
+const LISTINGS_KEPT = LISTINGS_CAP;
 
-interface RawListing { hq: boolean; pricePerUnit: number; worldName?: string }
+interface RawListing { hq: boolean; pricePerUnit: number; worldName?: string; quantity?: number; retainerName?: string }
 interface RawHistory { hq: boolean; pricePerUnit: number }
 interface RawItem {
   listings?: RawListing[];
@@ -103,6 +103,8 @@ export function parseMarketResponse(raw: RawResponse): MarketData {
         world: l.worldName ?? '',
         price: l.pricePerUnit,
         hq: l.hq,
+        quantity: l.quantity ?? 1,
+        seller: l.retainerName ?? '',
       })),
       averagePriceNQ: item.averagePriceNQ ?? null,
       averagePriceHQ: item.averagePriceHQ ?? null,

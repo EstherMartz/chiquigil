@@ -56,16 +56,37 @@ describe('parseMarketResponse', () => {
       lastUploadTime: 1715000000000,
       listingCount: 3,
       worldListings: [
-        { world: 'Phantom', price: 50, hq: false },
-        { world: 'Phantom', price: 200, hq: true },
-        { world: 'Lich', price: 180, hq: true },
+        { world: 'Phantom', price: 50, hq: false, quantity: 1, seller: '' },
+        { world: 'Phantom', price: 200, hq: true, quantity: 1, seller: '' },
+        { world: 'Lich', price: 180, hq: true, quantity: 1, seller: '' },
       ],
       averagePriceNQ: 70,
       averagePriceHQ: 210,
     });
   });
 
-  it('uses the true listingsCount and keeps only the cheapest 10 rows', () => {
+  it('reads per-listing quantity and seller name when present', () => {
+    const raw = {
+      items: {
+        '101': {
+          listings: [
+            { hq: false, pricePerUnit: 50, worldName: 'Phantom', quantity: 3, retainerName: 'Alice' },
+            { hq: false, pricePerUnit: 60, worldName: 'Phantom', quantity: 1, retainerName: 'Bob' },
+          ],
+          recentHistory: [],
+          regularSaleVelocity: 0,
+          lastUploadTime: 0,
+        },
+      },
+    };
+    const out = parseMarketResponse(raw);
+    expect(out['101'].worldListings).toEqual([
+      { world: 'Phantom', price: 50, hq: false, quantity: 3, seller: 'Alice' },
+      { world: 'Phantom', price: 60, hq: false, quantity: 1, seller: 'Bob' },
+    ]);
+  });
+
+  it('uses the true listingsCount and keeps up to LISTINGS_CAP rows', () => {
     const listings = Array.from({ length: 14 }, (_, i) => ({
       hq: false, pricePerUnit: 100 + i, worldName: 'Phantom',
     }));
@@ -81,9 +102,9 @@ describe('parseMarketResponse', () => {
       },
     };
     const out = parseMarketResponse(raw);
-    expect(out['300'].listingCount).toBe(47);          // true total, not 14 or 10
-    expect(out['300'].worldListings).toHaveLength(10);  // only cheapest rows kept
-    expect(out['300'].minNQ).toBe(100);                 // min still over all rows
+    expect(out['300'].listingCount).toBe(47);          // true total
+    expect(out['300'].worldListings).toHaveLength(14);  // all rows kept (< cap)
+    expect(out['300'].minNQ).toBe(100);
   });
 
   it('falls back to the row count when listingsCount is absent', () => {

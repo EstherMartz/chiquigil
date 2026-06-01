@@ -392,7 +392,7 @@ function pickFirstTrustedTier(m, hq, canHq) {
 
 // src/lib/universalis.ts
 var LISTINGS_CAP = 50;
-var LISTINGS_KEPT = 10;
+var LISTINGS_KEPT = LISTINGS_CAP;
 function buildMarketUrl(scope, ids) {
   return `https://universalis.app/api/v2/${scope}/${ids.join(",")}?listings=10&entries=15`;
 }
@@ -432,7 +432,9 @@ function parseMarketResponse(raw) {
       worldListings: listings.slice(0, LISTINGS_KEPT).map((l) => ({
         world: l.worldName ?? "",
         price: l.pricePerUnit,
-        hq: l.hq
+        hq: l.hq,
+        quantity: l.quantity ?? 1,
+        seller: l.retainerName ?? ""
       })),
       averagePriceNQ: item.averagePriceNQ ?? null,
       averagePriceHQ: item.averagePriceHQ ?? null
@@ -1149,7 +1151,8 @@ function explode(targetId, targetQty, recipes, opts = {}) {
       return;
     }
     const recipe = recipes.get(id);
-    if (recipe && (id === targetId || craftIntermediates)) {
+    const forcedLeaf = id !== targetId && (opts.forceLeaf?.(id) ?? false);
+    if (recipe && !forcedLeaf && (id === targetId || craftIntermediates)) {
       const yieldPerCraft = recipe.amountResult ?? 1;
       const craftCount = Math.ceil(qty / yieldPerCraft);
       const existing = crafts.get(id);

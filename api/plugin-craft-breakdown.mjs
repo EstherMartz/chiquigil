@@ -158,7 +158,8 @@ function explode(targetId, targetQty, recipes, opts = {}) {
       return;
     }
     const recipe = recipes.get(id);
-    if (recipe && (id === targetId || craftIntermediates)) {
+    const forcedLeaf = id !== targetId && (opts.forceLeaf?.(id) ?? false);
+    if (recipe && !forcedLeaf && (id === targetId || craftIntermediates)) {
       const yieldPerCraft = recipe.amountResult ?? 1;
       const craftCount = Math.ceil(qty / yieldPerCraft);
       const existing = crafts.get(id);
