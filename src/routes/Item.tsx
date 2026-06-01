@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { useSettingsStore } from '../features/settings/store';
 import { useItemSnapshot } from '../features/queries/useItemSnapshot';
 import { useRecipeSnapshot } from '../features/queries/useRecipeSnapshot';
@@ -30,6 +31,7 @@ import { AddToWatchlistButton } from '../features/items/AddToWatchlistButton';
 import { AddToShoppingListButton } from '../features/shoppingList/AddToShoppingListButton';
 import { PluginItemActions } from '../features/plugin/PluginItemActions';
 import { fmtGil, fmtRelative, garlandItemUrl, gamerEscapeItemUrl, universalisItemUrl } from '../lib/format';
+import { fetchHistoryWithin } from '../lib/universalisHistory';
 import { Gil } from '../components/Gil';
 import { rarityBorderLeftClass, rarityLabel, rarityTextClass } from '../features/items/rarity';
 import { categoryLabel } from '../lib/itemSearchCategories';
@@ -109,6 +111,15 @@ export default function Item() {
   }, [itemId, ingredientIds, usedInIds, craftTreeIds, valid]);
 
   const market = useMarketData(priceIds, world, dc, 'Europe');
+
+  const NINETY_DAYS_SEC = 90 * 24 * 60 * 60;
+  const historyQ = useQuery({
+    queryKey: ['item-history', world, itemId, 90],
+    enabled: valid,
+    staleTime: 30 * 60 * 1000,
+    queryFn: async () => (await fetchHistoryWithin(world, [itemId], NINETY_DAYS_SEC)).get(itemId) ?? [],
+  });
+
   const vendors = useVendorShopSnapshot();
   const vendorPrice = valid && vendors.data?.snapshot.get(itemId);
   const shop = useSpecialShopSnapshot();
@@ -236,6 +247,7 @@ export default function Item() {
           homeWorld={world}
           canHq={canHq}
           now={Date.now()}
+          history={historyQ.data ?? []}
         />
       )}
 
