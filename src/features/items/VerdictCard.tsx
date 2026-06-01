@@ -3,6 +3,8 @@ import type { MarketItem } from '../../lib/universalis';
 import type { Recipe } from '../../lib/recipes';
 import type { Tone } from './verdict/types';
 import { computeVerdict } from './verdict/computeVerdict';
+import type { HistoryEntry } from '../../lib/universalisHistory';
+import { soldByStack, listedByStack, suggestStack } from './stackAnalysis';
 
 const TONE_BORDER: Record<Tone, string> = {
   gold: 'border-l-gold', good: 'border-l-jade', aether: 'border-l-aether',
@@ -26,6 +28,7 @@ interface Props {
   homeWorld: string;
   canHq: boolean;
   now?: number;
+  history?: HistoryEntry[];
 }
 
 export function VerdictCard(props: Props) {
@@ -33,9 +36,14 @@ export function VerdictCard(props: Props) {
   const { best, runnerUp } = computeVerdict({ ...props, now });
   const v = best;
 
+  const hq = best.quality === 'HQ';
+  const sold = soldByStack(props.history ?? [], hq);
+  const listed = listedByStack(props.phantom?.worldListings ?? [], hq);
+  const suggestion = suggestStack(sold, listed);
+
   return (
     <section
-      className={`bg-bg-card border ${TONE_FRAME[v.tone]} border-l-[3px] ${TONE_BORDER[v.tone]} p-5 md:p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1fr] gap-5 md:gap-7`}
+      className={`bg-bg-card border ${TONE_FRAME[v.tone]} border-l-[3px] ${TONE_BORDER[v.tone]} p-5 md:p-6 grid grid-cols-1 md:grid-cols-2 ${suggestion ? 'lg:grid-cols-[1.5fr_1fr_1fr_1fr_1fr]' : 'lg:grid-cols-[1.5fr_1fr_1fr_1fr]'} gap-5 md:gap-7`}
     >
       <div>
         <div className={`font-mono text-[10px] tracking-widest uppercase mb-1.5 ${TONE_TEXT[v.tone]}`}>
@@ -48,6 +56,13 @@ export function VerdictCard(props: Props) {
         {runnerUp && (
           <p className="font-mono text-[11px] text-text-low mt-2">
             also viable: {runnerUp.bestPlay} · + {fmtGil(runnerUp.gilPerDay)}/day
+          </p>
+        )}
+        {suggestion && (
+          <p className={`font-mono text-[11px] mt-2 ${suggestion.kind === 'gap' ? 'text-jade' : 'text-text-dim'}`}>
+            ▸ {suggestion.kind === 'gap'
+              ? `Best as ${suggestion.stack}-stacks · ~${fmtGil(suggestion.unitPrice)}/unit · under-supplied`
+              : `Most sales are ${suggestion.stack}-stacks · ~${fmtGil(suggestion.unitPrice)}/unit`}
           </p>
         )}
       </div>
@@ -76,6 +91,17 @@ export function VerdictCard(props: Props) {
         <div className="font-mono text-[10px] tracking-widest uppercase text-text-low mb-1">Risk</div>
         <div className="font-display text-base text-text-cream tracking-wide mb-1">{v.risk}</div>
       </div>
+
+      {suggestion && (
+        <div>
+          <div className="font-mono text-[10px] tracking-widest uppercase text-text-low mb-1">Sell as</div>
+          <div className="font-display text-base text-text-cream tracking-wide mb-1">{suggestion.stack}-stack</div>
+          <p className="font-mono text-[11px] text-text-dim">
+            ~ {fmtGil(suggestion.unitPrice)}/unit
+            {suggestion.kind === 'gap' && <span className="text-jade"> · under-supplied</span>}
+          </p>
+        </div>
+      )}
     </section>
   );
 }

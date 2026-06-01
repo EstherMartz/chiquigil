@@ -70,3 +70,37 @@ export function listedByStack(listings: WorldListing[], hq: boolean): ListedStac
 export function isStackable(sold: SoldStackRow[], listed: ListedStackRow[]): boolean {
   return sold.some((r) => r.stack > 1) || listed.some((r) => r.stack > 1);
 }
+
+export interface StackSuggestion {
+  stack: number;
+  unitPrice: number;
+  kind: 'gap' | 'liquid';
+}
+
+/**
+ * Recommend a stack size to list at: a supply gap (real demand, thin supply)
+ * if one exists, else the most-liquid size. Tie-break: most recent, then larger.
+ * Returns null for non-stackable items or when there are no sales.
+ */
+export function suggestStack(sold: SoldStackRow[], listed: ListedStackRow[]): StackSuggestion | null {
+  if (!isStackable(sold, listed) || sold.length === 0) return null;
+
+  const totalSales = sold.reduce((s, r) => s + r.sales, 0);
+  const listedCountByStack = new Map(listed.map((r) => [r.stack, r.count]));
+  const gapThreshold = Math.max(2, totalSales * 0.15);
+
+  const better = (a: SoldStackRow, b: SoldStackRow): SoldStackRow => {
+    if (a.sales !== b.sales) return a.sales > b.sales ? a : b;
+    if (a.lastSoldMs !== b.lastSoldMs) return a.lastSoldMs > b.lastSoldMs ? a : b;
+    return a.stack >= b.stack ? a : b;
+  };
+
+  const gapRows = sold.filter(
+    (r) => r.sales >= gapThreshold && (listedCountByStack.get(r.stack) ?? 0) <= 1,
+  );
+  const pool = gapRows.length > 0 ? gapRows : sold;
+  const kind: 'gap' | 'liquid' = gapRows.length > 0 ? 'gap' : 'liquid';
+  const pick = pool.reduce(better);
+
+  return { stack: pick.stack, unitPrice: pick.medianUnitPrice, kind };
+}
