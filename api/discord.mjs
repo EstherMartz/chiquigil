@@ -413,6 +413,8 @@ function parseMarketResponse(raw) {
     const history = item.recentHistory ?? [];
     const nqHist = history.filter((h) => !h.hq).map((h) => h.pricePerUnit);
     const hqHist = history.filter((h) => h.hq).map((h) => h.pricePerUnit);
+    const saleTimes = history.map((h) => h.timestamp).filter((t) => typeof t === "number" && t > 0);
+    const lastSaleMs = saleTimes.length ? Math.max(...saleTimes) * 1e3 : null;
     out[id] = {
       minNQ: minPrice(listings, false),
       minHQ: minPrice(listings, true),
@@ -437,7 +439,8 @@ function parseMarketResponse(raw) {
         seller: l.retainerName ?? ""
       })),
       averagePriceNQ: item.averagePriceNQ ?? null,
-      averagePriceHQ: item.averagePriceHQ ?? null
+      averagePriceHQ: item.averagePriceHQ ?? null,
+      lastSaleMs
     };
   }
   return out;
