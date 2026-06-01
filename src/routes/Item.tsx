@@ -12,6 +12,7 @@ import { useLeveUsedInIndex } from '../features/items/useLeveUsedInIndex';
 import { DeliverablesBlock } from '../features/items/DeliverablesBlock';
 import { CraftTreeBlock } from '../features/items/CraftTreeBlock';
 import { CraftSellMathCard } from '../features/items/CraftSellMathCard';
+import { IngredientBreakdownModal } from '../features/items/IngredientBreakdownModal';
 import { explode } from '../bot/craftExplode';
 import { useMarketData } from '../features/watchlist/useMarketData';
 import { useVendorShopSnapshot } from '../features/queries/useVendorShopSnapshot';
@@ -70,6 +71,7 @@ export default function Item() {
   const snapshot = useItemSnapshot();
   const recipes = useRecipeSnapshot(valid);
   const gathering = useGatheringCatalog();
+  const [showBreakdown, setShowBreakdown] = useState(false);
   const garland = useGarlandItem(valid ? itemId : null);
   const locations = useGarlandLocations();
   const usedInIdx = useUsedInIndex();
@@ -110,6 +112,19 @@ export default function Item() {
     () => valid ? findItemCurrencyOffers(itemId, shop.data?.snapshot ?? { byCurrency: new Map() }) : [],
     [itemId, valid, shop.data],
   );
+
+  // Resolver for the self-source breakdown: cheapest currency offer per item
+  // (scrip/tome/seal). Such mats count as 0 gil — earned by playing.
+  const currencyOf = useMemo(() => {
+    const snap = shop.data?.snapshot;
+    return (id: number) => {
+      if (!snap) return null;
+      const offers = findItemCurrencyOffers(id, snap);
+      if (offers.length === 0) return null;
+      const best = offers[0]; // sorted cheapest-first
+      return { label: best.currency.shortLabel, cost: best.costPerUnit };
+    };
+  }, [shop.data]);
 
   const vendorNpc = useMemo(() => {
     if (!vendorPrice || !garland.data?.gilShopNpcs.length) return undefined;
@@ -158,6 +173,13 @@ export default function Item() {
     }
     return total;
   }, [recipe, phantomMarket, market.data]);
+
+  // Ids of all gatherable items — feeds the self-source ("gather + craft")
+  // floor cost in the craft→sell math card.
+  const gatherableIds = useMemo(
+    () => (gathering.data ? new Set(gathering.data.keys()) : new Set<number>()),
+    [gathering.data],
+  );
 
   const nameOf = useMemo(() => {
     const m = new Map<number, string>();
@@ -264,6 +286,11 @@ export default function Item() {
             homeWorld={world}
             phantom={phantomMarket}
             canHq={canHq}
+            recipeMap={recipes.data}
+            homeMarket={market.data?.phantom}
+            gatherableIds={gatherableIds}
+            currencyOf={currencyOf}
+            onShowBreakdown={() => setShowBreakdown(true)}
           />
         </div>
       )}
@@ -300,6 +327,20 @@ export default function Item() {
         itemName={displayName}
         gather={gather}
       />
+
+      {showBreakdown && recipe && recipes.data && market.data && (
+        <IngredientBreakdownModal
+          itemId={itemId}
+          itemName={displayName}
+          recipe={recipe}
+          recipeMap={recipes.data}
+          market={market.data.phantom}
+          gatherableIds={gatherableIds}
+          currencyOf={currencyOf}
+          nameOf={nameOf}
+          onClose={() => setShowBreakdown(false)}
+        />
+      )}
     </div>
   );
 }

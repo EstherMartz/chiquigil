@@ -1,5 +1,101 @@
 import { describe, it, expect } from 'vitest';
-import { craftSellMath } from './CraftSellMathCard';
+import { craftSellMath, selfSourceCost, selfSourceBreakdown } from './CraftSellMathCard';
+import type { Recipe } from '../../lib/recipes';
+import type { MarketData } from '../../lib/universalis';
+
+function mkPrice(minNQ: number): MarketData[string] {
+  return {
+    minNQ, minHQ: null, avgNQ: null, avgHQ: null, medianNQ: null, medianHQ: null,
+    recentSalesNQ: 0, recentSalesHQ: 0, velocity: 0, lastUploadTime: 0,
+    listingCount: 1, worldListings: [], averagePriceNQ: null, averagePriceHQ: null,
+  };
+}
+
+describe('selfSourceCost', () => {
+  // Target 100 needs 2× ingredient 1 (gatherable) + 3× ingredient 2 (must buy @ 50).
+  const recipe: Recipe = {
+    itemResultId: 100, classJob: 'LTW', recipeLevel: 90,
+    ingredients: [{ itemId: 1, amount: 2 }, { itemId: 2, amount: 3 }],
+  };
+
+  it('counts gatherables as free and buys the rest at market', () => {
+    const market: MarketData = { 1: mkPrice(999), 2: mkPrice(50) };
+    const cost = selfSourceCost(recipe, new Map(), market, new Set([1]));
+    expect(cost).toBe(150); // 2×0 (gathered) + 3×50
+  });
+
+  it('recurses into craftable intermediates, dividing by their yield', () => {
+    // Ingredient 2 is itself craftable: yields 3 per synth from 1× gatherable 9.
+    const subRecipe: Recipe = {
+      itemResultId: 2, classJob: 'WVR', recipeLevel: 50, amountResult: 3,
+      ingredients: [{ itemId: 9, amount: 1 }],
+    };
+    const recipeMap = new Map<number, Recipe | null>([[2, subRecipe]]);
+    const market: MarketData = { 1: mkPrice(0), 2: mkPrice(50), 9: mkPrice(30) };
+    // ing 1 gathered (free); ing 2 crafted: (1×30)/3 = 10 each → 3×10 = 30.
+    const cost = selfSourceCost(recipe, recipeMap, market, new Set([1]));
+    expect(cost).toBe(30);
+  });
+
+  it('survives recipe cycles without infinite recursion', () => {
+    const a: Recipe = { itemResultId: 100, classJob: 'LTW', recipeLevel: 1, ingredients: [{ itemId: 2, amount: 1 }] };
+    const b: Recipe = { itemResultId: 2, classJob: 'LTW', recipeLevel: 1, ingredients: [{ itemId: 100, amount: 1 }] };
+    const recipeMap = new Map<number, Recipe | null>([[100, a], [2, b]]);
+    const market: MarketData = { 2: mkPrice(50), 100: mkPrice(70) };
+    // a→2→100→a, then 2 is already seen → falls back to item 2's market price (50).
+    // The point is it terminates with a finite number, not the exact value.
+    expect(selfSourceCost(a, recipeMap, market, new Set())).toBe(50);
+  });
+
+  it('treats currency-obtainable ingredients as 0 gil (earned by playing)', () => {
+    const recipe: Recipe = {
+      itemResultId: 100, classJob: 'ALC', recipeLevel: 90,
+      ingredients: [{ itemId: 1, amount: 2 }, { itemId: 2, amount: 3 }],
+    };
+    const market: MarketData = { 1: mkPrice(500), 2: mkPrice(50) };
+    // Item 1 is buyable with scrip → free; item 2 must be bought @ 50 → 150.
+    const currencyOf = (id: number) => (id === 1 ? { label: 'P-Craft', cost: 120 } : null);
+    expect(selfSourceCost(recipe, new Map(), market, new Set(), currencyOf)).toBe(150);
+  });
+});
+
+describe('selfSourceBreakdown', () => {
+  const recipe: Recipe = {
+    itemResultId: 100, classJob: 'LTW', recipeLevel: 90,
+    ingredients: [{ itemId: 1, amount: 2 }, { itemId: 2, amount: 3 }],
+  };
+
+  it('classifies each direct ingredient gather / craft / buy with line costs', () => {
+    const sub: Recipe = {
+      itemResultId: 2, classJob: 'WVR', recipeLevel: 50, amountResult: 3,
+      ingredients: [{ itemId: 9, amount: 1 }],
+    };
+    const recipeMap = new Map<number, Recipe | null>([[2, sub]]);
+    const market: MarketData = { 1: mkPrice(0), 2: mkPrice(50), 9: mkPrice(30) };
+    const rows = selfSourceBreakdown(recipe, recipeMap, market, new Set([1]));
+
+    expect(rows.map((r) => r.kind)).toEqual(['gather', 'craft']);
+    // ing 1 gathered → free; ing 2 crafted: (30/3)=10 unit → line 30, with nested child.
+    expect(rows[0]).toMatchObject({ kind: 'gather', unitCost: 0, lineCost: 0 });
+    expect(rows[1]).toMatchObject({ kind: 'craft', unitCost: 10, lineCost: 30, yield: 3 });
+    expect(rows[1].children?.[0]).toMatchObject({ itemId: 9, kind: 'buy', unitCost: 30 });
+  });
+
+  it('classifies a currency-obtainable ingredient with its currency label + cost', () => {
+    const market: MarketData = { 1: mkPrice(500), 2: mkPrice(50) };
+    const currencyOf = (id: number) => (id === 1 ? { label: 'P-Craft', cost: 120 } : null);
+    const rows = selfSourceBreakdown(recipe, new Map(), market, new Set(), currencyOf);
+    expect(rows[0]).toMatchObject({ kind: 'currency', unitCost: 0, lineCost: 0, currencyLabel: 'P-Craft', currencyCost: 120 });
+    expect(rows[1]).toMatchObject({ kind: 'buy', unitCost: 50 });
+  });
+
+  it('top-level line costs sum to selfSourceCost', () => {
+    const market: MarketData = { 1: mkPrice(0), 2: mkPrice(50) };
+    const rows = selfSourceBreakdown(recipe, new Map(), market, new Set([1]));
+    const total = rows.reduce((s, r) => s + r.lineCost, 0);
+    expect(total).toBe(selfSourceCost(recipe, new Map(), market, new Set([1])));
+  });
+});
 
 describe('craftSellMath', () => {
   it('calculates profit as sale price minus minimum materials cost', () => {
