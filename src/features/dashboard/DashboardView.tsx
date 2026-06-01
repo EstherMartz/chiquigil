@@ -141,10 +141,10 @@ export function DashboardView() {
           <div className="text-aether/70 mb-1 text-[18px]" aria-hidden>❖</div>
           <div>Your watchlist is empty.</div>
           <Link
-            to="/home"
+            to="/discover"
             className="not-italic mt-3 inline-block font-mono text-[11px] tracking-widest uppercase text-aether hover:text-gold transition-colors"
           >
-            Add items from a starter pack on Home →
+            Discover items to add to your watchlist →
           </Link>
         </div>
       )}
