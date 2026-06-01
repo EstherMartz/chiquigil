@@ -41,10 +41,6 @@ export function ShoppingListPanel({ searchableItems, onPlan }: Props) {
       setError('No match in catalog.');
       return;
     }
-    if (!match.hasRecipe) {
-      setError(`"${match.name}" is not craftable.`);
-      return;
-    }
     addItem(match.id, Math.max(1, qty));
     setQuery('');
     setQtyInput(1);
