@@ -7,6 +7,9 @@ import { useProject } from './useProject';
 import { collectPhases } from '../../bot/craftRender';
 import type { StoredTask, TaskSource } from '../../bot/craftTypes';
 import type { PhaseInfo } from '../../bot/craftRender';
+import { useRecipeSnapshot } from '../queries/useRecipeSnapshot';
+import { buildProjectTree } from './projectTree';
+import { ProjectCraftTree } from './ProjectCraftTree';
 
 const SOURCE_ORDER: TaskSource[] = ['craft', 'workshop', 'gather', 'currency', 'vendor', 'market'];
 
@@ -105,6 +108,8 @@ function PhaseTabs({
 export function ProjectDetail({ projectId }: { projectId: number }) {
   const q = useProject(projectId);
   const [activePhase, setActivePhase] = useState<{ partKey: string; phaseIndex: number } | null>(null);
+  const recipes = useRecipeSnapshot(true);
+  const [viewMode, setViewMode] = useState<'tree' | 'source'>('tree');
 
   if (q.isLoading) {
     return (
@@ -133,6 +138,11 @@ export function ProjectDetail({ projectId }: { projectId: number }) {
   const groups = groupTasks(visibleTasks);
 
   const isMultiCraft = projectItems.length >= 2;
+
+  const treeRoots = buildProjectTree(tasks, recipes.data ?? new Map());
+  const hasNesting = treeRoots.some((r) => r.children.length > 0);
+  const showTreeToggle = hasNesting && !hasPhases;
+  const showTree = showTreeToggle && viewMode === 'tree';
 
   return (
     <div className="max-w-[100rem] mx-auto px-4 space-y-4">
@@ -175,22 +185,46 @@ export function ProjectDetail({ projectId }: { projectId: number }) {
         />
       )}
 
-      {SOURCE_ORDER.map((source) => {
-        const list = groups.get(source) ?? [];
-        if (list.length === 0) return null;
-        return (
-          <section key={source} className="border border-border-base rounded p-3">
-            <h3 className="font-mono text-[10px] tracking-widest text-text-low mb-2 uppercase">
-              {SOURCE_LABEL[source]} · {list.length}
-            </h3>
-            <ul>
-              {list.map((t) => (
-                <TaskRow key={t.id} t={t} userNames={userNames} />
-              ))}
-            </ul>
-          </section>
-        );
-      })}
+      {showTreeToggle && (
+        <div className="flex gap-1.5">
+          {(['tree', 'source'] as const).map((mode) => (
+            <button
+              key={mode}
+              type="button"
+              onClick={() => setViewMode(mode)}
+              className={[
+                'px-2.5 py-1 rounded font-mono text-[10px] tracking-wide border transition-colors',
+                viewMode === mode
+                  ? 'bg-accent/20 border-accent text-accent'
+                  : 'border-border-base/40 text-text-low hover:border-accent/50 hover:text-text-base',
+              ].join(' ')}
+            >
+              {mode === 'tree' ? 'Tree' : 'By source'}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {showTree ? (
+        <ProjectCraftTree roots={treeRoots} />
+      ) : (
+        SOURCE_ORDER.map((source) => {
+          const list = groups.get(source) ?? [];
+          if (list.length === 0) return null;
+          return (
+            <section key={source} className="border border-border-base rounded p-3">
+              <h3 className="font-mono text-[10px] tracking-widest text-text-low mb-2 uppercase">
+                {SOURCE_LABEL[source]} · {list.length}
+              </h3>
+              <ul>
+                {list.map((t) => (
+                  <TaskRow key={t.id} t={t} userNames={userNames} />
+                ))}
+              </ul>
+            </section>
+          );
+        })
+      )}
     </div>
   );
 }
