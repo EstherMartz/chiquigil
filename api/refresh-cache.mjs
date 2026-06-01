@@ -16,7 +16,7 @@ function trimmedMedian(prices) {
 
 // src/lib/universalis.ts
 var LISTINGS_CAP = 50;
-var LISTINGS_KEPT = 10;
+var LISTINGS_KEPT = LISTINGS_CAP;
 function minPrice(arr, hq) {
   const v = arr.filter((l) => l.hq === hq).map((l) => l.pricePerUnit);
   return v.length ? Math.min(...v) : null;
@@ -53,7 +53,9 @@ function parseMarketResponse(raw) {
       worldListings: listings.slice(0, LISTINGS_KEPT).map((l) => ({
         world: l.worldName ?? "",
         price: l.pricePerUnit,
-        hq: l.hq
+        hq: l.hq,
+        quantity: l.quantity ?? 1,
+        seller: l.retainerName ?? ""
       })),
       averagePriceNQ: item.averagePriceNQ ?? null,
       averagePriceHQ: item.averagePriceHQ ?? null
