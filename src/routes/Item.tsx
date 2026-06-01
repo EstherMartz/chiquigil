@@ -337,7 +337,7 @@ function HeaderBlock({ name, ilvl, sc, canHq, rarity, itemId, recipe, world, dc,
       <div className="flex flex-col sm:flex-row sm:items-end gap-3 self-start sm:self-end">
         <div className="flex flex-wrap gap-2">
           <AddToWatchlistButton itemId={itemId} itemName={name} ilvl={ilvl} recipe={recipe} sc={sc} />
-          <AddToShoppingListButton itemId={itemId} hasRecipe={recipe != null} />
+          <AddToShoppingListButton itemId={itemId} />
           <PluginItemActions itemId={itemId} />
           <Link
             to="/projects"
