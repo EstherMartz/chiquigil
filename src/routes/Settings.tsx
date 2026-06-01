@@ -298,6 +298,18 @@ export default function Settings() {
           </button>
         </div>
       </section>
+      <section>
+        <SectionHeader label="About" />
+        <dl className="font-mono text-xs grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 max-w-md">
+          <dt className="text-text-low tracking-widest uppercase text-[10px]">Web app</dt>
+          <dd className="text-text-cream">v{__APP_VERSION__}</dd>
+          <dt className="text-text-low tracking-widest uppercase text-[10px]">Built</dt>
+          <dd className="text-text-low">{fmtDate(Date.parse(__BUILD_TIME__))}</dd>
+        </dl>
+        <p className="font-mono text-[10px] text-text-low mt-2 max-w-prose">
+          Connected plugin version (when paired) shows under <span className="text-aether">In-game plugin</span> above.
+        </p>
+      </section>
       <div className="pt-4 border-t border-border-base">
         <button
           type="button"
