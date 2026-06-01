@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { craftSellMath, selfSourceCost } from './CraftSellMathCard';
+import { craftSellMath, selfSourceCost, selfSourceBreakdown } from './CraftSellMathCard';
 import type { Recipe } from '../../lib/recipes';
 import type { MarketData } from '../../lib/universalis';
 
@@ -45,6 +45,36 @@ describe('selfSourceCost', () => {
     // a→2→100→a, then 2 is already seen → falls back to item 2's market price (50).
     // The point is it terminates with a finite number, not the exact value.
     expect(selfSourceCost(a, recipeMap, market, new Set())).toBe(50);
+  });
+});
+
+describe('selfSourceBreakdown', () => {
+  const recipe: Recipe = {
+    itemResultId: 100, classJob: 'LTW', recipeLevel: 90,
+    ingredients: [{ itemId: 1, amount: 2 }, { itemId: 2, amount: 3 }],
+  };
+
+  it('classifies each direct ingredient gather / craft / buy with line costs', () => {
+    const sub: Recipe = {
+      itemResultId: 2, classJob: 'WVR', recipeLevel: 50, amountResult: 3,
+      ingredients: [{ itemId: 9, amount: 1 }],
+    };
+    const recipeMap = new Map<number, Recipe | null>([[2, sub]]);
+    const market: MarketData = { 1: mkPrice(0), 2: mkPrice(50), 9: mkPrice(30) };
+    const rows = selfSourceBreakdown(recipe, recipeMap, market, new Set([1]));
+
+    expect(rows.map((r) => r.kind)).toEqual(['gather', 'craft']);
+    // ing 1 gathered → free; ing 2 crafted: (30/3)=10 unit → line 30, with nested child.
+    expect(rows[0]).toMatchObject({ kind: 'gather', unitCost: 0, lineCost: 0 });
+    expect(rows[1]).toMatchObject({ kind: 'craft', unitCost: 10, lineCost: 30, yield: 3 });
+    expect(rows[1].children?.[0]).toMatchObject({ itemId: 9, kind: 'buy', unitCost: 30 });
+  });
+
+  it('top-level line costs sum to selfSourceCost', () => {
+    const market: MarketData = { 1: mkPrice(0), 2: mkPrice(50) };
+    const rows = selfSourceBreakdown(recipe, new Map(), market, new Set([1]));
+    const total = rows.reduce((s, r) => s + r.lineCost, 0);
+    expect(total).toBe(selfSourceCost(recipe, new Map(), market, new Set([1])));
   });
 });
 

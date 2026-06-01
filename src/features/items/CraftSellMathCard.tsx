@@ -57,26 +57,40 @@ export interface BreakdownRow {
   /** Self-source cost per unit (0 for gather, sub-cost÷yield for craft, market for buy). */
   unitCost: number;
   lineCost: number;
+  /** Sub-recipe yield (units per synth) for craftable rows — for the "÷N" hint. */
+  yield?: number;
+  /** Nested breakdown of a craftable ingredient's own mats (full depth). */
+  children?: BreakdownRow[];
 }
 
 /**
- * Per-ingredient self-source classification + cost for the direct ingredients
- * of a recipe. Mirrors selfSourceCost's per-unit logic so the rows sum to it.
+ * Recursive self-source breakdown: each ingredient classified gather / craft /
+ * buy with its per-unit + line cost, and craftable ingredients carry their own
+ * nested children (full depth, cycle-guarded). Mirrors selfSourceCost so the
+ * tree's costs reconcile with it.
  */
 export function selfSourceBreakdown(
   recipe: Recipe,
   recipeMap: Map<number, Recipe | null>,
   market: MarketData,
   gatherableIds: Set<number>,
+  seen: Set<number> = new Set([recipe.itemResultId]),
 ): BreakdownRow[] {
   return recipe.ingredients.map((ing) => {
-    const unitCost = selfSourceUnit(ing.itemId, recipeMap, market, gatherableIds, new Set([recipe.itemResultId]));
-    const kind: IngredientSourceKind = gatherableIds.has(ing.itemId)
-      ? 'gather'
-      : recipeMap.get(ing.itemId)
-        ? 'craft'
-        : 'buy';
-    return { itemId: ing.itemId, amount: ing.amount, kind, unitCost, lineCost: unitCost * ing.amount };
+    const gatherable = gatherableIds.has(ing.itemId);
+    const sub = recipeMap.get(ing.itemId);
+    const craftable = !gatherable && !!sub && !seen.has(ing.itemId);
+    const kind: IngredientSourceKind = gatherable ? 'gather' : craftable ? 'craft' : 'buy';
+
+    const unitCost = selfSourceUnit(ing.itemId, recipeMap, market, gatherableIds, new Set(seen));
+    const row: BreakdownRow = {
+      itemId: ing.itemId, amount: ing.amount, kind, unitCost, lineCost: unitCost * ing.amount,
+    };
+    if (craftable && sub) {
+      row.yield = sub.amountResult ?? 1;
+      row.children = selfSourceBreakdown(sub, recipeMap, market, gatherableIds, new Set(seen).add(ing.itemId));
+    }
+    return row;
   });
 }
 

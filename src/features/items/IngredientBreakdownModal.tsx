@@ -1,8 +1,9 @@
+import { Fragment } from 'react';
 import { Link } from 'react-router-dom';
 import { fmtGil } from '../../lib/format';
 import { Gil } from '../../components/Gil';
 import { useShoppingListStore } from '../shoppingList/shoppingListStore';
-import { selfSourceBreakdown, type IngredientSourceKind } from './CraftSellMathCard';
+import { selfSourceBreakdown, type IngredientSourceKind, type BreakdownRow } from './CraftSellMathCard';
 import type { Recipe } from '../../lib/recipes';
 import type { MarketData } from '../../lib/universalis';
 
@@ -14,6 +15,40 @@ const KIND_CLASS: Record<IngredientSourceKind, string> = {
   craft:  'text-gold border-gold/40',
   buy:    'text-text-dim border-border-base',
 };
+
+/** Renders a breakdown tree as flat <tr>s; craftable rows recurse, indented. */
+function renderRows(rows: BreakdownRow[], nameOf: (id: number) => string, depth = 0): React.ReactNode {
+  return rows.map((r) => (
+    <Fragment key={`${depth}-${r.itemId}`}>
+      <tr className={depth === 0 ? 'border-t border-border-base/50' : ''}>
+        <td className="py-1.5">
+          <span style={{ paddingLeft: depth * 14 }} className="inline-flex items-center gap-1">
+            {depth > 0 && <span className="text-text-low" aria-hidden>↳</span>}
+            <Link to={`/item/${r.itemId}`} className="text-text-cream hover:text-aether hover:underline decoration-1 underline-offset-4">
+              {nameOf(r.itemId)}
+            </Link>
+          </span>
+        </td>
+        <td className="py-1.5 text-center font-mono tabular-nums">{r.amount}</td>
+        <td className="py-1.5 text-center">
+          <span className={`border ${KIND_CLASS[r.kind]} px-1.5 py-px leading-none text-[9px] tracking-widest uppercase rounded-sm`}>
+            {KIND_LABEL[r.kind]}
+          </span>
+          {r.kind === 'craft' && r.yield != null && r.yield > 1 && (
+            <span className="ml-1 font-mono text-[9px] text-text-low">÷{r.yield}</span>
+          )}
+        </td>
+        <td className="py-1.5 text-right font-mono tabular-nums text-text-low">
+          {r.kind === 'gather' ? 'free' : fmtGil(r.unitCost)}
+        </td>
+        <td className="py-1.5 text-right font-mono tabular-nums">
+          {r.kind === 'gather' ? '—' : <Gil value={r.lineCost} />}
+        </td>
+      </tr>
+      {r.children && r.children.length > 0 && renderRows(r.children, nameOf, depth + 1)}
+    </Fragment>
+  ));
+}
 
 /**
  * Per-ingredient self-source breakdown for one craft, plus a "Plan this craft"
@@ -77,27 +112,7 @@ export function IngredientBreakdownModal({
             </tr>
           </thead>
           <tbody>
-            {rows.map((r) => (
-              <tr key={r.itemId} className="border-t border-border-base/50">
-                <td className="py-1.5">
-                  <Link to={`/item/${r.itemId}`} className="text-text-cream hover:text-aether hover:underline decoration-1 underline-offset-4">
-                    {nameOf(r.itemId)}
-                  </Link>
-                </td>
-                <td className="py-1.5 text-center font-mono tabular-nums">{r.amount}</td>
-                <td className="py-1.5 text-center">
-                  <span className={`border ${KIND_CLASS[r.kind]} px-1.5 py-px leading-none text-[9px] tracking-widest uppercase rounded-sm`}>
-                    {KIND_LABEL[r.kind]}
-                  </span>
-                </td>
-                <td className="py-1.5 text-right font-mono tabular-nums text-text-low">
-                  {r.kind === 'gather' ? 'free' : fmtGil(r.unitCost)}
-                </td>
-                <td className="py-1.5 text-right font-mono tabular-nums">
-                  {r.kind === 'gather' ? '—' : <Gil value={r.lineCost} />}
-                </td>
-              </tr>
-            ))}
+            {renderRows(rows, nameOf)}
           </tbody>
           <tfoot>
             <tr className="border-t border-border-base">
