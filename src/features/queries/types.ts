@@ -215,3 +215,29 @@ export function defaultCurrencyFlipFilter(): CurrencyFlipFilter {
     limit: 200,
   };
 }
+
+export type EmptyShelfSort = 'freshness' | 'velocity' | 'estGilPerDay' | 'suggestedPrice';
+
+export interface EmptyShelfFilter {
+  searchCategories: number[];
+  hq: HqMode;
+  minVelocity: number;
+  maxListings: number;
+  maxDaysSinceSale: number | null;
+  sort: EmptyShelfSort;
+  limit: number;
+}
+
+export interface EmptyShelfRow {
+  id: number; name: string; sc: number; hq: boolean;
+  suggestedPrice: number;
+  velocity: number;
+  lastSaleMs: number | null;
+  daysSinceLastSale: number | null;
+  estGilPerDay: number;
+}
+
+export function defaultEmptyShelfFilter(): EmptyShelfFilter {
+  return { searchCategories: [], hq: 'either', minVelocity: 0.14, maxListings: 0,
+           maxDaysSinceSale: 30, sort: 'freshness', limit: 200 };
+}
