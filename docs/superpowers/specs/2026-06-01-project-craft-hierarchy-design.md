@@ -58,7 +58,7 @@ Pure and fully unit-tested.
 
 - `buildProjectTree` unit tests: target + 2 leaves → 1 root, 2 children; target → intermediate craft → leaf (3 levels); shared intermediate duplicated under two parents; no recipes → all roots, no children; cycle guard (recipe referencing an ancestor) terminates; root order preserved.
 - `ProjectCraftTree` render test: nested rows render with indentation; a leaf shows its source tag; progress/status text from the task; expand/collapse toggles child visibility.
-- `ProjectDetail`: a project with a craftable target shows the tree by default and the toggle; a recipe-less/flat project shows the original source view and no toggle; a phase-based project is unchanged. (Mock `useProject` + `useRecipeSnapshot` per existing test patterns.)
+- `ProjectDetail`: there is no existing component-test harness for this page (it depends on react-query hooks `useProject` + `useRecipeSnapshot` with no established mock pattern), so the thin wiring (toggle state, `hasNesting` fallback decision) is verified via `tsc --noEmit` + the full suite + manual check, not a brittle hook-mock test. The decision-bearing logic lives in the pure `buildProjectTree` (tested) and the pure `ProjectCraftTree` (tested); `ProjectDetail` only chooses which to render.
 
 ## Non-goals (Phase 1)
 
