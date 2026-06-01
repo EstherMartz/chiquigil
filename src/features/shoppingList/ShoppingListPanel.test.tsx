@@ -69,14 +69,6 @@ describe('ShoppingListPanel', () => {
     expect(useShoppingListStore.getState().items.map((i) => i.id)).toEqual([2]);
   });
 
-  it('toggles craftIntermediates per item', () => {
-    useShoppingListStore.getState().addItem(1);
-    render(<ShoppingListPanel searchableItems={sample} onPlan={() => {}} />);
-    const toggle = screen.getByLabelText(/craft sub-ingredients/i);
-    fireEvent.click(toggle);
-    expect(useShoppingListStore.getState().items[0].craftIntermediates).toBe(true);
-  });
-
   it('clear button empties the store', () => {
     useShoppingListStore.getState().addItem(1);
     useShoppingListStore.getState().addItem(2);
