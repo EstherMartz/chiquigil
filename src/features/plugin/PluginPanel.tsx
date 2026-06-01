@@ -28,6 +28,7 @@ export function PluginPanel() {
   const status = usePluginStore((s) => s.status);
   const lastSnapshotAt = usePluginStore((s) => s.lastSnapshotAt);
   const lastError = usePluginStore((s) => s.lastError);
+  const pluginVersion = usePluginDataStore((s) => s.pluginVersion);
   const setEnabled = usePluginStore((s) => s.setEnabled);
   const setUrl = usePluginStore((s) => s.setUrl);
   const setToken = usePluginStore((s) => s.setToken);
@@ -89,6 +90,11 @@ export function PluginPanel() {
         <span className={`font-mono text-[10px] tracking-widest uppercase ${STATUS_COLOR[status]}`}>
           ● {STATUS_LABEL[status]}
         </span>
+        {status === 'open' && pluginVersion && (
+          <span className="font-mono text-[10px] tracking-widest uppercase text-text-low">
+            plugin v{pluginVersion}
+          </span>
+        )}
         {lastSnapshotAt && (
           <span className="font-mono text-[10px] text-text-low">
             last sync {lastSyncLabel}
