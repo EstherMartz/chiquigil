@@ -58,13 +58,6 @@ export function VerdictCard(props: Props) {
             also viable: {runnerUp.bestPlay} · + {fmtGil(runnerUp.gilPerDay)}/day
           </p>
         )}
-        {suggestion && (
-          <p className={`font-mono text-[11px] mt-2 ${suggestion.kind === 'gap' ? 'text-jade' : 'text-text-dim'}`}>
-            ▸ {suggestion.kind === 'gap'
-              ? `Best as ${suggestion.stack}-stacks · ~${fmtGil(suggestion.unitPrice)}/unit · under-supplied`
-              : `Most sales are ${suggestion.stack}-stacks · ~${fmtGil(suggestion.unitPrice)}/unit`}
-          </p>
-        )}
       </div>
 
       <div>
@@ -95,7 +88,9 @@ export function VerdictCard(props: Props) {
       {suggestion && (
         <div>
           <div className="font-mono text-[10px] tracking-widest uppercase text-text-low mb-1">Sell as</div>
-          <div className="font-display text-base text-text-cream tracking-wide mb-1">{suggestion.stack}-stack</div>
+          <div className="font-display text-base text-text-cream tracking-wide mb-1">
+            {suggestion.stack}-stack <span className="text-gold text-sm align-middle">{hq ? 'HQ' : 'NQ'}</span>
+          </div>
           <p className="font-mono text-[11px] text-text-dim">
             ~ {fmtGil(suggestion.unitPrice)}/unit
             {suggestion.kind === 'gap' && <span className="text-jade"> · under-supplied</span>}

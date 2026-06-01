@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { VerdictCard } from './VerdictCard';
 import type { MarketItem } from '../../lib/universalis';
 import type { Recipe } from '../../lib/recipes';
@@ -45,7 +45,7 @@ describe('VerdictCard', () => {
 });
 
 describe('VerdictCard stack suggestion', () => {
-  it('shows the SELL AS column and under-supplied insight for a gap', () => {
+  it('shows a quality-labelled SELL AS column for an NQ gap, with no duplicate left insight', () => {
     const history = [
       sale(2, 1500, 10), sale(2, 1500, 20), sale(2, 1500, 30), sale(2, 1500, 40), sale(2, 1500, 50),
     ];
@@ -57,10 +57,32 @@ describe('VerdictCard stack suggestion', () => {
         history={history}
       />,
     );
-    expect(screen.getByText('Sell as')).toBeInTheDocument();
-    expect(screen.getByText('2-stack')).toBeInTheDocument(); // exact: the column value, not the "2-stacks" insight
-    expect(screen.getByText(/Best as 2-stacks/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/under-supplied/i).length).toBeGreaterThan(0);
+    const col = screen.getByText('Sell as').parentElement as HTMLElement;
+    expect(within(col).getByText(/2-stack/)).toBeInTheDocument();
+    expect(within(col).getByText('NQ')).toBeInTheDocument();
+    expect(within(col).getByText(/under-supplied/i)).toBeInTheDocument();
+    // The left insight line was removed — the suggestion is shown only once (the column).
+    expect(screen.queryByText(/Best as/i)).toBeNull();
+    expect(screen.queryByText(/Most sales are/i)).toBeNull();
+  });
+
+  it('uses HQ history and labels HQ when the best play is HQ', () => {
+    const history = [
+      sale(99, 4800, 10, true), sale(99, 4800, 20, true), sale(99, 4800, 30, true),
+      sale(2, 100, 40, false), // NQ noise — must be ignored when the verdict is HQ
+    ];
+    render(
+      <VerdictCard
+        phantom={mkt({ minHQ: 5000, avgHQ: 5000, recentSalesHQ: 10, velocity: 5, listingCount: 1, worldListings: [] })}
+        region={undefined} recipe={undefined} vendorPrice={undefined}
+        materialCost={0} homeWorld="Home" canHq now={NOW}
+        history={history}
+      />,
+    );
+    const col = screen.getByText('Sell as').parentElement as HTMLElement;
+    expect(within(col).getByText(/99-stack/)).toBeInTheDocument();
+    expect(within(col).getByText('HQ')).toBeInTheDocument();
+    expect(within(col).queryByText(/2-stack/)).toBeNull(); // the NQ size is not used
   });
 
   it('renders nothing extra for a non-stackable item', () => {
