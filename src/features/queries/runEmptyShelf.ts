@@ -56,7 +56,7 @@ export function runEmptyShelf(
       id: it.id, name: it.name, sc: it.sc, hq: tier.isHq,
       suggestedPrice: Math.round(tier.price),
       velocity: m.velocity,
-      lastSaleMs: m.lastSaleMs,
+      lastSaleMs: m.lastSaleMs ?? null,
       daysSinceLastSale,
       estGilPerDay: Math.round(tier.price * m.velocity),
     });

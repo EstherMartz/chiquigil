@@ -20,8 +20,12 @@ export interface MarketItem {
   worldListings: WorldListing[];
   averagePriceNQ: number | null;
   averagePriceHQ: number | null;
-  /** Newest recorded sale time in ms (max recentHistory timestamp ×1000), or null when no dated history. */
-  lastSaleMs: number | null;
+  /**
+   * Newest recorded sale time in ms (max recentHistory timestamp ×1000), or null when no dated history.
+   * Optional so the ~50 test/builder sites that construct MarketItem literals don't all need updating;
+   * the parser always emits it (null when unknown). Consumers should treat a missing value as null.
+   */
+  lastSaleMs?: number | null;
 }
 
 export type MarketData = Record<string, MarketItem>;
