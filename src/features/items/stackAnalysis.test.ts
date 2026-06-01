@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { soldByStack, listedByStack, isStackable } from './stackAnalysis';
+import { soldByStack, listedByStack, isStackable, suggestStack } from './stackAnalysis';
 import type { HistoryEntry } from '../../lib/universalisHistory';
 import type { WorldListing } from '../../lib/universalis';
+import type { SoldStackRow, ListedStackRow } from './stackAnalysis';
 
 const sale = (quantity: number, pricePerUnit: number, timestamp: number, hq = false): HistoryEntry =>
   ({ quantity, pricePerUnit, timestamp, hq });
@@ -70,5 +71,40 @@ describe('isStackable', () => {
 
   it('false for empty inputs', () => {
     expect(isStackable([], [])).toBe(false);
+  });
+});
+
+const sr = (stack: number, sales: number, lastSoldMs: number, medianUnitPrice = 1000): SoldStackRow =>
+  ({ stack, sales, units: stack * sales, medianUnitPrice, lastSoldMs });
+const lr = (stack: number, count: number): ListedStackRow => ({ stack, count });
+
+describe('suggestStack', () => {
+  it('returns null when not stackable', () => {
+    expect(suggestStack([sr(1, 5, 100)], [lr(1, 2)])).toBeNull();
+  });
+
+  it('returns null on empty sales', () => {
+    expect(suggestStack([], [])).toBeNull();
+  });
+
+  it('prefers a supply gap even when another size has more sales', () => {
+    const sold = [sr(2, 10, 100, 1500), sr(10, 30, 200, 999)];
+    const listed = [lr(10, 5)];
+    expect(suggestStack(sold, listed)).toEqual({ stack: 2, unitPrice: 1500, kind: 'gap' });
+  });
+
+  it('falls back to the most-liquid size when there is no gap', () => {
+    const sold = [sr(2, 5, 100), sr(10, 8, 200, 1300)];
+    const listed = [lr(2, 3), lr(10, 3)];
+    expect(suggestStack(sold, listed)).toEqual({ stack: 10, unitPrice: 1300, kind: 'liquid' });
+  });
+
+  it('breaks sales ties by most recent, then larger stack', () => {
+    expect(suggestStack([sr(5, 4, 100), sr(9, 4, 200, 1700)], [])).toEqual(
+      { stack: 9, unitPrice: 1700, kind: 'gap' },
+    );
+    expect(suggestStack([sr(5, 4, 100), sr(9, 4, 100, 1700)], [])).toEqual(
+      { stack: 9, unitPrice: 1700, kind: 'gap' },
+    );
   });
 });
