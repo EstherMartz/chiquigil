@@ -14,6 +14,7 @@ export interface ExplodeResult {
 export interface ExplodeOpts {
   craftIntermediates?: boolean;  // default true
   maxDepth?: number;            // default 20
+  forceLeaf?: (id: number) => boolean;  // treat matching non-target nodes as leaves
 }
 
 export function explode(
@@ -41,8 +42,9 @@ export function explode(
     }
 
     const recipe = recipes.get(id);
-    // Craft if: recipe exists AND (it's the top-level target OR we're crafting intermediates)
-    if (recipe && (id === targetId || craftIntermediates)) {
+    const forcedLeaf = id !== targetId && (opts.forceLeaf?.(id) ?? false);
+    // Craft if: recipe exists, not forced to leaf, AND (top-level target OR crafting intermediates)
+    if (recipe && !forcedLeaf && (id === targetId || craftIntermediates)) {
       const yieldPerCraft = recipe.amountResult ?? 1;
       const craftCount = Math.ceil(qty / yieldPerCraft);
 
