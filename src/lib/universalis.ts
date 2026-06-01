@@ -20,6 +20,12 @@ export interface MarketItem {
   worldListings: WorldListing[];
   averagePriceNQ: number | null;
   averagePriceHQ: number | null;
+  /**
+   * Newest recorded sale time in ms (max recentHistory timestamp ×1000), or null when no dated history.
+   * Optional so the ~50 test/builder sites that construct MarketItem literals don't all need updating;
+   * the parser always emits it (null when unknown). Consumers should treat a missing value as null.
+   */
+  lastSaleMs?: number | null;
 }
 
 export type MarketData = Record<string, MarketItem>;
@@ -36,7 +42,7 @@ export const LISTINGS_CAP = 50;
 const LISTINGS_KEPT = LISTINGS_CAP;
 
 interface RawListing { hq: boolean; pricePerUnit: number; worldName?: string; quantity?: number; retainerName?: string }
-interface RawHistory { hq: boolean; pricePerUnit: number }
+interface RawHistory { hq: boolean; pricePerUnit: number; timestamp?: number }
 interface RawItem {
   listings?: RawListing[];
   recentHistory?: RawHistory[];
@@ -83,6 +89,10 @@ export function parseMarketResponse(raw: RawResponse): MarketData {
     const history = item.recentHistory ?? [];
     const nqHist = history.filter((h) => !h.hq).map((h) => h.pricePerUnit);
     const hqHist = history.filter((h) => h.hq).map((h) => h.pricePerUnit);
+    const saleTimes = history
+      .map((h) => h.timestamp)
+      .filter((t): t is number => typeof t === 'number' && t > 0);
+    const lastSaleMs = saleTimes.length ? Math.max(...saleTimes) * 1000 : null;
     out[id] = {
       minNQ: minPrice(listings, false),
       minHQ: minPrice(listings, true),
@@ -108,6 +118,7 @@ export function parseMarketResponse(raw: RawResponse): MarketData {
       })),
       averagePriceNQ: item.averagePriceNQ ?? null,
       averagePriceHQ: item.averagePriceHQ ?? null,
+      lastSaleMs,
     };
   }
   return out;
@@ -238,6 +249,7 @@ function emptyMarketItem(): MarketItem {
     velocity: 0, lastUploadTime: 0, listingCount: 0,
     worldListings: [],
     averagePriceNQ: null, averagePriceHQ: null,
+    lastSaleMs: null,
   };
 }
 
