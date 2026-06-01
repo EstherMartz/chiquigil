@@ -104,27 +104,17 @@ export function DashboardView() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-end justify-between flex-wrap gap-3">
-        <div className="space-y-1">
-          <h2 className="font-display text-2xl text-gold tracking-wide">Dashboard</h2>
-          <p className="font-mono text-[11px] text-text-low max-w-prose">
-            Your whole watchlist at a glance — daily gil potential, margin spread, top earners, and what moved.
-            Pulled live from {world} / {dc} prices. {applyMarketTax ? 'Net of the 5% marketboard tax.' : 'Gross (tax off).'}
-          </p>
-          {market.data && (
-            <div className="opacity-70 scale-90 origin-left">
-              <FreshnessChip ts={market.dataUpdatedAt} now={now} />
-            </div>
-          )}
-        </div>
-        <button
-          type="button"
-          onClick={() => { market.refetch(); history.refetch(); recipes.refetch(); }}
-          disabled={market.isFetching || recipes.isFetching}
-          className="font-mono text-[10px] tracking-widest uppercase bg-gold text-bg-deep px-4 py-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
-        >
-          ↻ Refresh
-        </button>
+      <div className="space-y-1">
+        <h2 className="font-display text-2xl text-gold tracking-wide">Dashboard</h2>
+        <p className="font-mono text-[11px] text-text-low max-w-prose">
+          Your whole watchlist at a glance — daily gil potential, margin spread, top earners, and what moved.
+          Pulled live from {world} / {dc} prices. {applyMarketTax ? 'Net of the 5% marketboard tax.' : 'Gross (tax off).'}
+        </p>
+        {market.data && (
+          <div className="opacity-70 scale-90 origin-left">
+            <FreshnessChip ts={market.dataUpdatedAt} now={now} />
+          </div>
+        )}
       </div>
 
       {market.isError && (
@@ -141,10 +131,10 @@ export function DashboardView() {
           <div className="text-aether/70 mb-1 text-[18px]" aria-hidden>❖</div>
           <div>Your watchlist is empty.</div>
           <Link
-            to="/home"
+            to="/discover"
             className="not-italic mt-3 inline-block font-mono text-[11px] tracking-widest uppercase text-aether hover:text-gold transition-colors"
           >
-            Add items from a starter pack on Home →
+            Discover items to add to your watchlist →
           </Link>
         </div>
       )}

@@ -23,6 +23,7 @@ import { SupplyDepthBlock } from '../features/items/SupplyDepthBlock';
 import { ConcentrationBlock } from '../features/items/ConcentrationBlock';
 import { VerdictCard } from '../features/items/VerdictCard';
 import { MarketSnapshotRow } from '../features/items/MarketSnapshotRow';
+import { LiveRefreshBar } from '../features/items/LiveRefreshBar';
 import { findItemCurrencyOffers } from '../features/items/currencyOffers';
 import { AddToWatchlistButton } from '../features/items/AddToWatchlistButton';
 import { AddToShoppingListButton } from '../features/shoppingList/AddToShoppingListButton';
@@ -234,6 +235,16 @@ export default function Item() {
           homeWorld={world}
           canHq={canHq}
           now={Date.now()}
+        />
+      )}
+
+      {!market.isLoading && (
+        <LiveRefreshBar
+          itemId={itemId}
+          homeWorld={world}
+          dc={dc}
+          region="Europe"
+          onRefreshed={() => market.refetch()}
         />
       )}
 

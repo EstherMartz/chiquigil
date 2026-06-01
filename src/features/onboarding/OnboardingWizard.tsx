@@ -40,10 +40,10 @@ export function OnboardingWizard({ onComplete, prefill }: Props) {
     setStep(3);
   }
 
-  function handleFinish(goToWhatNow: boolean) {
+  function handleFinish(goToDashboard: boolean) {
     localStorage.setItem('ffxiv-helper:onboarded', '1');
     onComplete();
-    if (goToWhatNow) navigate('/home');
+    if (goToDashboard) navigate('/dashboard');
   }
 
   // Summary for step 3
@@ -141,7 +141,7 @@ export function OnboardingWizard({ onComplete, prefill }: Props) {
                 You're all set, {world}!
               </h2>
               <p className="font-mono text-[10px] text-text-low mt-1">
-                qiqirn.tools will now show you real market data for your world. Start with What Now? for an instant overview of your best gil-making opportunity right now.
+                qiqirn.tools will now show you real market data for your world. Start with the Dashboard for an instant overview of your best gil-making opportunities right now.
               </p>
             </div>
 
@@ -164,7 +164,7 @@ export function OnboardingWizard({ onComplete, prefill }: Props) {
                 onClick={() => handleFinish(true)}
                 className="flex-1 font-mono text-[10px] tracking-widest uppercase border border-gold text-gold px-4 py-3 hover:bg-gold hover:text-bg-deep transition-colors"
               >
-                Go to What Now? →
+                Go to Dashboard →
               </button>
               <button
                 type="button"

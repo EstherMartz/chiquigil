@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   fetchMarketData,
+  fetchMarketLive,
   buildMarketUrl,
   parseMarketResponse,
   _resetMarketCacheForTests,
@@ -198,6 +199,49 @@ describe('fetchMarketData (cache-only)', () => {
     const out = await fetchMarketData('Phantom', [1, 2]);
     expect(out['1'].minNQ).toBeNull();
     expect(out['2'].minNQ).toBeNull();
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe('fetchMarketLive (per-item live pull)', () => {
+  beforeEach(async () => {
+    vi.restoreAllMocks();
+    _resetMarketCacheForTests();
+    await clearMarketCache();
+  });
+
+  it('hits Universalis, parses, and seeds the cache so fetchMarketData sees it', async () => {
+    const raw = {
+      itemID: 5,
+      listings: [{ hq: false, pricePerUnit: 120, worldName: 'Phantom' }],
+      recentHistory: [{ hq: false, pricePerUnit: 130 }],
+      regularSaleVelocity: 2,
+      lastUploadTime: 1700,
+      listingsCount: 1,
+    };
+    const fetchSpy = vi.fn().mockResolvedValue({ ok: true, json: async () => raw });
+    vi.stubGlobal('fetch', fetchSpy);
+
+    const live = await fetchMarketLive('Phantom', [5]);
+    expect(fetchSpy).toHaveBeenCalledWith(buildMarketUrl('Phantom', [5]));
+    expect(live['5'].minNQ).toBe(120);
+
+    // The live row is now cached — the cache-only path returns it without a fetch.
+    fetchSpy.mockClear();
+    const cached = await fetchMarketData('Phantom', [5]);
+    expect(cached['5'].minNQ).toBe(120);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('throws on a non-ok response', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 503 }));
+    await expect(fetchMarketLive('Phantom', [5])).rejects.toThrow('503');
+  });
+
+  it('short-circuits for an empty id list (no fetch)', async () => {
+    const fetchSpy = vi.fn();
+    vi.stubGlobal('fetch', fetchSpy);
+    expect(await fetchMarketLive('Phantom', [])).toEqual({});
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 });

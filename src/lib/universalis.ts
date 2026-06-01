@@ -185,9 +185,34 @@ export interface FetchMarketOpts {
 }
 
 /**
+ * Live single-fetch straight from Universalis for `ids` on `scope`, bypassing
+ * the hourly bot blob. Parsed rows are merged into the in-memory cache with a
+ * fresh `ts`, so the next `fetchMarketData`/useMarketData refetch reads the new
+ * prices. This is the "I want THIS item's prices right now" path — meant for a
+ * single item at a time, not the bulk feed (which the hourly blob handles).
+ */
+export async function fetchMarketLive(scope: Scope, ids: number[]): Promise<MarketData> {
+  if (ids.length === 0) return {};
+  const res = await fetch(buildMarketUrl(scope, ids));
+  if (!res.ok) throw new Error(`Universalis ${scope} returned ${res.status}`);
+  const parsed = parseMarketResponse((await res.json()) as RawResponse);
+  // Merge into the existing scope cache (hydrate first so we don't clobber the
+  // blob's other entries), stamping each row fresh.
+  await ensureHydrated(scope);
+  const cache: ScopeCache = memCache.get(scope) ?? new Map();
+  const ts = Date.now();
+  for (const [idStr, item] of Object.entries(parsed)) {
+    cache.set(Number(idStr), { ts, data: item });
+  }
+  memCache.set(scope, cache);
+  hydrated.add(scope);
+  return parsed;
+}
+
+/**
  * Return market data for `ids` on `scope` from cache only.
- * Stale/missing items get empty placeholders — all live data comes from
- * the bot's hourly cache refresh, never from Universalis directly.
+ * Stale/missing items get empty placeholders — bulk data comes from the bot's
+ * hourly cache refresh (see `fetchMarketLive` for the per-item live path).
  */
 export async function fetchMarketData(scope: Scope, ids: number[], opts: FetchMarketOpts = {}): Promise<MarketData> {
   if (ids.length === 0) return {};
