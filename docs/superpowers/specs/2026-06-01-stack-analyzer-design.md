@@ -43,6 +43,10 @@ No I/O; fully unit-tested.
 
 ## UI — `src/features/items/StackAnalyzerBlock.tsx`
 
+Split into a query wrapper + a pure view, mirroring `SaleHistoryBlock` (`SaleHistoryBlock` + `HistoryContent`):
+- `StackAnalyzerBlock({ itemId, scope, listings, canHq })` — owns the history `useQuery`, renders the spinner/empty/error states, then delegates to `StackAnalyzerView`.
+- `StackAnalyzerView({ entries, listings, canHq })` — **exported, pure**; holds the NQ/HQ `useState`, runs the compute, renders the panels. The render test targets this directly (arrays in, no query client / no fetch mock).
+
 - `SectionHeader label="Stack size analyzer" compact`.
 - Shared `QualityTab` NQ/HQ toggle (default NQ), shown only when `canHq`. Filters both facets.
 - Two panels in a `md:grid-cols-2` grid:
@@ -76,7 +80,7 @@ The block owns its own history query (so it renders independently of other block
 - `soldByStack`: grouping by exact size, sort ascending, median price, units sum, lastSoldMs, HQ filter, empty.
 - `listedByStack`: grouping, sort, `quantity ?? 1` default, HQ filter, empty.
 - `isStackable`: all-1 → false; any >1 → true; empty → false.
-- `StackAnalyzerBlock` render test: sold + listed tables present; not-stackable note; gap marker appears on a high-demand/low-supply row; quality toggle switches tiers. History query mocked (vi.mock the fetch) or fed via a query-client wrapper following existing item-block test patterns.
+- `StackAnalyzerView` render test (pure component, arrays in — no query client): sold + listed tables present; not-stackable note; gap marker appears on a high-demand/low-supply row; quality toggle switches tiers.
 
 ## Non-goals (this round)
 
