@@ -13,6 +13,7 @@ import { ShoppingListPanel } from '../features/shoppingList/ShoppingListPanel';
 import { ShoppingListPlan } from '../features/shoppingList/ShoppingListPlan';
 import { CraftSection } from '../features/shoppingList/CraftSection';
 import { GatherSection } from '../features/shoppingList/GatherSection';
+import { CraftPlanExport } from '../features/shoppingList/CraftPlanExport';
 import { useGatheringCatalog } from '../features/queries/useGatheringCatalog';
 import { PluginShoppingSend } from '../features/plugin/PluginShoppingSend';
 import { Spinner } from '../components/Spinner';
@@ -120,6 +121,7 @@ export default function ShoppingList() {
           </button>
         </div>
       )}
+      {plan && <CraftPlanExport plan={plan} nameById={nameById} />}
       {plan && (
         <CraftSection craft={plan.craft} targetIds={targetIds} nameById={nameById} onBuyInstead={setBuyOverride} />
       )}
