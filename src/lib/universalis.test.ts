@@ -63,6 +63,7 @@ describe('parseMarketResponse', () => {
       ],
       averagePriceNQ: 70,
       averagePriceHQ: 210,
+      lastSaleMs: null,
     });
   });
 
@@ -121,6 +122,7 @@ describe('parseMarketResponse', () => {
       recentSalesNQ: 0, recentSalesHQ: 0,
       velocity: 0, lastUploadTime: 0, listingCount: 0,
       worldListings: [], averagePriceNQ: null, averagePriceHQ: null,
+      lastSaleMs: null,
     });
   });
 
@@ -178,6 +180,27 @@ describe('parseMarketResponse', () => {
     expect(out['201'].medianHQ).toBe(100);
     expect(out['201'].medianNQ).toBeNull();
     expect(out['201'].recentSalesNQ).toBe(0);
+  });
+
+  it('captures the newest sale timestamp as lastSaleMs (ms)', () => {
+    const raw = { items: { '110': {
+      listings: [],
+      recentHistory: [
+        { hq: false, pricePerUnit: 100, timestamp: 1_000 },
+        { hq: true,  pricePerUnit: 200, timestamp: 5_000 },
+        { hq: false, pricePerUnit: 90,  timestamp: 3_000 },
+      ],
+      regularSaleVelocity: 1, lastUploadTime: 0,
+    } } };
+    expect(parseMarketResponse(raw)['110'].lastSaleMs).toBe(5_000_000);
+  });
+
+  it('lastSaleMs is null when history has no timestamps', () => {
+    const raw = { items: { '111': {
+      listings: [], recentHistory: [{ hq: false, pricePerUnit: 100 }],
+      regularSaleVelocity: 1, lastUploadTime: 0,
+    } } };
+    expect(parseMarketResponse(raw)['111'].lastSaleMs).toBeNull();
   });
 });
 
