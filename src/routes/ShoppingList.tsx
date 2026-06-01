@@ -99,9 +99,9 @@ export default function ShoppingList() {
   return (
     <div className="max-w-[100rem] mx-auto px-4 space-y-4">
       <div>
-        <h2 className="font-display text-lg text-gold tracking-wide">Shopping List</h2>
+        <h2 className="font-display text-lg text-gold tracking-wide">Craft Helper</h2>
         <p className="font-mono text-[11px] text-text-low max-w-prose">
-          Plan a crafting session across multiple items — aggregates ingredients region-wide and finds the cheapest source per material.
+          Plan a crafting session end-to-end — what to craft, what to gather, and what to buy, with the cheapest source per material.
         </p>
       </div>
 
