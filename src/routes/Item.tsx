@@ -159,6 +159,13 @@ export default function Item() {
     return total;
   }, [recipe, phantomMarket, market.data]);
 
+  // Ids of all gatherable items — feeds the self-source ("gather + craft")
+  // floor cost in the craft→sell math card.
+  const gatherableIds = useMemo(
+    () => (gathering.data ? new Set(gathering.data.keys()) : new Set<number>()),
+    [gathering.data],
+  );
+
   const nameOf = useMemo(() => {
     const m = new Map<number, string>();
     for (const i of snapshot.data?.items ?? []) m.set(i.id, i.name);
@@ -264,6 +271,9 @@ export default function Item() {
             homeWorld={world}
             phantom={phantomMarket}
             canHq={canHq}
+            recipeMap={recipes.data}
+            homeMarket={market.data?.phantom}
+            gatherableIds={gatherableIds}
           />
         </div>
       )}
