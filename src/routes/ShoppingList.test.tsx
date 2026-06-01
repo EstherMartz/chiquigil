@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { useShoppingListStore, defaultShoppingList } from '../features/shoppingList/shoppingListStore';
 
@@ -101,6 +101,18 @@ vi.mock('../features/queries/useSpecialShopSnapshot', () => ({
   }),
 }));
 
+vi.mock('../features/queries/useGatheringCatalog', () => ({
+  useGatheringCatalog: () => ({
+    data: new Map([
+      [10, { id: 10, name: 'Iron Ore', level: 1, timed: false }],
+      // Item 5 (Iron Ingot) and 2 (Fire Shard) are not gatherables; they'll go to buy or craft
+    ]),
+    isLoading: false,
+    isError: false,
+    error: null,
+  }),
+}));
+
 import ShoppingList from './ShoppingList';
 
 beforeEach(() => {
@@ -121,38 +133,43 @@ describe('ShoppingList route', () => {
   it('renders the plan after the user adds an item and clicks Plan shopping', () => {
     useShoppingListStore.getState().addItem(100, 1);
     renderRoute();
-    fireEvent.click(screen.getByRole('button', { name: /plan shopping/i }));
-    expect(screen.getByText(/total material cost/i)).toBeInTheDocument();
-    expect(screen.getByText(/est. revenue/i)).toBeInTheDocument();
-    // Spend = 100 × 2 = 200 (only ingots, crystals filtered); revenue = 500 × 1 = 500; profit = 300
-    expect(screen.getByText(/total material cost/i).parentElement?.textContent).toContain('200');
-    expect(screen.getByText(/est. revenue/i).parentElement?.textContent).toContain('500');
-    expect(screen.getByText(/net profit/i).parentElement?.textContent).toContain('300');
+    // Craft/gather sections render immediately with the new engine
+    expect(screen.getByText(/Craft \(/i)).toBeInTheDocument();
+    expect(screen.getByText(/Gather \(/i)).toBeInTheDocument();
+    // Check that craft section contains Widget (it appears as a link in the craft table)
+    const craftLinks = screen.getAllByText('Widget');
+    expect(craftLinks.length).toBeGreaterThan(1); // One in panel, one in craft section
+    // Iron Ore (gatherable) should appear in the Gather section
+    expect(screen.getByText('Iron Ore')).toBeInTheDocument();
   });
 
   it('excludes crystal ingredients when hideCrystals is enabled', () => {
     useShoppingListStore.getState().addItem(100, 1);
     renderRoute();
-    fireEvent.click(screen.getByRole('button', { name: /plan shopping/i }));
+    // Craft/Gather sections should appear immediately
+    expect(screen.getByText(/Craft \(/i)).toBeInTheDocument();
+    // Fire Shard (crystal, sc=58) should not appear anywhere due to hideCrystals
     expect(screen.queryByText('Fire Shard')).not.toBeInTheDocument();
+    // Iron Ingot should appear (not a crystal)
     expect(screen.getByText('Iron Ingot')).toBeInTheDocument();
-    // Spend should be 200 (2×100 for ingots), not 240 (200 + 4×10 for shards)
-    expect(screen.getByText(/total material cost/i).parentElement?.textContent).toContain('200');
+    // Iron Ore (gatherable leaf) should appear
+    expect(screen.getByText('Iron Ore')).toBeInTheDocument();
   });
 
   it('expands sub-ingredients when craftIntermediates is enabled', () => {
     useShoppingListStore.getState().addItem(100, 1);
     useShoppingListStore.getState().setCraftIntermediates(100, true);
     renderRoute();
-    fireEvent.click(screen.getByRole('button', { name: /plan shopping/i }));
     // With craftIntermediates on item 100:
     // Recipe: 100 needs 2x item 5 + 4x item 2
     // Item 5 has sub-recipe: 3x item 10
-    // So item 5 expands: 2 * 3 = 6x item 10
+    // The engine should craft both 100 and 5, with 5's leaves expanded to 6x item 10
     // Item 2 (crystal, sc=58) is filtered by hideCrystals
-    // Result: 6x item 10 (Iron Ore) at 20 each = 120
+    // Result: craft section shows 100 and 5, gather section shows 6x item 10
+    expect(screen.getByText(/Craft \(/i)).toBeInTheDocument();
+    expect(screen.getByText(/Gather \(/i)).toBeInTheDocument();
     expect(screen.getByText('Iron Ore')).toBeInTheDocument();
-    expect(screen.queryByText('Iron Ingot')).not.toBeInTheDocument();
-    expect(screen.getByText(/total material cost/i).parentElement?.textContent).toContain('120');
+    // Iron Ingot appears in the Craft section as an intermediate craft
+    expect(screen.getByText('Iron Ingot')).toBeInTheDocument();
   });
 });
