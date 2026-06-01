@@ -12,6 +12,7 @@ import { useLeveUsedInIndex } from '../features/items/useLeveUsedInIndex';
 import { DeliverablesBlock } from '../features/items/DeliverablesBlock';
 import { CraftTreeBlock } from '../features/items/CraftTreeBlock';
 import { CraftSellMathCard } from '../features/items/CraftSellMathCard';
+import { IngredientBreakdownModal } from '../features/items/IngredientBreakdownModal';
 import { explode } from '../bot/craftExplode';
 import { useMarketData } from '../features/watchlist/useMarketData';
 import { useVendorShopSnapshot } from '../features/queries/useVendorShopSnapshot';
@@ -70,6 +71,7 @@ export default function Item() {
   const snapshot = useItemSnapshot();
   const recipes = useRecipeSnapshot(valid);
   const gathering = useGatheringCatalog();
+  const [showBreakdown, setShowBreakdown] = useState(false);
   const garland = useGarlandItem(valid ? itemId : null);
   const locations = useGarlandLocations();
   const usedInIdx = useUsedInIndex();
@@ -274,6 +276,7 @@ export default function Item() {
             recipeMap={recipes.data}
             homeMarket={market.data?.phantom}
             gatherableIds={gatherableIds}
+            onShowBreakdown={() => setShowBreakdown(true)}
           />
         </div>
       )}
@@ -310,6 +313,19 @@ export default function Item() {
         itemName={displayName}
         gather={gather}
       />
+
+      {showBreakdown && recipe && recipes.data && market.data && (
+        <IngredientBreakdownModal
+          itemId={itemId}
+          itemName={displayName}
+          recipe={recipe}
+          recipeMap={recipes.data}
+          market={market.data.phantom}
+          gatherableIds={gatherableIds}
+          nameOf={nameOf}
+          onClose={() => setShowBreakdown(false)}
+        />
+      )}
     </div>
   );
 }

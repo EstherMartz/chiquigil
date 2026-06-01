@@ -48,6 +48,38 @@ function selfSourceUnit(
   return marketUnit(itemId, market); // must buy it
 }
 
+export type IngredientSourceKind = 'gather' | 'craft' | 'buy';
+
+export interface BreakdownRow {
+  itemId: number;
+  amount: number;
+  kind: IngredientSourceKind;
+  /** Self-source cost per unit (0 for gather, sub-cost÷yield for craft, market for buy). */
+  unitCost: number;
+  lineCost: number;
+}
+
+/**
+ * Per-ingredient self-source classification + cost for the direct ingredients
+ * of a recipe. Mirrors selfSourceCost's per-unit logic so the rows sum to it.
+ */
+export function selfSourceBreakdown(
+  recipe: Recipe,
+  recipeMap: Map<number, Recipe | null>,
+  market: MarketData,
+  gatherableIds: Set<number>,
+): BreakdownRow[] {
+  return recipe.ingredients.map((ing) => {
+    const unitCost = selfSourceUnit(ing.itemId, recipeMap, market, gatherableIds, new Set([recipe.itemResultId]));
+    const kind: IngredientSourceKind = gatherableIds.has(ing.itemId)
+      ? 'gather'
+      : recipeMap.get(ing.itemId)
+        ? 'craft'
+        : 'buy';
+    return { itemId: ing.itemId, amount: ing.amount, kind, unitCost, lineCost: unitCost * ing.amount };
+  });
+}
+
 export interface CraftSellMathInput {
   materialsHome: number;
   materialsRegionBest: number;
@@ -105,6 +137,7 @@ export function CraftSellMathCard({
   recipeMap,
   homeMarket,
   gatherableIds,
+  onShowBreakdown,
 }: {
   recipe: Recipe;
   materialsHome: number;
@@ -118,6 +151,8 @@ export function CraftSellMathCard({
   homeMarket?: MarketData;
   /** Ids of gatherable items (cost 0 to self-source). */
   gatherableIds?: Set<number>;
+  /** Opens the per-ingredient breakdown modal (owned by the item page). */
+  onShowBreakdown?: () => void;
 }) {
   // Compute the best single-stop region cost if we have region data.
   const { materialsRegionBest, bestWorld } = useMemo(() => {
@@ -288,6 +323,17 @@ export function CraftSellMathCard({
             <span className="text-gold flex-shrink-0">•</span>
             <span>No home sale price yet.</span>
           </div>
+        )}
+
+        {/* Detailed breakdown → opens the per-ingredient modal (and plan-this-craft) */}
+        {onShowBreakdown && recipeMap && homeMarket && (
+          <button
+            type="button"
+            onClick={onShowBreakdown}
+            className="w-full mt-1 font-mono text-[10px] tracking-widest uppercase border border-border-base text-aether px-3 py-2 hover:border-aether transition-colors"
+          >
+            Detailed view →
+          </button>
         )}
       </div>
     </section>
