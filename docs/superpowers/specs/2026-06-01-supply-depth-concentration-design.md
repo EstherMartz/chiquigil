@@ -9,7 +9,7 @@
 Add two market-microstructure views to the item detail page:
 
 1. **Supply Depth (#5)** — a histogram of how the current order book is distributed across price tiers, so a user can see whether the bottom of the book is thin (price about to break) or thick (supply capping upside).
-2. **Market Concentration (#8)** — a seller-concentration index (HHI) that finally gives the dormant **Risk** field a real meaning: is the cheap supply controlled by one or two retainers (a single resetter can crash it) or spread across many sellers (stable)?
+2. **Market Concentration (#8)** — a seller-concentration index (HHI) that surfaces a **new, orthogonal risk dimension**: is the cheap supply controlled by one or two retainers (a single resetter can crash it) or spread across many sellers (stable)? The existing `VerdictCard` "Risk" field is a *liquidity* signal (`riskLabel(confidence, velocity)` in `verdict/pricing.ts`); concentration is a *supply-structure* signal that liquidity doesn't capture. This round renders it as its own block; folding it into the verdict's risk string is a deferred follow-up.
 
 Both features are currently blocked on the same missing data. One small data-layer enrichment unlocks both at full fidelity.
 
@@ -66,7 +66,7 @@ Both blocks slot near the existing `CrossWorldListingsBlock`, following its sect
 
 ### Concentration block
 - Compact indicator: an HHI bar (or equivalent visual) + a one-line summary "top seller holds **X%** across **N** sellers".
-- A `RiskBadge` reflecting `RiskLevel`, wired so the page's **Risk** field is driven by this (replacing the dormant placeholder).
+- A `RiskBadge` reflecting `RiskLevel` (supply-structure risk), labelled to distinguish it from the verdict's liquidity Risk.
 - Degraded-data state: "limited data — refreshing" note when `concentrationHHI` returns `null`.
 
 ## Testing
@@ -81,12 +81,14 @@ Both blocks slot near the existing `CrossWorldListingsBlock`, following its sect
 - Extending depth/HHI to the cross-world flip runners or scan tables — item page only.
 - Per-seller drill-down or naming individual retainers in the UI (HHI is aggregate).
 - Any change to the EV/Opportunity score (#3) — concentration's `RiskLevel` is designed to feed it later, but that wiring is out of scope here.
+- Folding the concentration `RiskLevel` into the verdict pipeline's `Play.risk` string (`verdict/pricing.ts`) — deferred; the new block stands alone this round.
 
 ## Files
 
 **Modify:**
 - `src/lib/universalis.ts` — `buildMarketUrl`, `RawListing`, `WorldListing`, parser, `LISTINGS_KEPT`.
-- `src/routes/Item.tsx` — mount the two new blocks; wire Risk field.
+- `src/lib/universalis.test.ts` — update parser/url expectations for the new fields + `listings=50`.
+- `src/routes/Item.tsx` — mount the two new blocks (no change to the verdict pipeline).
 
 **Add:**
 - `src/features/items/depth.ts` (+ `.test.ts`) — `depthBuckets`.
