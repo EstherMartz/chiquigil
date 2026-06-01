@@ -21,6 +21,7 @@ import { VendorSourceCard } from '../features/items/VendorSourceCard';
 import { CurrencySourceCard } from '../features/items/CurrencySourceCard';
 import { SupplyDepthBlock } from '../features/items/SupplyDepthBlock';
 import { ConcentrationBlock } from '../features/items/ConcentrationBlock';
+import { StackAnalyzerBlock } from '../features/items/StackAnalyzerBlock';
 import { VerdictCard } from '../features/items/VerdictCard';
 import { MarketSnapshotRow } from '../features/items/MarketSnapshotRow';
 import { LiveRefreshBar } from '../features/items/LiveRefreshBar';
@@ -287,6 +288,15 @@ export default function Item() {
 
       {phantomMarket && phantomMarket.worldListings.length > 0 && (
         <ConcentrationBlock listings={phantomMarket.worldListings} canHq={canHq} />
+      )}
+
+      {phantomMarket && (
+        <StackAnalyzerBlock
+          itemId={itemId}
+          scope={world}
+          listings={phantomMarket.worldListings}
+          canHq={canHq}
+        />
       )}
 
       {recipes.isLoading && !recipe && (
