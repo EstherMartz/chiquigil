@@ -113,6 +113,19 @@ export default function Item() {
     [itemId, valid, shop.data],
   );
 
+  // Resolver for the self-source breakdown: cheapest currency offer per item
+  // (scrip/tome/seal). Such mats count as 0 gil — earned by playing.
+  const currencyOf = useMemo(() => {
+    const snap = shop.data?.snapshot;
+    return (id: number) => {
+      if (!snap) return null;
+      const offers = findItemCurrencyOffers(id, snap);
+      if (offers.length === 0) return null;
+      const best = offers[0]; // sorted cheapest-first
+      return { label: best.currency.shortLabel, cost: best.costPerUnit };
+    };
+  }, [shop.data]);
+
   const vendorNpc = useMemo(() => {
     if (!vendorPrice || !garland.data?.gilShopNpcs.length) return undefined;
     const first = garland.data.gilShopNpcs[0];
@@ -276,6 +289,7 @@ export default function Item() {
             recipeMap={recipes.data}
             homeMarket={market.data?.phantom}
             gatherableIds={gatherableIds}
+            currencyOf={currencyOf}
             onShowBreakdown={() => setShowBreakdown(true)}
           />
         </div>
@@ -322,6 +336,7 @@ export default function Item() {
           recipeMap={recipes.data}
           market={market.data.phantom}
           gatherableIds={gatherableIds}
+          currencyOf={currencyOf}
           nameOf={nameOf}
           onClose={() => setShowBreakdown(false)}
         />

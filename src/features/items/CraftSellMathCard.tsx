@@ -5,23 +5,27 @@ import type { MarketItem, MarketData } from '../../lib/universalis';
 import { Gil } from '../../components/Gil';
 import { SectionHeader } from '../../components/SectionHeader';
 
+/** Cheapest currency offer for an item, if any (label for display + cost in that currency). */
+export type CurrencyResolver = (itemId: number) => { label: string; cost: number } | null;
+
 /**
- * Gil cost to *self-source* one unit: gatherable ingredients cost 0 (you
- * harvest them — costs time, not gil), craftable ones recurse into their own
- * self-source cost (divided by the sub-recipe's yield), everything else falls
- * back to its market buy price. Full-depth, with cycle protection. Returns the
- * floor cost in gil of making one of the target item yourself.
+ * Gil cost to *self-source* one unit: gatherable and currency-obtainable
+ * ingredients cost 0 gil (earned by playing — costs time/currency, not gil),
+ * craftable ones recurse into their own self-source cost (÷ the sub-recipe's
+ * yield), everything else falls back to its market buy price. Full-depth, with
+ * cycle protection. Returns the floor cost in gil of making one yourself.
  */
 export function selfSourceCost(
   recipe: Recipe,
   recipeMap: Map<number, Recipe | null>,
   market: MarketData,
   gatherableIds: Set<number>,
+  currencyOf: CurrencyResolver = () => null,
   seen: Set<number> = new Set(),
 ): number {
   let total = 0;
   for (const ing of recipe.ingredients) {
-    total += selfSourceUnit(ing.itemId, recipeMap, market, gatherableIds, seen) * ing.amount;
+    total += selfSourceUnit(ing.itemId, recipeMap, market, gatherableIds, currencyOf, seen) * ing.amount;
   }
   return total;
 }
@@ -36,59 +40,73 @@ function selfSourceUnit(
   recipeMap: Map<number, Recipe | null>,
   market: MarketData,
   gatherableIds: Set<number>,
+  currencyOf: CurrencyResolver,
   seen: Set<number>,
 ): number {
-  if (gatherableIds.has(itemId)) return 0; // harvest it yourself — no gil
+  if (gatherableIds.has(itemId)) return 0;   // harvest it yourself — no gil
+  if (currencyOf(itemId)) return 0;           // buy with earned currency — no gil
   const sub = recipeMap.get(itemId);
   if (sub && !seen.has(itemId)) {
-    const next = new Set(seen).add(itemId); // guard against recipe cycles
-    const perBatch = selfSourceCost(sub, recipeMap, market, gatherableIds, next);
+    const next = new Set(seen).add(itemId);   // guard against recipe cycles
+    const perBatch = selfSourceCost(sub, recipeMap, market, gatherableIds, currencyOf, next);
     return perBatch / (sub.amountResult ?? 1);
   }
-  return marketUnit(itemId, market); // must buy it
+  return marketUnit(itemId, market);          // must buy it on the market
 }
 
-export type IngredientSourceKind = 'gather' | 'craft' | 'buy';
+export type IngredientSourceKind = 'gather' | 'currency' | 'craft' | 'buy';
 
 export interface BreakdownRow {
   itemId: number;
   amount: number;
   kind: IngredientSourceKind;
-  /** Self-source cost per unit (0 for gather, sub-cost÷yield for craft, market for buy). */
+  /** Self-source cost per unit (0 for gather/currency, sub-cost÷yield for craft, market for buy). */
   unitCost: number;
   lineCost: number;
   /** Sub-recipe yield (units per synth) for craftable rows — for the "÷N" hint. */
   yield?: number;
+  /** For currency rows: the currency label + cost per unit (e.g. "P-Craft", 120). */
+  currencyLabel?: string;
+  currencyCost?: number;
   /** Nested breakdown of a craftable ingredient's own mats (full depth). */
   children?: BreakdownRow[];
 }
 
 /**
- * Recursive self-source breakdown: each ingredient classified gather / craft /
- * buy with its per-unit + line cost, and craftable ingredients carry their own
- * nested children (full depth, cycle-guarded). Mirrors selfSourceCost so the
- * tree's costs reconcile with it.
+ * Recursive self-source breakdown: each ingredient classified gather / currency
+ * / craft / buy with its per-unit + line cost, craftable ingredients carrying
+ * their own nested children (full depth, cycle-guarded). Mirrors selfSourceCost
+ * so the tree's costs reconcile with it.
  */
 export function selfSourceBreakdown(
   recipe: Recipe,
   recipeMap: Map<number, Recipe | null>,
   market: MarketData,
   gatherableIds: Set<number>,
+  currencyOf: CurrencyResolver = () => null,
   seen: Set<number> = new Set([recipe.itemResultId]),
 ): BreakdownRow[] {
   return recipe.ingredients.map((ing) => {
     const gatherable = gatherableIds.has(ing.itemId);
+    const offer = gatherable ? null : currencyOf(ing.itemId);
     const sub = recipeMap.get(ing.itemId);
-    const craftable = !gatherable && !!sub && !seen.has(ing.itemId);
-    const kind: IngredientSourceKind = gatherable ? 'gather' : craftable ? 'craft' : 'buy';
+    const craftable = !gatherable && !offer && !!sub && !seen.has(ing.itemId);
+    const kind: IngredientSourceKind = gatherable ? 'gather'
+      : offer ? 'currency'
+      : craftable ? 'craft'
+      : 'buy';
 
-    const unitCost = selfSourceUnit(ing.itemId, recipeMap, market, gatherableIds, new Set(seen));
+    const unitCost = selfSourceUnit(ing.itemId, recipeMap, market, gatherableIds, currencyOf, new Set(seen));
     const row: BreakdownRow = {
       itemId: ing.itemId, amount: ing.amount, kind, unitCost, lineCost: unitCost * ing.amount,
     };
+    if (offer) {
+      row.currencyLabel = offer.label;
+      row.currencyCost = offer.cost;
+    }
     if (craftable && sub) {
       row.yield = sub.amountResult ?? 1;
-      row.children = selfSourceBreakdown(sub, recipeMap, market, gatherableIds, new Set(seen).add(ing.itemId));
+      row.children = selfSourceBreakdown(sub, recipeMap, market, gatherableIds, currencyOf, new Set(seen).add(ing.itemId));
     }
     return row;
   });
@@ -151,6 +169,7 @@ export function CraftSellMathCard({
   recipeMap,
   homeMarket,
   gatherableIds,
+  currencyOf,
   onShowBreakdown,
 }: {
   recipe: Recipe;
@@ -165,6 +184,8 @@ export function CraftSellMathCard({
   homeMarket?: MarketData;
   /** Ids of gatherable items (cost 0 to self-source). */
   gatherableIds?: Set<number>;
+  /** Cheapest currency offer per item (scrip/tome/seal — counts as 0 gil). */
+  currencyOf?: CurrencyResolver;
   /** Opens the per-ingredient breakdown modal (owned by the item page). */
   onShowBreakdown?: () => void;
 }) {
@@ -175,11 +196,11 @@ export function CraftSellMathCard({
     return { materialsRegionBest: result.cost, bestWorld: result.world };
   }, [recipe.ingredients, regionMap, homeWorld, materialsHome]);
 
-  // Floor cost if you gather + craft everything you can yourself.
+  // Floor cost if you gather / earn-with-currency / craft everything you can.
   const materialsSelf = useMemo(() => {
     if (!recipeMap || !homeMarket) return null;
-    return selfSourceCost(recipe, recipeMap, homeMarket, gatherableIds ?? new Set());
-  }, [recipe, recipeMap, homeMarket, gatherableIds]);
+    return selfSourceCost(recipe, recipeMap, homeMarket, gatherableIds ?? new Set(), currencyOf);
+  }, [recipe, recipeMap, homeMarket, gatherableIds, currencyOf]);
 
   // Get the sale price: prefer HQ average, fall back to NQ average.
   const salePrice = useMemo(() => {

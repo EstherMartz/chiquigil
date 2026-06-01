@@ -46,6 +46,17 @@ describe('selfSourceCost', () => {
     // The point is it terminates with a finite number, not the exact value.
     expect(selfSourceCost(a, recipeMap, market, new Set())).toBe(50);
   });
+
+  it('treats currency-obtainable ingredients as 0 gil (earned by playing)', () => {
+    const recipe: Recipe = {
+      itemResultId: 100, classJob: 'ALC', recipeLevel: 90,
+      ingredients: [{ itemId: 1, amount: 2 }, { itemId: 2, amount: 3 }],
+    };
+    const market: MarketData = { 1: mkPrice(500), 2: mkPrice(50) };
+    // Item 1 is buyable with scrip → free; item 2 must be bought @ 50 → 150.
+    const currencyOf = (id: number) => (id === 1 ? { label: 'P-Craft', cost: 120 } : null);
+    expect(selfSourceCost(recipe, new Map(), market, new Set(), currencyOf)).toBe(150);
+  });
 });
 
 describe('selfSourceBreakdown', () => {
@@ -68,6 +79,14 @@ describe('selfSourceBreakdown', () => {
     expect(rows[0]).toMatchObject({ kind: 'gather', unitCost: 0, lineCost: 0 });
     expect(rows[1]).toMatchObject({ kind: 'craft', unitCost: 10, lineCost: 30, yield: 3 });
     expect(rows[1].children?.[0]).toMatchObject({ itemId: 9, kind: 'buy', unitCost: 30 });
+  });
+
+  it('classifies a currency-obtainable ingredient with its currency label + cost', () => {
+    const market: MarketData = { 1: mkPrice(500), 2: mkPrice(50) };
+    const currencyOf = (id: number) => (id === 1 ? { label: 'P-Craft', cost: 120 } : null);
+    const rows = selfSourceBreakdown(recipe, new Map(), market, new Set(), currencyOf);
+    expect(rows[0]).toMatchObject({ kind: 'currency', unitCost: 0, lineCost: 0, currencyLabel: 'P-Craft', currencyCost: 120 });
+    expect(rows[1]).toMatchObject({ kind: 'buy', unitCost: 50 });
   });
 
   it('top-level line costs sum to selfSourceCost', () => {
