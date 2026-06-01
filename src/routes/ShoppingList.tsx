@@ -7,10 +7,13 @@ import { useSettingsStore } from '../features/settings/store';
 import { useVendorShopSnapshot } from '../features/queries/useVendorShopSnapshot';
 import { useSpecialShopSnapshot } from '../features/queries/useSpecialShopSnapshot';
 import { CRYSTALS_SEARCH_CATEGORY } from '../features/queries/commonFilters';
-import { aggregateIngredients } from '../features/shoppingList/aggregateIngredients';
+import { buildCraftPlan, type SourceKind } from '../features/shoppingList/buildCraftPlan';
 import { surveyIngredients } from '../features/shoppingList/shoppingListSurvey';
 import { ShoppingListPanel } from '../features/shoppingList/ShoppingListPanel';
 import { ShoppingListPlan } from '../features/shoppingList/ShoppingListPlan';
+import { CraftSection } from '../features/shoppingList/CraftSection';
+import { GatherSection } from '../features/shoppingList/GatherSection';
+import { useGatheringCatalog } from '../features/queries/useGatheringCatalog';
 import { PluginShoppingSend } from '../features/plugin/PluginShoppingSend';
 import { Spinner } from '../components/Spinner';
 import { StatusBanner } from '../components/StatusBanner';
@@ -24,17 +27,23 @@ export default function ShoppingList() {
 
   const itemIds = useMemo(() => items.map((i) => i.id), [items]);
   const recipes = useRecipeSnapshot(itemIds.length > 0);
+  const gathering = useGatheringCatalog();
+  const [overrides, setOverrides] = useState<Map<number, SourceKind>>(new Map());
+  const setBuyOverride = (id: number) =>
+    setOverrides((prev) => { const next = new Map(prev); next.set(id, 'buy'); return next; });
+  const resetOverrides = () => setOverrides(new Map());
+  const targetIds = useMemo(() => new Set(items.map((i) => i.id)), [items]);
 
-  const aggregate = useMemo(() => {
-    if (!recipes.data) return null;
-    return aggregateIngredients(items, recipes.data);
-  }, [items, recipes.data]);
+  const plan = useMemo(() => {
+    if (!recipes.data || !gathering.data) return null;
+    return buildCraftPlan(items, recipes.data, gathering.data, overrides);
+  }, [items, recipes.data, gathering.data, overrides]);
 
   const priceIds = useMemo(() => {
     const ids = new Set<number>(itemIds);
-    if (aggregate) for (const id of aggregate.demand.keys()) ids.add(id);
+    if (plan) for (const id of plan.buy.keys()) ids.add(id);
     return [...ids];
-  }, [itemIds, aggregate]);
+  }, [itemIds, plan]);
 
   const market = useMarketData(priceIds, world, dc, 'Europe');
 
@@ -43,11 +52,11 @@ export default function ShoppingList() {
   useEffect(() => { setPlanRequested(false); }, [itemIds.length]);
 
   const survey = useMemo(() => {
-    if (!planRequested || !aggregate || !market.data || !snapshot.data) return null;
+    if (!planRequested || !plan || !market.data || !snapshot.data) return null;
     const vendorMap = vendor.data?.snapshot ?? new Map<number, number>();
     const shopSnapshot = shop.data?.snapshot ?? { byCurrency: new Map() };
 
-    let demand = aggregate.demand;
+    let demand = plan.buy;
     if (hideCrystals) {
       const crystalIds = new Set(
         snapshot.data.items.filter((s) => s.sc === CRYSTALS_SEARCH_CATEGORY).map((s) => s.id),
@@ -56,7 +65,7 @@ export default function ShoppingList() {
     }
 
     return surveyIngredients(demand, market.data.region, vendorMap, shopSnapshot);
-  }, [planRequested, aggregate, market.data, snapshot.data, vendor.data, shop.data, hideCrystals]);
+  }, [planRequested, plan, market.data, snapshot.data, vendor.data, shop.data, hideCrystals]);
 
   const searchableItems = useMemo(() => {
     if (!snapshot.data || !recipes.data) {
@@ -80,16 +89,19 @@ export default function ShoppingList() {
 
   // Ingredient demand (name + qty) to push into the in-game plugin window.
   const pluginShoppingItems = useMemo(() => {
-    if (!aggregate) return [];
-    return [...aggregate.demand].map(([id, qty]) => ({ name: nameById.get(id) ?? `#${id}`, qty }));
-  }, [aggregate, nameById]);
+    if (!plan) return [];
+    const acquire = new Map<number, number>();
+    for (const [id, g] of plan.gather) acquire.set(id, g.qty);
+    for (const [id, qty] of plan.buy) acquire.set(id, (acquire.get(id) ?? 0) + qty);
+    return [...acquire].map(([id, qty]) => ({ name: nameById.get(id) ?? `#${id}`, qty }));
+  }, [plan, nameById]);
 
   return (
     <div className="max-w-[100rem] mx-auto px-4 space-y-4">
       <div>
-        <h2 className="font-display text-lg text-gold tracking-wide">Shopping List</h2>
+        <h2 className="font-display text-lg text-gold tracking-wide">Craft Helper</h2>
         <p className="font-mono text-[11px] text-text-low max-w-prose">
-          Plan a crafting session across multiple items — aggregates ingredients region-wide and finds the cheapest source per material.
+          Plan a crafting session end-to-end — what to craft, what to gather, and what to buy, with the cheapest source per material.
         </p>
       </div>
 
@@ -99,6 +111,21 @@ export default function ShoppingList() {
       />
 
       <PluginShoppingSend items={pluginShoppingItems} />
+
+      {plan && overrides.size > 0 && (
+        <div className="font-mono text-[11px] text-text-low flex items-center gap-2">
+          <span>{overrides.size} item{overrides.size === 1 ? '' : 's'} moved to Buy</span>
+          <button onClick={resetOverrides} className="text-aether hover:underline decoration-1 underline-offset-4">
+            reset
+          </button>
+        </div>
+      )}
+      {plan && (
+        <CraftSection craft={plan.craft} targetIds={targetIds} nameById={nameById} onBuyInstead={setBuyOverride} />
+      )}
+      {plan && (
+        <GatherSection gather={plan.gather} nameById={nameById} onBuyInstead={setBuyOverride} />
+      )}
 
       {planRequested && (market.isLoading || recipes.isLoading) && (
         <Spinner label="Fetching prices + recipes…" />

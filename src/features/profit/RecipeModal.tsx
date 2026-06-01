@@ -64,7 +64,7 @@ export function RecipeModal({
             <h3 className="font-display text-xl text-gold">{item.name}</h3>
           </div>
           <div className="flex items-start gap-2">
-            <AddToShoppingListButton itemId={item.id} hasRecipe={true} />
+            <AddToShoppingListButton itemId={item.id} />
             <button
               onClick={onClose}
               className="text-text-dim hover:text-aether font-mono text-sm"

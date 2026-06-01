@@ -35,12 +35,13 @@ describe('ShoppingListPanel', () => {
     expect(useShoppingListStore.getState().items[0]).toMatchObject({ id: 1, qty: 5 });
   });
 
-  it('blocks adding a non-craftable item and shows an inline error', () => {
-    render(<ShoppingListPanel searchableItems={sample} onPlan={() => {}} />);
-    fireEvent.change(screen.getByLabelText(/search item/i), { target: { value: 'fire' } });
+  it('adds a non-craftable item from the search box', () => {
+    useShoppingListStore.setState(defaultShoppingList());
+    const searchable = [{ id: 7, name: 'Copper Ore', hasRecipe: false }];
+    render(<ShoppingListPanel searchableItems={searchable} onPlan={() => {}} />);
+    fireEvent.change(screen.getByLabelText(/search item/i), { target: { value: 'copper' } });
     fireEvent.click(screen.getByRole('button', { name: /^add$/i }));
-    expect(useShoppingListStore.getState().items).toEqual([]);
-    expect(screen.getByText(/not craftable/i)).toBeInTheDocument();
+    expect(useShoppingListStore.getState().items.map((i) => i.id)).toContain(7);
   });
 
   it('shows no-match inline error when search has no hits', () => {
@@ -66,14 +67,6 @@ describe('ShoppingListPanel', () => {
     const removeButtons = screen.getAllByLabelText(/remove/i);
     fireEvent.click(removeButtons[0]);
     expect(useShoppingListStore.getState().items.map((i) => i.id)).toEqual([2]);
-  });
-
-  it('toggles craftIntermediates per item', () => {
-    useShoppingListStore.getState().addItem(1);
-    render(<ShoppingListPanel searchableItems={sample} onPlan={() => {}} />);
-    const toggle = screen.getByLabelText(/craft sub-ingredients/i);
-    fireEvent.click(toggle);
-    expect(useShoppingListStore.getState().items[0].craftIntermediates).toBe(true);
   });
 
   it('clear button empties the store', () => {

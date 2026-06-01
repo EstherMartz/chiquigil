@@ -13,8 +13,6 @@ export interface ShoppingListState {
   addItem: (id: number, qty?: number) => void;
   removeItem: (id: number) => void;
   setQty: (id: number, qty: number) => void;
-  setCraftIntermediates: (id: number, value: boolean) => void;
-  setAllCraftIntermediates: (value: boolean) => void;
   clear: () => void;
 }
 
@@ -42,12 +40,6 @@ export const useShoppingListStore = create<ShoppingListState>()(
         if (qty <= 0) return { items: s.items.filter((i) => i.id !== id) };
         return { items: s.items.map((i) => (i.id === id ? { ...i, qty } : i)) };
       }),
-      setCraftIntermediates: (id, value) => set((s) => ({
-        items: s.items.map((i) => (i.id === id ? { ...i, craftIntermediates: value } : i)),
-      })),
-      setAllCraftIntermediates: (value) => set((s) => ({
-        items: s.items.map((i) => ({ ...i, craftIntermediates: value })),
-      })),
       clear: () => set({ items: [] }),
     }),
     { name: 'ffxiv-helper:shoppingList' },

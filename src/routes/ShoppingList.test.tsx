@@ -12,6 +12,7 @@ vi.mock('../features/queries/useItemSnapshot', () => ({
         { id: 5, name: 'Iron Ingot', sc: 1, ui: 1, ilvl: 1, canHq: false },
         { id: 2, name: 'Fire Shard', sc: 58, ui: 1, ilvl: 1, canHq: false },
         { id: 10, name: 'Iron Ore', sc: 1, ui: 1, ilvl: 1, canHq: false },
+        { id: 3, name: 'Maple Branch', sc: 1, ui: 1, ilvl: 1, canHq: false },
       ],
     },
     isLoading: false,
@@ -21,7 +22,7 @@ vi.mock('../features/queries/useItemSnapshot', () => ({
 vi.mock('../features/queries/useRecipeSnapshot', () => ({
   useRecipeSnapshot: () => ({
     data: new Map([
-      [100, { itemResultId: 100, classJob: 'CRP', recipeLevel: 1, ingredients: [{ itemId: 5, amount: 2 }, { itemId: 2, amount: 4 }] }],
+      [100, { itemResultId: 100, classJob: 'CRP', recipeLevel: 1, ingredients: [{ itemId: 5, amount: 2 }, { itemId: 2, amount: 4 }, { itemId: 3, amount: 5 }] }],
       [5, { itemResultId: 5, classJob: 'BSM', recipeLevel: 1, ingredients: [{ itemId: 10, amount: 3 }] }],
     ]),
     isLoading: false,
@@ -71,6 +72,14 @@ vi.mock('../features/watchlist/useMarketData', () => ({
           avgNQ: null, avgHQ: null, medianNQ: null, medianHQ: null,
           recentSalesNQ: 0, recentSalesHQ: 0,
         },
+        3: {
+          minNQ: 30, minHQ: null,
+          worldListings: [{ world: 'Phantom', price: 30, hq: false }],
+          velocity: 0, lastUploadTime: 0, listingCount: 1,
+          averagePriceNQ: null, averagePriceHQ: null,
+          avgNQ: null, avgHQ: null, medianNQ: null, medianHQ: null,
+          recentSalesNQ: 0, recentSalesHQ: 0,
+        },
       },
     },
     isLoading: false,
@@ -101,6 +110,18 @@ vi.mock('../features/queries/useSpecialShopSnapshot', () => ({
   }),
 }));
 
+vi.mock('../features/queries/useGatheringCatalog', () => ({
+  useGatheringCatalog: () => ({
+    data: new Map([
+      [10, { id: 10, name: 'Iron Ore', level: 1, timed: false }],
+      // Item 5 (Iron Ingot) and 2 (Fire Shard) are not gatherables; they'll go to buy or craft
+    ]),
+    isLoading: false,
+    isError: false,
+    error: null,
+  }),
+}));
+
 import ShoppingList from './ShoppingList';
 
 beforeEach(() => {
@@ -118,41 +139,59 @@ describe('ShoppingList route', () => {
     expect(screen.getByText(/add items from the watchlist/i)).toBeInTheDocument();
   });
 
-  it('renders the plan after the user adds an item and clicks Plan shopping', () => {
+  it('renders the craft and gather sections immediately (no Plan click needed)', () => {
     useShoppingListStore.getState().addItem(100, 1);
     renderRoute();
-    fireEvent.click(screen.getByRole('button', { name: /plan shopping/i }));
-    expect(screen.getByText(/total material cost/i)).toBeInTheDocument();
-    expect(screen.getByText(/est. revenue/i)).toBeInTheDocument();
-    // Spend = 100 × 2 = 200 (only ingots, crystals filtered); revenue = 500 × 1 = 500; profit = 300
-    expect(screen.getByText(/total material cost/i).parentElement?.textContent).toContain('200');
-    expect(screen.getByText(/est. revenue/i).parentElement?.textContent).toContain('500');
-    expect(screen.getByText(/net profit/i).parentElement?.textContent).toContain('300');
-  });
-
-  it('excludes crystal ingredients when hideCrystals is enabled', () => {
-    useShoppingListStore.getState().addItem(100, 1);
-    renderRoute();
-    fireEvent.click(screen.getByRole('button', { name: /plan shopping/i }));
-    expect(screen.queryByText('Fire Shard')).not.toBeInTheDocument();
+    // Craft/gather sections render as soon as recipes + catalog resolve.
+    expect(screen.getByText(/Craft \(/i)).toBeInTheDocument();
+    expect(screen.getByText(/Gather \(/i)).toBeInTheDocument();
+    // Widget (target) and Iron Ingot (craftable intermediate) both land in Craft.
+    expect(screen.getAllByText('Widget').length).toBeGreaterThan(1); // panel + craft section
     expect(screen.getByText('Iron Ingot')).toBeInTheDocument();
-    // Spend should be 200 (2×100 for ingots), not 240 (200 + 4×10 for shards)
-    expect(screen.getByText(/total material cost/i).parentElement?.textContent).toContain('200');
+    // Iron Ore (gatherable leaf) lands in Gather.
+    expect(screen.getByText('Iron Ore')).toBeInTheDocument();
   });
 
-  it('expands sub-ingredients when craftIntermediates is enabled', () => {
+  it('prices the Buy list after clicking Plan shopping, excluding crystals', () => {
     useShoppingListStore.getState().addItem(100, 1);
-    useShoppingListStore.getState().setCraftIntermediates(100, true);
     renderRoute();
+    // The Buy survey is gated behind the Plan button to avoid eager market fetches.
+    expect(screen.queryByText(/total material cost/i)).not.toBeInTheDocument();
+
     fireEvent.click(screen.getByRole('button', { name: /plan shopping/i }));
-    // With craftIntermediates on item 100:
-    // Recipe: 100 needs 2x item 5 + 4x item 2
-    // Item 5 has sub-recipe: 3x item 10
-    // So item 5 expands: 2 * 3 = 6x item 10
-    // Item 2 (crystal, sc=58) is filtered by hideCrystals
-    // Result: 6x item 10 (Iron Ore) at 20 each = 120
+
+    // Buy section now rendered.
+    expect(screen.getByText(/total material cost/i)).toBeInTheDocument();
+    // Maple Branch (non-crystal buy leaf) is priced in the breakdown: 30 × 5 = 150.
+    expect(screen.getByText('Maple Branch')).toBeInTheDocument();
+    expect(screen.getByText(/total material cost/i).parentElement?.textContent).toContain('150');
+    // Fire Shard is a non-gatherable buy leaf too, but hideCrystals filters it out —
+    // it is absent from the breakdown for the RIGHT reason (filtered, not un-rendered).
+    expect(screen.queryByText('Fire Shard')).not.toBeInTheDocument();
+  });
+
+  it('fully recurses craftable intermediates regardless of the per-item flag', () => {
+    // The engine always expands the full tree. Item 100 → 2× Iron Ingot (5),
+    // and Iron Ingot → 3× Iron Ore (10), so 5 is crafted and 10 (qty 6) is gathered.
+    useShoppingListStore.getState().addItem(100, 1);
+    renderRoute();
+    expect(screen.getByText(/Craft \(/i)).toBeInTheDocument();
+    expect(screen.getByText(/Gather \(/i)).toBeInTheDocument();
+    // Iron Ingot is crafted (intermediate), Iron Ore is gathered (raw leaf).
+    expect(screen.getByText('Iron Ingot')).toBeInTheDocument();
     expect(screen.getByText('Iron Ore')).toBeInTheDocument();
-    expect(screen.queryByText('Iron Ingot')).not.toBeInTheDocument();
-    expect(screen.getByText(/total material cost/i).parentElement?.textContent).toContain('120');
+  });
+
+  it('moves a gatherable leaf into the Buy list when "Buy instead" is clicked', () => {
+    useShoppingListStore.getState().addItem(100, 1);
+    renderRoute();
+    // Iron Ore starts in the Gather section. Find its row's "Buy instead" button.
+    const ironOreRow = screen.getByText('Iron Ore').closest('tr');
+    expect(ironOreRow).not.toBeNull();
+    const buyBtn = ironOreRow!.querySelector('button');
+    expect(buyBtn?.textContent).toMatch(/buy instead/i);
+    fireEvent.click(buyBtn!);
+    // The override banner appears once an item is moved to Buy.
+    expect(screen.getByText(/moved to buy/i)).toBeInTheDocument();
   });
 });

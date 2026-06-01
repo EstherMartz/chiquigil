@@ -9,35 +9,30 @@ beforeEach(() => {
 });
 
 describe('AddToShoppingListButton', () => {
-  it('renders disabled "Not craftable" when no recipe is provided', () => {
-    render(<AddToShoppingListButton itemId={1} hasRecipe={false} />);
+  it('renders an enabled add button for any item (no recipe required)', () => {
+    render(<AddToShoppingListButton itemId={1} />);
     const btn = screen.getByRole('button');
-    expect(btn).toBeDisabled();
-    expect(btn.textContent).toContain('Not craftable');
-  });
-
-  it('renders "+ Shopping list" when item is craftable and not on list', () => {
-    render(<AddToShoppingListButton itemId={1} hasRecipe={true} />);
-    expect(screen.getByRole('button').textContent).toContain('+ Shopping list');
+    expect(btn).not.toBeDisabled();
+    expect(btn.textContent).toContain('Craft Helper');
   });
 
   it('adds the item to the store on click', () => {
-    render(<AddToShoppingListButton itemId={42} hasRecipe={true} />);
+    render(<AddToShoppingListButton itemId={42} />);
     fireEvent.click(screen.getByRole('button'));
     expect(useShoppingListStore.getState().items).toEqual([
       { id: 42, qty: 1, craftIntermediates: false },
     ]);
   });
 
-  it('renders "✓ On list · Remove" when item is on the list', () => {
+  it('renders "On list · Remove" when the item is already on the list', () => {
     useShoppingListStore.getState().addItem(42);
-    render(<AddToShoppingListButton itemId={42} hasRecipe={true} />);
+    render(<AddToShoppingListButton itemId={42} />);
     expect(screen.getByRole('button').textContent).toContain('On list');
   });
 
   it('removes the item on click when already on the list', () => {
     useShoppingListStore.getState().addItem(42);
-    render(<AddToShoppingListButton itemId={42} hasRecipe={true} />);
+    render(<AddToShoppingListButton itemId={42} />);
     fireEvent.click(screen.getByRole('button'));
     expect(useShoppingListStore.getState().items).toEqual([]);
   });

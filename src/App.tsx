@@ -48,7 +48,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/gathering': 'Gathering',
   '/gathering/plan': 'Gathering Plan',
   '/leves': 'Leves',
-  '/shopping-list': 'Shopping List',
+  '/shopping-list': 'Craft Helper',
   '/vendor-flip': 'Vendor Flip',
   '/housing': 'Housing',
   '/currency-flip': 'Currencies',
@@ -117,6 +117,7 @@ export default function App() {
                       <Route path="/gathering/plan" element={<GatheringPlan />} />
                       <Route path="/leves" element={<LevePlan />} />
                       <Route path="/shopping-list" element={<ShoppingList />} />
+                      <Route path="/craft-helper" element={<Navigate to="/shopping-list" replace />} />
                       <Route path="/vendor-flip" element={<VendorFlip />} />
                       <Route path="/housing" element={<Housing />} />
                       <Route path="/currency-flip" element={<CurrencyFlip />} />

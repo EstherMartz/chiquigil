@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { useShoppingListStore } from './shoppingListStore';
 
 interface Searchable { id: number; name: string; hasRecipe: boolean }
@@ -13,8 +13,6 @@ export function ShoppingListPanel({ searchableItems, onPlan }: Props) {
   const addItem = useShoppingListStore((s) => s.addItem);
   const removeItem = useShoppingListStore((s) => s.removeItem);
   const setQty = useShoppingListStore((s) => s.setQty);
-  const setCraftIntermediates = useShoppingListStore((s) => s.setCraftIntermediates);
-  const setAllCraftIntermediates = useShoppingListStore((s) => s.setAllCraftIntermediates);
   const clear = useShoppingListStore((s) => s.clear);
 
   const [query, setQuery] = useState('');
@@ -23,15 +21,6 @@ export function ShoppingListPanel({ searchableItems, onPlan }: Props) {
 
   const nameById = new Map(searchableItems.map((s) => [s.id, s.name]));
 
-  const allCraft = items.length > 0 && items.every((i) => i.craftIntermediates);
-  const noneCraft = items.length === 0 || items.every((i) => !i.craftIntermediates);
-  const craftAllRef = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    if (craftAllRef.current) {
-      craftAllRef.current.indeterminate = !allCraft && !noneCraft;
-    }
-  }, [allCraft, noneCraft]);
-
   function handleAdd() {
     setError(null);
     const q = query.trim().toLowerCase();
@@ -39,10 +28,6 @@ export function ShoppingListPanel({ searchableItems, onPlan }: Props) {
     const match = searchableItems.find((s) => s.name.toLowerCase().includes(q));
     if (!match) {
       setError('No match in catalog.');
-      return;
-    }
-    if (!match.hasRecipe) {
-      setError(`"${match.name}" is not craftable.`);
       return;
     }
     addItem(match.id, Math.max(1, qty));
@@ -111,14 +96,6 @@ export function ShoppingListPanel({ searchableItems, onPlan }: Props) {
                   className="bg-bg-card-lo border border-border-base text-text-cream font-mono text-xs px-2 py-1 w-16"
                 />
               </label>
-              <label className="flex items-center gap-1 font-mono text-[10px] uppercase text-text-low">
-                <input
-                  type="checkbox"
-                  checked={it.craftIntermediates}
-                  onChange={(e) => setCraftIntermediates(it.id, e.target.checked)}
-                />
-                <span>Craft sub-ingredients</span>
-              </label>
               <button
                 onClick={() => removeItem(it.id)}
                 aria-label={`Remove ${nameById.get(it.id) ?? it.id}`}
@@ -134,17 +111,6 @@ export function ShoppingListPanel({ searchableItems, onPlan }: Props) {
       <div className="flex items-center justify-between gap-2 p-3 border-t border-border-base">
         <div className="flex items-center gap-3">
           <span className="font-mono text-[11px] text-text-low">{items.length} items</span>
-          {items.length > 0 && (
-            <label className="flex items-center gap-1 font-mono text-[10px] uppercase text-text-low">
-              <input
-                ref={craftAllRef}
-                type="checkbox"
-                checked={allCraft}
-                onChange={() => setAllCraftIntermediates(!allCraft)}
-              />
-              <span>Craft all sub-ingredients</span>
-            </label>
-          )}
         </div>
         <div className="flex gap-2">
           {items.length > 0 && (

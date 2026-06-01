@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
+import { usePluginBridge } from '../../features/plugin/usePluginBridge';
 
 const navItemClass = ({ isActive }: { isActive: boolean }) =>
   `block px-4 py-3 md:py-1.5 font-mono text-[13px] tracking-widest transition-colors border-l-[3px] ${
@@ -36,12 +37,11 @@ const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Planning',
     items: [
-      { label: 'Plan', path: '/planner' },
       { label: 'Projects', path: '/projects' },
       { label: 'Watchlist', path: '/watchlist' },
       { label: 'Discover', path: '/discover' },
       { label: 'Batch', path: '/craft-batch' },
-      { label: 'Shopping', path: '/shopping-list' },
+      { label: 'Craft Helper', path: '/shopping-list' },
       { label: 'Leves', path: '/leves' },
     ],
   },
@@ -66,6 +66,12 @@ const NAV_GROUPS: NavGroup[] = [
 
 export function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { connected } = usePluginBridge();
+  const navGroups = NAV_GROUPS.map((group) =>
+    group.label === 'Planning' && connected
+      ? { ...group, items: [{ label: 'Plan', path: '/planner' }, ...group.items] }
+      : group,
+  );
 
   const closeMobileMenu = () => setMobileOpen(false);
 
@@ -90,7 +96,7 @@ export function Sidebar() {
 
       {/* Nav groups */}
       <nav className="py-4 space-y-6 overflow-y-auto flex-1">
-        {NAV_GROUPS.map((group, idx) => (
+        {navGroups.map((group, idx) => (
           <div key={group.label} className={idx > 0 ? 'border-t border-border-base/50 pt-4' : ''}>
             <div className="px-4 font-mono text-[13px] tracking-widest uppercase text-text-low mb-2">
               {group.label}
@@ -160,7 +166,7 @@ export function Sidebar() {
           </button>
         </div>
         <nav className="py-4 space-y-6">
-          {NAV_GROUPS.map((group, idx) => (
+          {navGroups.map((group, idx) => (
             <div key={group.label} className={idx > 0 ? 'border-t border-border-base/50 pt-4' : ''}>
               <div className="px-4 font-mono text-[13px] tracking-widest uppercase text-text-low mb-2">
                 {group.label}
