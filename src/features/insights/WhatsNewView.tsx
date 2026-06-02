@@ -14,6 +14,8 @@ import { StatusBanner } from '../../components/StatusBanner';
 import { EmptyState } from '../../components/EmptyState';
 import { useInitialScan } from '../queries/useInitialScan';
 import type { SnapshotItem } from '../../lib/itemSnapshot';
+import { CategorySelect } from '../../components/CategorySelect';
+import { categoryLabel } from '../../lib/itemSearchCategories';
 
 interface RunResult { saleMap: MarketData; skipped: number; tabAtRun: WhatsNewTab; }
 
@@ -40,6 +42,17 @@ export function WhatsNewView() {
     if (!whatsNew.data) return [];
     return filter.tab === 'items' ? whatsNew.data.newItems : whatsNew.data.newRecipeItems;
   }, [whatsNew.data, filter.tab]);
+
+  const presentCategories = useMemo(() => {
+    const ids = new Set<number>();
+    for (const id of activeIds) {
+      const it = itemsById.get(id);
+      if (it && it.sc > 0) ids.add(it.sc);
+    }
+    return [...ids]
+      .map((id) => ({ id, name: categoryLabel(id) }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [activeIds, itemsById]);
 
   const run = useMutation<RunResult>({
     mutationFn: async () => {
@@ -74,9 +87,10 @@ export function WhatsNewView() {
 
       <TabBar
         tab={filter.tab}
-        onTab={(tab) => { setFilter({ ...filter, tab }); run.reset(); run.mutate(); }}
+        onTab={(tab) => { setFilter({ ...filter, tab, categories: [] }); run.reset(); run.mutate(); }}
         filter={filter}
         onChange={setFilter}
+        categories={presentCategories}
         onRun={() => { run.reset(); run.mutate(); }}
         busy={run.isPending}
         notReady={!ready}
@@ -104,9 +118,10 @@ export function WhatsNewView() {
   );
 }
 
-function TabBar({ tab, onTab, filter, onChange, onRun, busy, notReady, stale }: {
+function TabBar({ tab, onTab, filter, onChange, categories, onRun, busy, notReady, stale }: {
   tab: WhatsNewTab; onTab: (t: WhatsNewTab) => void;
   filter: WhatsNewFilter; onChange: (f: WhatsNewFilter) => void;
+  categories: { id: number; name: string }[];
   onRun: () => void; busy: boolean; notReady: boolean; stale: boolean;
 }) {
   return (
@@ -128,6 +143,17 @@ function TabBar({ tab, onTab, filter, onChange, onRun, busy, notReady, stale }: 
           onChange={(e) => onChange({ ...filter, minVelocity: Math.max(0, Number(e.target.value) || 0) })}
           className="mt-1 block w-28 bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors" />
       </label>
+      {categories.length > 0 && (
+        <div className="flex flex-col gap-1 w-56">
+          <span className="font-mono text-[13px] tracking-widest text-text-low uppercase">Item type</span>
+          <CategorySelect
+            categories={categories}
+            selected={filter.categories}
+            onChange={(ids) => onChange({ ...filter, categories: ids })}
+            placeholder="All types"
+          />
+        </div>
+      )}
       <label className="flex items-center gap-2 pb-2">
         <input type="checkbox" checked={filter.tradeableOnly}
           onChange={(e) => onChange({ ...filter, tradeableOnly: e.target.checked })} />

@@ -41,6 +41,7 @@ export function runWhatsNew(
   for (const id of ids) {
     const it = items.get(id);
     if (!it) continue; // ID no longer in catalog
+    if (filter.categories.length > 0 && !filter.categories.includes(it.sc)) continue;
     const m = market[id];
     if (filter.tradeableOnly && !m) continue;
     if (m && m.velocity < filter.minVelocity) continue;
