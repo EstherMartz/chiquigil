@@ -7,7 +7,7 @@ import {
   getItemSnapshotUpdatedAt,
 } from '../../lib/recipeCache';
 import { fetchItemSnapshot, type SnapshotItem } from '../../lib/itemSnapshot';
-import { loadStaticItemsSnapshot } from '../../lib/staticSnapshots';
+import { loadStaticItemsSnapshot, loadSnapshotManifestBakedAt } from '../../lib/staticSnapshots';
 
 const QUERY_KEY = ['itemSnapshot'] as const;
 
@@ -22,7 +22,17 @@ export function useItemSnapshot() {
     queryFn: async () => {
       const cached = await getAllCachedItems();
       const ts = await getItemSnapshotUpdatedAt();
-      if (cached) return { items: cached, updatedAt: ts ?? null };
+      if (cached) {
+        // Re-hydrate from the static bundle when a newer bake has shipped — a
+        // re-baked catalog (e.g. a game patch's new items) would otherwise stay
+        // invisible behind the cache until a DB version bump. Only refresh when
+        // we can confirm the bundle is strictly newer; null manifest/ts means
+        // "can't tell" → keep the cache (offline-safe).
+        const bundleBakedAt = await loadSnapshotManifestBakedAt();
+        if (bundleBakedAt == null || ts == null || bundleBakedAt <= ts) {
+          return { items: cached, updatedAt: ts ?? null };
+        }
+      }
 
       const bundled = await loadStaticItemsSnapshot();
       if (bundled) {
