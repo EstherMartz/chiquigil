@@ -57,3 +57,18 @@ export async function loadStaticQuestSnapshot(): Promise<StaticBundle<SnapshotQu
   const raw = await load<{ bakedAt: number; quests: SnapshotQuest[] }>(`${BASE}/quests.json`);
   return raw ? { bakedAt: raw.bakedAt, data: raw.quests } : null;
 }
+
+export interface WhatsNewData {
+  prevBakedAt: number | null;
+  newItems: number[];
+  newRecipeItems: number[];
+}
+
+export async function loadStaticWhatsNewSnapshot(): Promise<StaticBundle<WhatsNewData> | null> {
+  const raw = await load<{ bakedAt: number; prevBakedAt: number | null; newItems: number[]; newRecipeItems: number[] }>(
+    `${BASE}/whatsNew.json`,
+  );
+  return raw
+    ? { bakedAt: raw.bakedAt, data: { prevBakedAt: raw.prevBakedAt, newItems: raw.newItems, newRecipeItems: raw.newRecipeItems } }
+    : null;
+}
