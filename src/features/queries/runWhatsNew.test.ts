@@ -57,4 +57,31 @@ describe('runWhatsNew', () => {
     const rows = runWhatsNew([1, 2], items, data, recipeKeys, filter, NOW);
     expect(rows.map((r) => r.id)).toEqual([1]); // item 2 velocity 1 < 2
   });
+
+  it('filters to the selected item-search-categories', () => {
+    const catItems = new Map<number, SnapshotItem>([
+      [1, { id: 1, name: 'Alpha', sc: 7, ui: 1, ilvl: 1, canHq: true }],
+      [2, { id: 2, name: 'Beta', sc: 56, ui: 1, ilvl: 1, canHq: true }],
+    ]);
+    const catData: MarketData = {
+      1: market({ velocity: 5, medianNQ: 200, recentSalesNQ: 4 }),
+      2: market({ velocity: 4, medianNQ: 100, recentSalesNQ: 4 }),
+    };
+    const filter = { ...defaultWhatsNewFilter(), categories: [56] };
+    const rows = runWhatsNew([1, 2], catItems, catData, new Set<number>(), filter, NOW);
+    expect(rows.map((r) => r.id)).toEqual([2]); // only sc=56 kept
+  });
+
+  it('shows all categories when none are selected', () => {
+    const catItems = new Map<number, SnapshotItem>([
+      [1, { id: 1, name: 'Alpha', sc: 7, ui: 1, ilvl: 1, canHq: true }],
+      [2, { id: 2, name: 'Beta', sc: 56, ui: 1, ilvl: 1, canHq: true }],
+    ]);
+    const catData: MarketData = {
+      1: market({ velocity: 5 }),
+      2: market({ velocity: 4 }),
+    };
+    const rows = runWhatsNew([1, 2], catItems, catData, new Set<number>(), defaultWhatsNewFilter(), NOW);
+    expect(rows.map((r) => r.id).sort()).toEqual([1, 2]);
+  });
 });

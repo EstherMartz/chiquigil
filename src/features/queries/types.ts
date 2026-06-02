@@ -249,6 +249,7 @@ export interface WhatsNewFilter {
   tab: WhatsNewTab;
   tradeableOnly: boolean;
   minVelocity: number;
+  categories: number[];
   sort: WhatsNewSort;
   limit: number;
 }
@@ -267,5 +268,5 @@ export interface WhatsNewRow {
 }
 
 export function defaultWhatsNewFilter(): WhatsNewFilter {
-  return { tab: 'items', tradeableOnly: true, minVelocity: 0, sort: 'velocity', limit: 200 };
+  return { tab: 'items', tradeableOnly: true, minVelocity: 0, categories: [], sort: 'velocity', limit: 200 };
 }
