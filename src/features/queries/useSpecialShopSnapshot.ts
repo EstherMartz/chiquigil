@@ -7,7 +7,7 @@ import {
   getSpecialShopUpdatedAt,
 } from '../../lib/recipeCache';
 import { fetchSpecialShopSnapshot, type SpecialShopSnapshot } from '../../lib/specialShopSnapshot';
-import { loadStaticSpecialShopSnapshot } from '../../lib/staticSnapshots';
+import { loadStaticSpecialShopSnapshot, loadSnapshotManifestBakedAt } from '../../lib/staticSnapshots';
 import { currencyByItemId } from '../../lib/currencies';
 
 const QUERY_KEY = ['specialShopSnapshot'] as const;
@@ -23,7 +23,17 @@ export function useSpecialShopSnapshot() {
     queryFn: async () => {
       const cached = await getCachedSpecialShop();
       const ts = await getSpecialShopUpdatedAt();
-      if (cached) return { snapshot: cached, updatedAt: ts ?? null };
+      if (cached) {
+        // Re-hydrate from the static bundle when a newer bake has shipped — a
+        // re-baked shop list would otherwise stay invisible behind the cache
+        // until a DB version bump. Only refresh when we can confirm the bundle
+        // is strictly newer; null manifest/ts means "can't tell" → keep the
+        // cache (offline-safe).
+        const bundleBakedAt = await loadSnapshotManifestBakedAt();
+        if (bundleBakedAt == null || ts == null || bundleBakedAt <= ts) {
+          return { snapshot: cached, updatedAt: ts ?? null };
+        }
+      }
 
       const bundled = await loadStaticSpecialShopSnapshot();
       if (bundled) {
