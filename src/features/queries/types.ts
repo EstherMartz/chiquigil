@@ -241,3 +241,31 @@ export function defaultEmptyShelfFilter(): EmptyShelfFilter {
   return { searchCategories: [], hq: 'either', minVelocity: 0.14, maxListings: 0,
            maxDaysSinceSale: 30, sort: 'freshness', limit: 200 };
 }
+
+export type WhatsNewTab = 'items' | 'recipes';
+export type WhatsNewSort = 'velocity' | 'price' | 'freshness' | 'name';
+
+export interface WhatsNewFilter {
+  tab: WhatsNewTab;
+  tradeableOnly: boolean;
+  minVelocity: number;
+  sort: WhatsNewSort;
+  limit: number;
+}
+
+export interface WhatsNewRow {
+  id: number;
+  name: string;
+  sc: number;
+  craftable: boolean;
+  hq: boolean;
+  price: number | null;
+  velocity: number;
+  recentSales: number;
+  lastSaleMs: number | null;
+  daysSinceLastSale: number | null;
+}
+
+export function defaultWhatsNewFilter(): WhatsNewFilter {
+  return { tab: 'items', tradeableOnly: true, minVelocity: 0, sort: 'velocity', limit: 200 };
+}
