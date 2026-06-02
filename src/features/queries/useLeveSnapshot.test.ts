@@ -37,4 +37,19 @@ describe('useLeveSnapshot', () => {
     expect(put).toHaveBeenCalledWith(sample, 777);
     expect(live$).not.toHaveBeenCalled();
   });
+
+  it('re-hydrates from the static bundle when a newer bake has shipped', async () => {
+    const stale: SnapshotLeve[] = [];
+    vi.spyOn(cache, 'getCachedLeves').mockResolvedValue(stale);
+    vi.spyOn(cache, 'getLeveSnapshotUpdatedAt').mockResolvedValue(100);
+    vi.spyOn(staticLoader, 'loadSnapshotManifestBakedAt').mockResolvedValue(999);
+    const put = vi.spyOn(cache, 'putCachedLeves').mockResolvedValue();
+    vi.spyOn(staticLoader, 'loadStaticLevesSnapshot').mockResolvedValue({ bakedAt: 999, data: sample });
+
+    const { result } = renderHook(() => useLeveSnapshot(), { wrapper: wrapper() });
+    await waitFor(() => expect(result.current.data).toBeDefined());
+    expect(result.current.data!.leves).toEqual(sample);
+    expect(result.current.data!.updatedAt).toBe(999);
+    expect(put).toHaveBeenCalledWith(sample, 999);
+  });
 });

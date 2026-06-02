@@ -33,4 +33,20 @@ describe('useVendorShopSnapshot', () => {
     expect(put).toHaveBeenCalledWith(map, 888);
     expect(live$).not.toHaveBeenCalled();
   });
+
+  it('re-hydrates from the static bundle when a newer bake has shipped', async () => {
+    const stale = new Map([[10, 1]]);
+    const fresh = new Map([[10, 1], [20, 2]]);
+    vi.spyOn(cache, 'getCachedVendorSnapshot').mockResolvedValue(stale);
+    vi.spyOn(cache, 'getVendorSnapshotUpdatedAt').mockResolvedValue(100);
+    vi.spyOn(staticLoader, 'loadSnapshotManifestBakedAt').mockResolvedValue(999);
+    const put = vi.spyOn(cache, 'putCachedVendorSnapshot').mockResolvedValue();
+    vi.spyOn(staticLoader, 'loadStaticVendorSnapshot').mockResolvedValue({ bakedAt: 999, data: fresh });
+
+    const { result } = renderHook(() => useVendorShopSnapshot(), { wrapper: wrapper() });
+    await waitFor(() => expect(result.current.data).toBeDefined());
+    expect(result.current.data!.snapshot.get(20)).toBe(2);
+    expect(result.current.data!.updatedAt).toBe(999);
+    expect(put).toHaveBeenCalledWith(fresh, 999);
+  });
 });

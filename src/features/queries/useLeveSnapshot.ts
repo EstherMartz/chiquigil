@@ -7,7 +7,7 @@ import {
   getLeveSnapshotUpdatedAt,
 } from '../../lib/recipeCache';
 import { fetchLeveSnapshot, type SnapshotLeve } from '../../lib/leveSnapshot';
-import { loadStaticLevesSnapshot } from '../../lib/staticSnapshots';
+import { loadStaticLevesSnapshot, loadSnapshotManifestBakedAt } from '../../lib/staticSnapshots';
 
 const QUERY_KEY = ['leveSnapshot'] as const;
 
@@ -22,7 +22,14 @@ export function useLeveSnapshot() {
     queryFn: async () => {
       const cached = await getCachedLeves();
       const ts = await getLeveSnapshotUpdatedAt();
-      if (cached) return { leves: cached, updatedAt: ts ?? null };
+      if (cached) {
+        // Re-hydrate from the bundle when a newer bake has shipped; null
+        // manifest/ts means "can't tell" → keep the cache (offline-safe).
+        const bundleBakedAt = await loadSnapshotManifestBakedAt();
+        if (bundleBakedAt == null || ts == null || bundleBakedAt <= ts) {
+          return { leves: cached, updatedAt: ts ?? null };
+        }
+      }
 
       const bundled = await loadStaticLevesSnapshot();
       if (bundled) {

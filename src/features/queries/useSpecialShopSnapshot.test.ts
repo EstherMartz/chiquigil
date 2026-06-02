@@ -36,4 +36,22 @@ describe('useSpecialShopSnapshot', () => {
     expect(put).toHaveBeenCalledWith(snap, 444);
     expect(live$).not.toHaveBeenCalled();
   });
+
+  it('re-hydrates from the static bundle when a newer bake has shipped', async () => {
+    const stale: SpecialShopSnapshot = { byCurrency: new Map() };
+    const fresh: SpecialShopSnapshot = {
+      byCurrency: new Map([['poetics' as never, [{ itemId: 5, receiveQty: 1, costPerUnit: 100, isHq: false }]]]),
+    };
+    vi.spyOn(cache, 'getCachedSpecialShop').mockResolvedValue(stale);
+    vi.spyOn(cache, 'getSpecialShopUpdatedAt').mockResolvedValue(100);
+    vi.spyOn(staticLoader, 'loadSnapshotManifestBakedAt').mockResolvedValue(999);
+    const put = vi.spyOn(cache, 'putCachedSpecialShop').mockResolvedValue();
+    vi.spyOn(staticLoader, 'loadStaticSpecialShopSnapshot').mockResolvedValue({ bakedAt: 999, data: fresh });
+
+    const { result } = renderHook(() => useSpecialShopSnapshot(), { wrapper: wrapper() });
+    await waitFor(() => expect(result.current.data).toBeDefined());
+    expect(result.current.data!.snapshot.byCurrency.size).toBe(1);
+    expect(result.current.data!.updatedAt).toBe(999);
+    expect(put).toHaveBeenCalledWith(fresh, 999);
+  });
 });
