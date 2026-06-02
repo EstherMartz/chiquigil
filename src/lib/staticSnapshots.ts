@@ -28,6 +28,17 @@ export async function loadStaticItemsSnapshot(): Promise<StaticBundle<SnapshotIt
   return raw ? { bakedAt: raw.bakedAt, data: raw.items } : null;
 }
 
+/**
+ * The bake timestamp from the lightweight manifest, used to decide whether a
+ * cached snapshot is stale relative to the deployed bundle. Returns null when
+ * the manifest can't be read (offline / older deploy) — callers must treat
+ * null as "can't tell, keep the cache" rather than forcing a re-fetch.
+ */
+export async function loadSnapshotManifestBakedAt(): Promise<number | null> {
+  const raw = await load<{ bakedAt: number }>(`${BASE}/manifest.json`);
+  return raw && typeof raw.bakedAt === 'number' ? raw.bakedAt : null;
+}
+
 export async function loadStaticLevesSnapshot(): Promise<StaticBundle<SnapshotLeve[]> | null> {
   const raw = await load<{ bakedAt: number; leves: SnapshotLeve[] }>(`${BASE}/leves.json`);
   return raw ? { bakedAt: raw.bakedAt, data: raw.leves } : null;

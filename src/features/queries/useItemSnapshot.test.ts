@@ -20,9 +20,10 @@ const sampleItems = [{ id: 1, name: 'A', sc: 1, ui: 1, ilvl: 1, canHq: false }];
 afterEach(() => { vi.restoreAllMocks(); });
 
 describe('useItemSnapshot', () => {
-  it('prefers IDB cache when populated', async () => {
+  it('prefers IDB cache when it is up to date with the bundle', async () => {
     vi.spyOn(cache, 'getAllCachedItems').mockResolvedValue(sampleItems);
     vi.spyOn(cache, 'getItemSnapshotUpdatedAt').mockResolvedValue(123);
+    vi.spyOn(staticLoader, 'loadSnapshotManifestBakedAt').mockResolvedValue(123);
     const live$ = vi.spyOn(live, 'fetchItemSnapshot').mockResolvedValue([]);
     const static$ = vi.spyOn(staticLoader, 'loadStaticItemsSnapshot').mockResolvedValue(null);
 
@@ -31,6 +32,39 @@ describe('useItemSnapshot', () => {
     expect(result.current.data!.items).toEqual(sampleItems);
     expect(live$).not.toHaveBeenCalled();
     expect(static$).not.toHaveBeenCalled();
+  });
+
+  it('keeps the cache when the manifest cannot be read (offline-safe)', async () => {
+    vi.spyOn(cache, 'getAllCachedItems').mockResolvedValue(sampleItems);
+    vi.spyOn(cache, 'getItemSnapshotUpdatedAt').mockResolvedValue(123);
+    vi.spyOn(staticLoader, 'loadSnapshotManifestBakedAt').mockResolvedValue(null);
+    const static$ = vi.spyOn(staticLoader, 'loadStaticItemsSnapshot').mockResolvedValue(null);
+
+    const { result } = renderHook(() => useItemSnapshot(), { wrapper: wrapper() });
+    await waitFor(() => expect(result.current.data).toBeDefined());
+    expect(result.current.data!.items).toEqual(sampleItems);
+    expect(static$).not.toHaveBeenCalled();
+  });
+
+  it('re-hydrates from the static bundle when a newer bake has shipped', async () => {
+    const staleItems = [{ id: 1, name: 'old', sc: 1, ui: 1, ilvl: 1, canHq: false }];
+    const freshItems = [
+      { id: 1, name: 'old', sc: 1, ui: 1, ilvl: 1, canHq: false },
+      { id: 2, name: 'NEW patch item', sc: 1, ui: 1, ilvl: 1, canHq: false },
+    ];
+    vi.spyOn(cache, 'getAllCachedItems').mockResolvedValue(staleItems);
+    vi.spyOn(cache, 'getItemSnapshotUpdatedAt').mockResolvedValue(100);
+    vi.spyOn(staticLoader, 'loadSnapshotManifestBakedAt').mockResolvedValue(999);
+    const put = vi.spyOn(cache, 'putCachedItems').mockResolvedValue();
+    vi.spyOn(staticLoader, 'loadStaticItemsSnapshot').mockResolvedValue({ bakedAt: 999, data: freshItems });
+    const live$ = vi.spyOn(live, 'fetchItemSnapshot').mockResolvedValue([]);
+
+    const { result } = renderHook(() => useItemSnapshot(), { wrapper: wrapper() });
+    await waitFor(() => expect(result.current.data).toBeDefined());
+    expect(result.current.data!.items).toEqual(freshItems);
+    expect(result.current.data!.updatedAt).toBe(999);
+    expect(put).toHaveBeenCalledWith(freshItems, 999);
+    expect(live$).not.toHaveBeenCalled();
   });
 
   it('falls back to static bundle when cache empty', async () => {
