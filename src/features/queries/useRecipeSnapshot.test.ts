@@ -33,4 +33,18 @@ describe('useRecipeSnapshot', () => {
     expect(put).toHaveBeenCalledWith(sample, 555);
     expect(live$).not.toHaveBeenCalled();
   });
+
+  it('re-hydrates from the static bundle when a newer bake has shipped', async () => {
+    const staleEntries: Array<[number, Recipe]> = [];
+    vi.spyOn(cache, 'getCachedRecipeSnapshot').mockResolvedValue(staleEntries);
+    vi.spyOn(cache, 'getRecipeSnapshotUpdatedAt').mockResolvedValue(100);
+    vi.spyOn(staticLoader, 'loadSnapshotManifestBakedAt').mockResolvedValue(999);
+    const put = vi.spyOn(cache, 'putCachedRecipeSnapshot').mockResolvedValue();
+    vi.spyOn(staticLoader, 'loadStaticRecipesSnapshot').mockResolvedValue({ bakedAt: 999, data: new Map(sample) });
+
+    const { result } = renderHook(() => useRecipeSnapshot(), { wrapper: wrapper() });
+    await waitFor(() => expect(result.current.data).toBeDefined());
+    expect([...result.current.data!.entries()]).toEqual(sample);
+    expect(put).toHaveBeenCalledWith(sample, 999);
+  });
 });

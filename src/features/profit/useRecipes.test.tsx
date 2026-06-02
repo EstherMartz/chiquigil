@@ -20,6 +20,10 @@ beforeEach(async () => {
   await clearRecipeSnapshot();
   // Mock static snapshot loader to return null so tests use mocked fetch instead.
   vi.spyOn(staticLoader, 'loadStaticRecipesSnapshot').mockResolvedValue(null);
+  // The snapshot hook now does a freshness check (manifest bakedAt vs cached
+  // ts) on cache hits; stub it to null ("can't tell → keep cache") so it
+  // doesn't make a real manifest fetch through the tests' stubbed global fetch.
+  vi.spyOn(staticLoader, 'loadSnapshotManifestBakedAt').mockResolvedValue(null);
 });
 
 describe('useRecipes (snapshot-backed)', () => {

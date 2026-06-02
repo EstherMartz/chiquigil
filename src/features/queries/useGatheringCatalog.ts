@@ -1,12 +1,18 @@
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { buildGatheringCatalog, type GatheringCatalog } from '../../lib/gatheringCatalog';
-import { getCachedGatheringCatalog, putCachedGatheringCatalog } from '../../lib/recipeCache';
-import { loadStaticGatheringCatalog } from '../../lib/staticSnapshots';
+import { getCachedGatheringCatalog, putCachedGatheringCatalog, getGatheringCatalogUpdatedAt } from '../../lib/recipeCache';
+import { loadStaticGatheringCatalog, loadSnapshotManifestBakedAt } from '../../lib/staticSnapshots';
 
 async function resolve(setProgress: (msg: string) => void): Promise<GatheringCatalog> {
   const cached = await getCachedGatheringCatalog();
-  if (cached) return new Map(cached);
+  if (cached) {
+    // Re-hydrate from the bundle when a newer bake has shipped; null
+    // manifest/ts means "can't tell" → keep the cache (offline-safe).
+    const ts = await getGatheringCatalogUpdatedAt();
+    const bundleBakedAt = await loadSnapshotManifestBakedAt();
+    if (bundleBakedAt == null || ts == null || bundleBakedAt <= ts) return new Map(cached);
+  }
 
   const bundled = await loadStaticGatheringCatalog();
   if (bundled) {

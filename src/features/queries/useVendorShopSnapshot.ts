@@ -7,7 +7,7 @@ import {
   getVendorSnapshotUpdatedAt,
 } from '../../lib/recipeCache';
 import { fetchVendorSnapshot } from '../../lib/vendorShopSnapshot';
-import { loadStaticVendorSnapshot } from '../../lib/staticSnapshots';
+import { loadStaticVendorSnapshot, loadSnapshotManifestBakedAt } from '../../lib/staticSnapshots';
 
 const QUERY_KEY = ['vendorSnapshot'] as const;
 
@@ -22,7 +22,14 @@ export function useVendorShopSnapshot() {
     queryFn: async () => {
       const cached = await getCachedVendorSnapshot();
       const ts = await getVendorSnapshotUpdatedAt();
-      if (cached) return { snapshot: cached, updatedAt: ts ?? null };
+      if (cached) {
+        // Re-hydrate from the bundle when a newer bake has shipped; null
+        // manifest/ts means "can't tell" → keep the cache (offline-safe).
+        const bundleBakedAt = await loadSnapshotManifestBakedAt();
+        if (bundleBakedAt == null || ts == null || bundleBakedAt <= ts) {
+          return { snapshot: cached, updatedAt: ts ?? null };
+        }
+      }
 
       const bundled = await loadStaticVendorSnapshot();
       if (bundled) {

@@ -6,6 +6,7 @@ import type { SnapshotQuest } from '../../lib/questSnapshot';
 
 vi.mock('../../lib/staticSnapshots', () => ({
   loadStaticQuestSnapshot: vi.fn(),
+  loadSnapshotManifestBakedAt: vi.fn(),
 }));
 
 vi.mock('../../lib/recipeCache', () => ({
@@ -19,7 +20,7 @@ vi.mock('../../lib/questSnapshot', () => ({
   fetchQuestSnapshot: vi.fn(),
 }));
 
-import { loadStaticQuestSnapshot } from '../../lib/staticSnapshots';
+import { loadStaticQuestSnapshot, loadSnapshotManifestBakedAt } from '../../lib/staticSnapshots';
 import { getCachedQuests, getQuestSnapshotUpdatedAt, putCachedQuests } from '../../lib/recipeCache';
 import { fetchQuestSnapshot } from '../../lib/questSnapshot';
 
@@ -49,11 +50,29 @@ describe('useQuestSnapshot', () => {
     }];
     vi.mocked(getCachedQuests).mockResolvedValue(cached);
     vi.mocked(getQuestSnapshotUpdatedAt).mockResolvedValue(123);
+    vi.mocked(loadSnapshotManifestBakedAt).mockResolvedValue(123); // not newer → keep cache
 
     let observed: SnapshotQuest[] | undefined;
     renderProbe((v) => { observed = v; });
     await waitFor(() => expect(observed).toEqual(cached));
     expect(loadStaticQuestSnapshot).not.toHaveBeenCalled();
+    expect(fetchQuestSnapshot).not.toHaveBeenCalled();
+  });
+
+  it('re-hydrates from the static bundle when a newer bake has shipped', async () => {
+    const stale: SnapshotQuest[] = [];
+    const fresh: SnapshotQuest[] = [{
+      questId: 9, questName: 'NEW', categoryName: 'Carpenter', level: 1, requiredItems: [],
+    }];
+    vi.mocked(getCachedQuests).mockResolvedValue(stale);
+    vi.mocked(getQuestSnapshotUpdatedAt).mockResolvedValue(100);
+    vi.mocked(loadSnapshotManifestBakedAt).mockResolvedValue(999); // newer → re-hydrate
+    vi.mocked(loadStaticQuestSnapshot).mockResolvedValue({ data: fresh, bakedAt: 999 });
+
+    let observed: SnapshotQuest[] | undefined;
+    renderProbe((v) => { observed = v; });
+    await waitFor(() => expect(observed).toEqual(fresh));
+    expect(putCachedQuests).toHaveBeenCalledWith(fresh, 999);
     expect(fetchQuestSnapshot).not.toHaveBeenCalled();
   });
 

@@ -7,7 +7,7 @@ import {
   getQuestSnapshotUpdatedAt,
 } from '../../lib/recipeCache';
 import { fetchQuestSnapshot, type SnapshotQuest } from '../../lib/questSnapshot';
-import { loadStaticQuestSnapshot } from '../../lib/staticSnapshots';
+import { loadStaticQuestSnapshot, loadSnapshotManifestBakedAt } from '../../lib/staticSnapshots';
 
 const QUERY_KEY = ['questSnapshot'] as const;
 
@@ -22,7 +22,14 @@ export function useQuestSnapshot() {
     queryFn: async () => {
       const cached = await getCachedQuests();
       const ts = await getQuestSnapshotUpdatedAt();
-      if (cached) return { snapshot: cached, updatedAt: ts ?? null };
+      if (cached) {
+        // Re-hydrate from the bundle when a newer bake has shipped; null
+        // manifest/ts means "can't tell" → keep the cache (offline-safe).
+        const bundleBakedAt = await loadSnapshotManifestBakedAt();
+        if (bundleBakedAt == null || ts == null || bundleBakedAt <= ts) {
+          return { snapshot: cached, updatedAt: ts ?? null };
+        }
+      }
 
       const bundled = await loadStaticQuestSnapshot();
       if (bundled) {

@@ -31,4 +31,18 @@ describe('useGatheringCatalog', () => {
     expect(put).toHaveBeenCalledWith([[1, { level: 50, timed: false, hidden: false }]], 222);
     expect(live$).not.toHaveBeenCalled();
   });
+
+  it('re-hydrates from the static bundle when a newer bake has shipped', async () => {
+    const fresh = new Map([[1, { level: 50, timed: false, hidden: false }]]);
+    vi.spyOn(cache, 'getCachedGatheringCatalog').mockResolvedValue([]);
+    vi.spyOn(cache, 'getGatheringCatalogUpdatedAt').mockResolvedValue(100);
+    vi.spyOn(staticLoader, 'loadSnapshotManifestBakedAt').mockResolvedValue(999);
+    const put = vi.spyOn(cache, 'putCachedGatheringCatalog').mockResolvedValue();
+    vi.spyOn(staticLoader, 'loadStaticGatheringCatalog').mockResolvedValue({ bakedAt: 999, data: fresh });
+
+    const { result } = renderHook(() => useGatheringCatalog(), { wrapper: wrapper() });
+    await waitFor(() => expect(result.current.data).toBeDefined());
+    expect(result.current.data!.get(1)?.level).toBe(50);
+    expect(put).toHaveBeenCalledWith([[1, { level: 50, timed: false, hidden: false }]], 999);
+  });
 });
