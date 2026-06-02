@@ -24,6 +24,7 @@ import GcSeals from './routes/GcSeals';
 import ShoppingList from './routes/ShoppingList';
 import VendorFlip from './routes/VendorFlip';
 import EmptyShelf from './routes/EmptyShelf';
+import WhatsNew from './routes/WhatsNew';
 import CurrencyFlip from './routes/CurrencyFlip';
 import Cleanup from './routes/Cleanup';
 import CraftFromInventory from './routes/CraftFromInventory';
@@ -52,6 +53,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/shopping-list': 'Craft Helper',
   '/vendor-flip': 'Vendor Flip',
   '/empty-shelf': 'Empty Shelf',
+  '/whats-new': "What's New",
   '/housing': 'Housing',
   '/currency-flip': 'Currencies',
   '/gc-seals': 'GC Seals',
@@ -122,6 +124,7 @@ export default function App() {
                       <Route path="/craft-helper" element={<Navigate to="/shopping-list" replace />} />
                       <Route path="/vendor-flip" element={<VendorFlip />} />
                       <Route path="/empty-shelf" element={<EmptyShelf />} />
+                      <Route path="/whats-new" element={<WhatsNew />} />
                       <Route path="/housing" element={<Housing />} />
                       <Route path="/currency-flip" element={<CurrencyFlip />} />
                       <Route path="/gc-seals" element={<GcSeals />} />
