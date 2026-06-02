@@ -8,7 +8,7 @@
  * The runtime hooks fall back to live fetch if a bundle is missing, so
  * partial bakes are safe.
  */
-import { writeFile, mkdir } from 'node:fs/promises';
+import { writeFile, mkdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import { fetchItemSnapshot } from '../src/lib/itemSnapshot';
@@ -20,6 +20,7 @@ import { fetchSpecialShopSnapshot } from '../src/lib/specialShopSnapshot';
 import { buildGatheringCatalog } from '../src/lib/gatheringCatalog';
 import { fetchCompanyCraftSnapshot } from '../src/lib/companyCraftSnapshot';
 import { currencyByItemId } from '../src/lib/currencies';
+import { newIdsSince } from './whatsNewDiff';
 
 const OUT_DIR = join(process.cwd(), 'public', 'data', 'snapshots');
 
@@ -118,8 +119,53 @@ async function bakeCompanyCraft(bakedAt: number, namesById: Map<number, string>)
   return map.size;
 }
 
+/** Read IDs from an existing on-disk bundle; empty + null bakedAt if absent (first bake). */
+async function readPriorItemIds(): Promise<{ ids: number[]; bakedAt: number | null }> {
+  try {
+    const raw = JSON.parse(await readFile(join(OUT_DIR, 'items.json'), 'utf-8')) as {
+      bakedAt: number; items: Array<{ id: number }>;
+    };
+    return { ids: raw.items.map((i) => i.id), bakedAt: raw.bakedAt };
+  } catch {
+    return { ids: [], bakedAt: null };
+  }
+}
+
+async function readPriorRecipeKeys(): Promise<number[]> {
+  try {
+    const raw = JSON.parse(await readFile(join(OUT_DIR, 'recipes.json'), 'utf-8')) as {
+      entries: Array<[number, unknown]>;
+    };
+    return raw.entries.map(([id]) => id);
+  } catch {
+    return [];
+  }
+}
+
+async function bakeWhatsNew(
+  bakedAt: number,
+  prevBakedAt: number | null,
+  priorItemIds: number[],
+  priorRecipeKeys: number[],
+  curItemIds: number[],
+  curRecipeKeys: number[],
+) {
+  const bundle = {
+    bakedAt,
+    prevBakedAt,
+    newItems: newIdsSince(priorItemIds, curItemIds),
+    newRecipeItems: newIdsSince(priorRecipeKeys, curRecipeKeys),
+  };
+  await writeFile(join(OUT_DIR, 'whatsNew.json'), JSON.stringify(bundle));
+  log('whatsNew', `wrote ${bundle.newItems.length} new items, ${bundle.newRecipeItems.length} new recipes`);
+  return { newItems: bundle.newItems.length, newRecipeItems: bundle.newRecipeItems.length };
+}
+
 async function main() {
   await mkdir(OUT_DIR, { recursive: true });
+  // Capture the PREVIOUS bake's IDs before bakeItems/bakeRecipes overwrite them.
+  const prior = await readPriorItemIds();
+  const priorRecipeKeys = await readPriorRecipeKeys();
   const bakedAt = Date.now();
   const bakedAtIso = new Date(bakedAt).toISOString();
 
@@ -132,17 +178,25 @@ async function main() {
   const quests = await bakeQuests(bakedAt);
 
   // Read baked items back to build names map for CompanyCraft.
-  const { readFile } = await import('node:fs/promises');
   const itemsRaw = JSON.parse(await readFile(join(OUT_DIR, 'items.json'), 'utf-8')) as {
     items: Array<{ id: number; name: string }>;
   };
   const namesById = new Map<number, string>(itemsRaw.items.map((i) => [i.id, i.name]));
   const companyCraft = await bakeCompanyCraft(bakedAt, namesById);
 
+  const curItemIds = itemsRaw.items.map((i) => i.id);
+  const curRecipesRaw = JSON.parse(await readFile(join(OUT_DIR, 'recipes.json'), 'utf-8')) as {
+    entries: Array<[number, unknown]>;
+  };
+  const curRecipeKeys = curRecipesRaw.entries.map(([id]) => id);
+  const whatsNew = await bakeWhatsNew(
+    bakedAt, prior.bakedAt, prior.ids, priorRecipeKeys, curItemIds, curRecipeKeys,
+  );
+
   const manifest = {
     bakedAt,
     bakedAtIso,
-    counts: { items, recipes, leves, vendorShop: vendor, specialShop: special, gathering, quests, companyCraft },
+    counts: { items, recipes, leves, vendorShop: vendor, specialShop: special, gathering, quests, companyCraft, whatsNew },
   };
   await writeFile(join(OUT_DIR, 'manifest.json'), JSON.stringify(manifest, null, 2));
   log('manifest', `bake complete at ${bakedAtIso}`);

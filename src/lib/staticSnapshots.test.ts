@@ -6,6 +6,7 @@ import {
   loadStaticSpecialShopSnapshot,
   loadStaticGatheringCatalog,
   loadStaticLevesSnapshot,
+  loadStaticWhatsNewSnapshot,
 } from './staticSnapshots';
 
 const origFetch = globalThis.fetch;
@@ -91,5 +92,26 @@ describe('loadStaticLevesSnapshot', () => {
     });
     const got = await loadStaticLevesSnapshot();
     expect(got!.data).toHaveLength(1);
+  });
+});
+
+describe('loadStaticWhatsNewSnapshot', () => {
+  it('maps the bundle into StaticBundle<WhatsNewData>', async () => {
+    mockFetch({
+      '/data/snapshots/whatsNew.json': {
+        status: 200,
+        body: { bakedAt: 123, prevBakedAt: 100, newItems: [7, 8], newRecipeItems: [9] },
+      },
+    });
+    const got = await loadStaticWhatsNewSnapshot();
+    expect(got).toEqual({
+      bakedAt: 123,
+      data: { prevBakedAt: 100, newItems: [7, 8], newRecipeItems: [9] },
+    });
+  });
+
+  it('returns null when the bundle is missing', async () => {
+    mockFetch({});
+    expect(await loadStaticWhatsNewSnapshot()).toBeNull();
   });
 });
