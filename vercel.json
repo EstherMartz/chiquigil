@@ -37,6 +37,7 @@
   },
   "rewrites": [
     { "source": "/api/projects/:id", "destination": "/api/projects" },
+    { "source": "/api/auth/admin/(.*)", "destination": "/api/auth" },
     { "source": "/api/auth/:action", "destination": "/api/auth" },
     { "source": "/api/plugin/claim", "destination": "/api/plugin-claim" },
     { "source": "/api/plugin/craftable", "destination": "/api/plugin-craftable" },
