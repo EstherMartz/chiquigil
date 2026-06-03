@@ -2,6 +2,8 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import {
   verifyState, signSession, serializeSessionCookie, allowedGuildsFor, oauthRedirectUri,
 } from '../_auth';
+import { decideAccess } from '../_access';
+import { getStore } from '../_store';
 
 function redirect(res: VercelResponse, location: string) {
   res.setHeader('Location', location);
@@ -51,11 +53,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const me = (await meRes.json()) as { id: string; username?: string; global_name?: string | null; avatar?: string | null };
     const guilds = (await guildsRes.json()) as Array<{ id: string }>;
 
-    // 3. Authorize against the allow-list.
+    // 3. Authorize: combine guild membership with any per-user override.
     const allowed = allowedGuildsFor(guilds.map((g) => g.id));
-    if (allowed.length === 0) return redirect(res, '/login?error=not_authorized');
+    const store = await getStore();
+    const record = await store.getAppUser(me.id);
+    if (!decideAccess({ guildAllowed: allowed.length > 0, access: record?.access ?? null })) {
+      return redirect(res, '/login?error=not_authorized');
+    }
 
-    // 4. Mint the session cookie.
+    // 4. Record / refresh the login.
+    await store.upsertAppUser({
+      discordId: me.id,
+      username: me.global_name ?? me.username ?? me.id,
+      avatar: me.avatar ?? null,
+      guilds: allowed,
+    });
+
+    // 5. Mint the session cookie.
     const token = await signSession({
       sub: me.id,
       username: me.global_name ?? me.username ?? me.id,
