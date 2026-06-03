@@ -17,8 +17,8 @@ export default {
         'aether-soft': '#4a8a91',
         gold: '#d4a958',
         'gold-hi': '#f0c878',
-        crimson: '#c2604a',
-        jade: '#6ab06f',
+        crimson: '#c06a59',
+        jade: '#64b46b',
         // Crafter identity colors (FFXIV Disciples of the Hand).
         // Tuned to read on the dark card background without competing with
         // the gold/aether accents used for primary affordances.
