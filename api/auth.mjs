@@ -635,6 +635,15 @@ async function handler3(req, res) {
   if (!decideAccess({ guildAllowed: (user.guilds?.length ?? 0) > 0, access: record?.access ?? null })) {
     return res.status(401).json({ error: "Access revoked" });
   }
+  try {
+    await store.upsertAppUser({
+      discordId: user.sub,
+      username: user.username,
+      avatar: user.avatar,
+      guilds: user.guilds
+    });
+  } catch {
+  }
   return res.status(200).json({ user, isAdmin: isAdmin(user.sub) });
 }
 

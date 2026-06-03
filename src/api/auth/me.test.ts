@@ -53,6 +53,28 @@ describe('auth/me', () => {
     expect(res.statusCode).toBe(401);
   });
 
+  it('records/refreshes the active user in app_users on a successful poll', async () => {
+    const token = await signSession({ sub: '111', username: 'Esther', avatar: 'av', guilds: ['123'] });
+    const res = makeRes();
+    await meHandler(req('GET', `${SESSION_COOKIE}=${token}`), res);
+    expect(res.statusCode).toBe(200);
+    const rec = await store.getAppUser('111');
+    expect(rec).toMatchObject({ discordId: '111', username: 'Esther', avatar: 'av', access: 'default' });
+  });
+
+  it('does NOT record a blocked user (denied before recording)', async () => {
+    await store.upsertAppUser({ discordId: '222', username: 'Blocked', avatar: null, guilds: ['123'] });
+    await store.setUserAccess('222', 'block');
+    const before = (await store.getAppUser('222'))!;
+    const token = await signSession({ sub: '222', username: 'Blocked', avatar: null, guilds: ['123'] });
+    const res = makeRes();
+    await meHandler(req('GET', `${SESSION_COOKIE}=${token}`), res);
+    expect(res.statusCode).toBe(401);
+    const after = (await store.getAppUser('222'))!;
+    expect(after.lastSeen).toBe(before.lastSeen); // unchanged — not refreshed
+    expect(after.access).toBe('block');
+  });
+
   it('returns 401 when the user is blocked', async () => {
     await store.upsertAppUser({ discordId: '111', username: 'E', avatar: null, guilds: ['123'] });
     await store.setUserAccess('111', 'block');

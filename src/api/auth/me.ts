@@ -19,6 +19,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(401).json({ error: 'Access revoked' });
   }
 
+  // Record/refresh the user so the admin roster reflects everyone with an
+  // active session — not just those who logged in fresh after this shipped.
+  // `me` is the universal authenticated choke point (the SPA polls it on
+  // every load). Best-effort: a write hiccup must not flip an authed user to
+  // anon, so swallow errors here. upsert preserves access + first_seen and
+  // only refreshes username/avatar/guilds/last_seen.
+  try {
+    await store.upsertAppUser({
+      discordId: user.sub,
+      username: user.username,
+      avatar: user.avatar,
+      guilds: user.guilds,
+    });
+  } catch {
+    // best-effort roster recording
+  }
+
   return res.status(200).json({ user, isAdmin: isAdmin(user.sub) });
 }
 
