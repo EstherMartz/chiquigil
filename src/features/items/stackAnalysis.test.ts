@@ -144,6 +144,7 @@ describe('partitionStacks', () => {
     expect(shown.map((r) => r.stack)).toEqual([1, 2]);
     expect(rare).toMatchObject({ count: 10, totalSales: 10, totalListed: 0 });
     expect(rare!.sizes).toEqual([3, 4, 5, 6, 7, 8, 9, 10, 12, 16]);
+    expect(rare!.rows.map((r) => r.stack)).toEqual([3, 4, 5, 6, 7, 8, 9, 10, 12, 16]);
   });
 
   it('keeps a tiny gap stack visible', () => {

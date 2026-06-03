@@ -23,7 +23,32 @@ describe('StackAnalyzerView', () => {
     expect(screen.getByText('▼ listed now')).toBeInTheDocument();
     expect(screen.getByText(/~\/unit/i)).toBeInTheDocument(); // price-line legend marker
     // The gap caption names the recommended stack (stack 1 here: strong demand, nothing listed).
-    expect(screen.getByText(/gap/i)).toBeInTheDocument();
+    expect(screen.getByText(/gap at stack/i)).toBeInTheDocument();
+  });
+
+  it('labels the price extremes and keys the markers', () => {
+    const entries = [
+      sale(1, 3400, 10), sale(1, 3400, 11),
+      sale(2, 1500, 20), sale(2, 1500, 21),
+    ];
+    render(<StackAnalyzerView entries={entries} listings={[]} canHq={false} />);
+    // High end of the per-unit price range is labelled on the chart (caption shows the pick's price, not this one).
+    expect(screen.getByText(/~3\.4k/)).toBeInTheDocument();
+    // Marker key explains the ✓ and ▾ marks.
+    expect(screen.getByText('✓ supply gap · ▾ suggested to list')).toBeInTheDocument();
+  });
+
+  it('expands the rare chip to list the collapsed sizes and their volumes', () => {
+    const entries = [
+      ...Array.from({ length: 20 }, (_, k) => sale(1, 1000, k + 1)),
+      ...[3, 4, 5, 6, 7].map((s) => sale(s, 1000, 100 + s)),
+    ];
+    render(<StackAnalyzerView entries={entries} listings={[]} canHq={false} />);
+    expect(screen.queryByText(/rare sizes \(\d+\)/i)).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: /rare sizes/i }));
+    expect(screen.getByText(/rare sizes \(5\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/^3: 1 sold/)).toBeInTheDocument();
   });
 
   it('collapses the low-volume tail into a rare-sizes chip', () => {
