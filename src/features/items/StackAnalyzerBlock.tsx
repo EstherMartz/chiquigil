@@ -71,9 +71,11 @@ export function StackDemandSupplyChart({ rows }: { rows: MergedStackRow[] }) {
   const maxSales = Math.max(1, ...rows.map((r) => r.sales));
   const maxListed = Math.max(1, ...rows.map((r) => r.listedCount));
 
+  const COLS = 'grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]';
+
   return (
-    <div className="border border-border-base bg-bg-card overflow-x-auto">
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-x-2 px-3 py-2 font-mono text-[10px] tracking-widest uppercase text-text-low border-b border-border-base">
+    <div className="border border-border-base bg-bg-card overflow-hidden">
+      <div className={`grid ${COLS} items-center gap-x-3 px-3 py-2 font-mono text-[10px] tracking-widest uppercase text-text-low border-b border-border-base`}>
         <div className="text-right">Sold · 90d</div>
         <div className="text-center">Stack</div>
         <div className="text-left">Listed now</div>
@@ -81,24 +83,30 @@ export function StackDemandSupplyChart({ rows }: { rows: MergedStackRow[] }) {
       {rows.map((r) => (
         <div
           key={r.stack}
-          className={`grid grid-cols-[1fr_auto_1fr] items-center gap-x-2 px-3 py-1.5 border-t border-border-base ${r.isGap ? 'bg-jade/10' : ''}`}
+          className={`grid ${COLS} items-center gap-x-3 px-3 py-1.5 border-t border-border-base ${r.isGap ? 'bg-jade/10' : ''}`}
         >
-          {/* Demand — right-aligned, bar grows left */}
-          <div className="flex items-center justify-end gap-2 min-w-0">
-            {r.sales > 0 ? (
-              <>
-                <span className="font-mono text-text-low text-[11px] shrink-0">{fmtGil(r.medianUnitPrice)}/u</span>
-                <span className="font-mono text-sm shrink-0">{r.sales}</span>
+          {/* Demand — bar grows outward (left), value label hugs the center axis */}
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+            <div className="min-w-0">
+              {r.sales > 0 && (
                 <div
-                  className="bg-jade/40 h-3 shrink-0"
+                  className="bg-jade/40 h-3 ml-auto"
                   style={{ width: `${(r.sales / maxSales) * 100}%` }}
                   title={`Last sold ${fmtRelative(r.lastSoldMs)}`}
                   aria-hidden
                 />
-              </>
-            ) : (
-              <span className="font-mono text-text-low text-sm">—</span>
-            )}
+              )}
+            </div>
+            <div className="flex items-center gap-1.5 whitespace-nowrap justify-self-end">
+              {r.sales > 0 ? (
+                <>
+                  <span className="font-mono text-text-low text-[11px]">{fmtGil(r.medianUnitPrice)}/u</span>
+                  <span className="font-mono text-sm">{r.sales}</span>
+                </>
+              ) : (
+                <span className="font-mono text-text-low text-sm">—</span>
+              )}
+            </div>
           </div>
 
           {/* Center axis — stack size */}
@@ -107,20 +115,24 @@ export function StackDemandSupplyChart({ rows }: { rows: MergedStackRow[] }) {
             {r.isGap && <span className="text-jade ml-1" title="High demand, thin supply">✓ gap</span>}
           </div>
 
-          {/* Supply — left-aligned, bar grows right */}
-          <div className="flex items-center justify-start gap-2 min-w-0">
-            {r.listedCount > 0 ? (
-              <>
+          {/* Supply — value label hugs the center axis, bar grows outward (right) */}
+          <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2">
+            <div className="flex items-center gap-1.5 whitespace-nowrap justify-self-start">
+              {r.listedCount > 0 ? (
+                <span className="font-mono text-sm">{r.listedCount}</span>
+              ) : (
+                <span className="font-mono text-text-low text-sm">—</span>
+              )}
+            </div>
+            <div className="min-w-0">
+              {r.listedCount > 0 && (
                 <div
-                  className="bg-aether/40 h-3 shrink-0"
+                  className="bg-aether/40 h-3 mr-auto"
                   style={{ width: `${(r.listedCount / maxListed) * 100}%` }}
                   aria-hidden
                 />
-                <span className="font-mono text-sm shrink-0">{r.listedCount}</span>
-              </>
-            ) : (
-              <span className="font-mono text-text-low text-sm">—</span>
-            )}
+              )}
+            </div>
           </div>
         </div>
       ))}
