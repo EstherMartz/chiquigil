@@ -71,6 +71,48 @@ export function isStackable(sold: SoldStackRow[], listed: ListedStackRow[]): boo
   return sold.some((r) => r.stack > 1) || listed.some((r) => r.stack > 1);
 }
 
+export interface MergedStackRow {
+  stack: number;
+  sales: number;
+  units: number;
+  medianUnitPrice: number;
+  lastSoldMs: number;
+  listedCount: number;
+  isGap: boolean;
+}
+
+/**
+ * Fold the demand (sold) and supply (listed) facets into one per-stack-size view,
+ * sorted ascending over the union of sizes. Drives the diverging demand↔supply chart.
+ * `isGap` reuses the analyzer's rule: meaningful demand (`sales >= max(2, 0.15 * total)`)
+ * meeting thin current supply (`listedCount <= 1`).
+ */
+export function mergeStacks(sold: SoldStackRow[], listed: ListedStackRow[]): MergedStackRow[] {
+  const soldByStackSize = new Map(sold.map((r) => [r.stack, r]));
+  const listedCountByStack = new Map(listed.map((r) => [r.stack, r.count]));
+  const totalSales = sold.reduce((s, r) => s + r.sales, 0);
+  const gapThreshold = Math.max(2, totalSales * 0.15);
+
+  const sizes = [...new Set([...soldByStackSize.keys(), ...listedCountByStack.keys()])].sort(
+    (a, b) => a - b,
+  );
+
+  return sizes.map((stack) => {
+    const d = soldByStackSize.get(stack);
+    const listedCount = listedCountByStack.get(stack) ?? 0;
+    const sales = d?.sales ?? 0;
+    return {
+      stack,
+      sales,
+      units: d?.units ?? 0,
+      medianUnitPrice: d?.medianUnitPrice ?? 0,
+      lastSoldMs: d?.lastSoldMs ?? 0,
+      listedCount,
+      isGap: sales >= gapThreshold && listedCount <= 1,
+    };
+  });
+}
+
 export interface StackSuggestion {
   stack: number;
   unitPrice: number;

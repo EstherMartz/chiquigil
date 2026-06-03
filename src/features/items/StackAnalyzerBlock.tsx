@@ -6,7 +6,7 @@ import { SectionHeader } from '../../components/SectionHeader';
 import { Spinner } from '../../components/Spinner';
 import { QualityTab } from './QualityTab';
 import { fmtGil, fmtRelative } from '../../lib/format';
-import { soldByStack, listedByStack, isStackable, type SoldStackRow } from './stackAnalysis';
+import { soldByStack, listedByStack, isStackable, mergeStacks, type MergedStackRow } from './stackAnalysis';
 
 const NINETY_DAYS_SEC = 90 * 24 * 60 * 60;
 
@@ -40,13 +40,7 @@ export function StackAnalyzerView({ entries, listings, canHq }: ViewProps) {
   const sold = soldByStack(entries, hq);
   const listed = listedByStack(listings, hq);
   const stackable = isStackable(sold, listed);
-
-  const totalSales = sold.reduce((s, r) => s + r.sales, 0);
-  const listedCountByStack = new Map(listed.map((r) => [r.stack, r.count]));
-  const gapThreshold = Math.max(2, totalSales * 0.15);
-  const isGap = (r: SoldStackRow) =>
-    r.sales >= gapThreshold && (listedCountByStack.get(r.stack) ?? 0) <= 1;
-  const maxListed = listed.reduce((m, r) => Math.max(m, r.count), 0);
+  const rows = mergeStacks(sold, listed);
 
   return (
     <div>
@@ -61,77 +55,75 @@ export function StackAnalyzerView({ entries, listings, canHq }: ViewProps) {
         <div className="border border-border-base bg-bg-card p-4 text-text-low text-sm italic">
           Always sold as single units — stack analysis doesn't apply.
         </div>
+      ) : rows.length === 0 ? (
+        <div className="border border-border-base bg-bg-card p-4 text-text-low text-sm italic">
+          No {hq ? 'HQ' : 'NQ'} data in the last 90 days.
+        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="border border-border-base bg-bg-card overflow-x-auto">
-            <div className="px-3 py-2 font-mono text-[10px] tracking-widest uppercase text-text-low border-b border-border-base">
-              Sold · last 90d {hq ? '(HQ)' : '(NQ)'}
-            </div>
-            {sold.length === 0 ? (
-              <div className="p-4 text-text-low text-sm italic">No {hq ? 'HQ' : 'NQ'} sales in the last 90 days.</div>
+        <StackDemandSupplyChart rows={rows} />
+      )}
+    </div>
+  );
+}
+
+/** Diverging per-stack chart: demand (90-day sales) grows left, supply (live listings) grows right. */
+export function StackDemandSupplyChart({ rows }: { rows: MergedStackRow[] }) {
+  const maxSales = Math.max(1, ...rows.map((r) => r.sales));
+  const maxListed = Math.max(1, ...rows.map((r) => r.listedCount));
+
+  return (
+    <div className="border border-border-base bg-bg-card overflow-x-auto">
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-x-2 px-3 py-2 font-mono text-[10px] tracking-widest uppercase text-text-low border-b border-border-base">
+        <div className="text-right">Sold · 90d</div>
+        <div className="text-center">Stack</div>
+        <div className="text-left">Listed now</div>
+      </div>
+      {rows.map((r) => (
+        <div
+          key={r.stack}
+          className={`grid grid-cols-[1fr_auto_1fr] items-center gap-x-2 px-3 py-1.5 border-t border-border-base ${r.isGap ? 'bg-jade/10' : ''}`}
+        >
+          {/* Demand — right-aligned, bar grows left */}
+          <div className="flex items-center justify-end gap-2 min-w-0">
+            {r.sales > 0 ? (
+              <>
+                <span className="font-mono text-text-low text-[11px] shrink-0">{fmtGil(r.medianUnitPrice)}/u</span>
+                <span className="font-mono text-sm shrink-0">{r.sales}</span>
+                <div
+                  className="bg-jade/40 h-3 shrink-0"
+                  style={{ width: `${(r.sales / maxSales) * 100}%` }}
+                  title={`Last sold ${fmtRelative(r.lastSoldMs)}`}
+                  aria-hidden
+                />
+              </>
             ) : (
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-text-low font-mono text-[10px] tracking-widest uppercase">
-                    <th className="text-right px-3 py-2">Stack</th>
-                    <th className="text-right px-3 py-2">Sales</th>
-                    <th className="text-right px-3 py-2">Units</th>
-                    <th className="text-right px-3 py-2">~/unit</th>
-                    <th className="text-right px-3 py-2">Last sold</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sold.map((r) => {
-                    const gap = isGap(r);
-                    return (
-                      <tr key={r.stack} className={`border-t border-border-base ${gap ? 'bg-jade/10' : ''}`}>
-                        <td className="px-3 py-2 text-right font-mono text-text-cream">
-                          {r.stack}
-                          {gap && <span className="text-jade ml-1" title="High demand, thin supply">↙ gap</span>}
-                        </td>
-                        <td className="px-3 py-2 text-right font-mono">{r.sales}</td>
-                        <td className="px-3 py-2 text-right font-mono text-text-low">{r.units}</td>
-                        <td className="px-3 py-2 text-right font-mono">{fmtGil(r.medianUnitPrice)}</td>
-                        <td className="px-3 py-2 text-right font-mono text-text-low">{fmtRelative(r.lastSoldMs)}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+              <span className="font-mono text-text-low text-sm">—</span>
             )}
           </div>
 
-          <div className="border border-border-base bg-bg-card overflow-x-auto">
-            <div className="px-3 py-2 font-mono text-[10px] tracking-widest uppercase text-text-low border-b border-border-base">
-              Listed now {hq ? '(HQ)' : '(NQ)'}
-            </div>
-            {listed.length === 0 ? (
-              <div className="p-4 text-text-low text-sm italic">No {hq ? 'HQ' : 'NQ'} listings.</div>
+          {/* Center axis — stack size */}
+          <div className="text-center font-mono text-text-cream whitespace-nowrap px-1">
+            {r.stack}
+            {r.isGap && <span className="text-jade ml-1" title="High demand, thin supply">✓ gap</span>}
+          </div>
+
+          {/* Supply — left-aligned, bar grows right */}
+          <div className="flex items-center justify-start gap-2 min-w-0">
+            {r.listedCount > 0 ? (
+              <>
+                <div
+                  className="bg-aether/40 h-3 shrink-0"
+                  style={{ width: `${(r.listedCount / maxListed) * 100}%` }}
+                  aria-hidden
+                />
+                <span className="font-mono text-sm shrink-0">{r.listedCount}</span>
+              </>
             ) : (
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-text-low font-mono text-[10px] tracking-widest uppercase">
-                    <th className="text-right px-3 py-2">Stack</th>
-                    <th className="text-left px-3 py-2 w-1/2">Depth</th>
-                    <th className="text-right px-3 py-2">Listings</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {listed.map((r) => (
-                    <tr key={r.stack} className="border-t border-border-base">
-                      <td className="px-3 py-2 text-right font-mono text-text-cream">{r.stack}</td>
-                      <td className="px-3 py-2">
-                        <div className="bg-aether/40 h-3" style={{ width: `${maxListed ? (r.count / maxListed) * 100 : 0}%` }} aria-hidden />
-                      </td>
-                      <td className="px-3 py-2 text-right font-mono">{r.count}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <span className="font-mono text-text-low text-sm">—</span>
             )}
           </div>
         </div>
-      )}
+      ))}
     </div>
   );
 }

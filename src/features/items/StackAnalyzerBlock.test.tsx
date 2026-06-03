@@ -19,7 +19,7 @@ describe('StackAnalyzerView', () => {
     const listings = [ls(99, 790), ls(99, 800)];
     render(<StackAnalyzerView entries={entries} listings={listings} canHq={false} />);
 
-    expect(screen.getByText(/Sold · last 90d/i)).toBeInTheDocument();
+    expect(screen.getByText(/Sold · 90d/i)).toBeInTheDocument();
     expect(screen.getByText(/Listed now/i)).toBeInTheDocument();
     expect(screen.getByText(/gap/i)).toBeInTheDocument();
   });
@@ -41,6 +41,6 @@ describe('StackAnalyzerView', () => {
     render(<StackAnalyzerView entries={entries} listings={listings} canHq />);
     expect(screen.getByText(/Always sold as single units/i)).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'HQ' }));
-    expect(screen.getByText(/Sold · last 90d/i)).toBeInTheDocument();
+    expect(screen.getByText(/Sold · 90d/i)).toBeInTheDocument();
   });
 });
