@@ -8,7 +8,7 @@ export default {
         'bg-deep': '#0a0d18',
         'bg-card': '#131725',
         'bg-card-hi': '#1a1f30',
-        'border-base': '#28304a',
+        'border-base': '#2f3858',
         'border-hi': '#3d476a',
         'text-cream': '#e8d8b0',
         'text-dim': '#9a9080',
