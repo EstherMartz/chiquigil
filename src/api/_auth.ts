@@ -112,6 +112,14 @@ export function allowedGuildsFor(userGuildIds: string[]): string[] {
   return userGuildIds.filter((id) => allow.has(id));
 }
 
+export function getAdminIds(): string[] {
+  return (process.env.ADMIN_USER_IDS ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+}
+
+export function isAdmin(sub: string): boolean {
+  return getAdminIds().includes(sub);
+}
+
 export async function requireSession(req: VercelRequest): Promise<SessionUser | null> {
   const jar = parseCookies(req.headers?.cookie);
   const token = jar[SESSION_COOKIE];
