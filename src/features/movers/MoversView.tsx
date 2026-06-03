@@ -182,7 +182,7 @@ export function MoversView() {
                       key={c.key}
                       onClick={() => toggleSort(c.key)}
                       aria-sort={sorted ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
-                      className={`px-3 py-2 cursor-pointer select-none ${c.align === 'right' ? 'text-right' : 'text-left'} ${sorted ? 'text-gold' : 'text-text-dim hover:text-aether'} ${'hideOnMobile' in c && c.hideOnMobile ? 'hidden md:table-cell' : ''}`}
+                      className={`px-3 py-2 cursor-pointer select-none ${c.align === 'right' ? 'text-right' : 'text-left'} ${sorted ? 'text-aether' : 'text-text-dim hover:text-aether'} ${'hideOnMobile' in c && c.hideOnMobile ? 'hidden md:table-cell' : ''}`}
                     >
                       {c.label}{arrow}
                     </th>

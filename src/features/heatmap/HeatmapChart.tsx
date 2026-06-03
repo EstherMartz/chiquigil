@@ -97,7 +97,7 @@ export function HeatmapChart({ cells }: { cells: HeatmapCell[] }) {
           return (
             <div
               key={r.id}
-              className={`absolute cursor-pointer overflow-hidden flex flex-col justify-center px-1.5 transition-[filter,outline] ${isSelected ? 'outline outline-2 outline-gold brightness-125 z-10' : 'border border-bg-deep/40 hover:brightness-125'}`}
+              className={`absolute cursor-pointer overflow-hidden flex flex-col justify-center px-1.5 transition-[filter,outline] ${isSelected ? 'outline outline-2 outline-aether brightness-125 z-10' : 'border border-bg-deep/40 hover:brightness-125'}`}
               style={{
                 left: r.x,
                 top: r.y,

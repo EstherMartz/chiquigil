@@ -68,7 +68,7 @@ export function WatchlistHeatmapTile({ items, market, recipes }: {
                 key={id}
                 onClick={() => setScope(id)}
                 className={`font-mono text-[10px] tracking-widest uppercase px-2 py-1 transition-colors ${
-                  scope === id ? 'text-gold' : 'text-text-dim hover:text-aether'
+                  scope === id ? 'text-aether' : 'text-text-dim hover:text-aether'
                 }`}
               >
                 {label}

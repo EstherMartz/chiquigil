@@ -101,7 +101,7 @@ function InlineDensityToggle() {
           onClick={() => setDensity(o.id)}
           title={o.title}
           className={`font-mono text-[10px] tracking-widest uppercase px-2.5 py-1 border-r border-border-base last:border-r-0 transition-colors ${
-            density === o.id ? 'bg-bg-card-hi text-gold' : 'text-text-dim hover:text-aether'
+            density === o.id ? 'bg-bg-card-hi text-aether' : 'text-text-dim hover:text-aether'
           }`}
         >
           {o.label}

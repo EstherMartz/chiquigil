@@ -4,7 +4,7 @@ import { AetheryteChip } from './AetheryteChip';
 
 const navClass = ({ isActive }: { isActive: boolean }) =>
   `px-3 py-2 font-mono text-xs tracking-widest uppercase transition-colors ${
-    isActive ? 'text-gold' : 'text-text-dim hover:text-aether'
+    isActive ? 'text-aether' : 'text-text-dim hover:text-aether'
   }`;
 
 export function Header() {

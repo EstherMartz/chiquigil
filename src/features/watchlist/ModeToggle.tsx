@@ -14,7 +14,7 @@ export function ModeToggle({ mode, onChange }: { mode: SuggestionMode; onChange:
           type="button"
           onClick={() => onChange(id)}
           className={`font-mono text-[10px] tracking-widest uppercase px-2 py-1 transition-colors ${
-            mode === id ? 'text-gold' : 'text-text-dim hover:text-aether'
+            mode === id ? 'text-aether' : 'text-text-dim hover:text-aether'
           }`}
         >
           {label}

@@ -213,7 +213,7 @@ export function WatchlistTable({ rows, onSelect, sparklineMap, sparklineLoading,
                   className={`px-3 py-2 bg-bg-card-hi font-mono text-[10px] tracking-widest uppercase ${
                     isClickable ? 'cursor-pointer' : ''
                   } select-none whitespace-nowrap sticky top-0 z-10 ${
-                    sorted ? 'text-gold' : isClickable ? 'text-text-dim hover:text-aether' : 'text-text-dim'
+                    sorted ? 'text-aether' : isClickable ? 'text-text-dim hover:text-aether' : 'text-text-dim'
                   } ${c.align === 'right' ? 'text-right' : 'text-left'} ${c.hideOnMobile ? 'hidden md:table-cell' : ''}`}
                 >
                   {c.tip ? (

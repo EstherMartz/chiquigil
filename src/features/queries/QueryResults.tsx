@@ -134,7 +134,7 @@ export function QueryResults({ rows, totalCandidates, skippedChunks, gatheringCa
                 const arrow = sorted ? (sortDir === 'asc' ? ' ▲' : ' ▼') : '';
                 const align = c.align === 'right' ? 'text-right' : 'text-left';
                 const hide = c.hideOnMobile ? 'hidden md:table-cell' : '';
-                const tone = sorted ? 'text-gold' : 'text-text-dim';
+                const tone = sorted ? 'text-aether' : 'text-text-dim';
                 const interactive = sortable ? 'cursor-pointer select-none hover:text-aether' : '';
                 const labelNode = c.hint ? (
                   <InfoTooltip label={c.hint}>{c.label}{arrow}</InfoTooltip>

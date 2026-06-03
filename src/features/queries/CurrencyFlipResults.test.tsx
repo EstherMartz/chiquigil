@@ -85,12 +85,12 @@ describe('CurrencyFlipResults', () => {
     expect(onSortChange).toHaveBeenCalledWith('velocity');
   });
 
-  it('marks the active sort header with the gold style + arrow', () => {
+  it('marks the active sort header with the aether style + arrow', () => {
     renderResults('salePrice');
     // Find the Sale column header (not table data)
     const headers = screen.getAllByText(/sale/i);
     const header = headers.find((el) => el.tagName === 'TH')!;
-    expect(header.className).toMatch(/text-gold/);
+    expect(header.className).toMatch(/text-aether/);
     expect(header.textContent).toContain('▼');
   });
 });

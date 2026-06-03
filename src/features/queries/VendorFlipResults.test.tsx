@@ -70,10 +70,10 @@ describe('VendorFlipResults', () => {
     expect(onSortChange).toHaveBeenCalledWith('markup');
   });
 
-  it('marks the active sort header with the gold style + arrow', () => {
+  it('marks the active sort header with the aether style + arrow', () => {
     renderResults('markup');
     const header = screen.getByText(/markup/i).closest('th')!;
-    expect(header.className).toMatch(/text-gold/);
+    expect(header.className).toMatch(/text-aether/);
     expect(header.textContent).toContain('▼');
   });
 });

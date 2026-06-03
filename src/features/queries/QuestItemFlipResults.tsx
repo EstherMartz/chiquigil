@@ -58,7 +58,7 @@ function SortableHeader({
       scope="col"
       className={`px-3 py-2 cursor-pointer select-none text-${align} ${
         hideOnMobile ? 'hidden md:table-cell' : ''
-      } ${active ? 'text-gold' : 'text-text-dim hover:text-aether'}`}
+      } ${active ? 'text-aether' : 'text-text-dim hover:text-aether'}`}
       onClick={onClick}
       aria-sort={active ? 'descending' : 'none'}
     >

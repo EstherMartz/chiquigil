@@ -5,7 +5,7 @@ import { usePluginBridge } from '../../features/plugin/usePluginBridge';
 const navItemClass = ({ isActive }: { isActive: boolean }) =>
   `block px-4 py-3 md:py-1.5 font-mono text-[13px] tracking-widest transition-colors border-l-[3px] ${
     isActive
-      ? 'text-gold border-l-gold bg-bg-card-hi/60'
+      ? 'text-aether border-l-aether bg-bg-card-hi/60'
       : 'text-text-dim border-l-transparent hover:text-text-cream hover:bg-bg-card-hi/30 active:bg-bg-card-hi'
   }`;
 

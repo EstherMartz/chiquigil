@@ -39,7 +39,7 @@ export function GilLeaderboard({ rows }: { rows: WatchlistRow[] }) {
                 key={id}
                 onClick={() => setTab(id)}
                 className={`font-mono text-[10px] tracking-widest uppercase px-2 py-1 transition-colors ${
-                  tab === id ? 'text-gold' : 'text-text-dim hover:text-aether'
+                  tab === id ? 'text-aether' : 'text-text-dim hover:text-aether'
                 }`}
               >
                 {label}

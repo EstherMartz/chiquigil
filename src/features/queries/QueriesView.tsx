@@ -187,7 +187,7 @@ export function QueriesView({ category, heading, onRowsChange, initialPresetId }
             <button
               onClick={() => applyPreset(p.id)}
               className={`font-mono text-[10px] tracking-widest uppercase px-3 py-2 border ${
-                activePresetId === p.id ? 'border-gold text-gold' : 'border-border-base text-text-dim hover:text-aether'
+                activePresetId === p.id ? 'border-aether text-aether' : 'border-border-base text-text-dim hover:text-aether'
               }`}
             >
               {p.label}

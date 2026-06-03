@@ -36,7 +36,7 @@ function SortableHeader({ active, onClick, children, hideOnMobile = false }: {
 }) {
   return (
     <th
-      className={`px-3 py-2 cursor-pointer select-none text-right ${hideOnMobile ? 'hidden md:table-cell' : ''} ${active ? 'text-gold' : 'text-text-dim hover:text-aether'}`}
+      className={`px-3 py-2 cursor-pointer select-none text-right ${hideOnMobile ? 'hidden md:table-cell' : ''} ${active ? 'text-aether' : 'text-text-dim hover:text-aether'}`}
       onClick={onClick}
       aria-sort={active ? 'descending' : 'none'}
     >

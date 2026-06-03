@@ -14,7 +14,7 @@ export function FilterBar() {
             key={c}
             onClick={() => setCat(c)}
             className={`font-mono text-[11px] tracking-wider px-3.5 py-2 border-r border-border-base last:border-r-0 uppercase transition-colors whitespace-nowrap shrink-0 ${
-              catFilter === c ? 'bg-bg-card-hi text-gold' : 'text-text-dim hover:text-aether'
+              catFilter === c ? 'bg-bg-card-hi text-aether' : 'text-text-dim hover:text-aether'
             }`}
           >
             {c}
