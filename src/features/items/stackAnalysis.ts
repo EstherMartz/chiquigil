@@ -152,6 +152,7 @@ export interface RareSummary {
   sizes: number[];
   totalSales: number;
   totalListed: number;
+  rows: MergedStackRow[];
 }
 
 /** Share of total activity below which a stack size is folded into the "rare" tail. */
@@ -185,6 +186,7 @@ export function partitionStacks(
     sizes: rareRows.map((r) => r.stack),
     totalSales: rareRows.reduce((s, r) => s + r.sales, 0),
     totalListed: rareRows.reduce((s, r) => s + r.listedCount, 0),
+    rows: rareRows,
   };
   return { shown, rare };
 }

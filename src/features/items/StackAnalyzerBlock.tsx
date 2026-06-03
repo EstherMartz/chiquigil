@@ -109,6 +109,7 @@ export function StackDemandSupplyChart({
   const [hover, setHover] = useState<{ row: MergedStackRow; el: HTMLElement } | null>(null);
   const clearHover = (stack: number) =>
     setHover((h) => (h?.row.stack === stack ? null : h));
+  const [rareOpen, setRareOpen] = useState(false);
 
   // Price line: a gold ~/unit polyline over the demand band, on a secondary price scale.
   // Columns are equal-width (no flex gap), so x = i + 0.5 lands at each column centre.
@@ -124,6 +125,24 @@ export function StackDemandSupplyChart({
     else if (run.length) { segments.push(run); run = []; }
   });
   if (run.length) segments.push(run);
+
+  // Dots at every priced column; value labels only at the price extremes (the range).
+  type PricePoint = { i: number; price: number; y: number };
+  const pricePoints: PricePoint[] = shown
+    .map((r, i) => (r.sales > 0 ? { i, price: r.medianUnitPrice, y: priceY(r.medianUnitPrice) } : null))
+    .filter((p): p is PricePoint => p !== null);
+  const labelPoints: PricePoint[] = [];
+  if (pricePoints.length) {
+    if (priceMax === priceMin) {
+      labelPoints.push(pricePoints[0]);
+    } else {
+      labelPoints.push(
+        pricePoints.reduce((a, b) => (b.price > a.price ? b : a)),
+        pricePoints.reduce((a, b) => (b.price < a.price ? b : a)),
+      );
+    }
+  }
+  const colCenter = (i: number) => `${((i + 0.5) / n) * 100}%`;
 
   return (
     <div className="border border-border-base bg-bg-card">
@@ -204,27 +223,75 @@ export function StackDemandSupplyChart({
                 ))}
               </svg>
             )}
+
+            {/* Price dots (HTML — crisp, undistorted) */}
+            {pricePoints.map((p) => (
+              <div
+                key={`dot-${p.i}`}
+                className="absolute w-1.5 h-1.5 rounded-full bg-gold -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+                style={{ left: colCenter(p.i), top: MARKER_H + p.y }}
+                aria-hidden
+              />
+            ))}
+            {/* Value labels at the price extremes only */}
+            {labelPoints.map((p) => {
+              const above = p.y > DEMAND_H * 0.25;
+              return (
+                <div
+                  key={`lbl-${p.i}`}
+                  className={`absolute -translate-x-1/2 pointer-events-none font-mono text-[9px] text-gold bg-bg-card/90 px-0.5 whitespace-nowrap ${
+                    above ? '-translate-y-[calc(100%+5px)]' : 'translate-y-1.5'
+                  }`}
+                  style={{ left: colCenter(p.i), top: MARKER_H + p.y }}
+                  aria-hidden
+                >
+                  ~{fmtGil(p.price)}
+                </div>
+              );
+            })}
           </div>
 
           {rare && (
-            <div
+            <button
+              type="button"
+              onClick={() => setRareOpen((o) => !o)}
+              aria-expanded={rareOpen}
               title={rareTitle(rare)}
-              aria-label={rareTitle(rare)}
-              className="shrink-0 ml-2 self-stretch flex items-center px-2 border-l border-border-base"
+              className="shrink-0 ml-2 self-stretch flex items-center px-2 border-l border-border-base hover:bg-bg-card-hi transition-colors text-left"
             >
               <span className="font-mono text-[10px] text-text-low leading-tight max-w-[5rem]">
-                +{rare.count} rare sizes
+                +{rare.count} rare sizes <span aria-hidden>{rareOpen ? '▴' : '▾'}</span>
               </span>
-            </div>
+            </button>
           )}
         </div>
       </div>
+
+      {rare && rareOpen && (
+        <div className="border-t border-border-base px-3 py-2">
+          <div className="font-mono text-[9px] tracking-widest uppercase text-text-low mb-1.5">
+            Rare sizes ({rare.count})
+          </div>
+          <div className="flex flex-wrap gap-x-4 gap-y-1 max-h-32 overflow-y-auto">
+            {rare.rows.map((r) => (
+              <span key={r.stack} className="font-mono text-[10px] text-text-low whitespace-nowrap">
+                {`${r.stack}: ${r.sales > 0 ? `${r.sales} sold` : 'no sales'}`}
+                {r.listedCount > 0 ? ` · ${r.listedCount} listed` : ' · none listed'}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       {suggestion && (
         <div className="border-t border-border-base px-3 py-2 font-mono text-[11px] text-jade">
           {suggestionCaption(suggestion, rows)}
         </div>
       )}
+
+      <div className="border-t border-border-base px-3 py-1.5 font-mono text-[10px] text-text-low">
+        ✓ supply gap · ▾ suggested to list
+      </div>
 
       {hover && <ColumnTooltip row={hover.row} anchor={hover.el} />}
     </div>
