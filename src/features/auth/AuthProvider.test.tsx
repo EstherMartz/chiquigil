@@ -7,6 +7,11 @@ function Probe() {
   return <div>status:{status} user:{user?.username ?? 'none'}</div>;
 }
 
+function AdminProbe() {
+  const { isAdmin } = useAuth();
+  return <div>admin:{String(isAdmin)}</div>;
+}
+
 afterEach(() => vi.restoreAllMocks());
 
 describe('AuthProvider', () => {
@@ -24,5 +29,14 @@ describe('AuthProvider', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 401, json: async () => ({}) }));
     render(<AuthProvider><Probe /></AuthProvider>);
     await waitFor(() => expect(screen.getByText(/status:anon/)).toBeInTheDocument());
+  });
+
+  it('exposes isAdmin from the me response', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ user: { sub: '1', username: 'E', avatar: null, guilds: [] }, isAdmin: true }),
+    }));
+    render(<AuthProvider><AdminProbe /></AuthProvider>);
+    await waitFor(() => expect(screen.getByText('admin:true')).toBeInTheDocument());
   });
 });

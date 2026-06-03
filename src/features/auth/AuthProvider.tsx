@@ -12,16 +12,17 @@ type Status = 'loading' | 'authed' | 'anon';
 interface AuthState {
   status: Status;
   user: AuthUser | null;
+  isAdmin: boolean;
 }
 
-const AuthContext = createContext<AuthState>({ status: 'loading', user: null });
+const AuthContext = createContext<AuthState>({ status: 'loading', user: null, isAdmin: false });
 
 export function useAuth(): AuthState {
   return useContext(AuthContext);
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AuthState>({ status: 'loading', user: null });
+  const [state, setState] = useState<AuthState>({ status: 'loading', user: null, isAdmin: false });
 
   useEffect(() => {
     let cancelled = false;
@@ -29,13 +30,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then(async (r) => {
         if (cancelled) return;
         if (r.ok) {
-          const data = (await r.json()) as { user: AuthUser };
-          setState({ status: 'authed', user: data.user });
+          const data = (await r.json()) as { user: AuthUser; isAdmin?: boolean };
+          setState({ status: 'authed', user: data.user, isAdmin: !!data.isAdmin });
         } else {
-          setState({ status: 'anon', user: null });
+          setState({ status: 'anon', user: null, isAdmin: false });
         }
       })
-      .catch(() => { if (!cancelled) setState({ status: 'anon', user: null }); });
+      .catch(() => { if (!cancelled) setState({ status: 'anon', user: null, isAdmin: false }); });
     return () => { cancelled = true; };
   }, []);
 
