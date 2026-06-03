@@ -17,7 +17,10 @@ export function SpreadBars({ spreads, homeWorld }: { spreads: WorldSpread[]; hom
         </div>
       ) : (
         <ul className="space-y-2">
-          {spreads.map((s) => (
+          {spreads.map((s) => {
+            const ratio = max > 0 ? s.spread / max : 0;
+            const fillIntensity = ratio >= 0.66 ? 'bg-aether' : ratio >= 0.33 ? 'bg-aether/70' : 'bg-aether/45';
+            return (
             <li key={s.id}>
               <div className="flex items-baseline justify-between gap-2">
                 <Link
@@ -31,13 +34,14 @@ export function SpreadBars({ spreads, homeWorld }: { spreads: WorldSpread[]; hom
                 </span>
               </div>
               <div className="mt-1 h-2 bg-bg-deep overflow-hidden rounded-sm">
-                <div className="h-full bg-aether" style={{ width: `${max > 0 ? Math.max(6, (s.spread / max) * 100) : 0}%` }} />
+                <div className={`h-full ${fillIntensity}`} style={{ width: `${max > 0 ? Math.max(6, (s.spread / max) * 100) : 0}%` }} />
               </div>
               <div className="mt-1 font-mono text-[9px] tracking-widest uppercase text-text-low">
                 {s.bestWorld} {fmtGil(s.bestPrice)} → home {fmtGil(s.homeFloor)} · {s.velocity.toFixed(1)}/day
               </div>
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
     </div>
