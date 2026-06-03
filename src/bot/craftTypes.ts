@@ -3,6 +3,18 @@ import type { CurrencyId } from '../lib/currencies';
 
 export type TaskSource = 'craft' | 'workshop' | 'market' | 'vendor' | 'currency' | 'gather';
 
+export type AccessLevel = 'default' | 'allow' | 'block';
+
+export interface AppUser {
+  discordId: string;
+  username: string;
+  avatar: string | null;
+  guilds: string[];
+  access: AccessLevel;
+  firstSeen: number;
+  lastSeen: number;
+}
+
 export interface CraftTaskMeta {
   job?: CrafterCode;
   world?: string;
