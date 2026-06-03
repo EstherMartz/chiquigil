@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { soldByStack, listedByStack, isStackable, suggestStack } from './stackAnalysis';
+import { soldByStack, listedByStack, isStackable, suggestStack, mergeStacks } from './stackAnalysis';
 import type { HistoryEntry } from '../../lib/universalisHistory';
 import type { WorldListing } from '../../lib/universalis';
 import type { SoldStackRow, ListedStackRow } from './stackAnalysis';
@@ -77,6 +77,53 @@ describe('isStackable', () => {
 const sr = (stack: number, sales: number, lastSoldMs: number, medianUnitPrice = 1000): SoldStackRow =>
   ({ stack, sales, units: stack * sales, medianUnitPrice, lastSoldMs });
 const lr = (stack: number, count: number): ListedStackRow => ({ stack, count });
+
+describe('mergeStacks', () => {
+  it('returns [] for empty inputs', () => {
+    expect(mergeStacks([], [])).toEqual([]);
+  });
+
+  it('unions sold + listed sizes, sorted ascending', () => {
+    const sold = [sr(2, 4, 100, 1500), sr(5, 1, 200, 900)];
+    const listed = [lr(5, 3), lr(20, 2)];
+    expect(mergeStacks(sold, listed).map((r) => r.stack)).toEqual([2, 5, 20]);
+  });
+
+  it('zeroes demand for a listed-only size', () => {
+    const merged = mergeStacks([sr(2, 4, 100)], [lr(20, 2)]);
+    const row = merged.find((r) => r.stack === 20)!;
+    expect(row).toMatchObject({
+      stack: 20, sales: 0, units: 0, medianUnitPrice: 0, lastSoldMs: 0, listedCount: 2, isGap: false,
+    });
+  });
+
+  it('zeroes listedCount for a sales-only size', () => {
+    const merged = mergeStacks([sr(2, 4, 100, 1500)], []);
+    const row = merged.find((r) => r.stack === 2)!;
+    expect(row).toMatchObject({ stack: 2, sales: 4, listedCount: 0 });
+  });
+
+  it('flags isGap on a high-demand, thin-supply size', () => {
+    // totalSales = 10; threshold = max(2, 1.5) = 2. stack 2 has 8 sales, 1 listing → gap.
+    const sold = [sr(2, 8, 100, 1500), sr(5, 2, 200, 900)];
+    const listed = [lr(2, 1), lr(5, 4)];
+    const merged = mergeStacks(sold, listed);
+    expect(merged.find((r) => r.stack === 2)!.isGap).toBe(true);
+    expect(merged.find((r) => r.stack === 5)!.isGap).toBe(false);
+  });
+
+  it('does not flag a gap when supply is ample', () => {
+    const sold = [sr(2, 8, 100)];
+    const listed = [lr(2, 6)];
+    expect(mergeStacks(sold, listed)[0].isGap).toBe(false);
+  });
+
+  it('does not flag a gap when demand is below threshold', () => {
+    const sold = [sr(2, 1, 100), sr(5, 20, 200)];
+    const listed = [lr(2, 0)];
+    expect(mergeStacks(sold, listed).find((r) => r.stack === 2)!.isGap).toBe(false);
+  });
+});
 
 describe('suggestStack', () => {
   it('returns null when not stackable', () => {
