@@ -49,7 +49,7 @@ export function KpiStrip({ totals, applyMarketTax, picks }: {
         {cells.map((s, i) => (
           <div key={s.k} className={`p-3 ${i < cells.length - 1 ? 'border-r border-border-base' : ''} bg-bg-card`}>
             <div className="font-mono text-[9px] tracking-widest uppercase text-text-low">{s.k}</div>
-            <div className={`font-display text-xl tabular-nums leading-none mt-1.5 ${s.tone}`}>{s.v}</div>
+            <div className={`font-mono text-xl tabular-nums leading-none mt-1.5 ${s.tone}`}>{s.v}</div>
             <div className="font-mono text-[9px] text-text-low mt-1.5">{s.sub}</div>
           </div>
         ))}
