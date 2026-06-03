@@ -2934,6 +2934,16 @@ async function openCraftStore(url, authToken) {
       craft_channel_id TEXT NOT NULL,
       language       TEXT NOT NULL DEFAULT 'es'
     );
+
+    CREATE TABLE IF NOT EXISTS app_users (
+      discord_id  TEXT PRIMARY KEY,
+      username    TEXT NOT NULL,
+      avatar      TEXT,
+      guilds      TEXT NOT NULL DEFAULT '[]',
+      access      TEXT NOT NULL DEFAULT 'default',
+      first_seen  INTEGER NOT NULL,
+      last_seen   INTEGER NOT NULL
+    );
   `;
   const statements = SCHEMA.split(";").map((s) => s.trim()).filter((s) => s.length > 0);
   for (const stmt of statements) {
@@ -2982,6 +2992,17 @@ async function openCraftStore(url, authToken) {
       assigneeId: row.assignee_id ? String(row.assignee_id) : null,
       status: String(row.status),
       updatedAt: Number(row.updated_at)
+    };
+  }
+  function rowToAppUser(row) {
+    return {
+      discordId: String(row.discord_id),
+      username: String(row.username),
+      avatar: row.avatar ? String(row.avatar) : null,
+      guilds: row.guilds ? JSON.parse(String(row.guilds)) : [],
+      access: String(row.access),
+      firstSeen: Number(row.first_seen),
+      lastSeen: Number(row.last_seen)
     };
   }
   return {
@@ -3237,6 +3258,38 @@ async function openCraftStore(url, authToken) {
             language = ?
         `,
         args: [config2.guildId, config2.craftChannelId, config2.language, config2.craftChannelId, config2.language]
+      });
+    },
+    async upsertAppUser(u) {
+      const now = Date.now();
+      await client.execute({
+        sql: `
+          INSERT INTO app_users (discord_id, username, avatar, guilds, access, first_seen, last_seen)
+          VALUES (?, ?, ?, ?, 'default', ?, ?)
+          ON CONFLICT(discord_id) DO UPDATE SET
+            username = excluded.username,
+            avatar = excluded.avatar,
+            guilds = excluded.guilds,
+            last_seen = excluded.last_seen
+        `,
+        args: [u.discordId, u.username, u.avatar, JSON.stringify(u.guilds), now, now]
+      });
+    },
+    async listAppUsers() {
+      const result = await client.execute("SELECT * FROM app_users ORDER BY last_seen DESC");
+      return result.rows.map(rowToAppUser);
+    },
+    async getAppUser(discordId) {
+      const result = await client.execute({
+        sql: "SELECT * FROM app_users WHERE discord_id = ?",
+        args: [discordId]
+      });
+      return result.rows.length ? rowToAppUser(result.rows[0]) : null;
+    },
+    async setUserAccess(discordId, access) {
+      await client.execute({
+        sql: "UPDATE app_users SET access = ? WHERE discord_id = ?",
+        args: [access, discordId]
       });
     },
     async close() {
