@@ -146,3 +146,45 @@ export function suggestStack(sold: SoldStackRow[], listed: ListedStackRow[]): St
 
   return { stack: pick.stack, unitPrice: pick.medianUnitPrice, kind };
 }
+
+export interface RareSummary {
+  count: number;
+  sizes: number[];
+  totalSales: number;
+  totalListed: number;
+}
+
+/** Share of total activity below which a stack size is folded into the "rare" tail. */
+const RARE_SHARE = 0.05;
+
+/**
+ * Split merged rows into the chart's individually-shown stacks and a collapsed "rare"
+ * tail. A stack stays shown when it carries a meaningful share of demand or supply, is a
+ * supply gap, or is the recommended pick. The tail only collapses when ≥2 sizes qualify
+ * (a one-size chip isn't worth it), so evenly-distributed items keep every column.
+ */
+export function partitionStacks(
+  rows: MergedStackRow[],
+  suggestion: StackSuggestion | null,
+): { shown: MergedStackRow[]; rare: RareSummary | null } {
+  const totalSales = rows.reduce((s, r) => s + r.sales, 0);
+  const totalListed = rows.reduce((s, r) => s + r.listedCount, 0);
+
+  const isShown = (r: MergedStackRow): boolean =>
+    (totalSales > 0 && r.sales >= RARE_SHARE * totalSales) ||
+    (totalListed > 0 && r.listedCount >= RARE_SHARE * totalListed) ||
+    r.isGap ||
+    r.stack === suggestion?.stack;
+
+  const rareRows = rows.filter((r) => !isShown(r));
+  if (rareRows.length < 2) return { shown: rows, rare: null };
+
+  const shown = rows.filter(isShown);
+  const rare: RareSummary = {
+    count: rareRows.length,
+    sizes: rareRows.map((r) => r.stack),
+    totalSales: rareRows.reduce((s, r) => s + r.sales, 0),
+    totalListed: rareRows.reduce((s, r) => s + r.listedCount, 0),
+  };
+  return { shown, rare };
+}

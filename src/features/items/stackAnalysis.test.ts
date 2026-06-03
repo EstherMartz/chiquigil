@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { soldByStack, listedByStack, isStackable, suggestStack, mergeStacks } from './stackAnalysis';
+import { soldByStack, listedByStack, isStackable, suggestStack, mergeStacks, partitionStacks } from './stackAnalysis';
+import type { MergedStackRow } from './stackAnalysis';
 import type { HistoryEntry } from '../../lib/universalisHistory';
 import type { WorldListing } from '../../lib/universalis';
 import type { SoldStackRow, ListedStackRow } from './stackAnalysis';
@@ -122,6 +123,66 @@ describe('mergeStacks', () => {
     const sold = [sr(2, 1, 100), sr(5, 20, 200)];
     const listed = [lr(2, 0)];
     expect(mergeStacks(sold, listed).find((r) => r.stack === 2)!.isGap).toBe(false);
+  });
+});
+
+const merged = (
+  stack: number, sales: number, listedCount: number,
+  opts: { price?: number; isGap?: boolean } = {},
+): MergedStackRow => ({
+  stack, sales, units: stack * sales, medianUnitPrice: opts.price ?? 1000,
+  lastSoldMs: 1, listedCount, isGap: opts.isGap ?? false,
+});
+
+describe('partitionStacks', () => {
+  it('collapses the sub-5% tail into a rare summary', () => {
+    const rows = [
+      merged(1, 100, 0), merged(2, 50, 0),
+      ...[3, 4, 5, 6, 7, 8, 9, 10, 12, 16].map((s) => merged(s, 1, 0)),
+    ];
+    const { shown, rare } = partitionStacks(rows, null);
+    expect(shown.map((r) => r.stack)).toEqual([1, 2]);
+    expect(rare).toMatchObject({ count: 10, totalSales: 10, totalListed: 0 });
+    expect(rare!.sizes).toEqual([3, 4, 5, 6, 7, 8, 9, 10, 12, 16]);
+  });
+
+  it('keeps a tiny gap stack visible', () => {
+    const rows = [
+      merged(1, 100, 0), merged(20, 1, 0, { isGap: true }),
+      ...[3, 4, 5].map((s) => merged(s, 1, 0)),
+    ];
+    const { shown } = partitionStacks(rows, null);
+    expect(shown.map((r) => r.stack)).toContain(20);
+  });
+
+  it('keeps the recommended stack visible even when tiny', () => {
+    const rows = [merged(1, 100, 0), merged(20, 1, 0), merged(4, 1, 0), merged(6, 1, 0)];
+    const { shown, rare } = partitionStacks(rows, { stack: 20, unitPrice: 1000, kind: 'liquid' });
+    expect(shown.map((r) => r.stack)).toContain(20);
+    expect(rare!.sizes).toEqual([4, 6]);
+  });
+
+  it('keeps a supply-heavy stack with no sales', () => {
+    const rows = [
+      merged(1, 100, 0), merged(99, 0, 50),
+      ...[3, 4].map((s) => merged(s, 1, 0)),
+    ];
+    const { shown } = partitionStacks(rows, null);
+    expect(shown.map((r) => r.stack)).toContain(99);
+  });
+
+  it('does not collapse when only one stack would be rare', () => {
+    const rows = [merged(1, 100, 0), merged(2, 1, 0)];
+    const { shown, rare } = partitionStacks(rows, null);
+    expect(rare).toBeNull();
+    expect(shown.map((r) => r.stack)).toEqual([1, 2]);
+  });
+
+  it('does not collapse an evenly-distributed set', () => {
+    const rows = [3, 4, 5, 6, 7].map((s) => merged(s, 1, 0));
+    const { shown, rare } = partitionStacks(rows, null);
+    expect(rare).toBeNull();
+    expect(shown).toHaveLength(5);
   });
 });
 

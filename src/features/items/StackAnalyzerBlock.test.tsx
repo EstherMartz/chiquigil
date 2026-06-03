@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { StackAnalyzerView } from './StackAnalyzerBlock';
 import type { HistoryEntry } from '../../lib/universalisHistory';
@@ -21,8 +21,41 @@ describe('StackAnalyzerView', () => {
 
     expect(screen.getByText(/sold \(90d\)/i)).toBeInTheDocument();
     expect(screen.getByText('▼ listed now')).toBeInTheDocument();
+    expect(screen.getByText(/~\/unit/i)).toBeInTheDocument(); // price-line legend marker
     // The gap caption names the recommended stack (stack 1 here: strong demand, nothing listed).
     expect(screen.getByText(/gap/i)).toBeInTheDocument();
+  });
+
+  it('collapses the low-volume tail into a rare-sizes chip', () => {
+    const entries = [
+      ...Array.from({ length: 20 }, (_, k) => sale(1, 1000, k + 1)),
+      ...[3, 4, 5, 6, 7].map((s) => sale(s, 1000, 100 + s)),
+    ];
+    render(<StackAnalyzerView entries={entries} listings={[]} canHq={false} />);
+    expect(screen.getByText(/\+5 rare sizes/)).toBeInTheDocument();
+  });
+
+  it('shows no rare chip when there is no tail', () => {
+    render(
+      <StackAnalyzerView entries={[sale(1, 1000, 10), sale(2, 1000, 20)]} listings={[]} canHq={false} />,
+    );
+    expect(screen.queryByText(/rare sizes/)).toBeNull();
+  });
+
+  it('opens a detail card with exact numbers on column hover, and marks the pick', () => {
+    const entries = [
+      sale(2, 2000, 10), sale(2, 2000, 20), sale(2, 2000, 30), sale(2, 2000, 40),
+      sale(10, 500, 5),
+    ];
+    const listings = [ls(10, 490), ls(10, 495), ls(10, 500)];
+    render(<StackAnalyzerView entries={entries} listings={listings} canHq={false} />);
+
+    // stack 2 is the gap pick → carries the sweet-spot marker.
+    expect(screen.getByText('▾')).toBeInTheDocument();
+
+    fireEvent.mouseEnter(screen.getByLabelText('Stack 2'));
+    expect(screen.getByText(/8 units/)).toBeInTheDocument();
+    expect(screen.getByText(/4 sales/)).toBeInTheDocument();
   });
 
   it('captions the recommended stack with its sold count', () => {
