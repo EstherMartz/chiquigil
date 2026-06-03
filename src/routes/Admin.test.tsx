@@ -9,7 +9,7 @@ const ROSTER = {
 };
 
 beforeEach(() => {
-  vi.stubGlobal('fetch', vi.fn(async (url: string, init?: any) => {
+  vi.stubGlobal('fetch', vi.fn(async (url: string) => {
     if (url.endsWith('/admin/users')) return new Response(JSON.stringify(ROSTER), { status: 200 });
     if (url.endsWith('/admin/access')) return new Response(JSON.stringify({ ok: true }), { status: 200 });
     return new Response('{}', { status: 404 });
