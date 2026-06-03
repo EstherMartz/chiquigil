@@ -12,7 +12,7 @@ export default {
         'border-hi': '#3d476a',
         'text-cream': '#e8d8b0',
         'text-dim': '#9a9080',
-        'text-low': '#6a6354',
+        'text-low': '#8a8274',
         aether: '#6ec5ce',
         'aether-soft': '#4a8a91',
         gold: '#d4a958',
