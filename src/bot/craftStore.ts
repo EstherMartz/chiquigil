@@ -1,5 +1,5 @@
 import { createClient } from '@libsql/client';
-import type { CraftProject, StoredTask, CraftTask, ChannelState } from './craftTypes';
+import type { CraftProject, StoredTask, CraftTask, ChannelState, AppUser, AccessLevel } from './craftTypes';
 
 export interface GuildConfig {
   guildId: string;
@@ -42,6 +42,10 @@ export interface CraftStore {
   upsertChannelState(state: ChannelState): Promise<void>;
   getGuildConfig(guildId: string): Promise<GuildConfig | null>;
   setGuildConfig(config: GuildConfig): Promise<void>;
+  upsertAppUser(u: { discordId: string; username: string; avatar: string | null; guilds: string[] }): Promise<void>;
+  listAppUsers(): Promise<AppUser[]>;
+  getAppUser(discordId: string): Promise<AppUser | null>;
+  setUserAccess(discordId: string, access: AccessLevel): Promise<void>;
   close(): Promise<void>;
 }
 
@@ -109,6 +113,16 @@ export async function openCraftStore(url: string, authToken?: string): Promise<C
       craft_channel_id TEXT NOT NULL,
       language       TEXT NOT NULL DEFAULT 'es'
     );
+
+    CREATE TABLE IF NOT EXISTS app_users (
+      discord_id  TEXT PRIMARY KEY,
+      username    TEXT NOT NULL,
+      avatar      TEXT,
+      guilds      TEXT NOT NULL DEFAULT '[]',
+      access      TEXT NOT NULL DEFAULT 'default',
+      first_seen  INTEGER NOT NULL,
+      last_seen   INTEGER NOT NULL
+    );
   `;
 
   // Split by semicolon and execute each statement separately
@@ -171,6 +185,18 @@ export async function openCraftStore(url: string, authToken?: string): Promise<C
       assigneeId: row.assignee_id ? String(row.assignee_id) : null,
       status: String(row.status) as 'open' | 'claimed' | 'done',
       updatedAt: Number(row.updated_at),
+    };
+  }
+
+  function rowToAppUser(row: Record<string, any>): AppUser {
+    return {
+      discordId: String(row.discord_id),
+      username: String(row.username),
+      avatar: row.avatar ? String(row.avatar) : null,
+      guilds: row.guilds ? JSON.parse(String(row.guilds)) : [],
+      access: String(row.access) as AccessLevel,
+      firstSeen: Number(row.first_seen),
+      lastSeen: Number(row.last_seen),
     };
   }
 
@@ -452,6 +478,42 @@ export async function openCraftStore(url: string, authToken?: string): Promise<C
             language = ?
         `,
         args: [config.guildId, config.craftChannelId, config.language, config.craftChannelId, config.language],
+      });
+    },
+
+    async upsertAppUser(u) {
+      const now = Date.now();
+      await client.execute({
+        sql: `
+          INSERT INTO app_users (discord_id, username, avatar, guilds, access, first_seen, last_seen)
+          VALUES (?, ?, ?, ?, 'default', ?, ?)
+          ON CONFLICT(discord_id) DO UPDATE SET
+            username = excluded.username,
+            avatar = excluded.avatar,
+            guilds = excluded.guilds,
+            last_seen = excluded.last_seen
+        `,
+        args: [u.discordId, u.username, u.avatar, JSON.stringify(u.guilds), now, now],
+      });
+    },
+
+    async listAppUsers() {
+      const result = await client.execute('SELECT * FROM app_users ORDER BY last_seen DESC');
+      return result.rows.map(rowToAppUser);
+    },
+
+    async getAppUser(discordId) {
+      const result = await client.execute({
+        sql: 'SELECT * FROM app_users WHERE discord_id = ?',
+        args: [discordId],
+      });
+      return result.rows.length ? rowToAppUser(result.rows[0] as Record<string, any>) : null;
+    },
+
+    async setUserAccess(discordId, access) {
+      await client.execute({
+        sql: 'UPDATE app_users SET access = ? WHERE discord_id = ?',
+        args: [access, discordId],
       });
     },
 
