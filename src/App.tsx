@@ -9,6 +9,7 @@ import { usePluginConnection } from './features/plugin/usePluginConnection';
 import { usePluginPairing } from './features/plugin/usePluginPairing';
 import { AuthProvider } from './features/auth/AuthProvider';
 import { RequireAuth } from './features/auth/RequireAuth';
+import { RequireAdmin } from './features/auth/RequireAdmin';
 import { UserMenu } from './features/auth/UserMenu';
 import Login from './routes/Login';
 import Home from './routes/Home';
@@ -39,6 +40,7 @@ import Submarines from './routes/Submarines';
 import Planner from './routes/Planner';
 import Projects from './routes/Projects';
 import Project from './routes/Project';
+import Admin from './routes/Admin';
 
 const PAGE_TITLES: Record<string, string> = {
   '/home': 'What Now?',
@@ -67,6 +69,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/submarines': 'Submarines',
   '/planner': 'Plan',
   '/projects': 'Projects',
+  '/admin': 'Admin',
 };
 
 function DocumentTitle() {
@@ -138,6 +141,7 @@ export default function App() {
                       <Route path="/queries" element={<Navigate to="/crafts" replace />} />
                       <Route path="/insights" element={<Navigate to="/trading" replace />} />
                       <Route path="/settings" element={<Settings />} />
+                      <Route path="/admin" element={<RequireAdmin><Admin /></RequireAdmin>} />
                       <Route path="/submarines" element={<Submarines />} />
                       <Route path="/planner" element={<Planner />} />
                       <Route path="/projects" element={<Projects />} />
