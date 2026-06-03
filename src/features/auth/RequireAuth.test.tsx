@@ -6,7 +6,7 @@ import { __TestAuthProvider } from './AuthProvider';
 
 function renderAt(status: 'loading' | 'authed' | 'anon') {
   return render(
-    <__TestAuthProvider value={{ status, user: status === 'authed' ? { sub: '1', username: 'E', avatar: null, guilds: ['1'] } : null }}>
+    <__TestAuthProvider value={{ status, user: status === 'authed' ? { sub: '1', username: 'E', avatar: null, guilds: ['1'] } : null, isAdmin: false }}>
       <MemoryRouter initialEntries={['/secret']}>
         <Routes>
           <Route path="/login" element={<div>LOGIN PAGE</div>} />
