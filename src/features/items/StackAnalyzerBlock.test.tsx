@@ -11,7 +11,7 @@ const ls = (quantity: number, price: number, hq = false): WorldListing =>
   ({ world: 'Phantom', price, hq, quantity, seller: '' });
 
 describe('StackAnalyzerView', () => {
-  it('renders sold + listed panels and flags a high-demand/thin-supply gap', () => {
+  it('renders the demand/supply legend and flags a high-demand/thin-supply gap', () => {
     const entries = [
       sale(1, 1000, 10), sale(1, 1000, 20), sale(1, 1000, 30), sale(1, 1000, 40), sale(1, 1000, 50),
       sale(99, 800, 5),
@@ -19,9 +19,23 @@ describe('StackAnalyzerView', () => {
     const listings = [ls(99, 790), ls(99, 800)];
     render(<StackAnalyzerView entries={entries} listings={listings} canHq={false} />);
 
-    expect(screen.getByText(/Sold · 90d/i)).toBeInTheDocument();
-    expect(screen.getByText(/Listed now/i)).toBeInTheDocument();
+    expect(screen.getByText(/sold \(90d\)/i)).toBeInTheDocument();
+    expect(screen.getByText('▼ listed now')).toBeInTheDocument();
+    // The gap caption names the recommended stack (stack 1 here: strong demand, nothing listed).
     expect(screen.getByText(/gap/i)).toBeInTheDocument();
+  });
+
+  it('captions the recommended stack with its sold count', () => {
+    const entries = [
+      sale(2, 2000, 10), sale(2, 2000, 20), sale(2, 2000, 30), sale(2, 2000, 40),
+      sale(10, 500, 5),
+    ];
+    const listings = [ls(10, 490), ls(10, 495), ls(10, 500)];
+    render(<StackAnalyzerView entries={entries} listings={listings} canHq={false} />);
+
+    // stack 2 has the demand and no supply → the gap pick.
+    expect(screen.getByText(/stack 2/i)).toBeInTheDocument();
+    expect(screen.getByText(/sold\/90d/i)).toBeInTheDocument();
   });
 
   it('shows the not-stackable note when every size is 1', () => {
@@ -41,6 +55,6 @@ describe('StackAnalyzerView', () => {
     render(<StackAnalyzerView entries={entries} listings={listings} canHq />);
     expect(screen.getByText(/Always sold as single units/i)).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'HQ' }));
-    expect(screen.getByText(/Sold · 90d/i)).toBeInTheDocument();
+    expect(screen.getByText(/sold \(90d\)/i)).toBeInTheDocument();
   });
 });

@@ -6,7 +6,10 @@ import { SectionHeader } from '../../components/SectionHeader';
 import { Spinner } from '../../components/Spinner';
 import { QualityTab } from './QualityTab';
 import { fmtGil, fmtRelative } from '../../lib/format';
-import { soldByStack, listedByStack, isStackable, mergeStacks, type MergedStackRow } from './stackAnalysis';
+import {
+  soldByStack, listedByStack, isStackable, mergeStacks, suggestStack,
+  type MergedStackRow, type StackSuggestion,
+} from './stackAnalysis';
 
 const NINETY_DAYS_SEC = 90 * 24 * 60 * 60;
 
@@ -41,6 +44,7 @@ export function StackAnalyzerView({ entries, listings, canHq }: ViewProps) {
   const listed = listedByStack(listings, hq);
   const stackable = isStackable(sold, listed);
   const rows = mergeStacks(sold, listed);
+  const suggestion = suggestStack(sold, listed);
 
   return (
     <div>
@@ -60,82 +64,100 @@ export function StackAnalyzerView({ entries, listings, canHq }: ViewProps) {
           No {hq ? 'HQ' : 'NQ'} data in the last 90 days.
         </div>
       ) : (
-        <StackDemandSupplyChart rows={rows} />
+        <StackDemandSupplyChart rows={rows} suggestion={suggestion} />
       )}
     </div>
   );
 }
 
-/** Diverging per-stack chart: demand (90-day sales) grows left, supply (live listings) grows right. */
-export function StackDemandSupplyChart({ rows }: { rows: MergedStackRow[] }) {
+/** One-line summary of a stack size, surfaced as the column's hover title. */
+function columnTitle(r: MergedStackRow): string {
+  const parts: string[] = [`Stack ${r.stack}`];
+  if (r.sales > 0) {
+    parts.push(`${r.sales} sold`, `${fmtGil(r.medianUnitPrice)}/u`, `last sold ${fmtRelative(r.lastSoldMs)}`);
+  } else {
+    parts.push('no sales');
+  }
+  parts.push(r.listedCount > 0 ? `${r.listedCount} listed` : 'none listed');
+  return parts.join(' · ');
+}
+
+/** The actionable "list at" caption, derived from suggestStack. */
+function suggestionCaption(suggestion: StackSuggestion, rows: MergedStackRow[]): string {
+  const row = rows.find((r) => r.stack === suggestion.stack);
+  const sales = row?.sales ?? 0;
+  const listed = row?.listedCount ?? 0;
+  const price = `~${fmtGil(suggestion.unitPrice)}/u`;
+  return suggestion.kind === 'gap'
+    ? `◆ Supply gap at stack ${suggestion.stack} — ${sales} sold/90d, ${price}, ${listed} listed now.`
+    : `◆ Most liquid at stack ${suggestion.stack} — ${sales} sold/90d, ${price}.`;
+}
+
+/**
+ * Vertical diverging column chart: demand (90-day sales) grows up, supply (live listings)
+ * grows down from a shared stack-size baseline. Per-column detail is in the hover title;
+ * the actionable size is captioned below via suggestStack.
+ */
+export function StackDemandSupplyChart({
+  rows, suggestion,
+}: { rows: MergedStackRow[]; suggestion: StackSuggestion | null }) {
   const maxSales = Math.max(1, ...rows.map((r) => r.sales));
   const maxListed = Math.max(1, ...rows.map((r) => r.listedCount));
 
-  const COLS = 'grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]';
-
   return (
-    <div className="border border-border-base bg-bg-card overflow-hidden">
-      <div className={`grid ${COLS} items-center gap-x-3 px-3 py-2 font-mono text-[10px] tracking-widest uppercase text-text-low border-b border-border-base`}>
-        <div className="text-right">Sold · 90d</div>
-        <div className="text-center">Stack</div>
-        <div className="text-left">Listed now</div>
+    <div className="border border-border-base bg-bg-card">
+      <div className="flex justify-between px-3 pt-2 font-mono text-[10px] tracking-widest uppercase">
+        <span className="text-jade/80">▲ sold (90d)</span>
+        <span className="text-aether/80">▼ listed now</span>
       </div>
-      {rows.map((r) => (
-        <div
-          key={r.stack}
-          className={`grid ${COLS} items-center gap-x-3 px-3 py-1.5 border-t border-border-base ${r.isGap ? 'bg-jade/10' : ''}`}
-        >
-          {/* Demand — bar grows outward (left), value label hugs the center axis */}
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
-            <div className="min-w-0">
-              {r.sales > 0 && (
-                <div
-                  className="bg-jade/40 h-3 ml-auto"
-                  style={{ width: `${(r.sales / maxSales) * 100}%` }}
-                  title={`Last sold ${fmtRelative(r.lastSoldMs)}`}
-                  aria-hidden
-                />
-              )}
-            </div>
-            <div className="flex items-center gap-1.5 whitespace-nowrap justify-self-end">
-              {r.sales > 0 ? (
-                <>
-                  <span className="font-mono text-text-low text-[11px]">{fmtGil(r.medianUnitPrice)}/u</span>
-                  <span className="font-mono text-sm">{r.sales}</span>
-                </>
-              ) : (
-                <span className="font-mono text-text-low text-sm">—</span>
-              )}
-            </div>
-          </div>
 
-          {/* Center axis — stack size */}
-          <div className="text-center font-mono text-text-cream whitespace-nowrap px-1">
-            {r.stack}
-            {r.isGap && <span className="text-jade ml-1" title="High demand, thin supply">✓ gap</span>}
-          </div>
-
-          {/* Supply — value label hugs the center axis, bar grows outward (right) */}
-          <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2">
-            <div className="flex items-center gap-1.5 whitespace-nowrap justify-self-start">
-              {r.listedCount > 0 ? (
-                <span className="font-mono text-sm">{r.listedCount}</span>
-              ) : (
-                <span className="font-mono text-text-low text-sm">—</span>
-              )}
-            </div>
-            <div className="min-w-0">
-              {r.listedCount > 0 && (
-                <div
-                  className="bg-aether/40 h-3 mr-auto"
-                  style={{ width: `${(r.listedCount / maxListed) * 100}%` }}
-                  aria-hidden
-                />
-              )}
-            </div>
-          </div>
+      <div className="overflow-x-auto px-3 pb-2 pt-1">
+        <div className="flex items-stretch gap-1">
+          {rows.map((r) => {
+            const title = columnTitle(r);
+            return (
+              <div
+                key={r.stack}
+                title={title}
+                aria-label={title}
+                className={`flex flex-col items-center min-w-[2.25rem] flex-1 ${r.isGap ? 'bg-jade/10' : ''}`}
+              >
+                {/* Demand — grows up from the baseline */}
+                <div className="flex items-end justify-center h-16 w-full">
+                  {r.sales > 0 && (
+                    <div
+                      className={`w-3 ${r.isGap ? 'bg-jade' : 'bg-jade/40'}`}
+                      style={{ height: `${(r.sales / maxSales) * 100}%` }}
+                      aria-hidden
+                    />
+                  )}
+                </div>
+                {/* Axis label */}
+                <div className="py-1 font-mono text-[11px] text-text-cream whitespace-nowrap">
+                  {r.stack}
+                  {r.isGap && <span className="text-jade ml-0.5" aria-hidden>✓</span>}
+                </div>
+                {/* Supply — grows down from the baseline */}
+                <div className="flex items-start justify-center h-12 w-full">
+                  {r.listedCount > 0 && (
+                    <div
+                      className="w-3 bg-aether/40"
+                      style={{ height: `${(r.listedCount / maxListed) * 100}%` }}
+                      aria-hidden
+                    />
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
-      ))}
+      </div>
+
+      {suggestion && (
+        <div className="border-t border-border-base px-3 py-2 font-mono text-[11px] text-jade">
+          {suggestionCaption(suggestion, rows)}
+        </div>
+      )}
     </div>
   );
 }
