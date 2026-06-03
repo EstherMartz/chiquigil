@@ -26,20 +26,20 @@ describe('Sparkline', () => {
   });
 
   it('renders multiple polyline segments when points contain nulls (gaps)', () => {
-    const { container } = render(<Sparkline points={[1, 2, null, 4, 5]} width={80} height={28} />);
+    const { container } = render(<Sparkline points={[1, 2, null, 4, 5]} width={80} height={32} />);
     const polylines = container.querySelectorAll('polyline');
     expect(polylines.length).toBe(2);
   });
 
   it('renders a filled dot at the last non-null point', () => {
-    const { container } = render(<Sparkline points={[1, 2, 3]} width={80} height={28} />);
+    const { container } = render(<Sparkline points={[1, 2, 3]} width={80} height={32} />);
     const circle = container.querySelector('circle');
     expect(circle).not.toBeNull();
     expect(circle!.getAttribute('r')).toBe('2');
   });
 
   it('applies color prop to stroke and dot', () => {
-    const { container } = render(<Sparkline points={[1, 2, 3]} width={80} height={28} color="#f87171" />);
+    const { container } = render(<Sparkline points={[1, 2, 3]} width={80} height={32} color="#f87171" />);
     const polyline = container.querySelector('polyline');
     expect(polyline!.getAttribute('stroke')).toBe('#f87171');
     const circle = container.querySelector('circle');
@@ -47,7 +47,7 @@ describe('Sparkline', () => {
   });
 
   it('renders dash when fewer than 2 non-null points', () => {
-    const { container } = render(<Sparkline points={[null, null, 5]} width={80} height={28} />);
+    const { container } = render(<Sparkline points={[null, null, 5]} width={80} height={32} />);
     expect(container.textContent).toContain('—');
   });
 });

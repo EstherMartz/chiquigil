@@ -6,7 +6,7 @@ interface Props {
   className?: string;
 }
 
-export function Sparkline({ points, width = 80, height = 28, color, className = '' }: Props) {
+export function Sparkline({ points, width = 80, height = 32, color, className = '' }: Props) {
   const nonNull = points.map((p, i) => p !== null ? { value: p, index: i } : null).filter(Boolean) as { value: number; index: number }[];
 
   if (nonNull.length < 2) {
@@ -48,7 +48,7 @@ export function Sparkline({ points, width = 80, height = 28, color, className = 
           key={i}
           fill="none"
           stroke={strokeColor}
-          strokeWidth={1.5}
+          strokeWidth={1.75}
           points={seg.join(' ')}
         />
       ))}
