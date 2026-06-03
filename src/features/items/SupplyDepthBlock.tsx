@@ -1,15 +1,16 @@
-import { useState } from 'react';
 import type { WorldListing } from '../../lib/universalis';
 import { fmtGil } from '../../lib/format';
 import { SectionHeader } from '../../components/SectionHeader';
 import { QualityTab } from './QualityTab';
+import { useQualityStore } from './qualityStore';
 import { depthBuckets } from './depth';
 
 interface Props { listings: WorldListing[]; canHq: boolean }
 
 /** Home-world order-book depth as a CSS-bar histogram over price tiers. */
 export function SupplyDepthBlock({ listings, canHq }: Props) {
-  const [hq, setHq] = useState(false);
+  const setHq = useQualityStore((s) => s.setHq);
+  const hq = useQualityStore((s) => s.hq) && canHq;
   const buckets = depthBuckets(listings, hq);
   const maxUnits = buckets.reduce((m, b) => Math.max(m, b.units), 0);
 

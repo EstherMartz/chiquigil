@@ -1,7 +1,7 @@
-import { useState } from 'react';
 import type { WorldListing } from '../../lib/universalis';
 import { SectionHeader } from '../../components/SectionHeader';
 import { QualityTab } from './QualityTab';
+import { useQualityStore } from './qualityStore';
 import { concentrationHHI, type RiskLevel } from './concentration';
 
 interface Props { listings: WorldListing[]; canHq: boolean }
@@ -14,7 +14,8 @@ const RISK_META: Record<RiskLevel, { label: string; cls: string }> = {
 
 /** Home-world seller-concentration (HHI) as a supply-structure risk indicator. */
 export function ConcentrationBlock({ listings, canHq }: Props) {
-  const [hq, setHq] = useState(false);
+  const setHq = useQualityStore((s) => s.setHq);
+  const hq = useQualityStore((s) => s.hq) && canHq;
   const c = concentrationHHI(listings, hq);
 
   return (

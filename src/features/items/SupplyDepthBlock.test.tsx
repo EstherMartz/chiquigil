@@ -1,13 +1,16 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { SupplyDepthBlock } from './SupplyDepthBlock';
+import { useQualityStore } from './qualityStore';
 import type { WorldListing } from '../../lib/universalis';
 
 const l = (price: number, quantity: number, seller: string, hq = false): WorldListing =>
   ({ world: 'Phantom', price, hq, quantity, seller });
 
 describe('SupplyDepthBlock', () => {
+  beforeEach(() => useQualityStore.setState({ hq: false }));
+
   it('renders price-tier rows with unit counts for the NQ book', () => {
     render(
       <SupplyDepthBlock

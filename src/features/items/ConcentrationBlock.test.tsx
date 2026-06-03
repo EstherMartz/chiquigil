@@ -1,12 +1,15 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { ConcentrationBlock } from './ConcentrationBlock';
+import { useQualityStore } from './qualityStore';
 import type { WorldListing } from '../../lib/universalis';
 
 const l = (price: number, quantity: number, seller: string, hq = false): WorldListing =>
   ({ world: 'Phantom', price, hq, quantity, seller });
 
 describe('ConcentrationBlock', () => {
+  beforeEach(() => useQualityStore.setState({ hq: false }));
+
   it('summarizes top-seller share and seller count', () => {
     render(
       <ConcentrationBlock

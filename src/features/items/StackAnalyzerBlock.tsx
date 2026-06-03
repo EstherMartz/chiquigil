@@ -11,6 +11,7 @@ import {
   soldByStack, listedByStack, isStackable, mergeStacks, suggestStack, partitionStacks,
   type MergedStackRow, type StackSuggestion, type RareSummary,
 } from './stackAnalysis';
+import { useQualityStore } from './qualityStore';
 
 const NINETY_DAYS_SEC = 90 * 24 * 60 * 60;
 
@@ -40,7 +41,8 @@ interface ViewProps { entries: HistoryEntry[]; listings: WorldListing[]; canHq: 
 
 /** Pure presentation: NQ/HQ toggle + demand and supply panels. Exported for tests. */
 export function StackAnalyzerView({ entries, listings, canHq }: ViewProps) {
-  const [hq, setHq] = useState(false);
+  const setHq = useQualityStore((s) => s.setHq);
+  const hq = useQualityStore((s) => s.hq) && canHq;
   const sold = soldByStack(entries, hq);
   const listed = listedByStack(listings, hq);
   const stackable = isStackable(sold, listed);
@@ -110,6 +112,7 @@ export function StackDemandSupplyChart({
   const clearHover = (stack: number) =>
     setHover((h) => (h?.row.stack === stack ? null : h));
   const [rareOpen, setRareOpen] = useState(false);
+  const [showAllRare, setShowAllRare] = useState(false);
 
   // Price line: a gold ~/unit polyline over the demand band, on a secondary price scale.
   // Columns are equal-width (no flex gap), so x = i + 0.5 lands at each column centre.
@@ -126,22 +129,25 @@ export function StackDemandSupplyChart({
   });
   if (run.length) segments.push(run);
 
-  // Dots at every priced column; value labels only at the price extremes (the range).
+  // A dot + value label per priced node; the peak (max price) is emphasised. Fixed-width
+  // columns keep labels narrower than their column, so every node can be labelled cleanly.
   type PricePoint = { i: number; price: number; y: number };
   const pricePoints: PricePoint[] = shown
     .map((r, i) => (r.sales > 0 ? { i, price: r.medianUnitPrice, y: priceY(r.medianUnitPrice) } : null))
     .filter((p): p is PricePoint => p !== null);
-  const labelPoints: PricePoint[] = [];
-  if (pricePoints.length) {
-    if (priceMax === priceMin) {
-      labelPoints.push(pricePoints[0]);
-    } else {
-      labelPoints.push(
-        pricePoints.reduce((a, b) => (b.price > a.price ? b : a)),
-        pricePoints.reduce((a, b) => (b.price < a.price ? b : a)),
-      );
-    }
-  }
+  const peakI = pricePoints.length
+    ? pricePoints.reduce((a, b) => (b.price > a.price ? b : a)).i
+    : -1;
+
+  // Stacks priced >5% above the median per-unit price get a gold axis label (price premium).
+  const sortedPrices = [...priced].sort((a, b) => a - b);
+  const m = sortedPrices.length;
+  const priceMedian = m === 0
+    ? 0
+    : m % 2
+      ? sortedPrices[(m - 1) / 2]
+      : (sortedPrices[m / 2 - 1] + sortedPrices[m / 2]) / 2;
+  const isPremium = (p: number) => priceMedian > 0 && p > 1.05 * priceMedian;
   const colCenter = (i: number) => `${((i + 0.5) / n) * 100}%`;
 
   return (
@@ -154,8 +160,8 @@ export function StackDemandSupplyChart({
 
       <div className="overflow-x-auto px-3 pb-2 pt-1">
         <div className="flex items-stretch">
-          {/* Equal-width column band (no gap → exact SVG alignment); relative for the price overlay. */}
-          <div className="relative flex items-stretch flex-1">
+          {/* Fixed-width column band (hugs its data, no dead canvas); relative for the price overlay. */}
+          <div className="relative flex items-stretch">
             {shown.map((r) => {
               const isRec = r.stack === recommended;
               return (
@@ -167,7 +173,7 @@ export function StackDemandSupplyChart({
                   onMouseLeave={() => clearHover(r.stack)}
                   onFocus={(e) => setHover({ row: r, el: e.currentTarget })}
                   onBlur={() => clearHover(r.stack)}
-                  className={`flex flex-col items-center min-w-[2.25rem] flex-1 outline-none focus-visible:bg-bg-card-hi ${r.isGap ? 'bg-jade/10' : ''}`}
+                  className={`flex flex-col items-center w-11 shrink-0 outline-none focus-visible:bg-bg-card-hi ${r.isGap ? 'bg-jade/10' : ''}`}
                 >
                   {/* Sweet-spot marker */}
                   <div className="flex items-end justify-center" style={{ height: MARKER_H }}>
@@ -183,8 +189,8 @@ export function StackDemandSupplyChart({
                       />
                     )}
                   </div>
-                  {/* Axis label */}
-                  <div className="py-1 font-mono text-[11px] text-text-cream whitespace-nowrap">
+                  {/* Axis label — gold when priced above the median (price premium) */}
+                  <div className={`py-1 font-mono text-[11px] whitespace-nowrap ${isPremium(r.medianUnitPrice) ? 'text-gold' : 'text-text-cream'}`}>
                     {r.stack}
                     {r.isGap && <span className="text-jade ml-0.5" aria-hidden>✓</span>}
                   </div>
@@ -224,23 +230,28 @@ export function StackDemandSupplyChart({
               </svg>
             )}
 
-            {/* Price dots (HTML — crisp, undistorted) */}
-            {pricePoints.map((p) => (
-              <div
-                key={`dot-${p.i}`}
-                className="absolute w-1.5 h-1.5 rounded-full bg-gold -translate-x-1/2 -translate-y-1/2 pointer-events-none"
-                style={{ left: colCenter(p.i), top: MARKER_H + p.y }}
-                aria-hidden
-              />
-            ))}
-            {/* Value labels at the price extremes only */}
-            {labelPoints.map((p) => {
+            {/* Price dots (HTML — crisp, undistorted); the peak is enlarged + ringed */}
+            {pricePoints.map((p) => {
+              const isPeak = p.i === peakI;
+              return (
+                <div
+                  key={`dot-${p.i}`}
+                  className={`absolute rounded-full bg-gold -translate-x-1/2 -translate-y-1/2 pointer-events-none ${
+                    isPeak ? 'w-3 h-3 ring-2 ring-gold/40' : 'w-2.5 h-2.5'
+                  }`}
+                  style={{ left: colCenter(p.i), top: MARKER_H + p.y }}
+                  aria-hidden
+                />
+              );
+            })}
+            {/* Value label at every priced node */}
+            {pricePoints.map((p) => {
               const above = p.y > DEMAND_H * 0.25;
               return (
                 <div
                   key={`lbl-${p.i}`}
                   className={`absolute -translate-x-1/2 pointer-events-none font-mono text-[9px] text-gold bg-bg-card/90 px-0.5 whitespace-nowrap ${
-                    above ? '-translate-y-[calc(100%+5px)]' : 'translate-y-1.5'
+                    above ? '-translate-y-[calc(100%+6px)]' : 'translate-y-2'
                   }`}
                   style={{ left: colCenter(p.i), top: MARKER_H + p.y }}
                   aria-hidden
@@ -268,18 +279,37 @@ export function StackDemandSupplyChart({
       </div>
 
       {rare && rareOpen && (
-        <div className="border-t border-border-base px-3 py-2">
-          <div className="font-mono text-[9px] tracking-widest uppercase text-text-low mb-1.5">
+        <div className="border-t border-border-base border-l-2 border-l-aether/60 px-3 py-2">
+          <div className="font-mono text-[9px] tracking-widest uppercase text-text-low mb-1">
             Rare sizes ({rare.count})
           </div>
-          <div className="flex flex-wrap gap-x-4 gap-y-1 max-h-32 overflow-y-auto">
-            {rare.rows.map((r) => (
-              <span key={r.stack} className="font-mono text-[10px] text-text-low whitespace-nowrap">
-                {`${r.stack}: ${r.sales > 0 ? `${r.sales} sold` : 'no sales'}`}
-                {r.listedCount > 0 ? ` · ${r.listedCount} listed` : ' · none listed'}
-              </span>
-            ))}
-          </div>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-text-low font-mono text-[10px] tracking-widest uppercase">
+                <th className="text-left px-2 py-1">Stack</th>
+                <th className="text-right px-2 py-1">Units sold (90d)</th>
+                <th className="text-right px-2 py-1">Unit price</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(showAllRare ? rare.rows : rare.rows.slice(0, 8)).map((r) => (
+                <tr key={r.stack} className="border-t border-border-base">
+                  <td className="px-2 py-2 font-mono text-text-cream">{r.stack}</td>
+                  <td className="px-2 py-2 text-right font-mono">{r.sales > 0 ? r.units : '—'}</td>
+                  <td className="px-2 py-2 text-right font-mono">{r.sales > 0 ? fmtGil(r.medianUnitPrice) : '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {rare.rows.length > 8 && (
+            <button
+              type="button"
+              onClick={() => setShowAllRare((o) => !o)}
+              className="mt-1.5 font-mono text-[10px] text-aether hover:underline"
+            >
+              {showAllRare ? 'Show less' : `Show all (${rare.rows.length})`}
+            </button>
+          )}
         </div>
       )}
 
@@ -289,8 +319,8 @@ export function StackDemandSupplyChart({
         </div>
       )}
 
-      <div className="border-t border-border-base px-3 py-1.5 font-mono text-[10px] text-text-low">
-        ✓ supply gap · ▾ suggested to list
+      <div className="border-t border-border-base px-3 py-1.5 font-mono text-[10px] text-text-dim">
+        ✓ supply gap · ▾ suggested to list · gold = above-median price
       </div>
 
       {hover && <ColumnTooltip row={hover.row} anchor={hover.el} />}
