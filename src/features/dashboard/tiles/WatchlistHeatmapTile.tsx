@@ -54,7 +54,7 @@ export function WatchlistHeatmapTile({ items, market, recipes }: {
                 onClick={() => setSizeMode(id)}
                 title={id === 'opportunity' ? 'Size by margin × velocity' : 'Size by sales/day'}
                 className={`font-mono text-[10px] tracking-widest uppercase px-2 py-1 transition-colors ${
-                  sizeMode === id ? 'text-aether' : 'text-text-dim hover:text-aether'
+                  sizeMode === id ? 'bg-bg-card-hi text-aether' : 'text-text-dim hover:text-aether'
                 }`}
               >
                 {label}
@@ -68,7 +68,7 @@ export function WatchlistHeatmapTile({ items, market, recipes }: {
                 key={id}
                 onClick={() => setScope(id)}
                 className={`font-mono text-[10px] tracking-widest uppercase px-2 py-1 transition-colors ${
-                  scope === id ? 'text-aether' : 'text-text-dim hover:text-aether'
+                  scope === id ? 'bg-bg-card-hi text-aether' : 'text-text-dim hover:text-aether'
                 }`}
               >
                 {label}

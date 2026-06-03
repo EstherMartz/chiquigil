@@ -119,7 +119,7 @@ function TopPickBanner({ picks }: { picks: TopPick[] }) {
         type="button"
         onClick={() => { dismissPick(pick.row.id); setIdx(0); }}
         title="Got it — stop suggesting this pick"
-        className="font-mono text-[9px] tracking-widest uppercase text-text-low hover:text-crimson transition-colors"
+        className="font-mono text-[9px] tracking-widest uppercase text-text-low hover:text-crimson border border-border-base hover:border-crimson/40 rounded-sm px-1.5 py-0.5 transition-colors"
       >
         got it ✕
       </button>

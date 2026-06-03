@@ -54,7 +54,7 @@ export function SuggestionRow({ s }: { s: Suggestion }) {
         <button
           type="button"
           onClick={() => toggleExcluded(s.id)}
-          className="font-mono text-[11px] text-text-low hover:text-crimson px-1.5 py-1 transition-colors"
+          className="font-mono text-[11px] text-text-low hover:text-crimson border border-border-base hover:border-crimson/40 rounded-sm px-1.5 py-0.5 transition-colors"
           title="Dismiss — don't suggest again"
           aria-label="Dismiss suggestion"
         >

@@ -259,7 +259,7 @@ export function CraftBatchView() {
                     </td>
                     <td className={`px-3 ${rowY} text-center`}>
                       <button
-                        className="text-crimson hover:text-crimson/80 text-lg leading-none"
+                        className="text-crimson hover:text-crimson/80 text-lg leading-none border border-border-base hover:border-crimson/40 rounded-sm px-1.5 py-0.5 inline-flex items-center justify-center transition-colors"
                         onClick={() => handleRemove(item.id)}
                         title="Remove and suggest replacement"
                       >
