@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from 'vitest';
 import type { BotSnapshots } from '../bot/loadSnapshots';
 import type { MarketData } from '../lib/universalis';
