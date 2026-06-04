@@ -33,7 +33,7 @@ export default {
       },
       fontFamily: {
         display: ['Cinzel', 'serif'],
-        body: ['Fraunces', 'Georgia', 'serif'],
+        body: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
         mono: ['"JetBrains Mono"', 'monospace'],
       },
     },
