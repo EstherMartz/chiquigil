@@ -2,6 +2,8 @@ import { loadSnapshots } from '../bot/loadSnapshots';
 import type { Recipe } from '../lib/recipes';
 import { cheapestWorld } from '../lib/cheapestWorld';
 import type { MarketData } from '../lib/universalis';
+import { priceRecipe, jobNameOf } from './_item-sources-core';
+import { categoryLabel } from '../lib/itemSearchCategories';
 
 interface SharedCache {
   phantom: MarketData;
@@ -35,7 +37,8 @@ interface RecipeSource {
   jobId: number;
   jobName: string;
   level: number;
-  ingredients: Array<{ itemId: number; itemName: string; qty: number }>;
+  ingredients: Array<{ itemId: number; itemName: string; qty: number; unitPrice: number | null; source: string }>;
+  materialCost: number;
   outputQty: number;
 }
 
@@ -68,6 +71,10 @@ interface CompanyCraftSource {
 interface ItemSourcesResponse {
   itemId: number;
   itemName: string;
+  ilvl: number;
+  category: string | null;
+  rarity: number;
+  canHq: boolean;
   sources: (RecipeSource | VendorSource | GatheringSource | SpecialShopSource | CompanyCraftSource)[];
 }
 
@@ -92,29 +99,34 @@ async function handler(req: any, res: any) {
   const itemName = snapshots.namesById.get(itemId) ?? `Item #${itemId}`;
   const sources: any[] = [];
 
-  // Recipes (all recipes that output this item)
-  const jobNames: Record<number, string> = {
-    8: 'Carpenter', 9: 'Blacksmith', 10: 'Armorer', 11: 'Goldsmith',
-    12: 'Weaver', 13: 'Leatherworker', 14: 'Carpenter', 15: 'Alchemist',
-    16: 'Culinarian'
-  };
+  // Load the market cache up front; recipe pricing and the verdict both need it.
+  const cache = await loadMarketCache(baseUrl);
+
+  let primaryRecipe: import('../lib/recipes').Recipe | null = null;
+  let primaryMaterialCost = 0;
 
   for (const [outputId, recipe] of snapshots.recipes) {
-    if (outputId === itemId) {
-      const jobName = jobNames[recipe.classJobId] || `Job #${recipe.classJobId}`;
-      sources.push({
-        type: 'recipe',
-        jobId: recipe.classJobId,
-        jobName,
-        level: recipe.recipeLevel?.stars || 1,
-        ingredients: recipe.ingredients.map(ing => ({
-          itemId: ing.itemId,
-          itemName: snapshots.namesById.get(ing.itemId) ?? `Item #${ing.itemId}`,
-          qty: ing.amount,
-        })),
-        outputQty: recipe.amountResult ?? 1,
-      });
+    if (outputId !== itemId) continue;
+    const priced = priceRecipe(recipe, cache.phantom, snapshots);
+    if (!primaryRecipe) {
+      primaryRecipe = recipe;
+      primaryMaterialCost = priced.materialCost;
     }
+    sources.push({
+      type: 'recipe',
+      jobId: 0,
+      jobName: jobNameOf(recipe.classJob),
+      level: recipe.recipeLevel,
+      ingredients: priced.ingredients.map(ing => ({
+        itemId: ing.itemId,
+        itemName: ing.itemName,
+        qty: ing.qty,
+        unitPrice: ing.unitPrice,
+        source: ing.source,
+      })),
+      materialCost: priced.materialCost,
+      outputQty: recipe.amountResult ?? 1,
+    });
   }
 
   // Vendors
@@ -186,7 +198,6 @@ async function handler(req: any, res: any) {
     cheapestPrice: number | null;
   } | null = null;
   try {
-    const cache = await loadMarketCache(baseUrl);
     const dcEntry = cache.dc?.[String(itemId)];
     const homeEntry = cache.phantom?.[String(itemId)];
     if (dcEntry || homeEntry) {
@@ -203,10 +214,16 @@ async function handler(req: any, res: any) {
     // market summary is best-effort
   }
 
+  const meta = snapshots.itemsById.get(itemId);
+
   res.setHeader('Cache-Control', 'public, max-age=600');
   return res.status(200).json({
     itemId,
     itemName,
+    ilvl: meta?.ilvl ?? 0,
+    category: meta?.sc ? categoryLabel(meta.sc) : null,
+    rarity: meta?.rarity ?? 0,
+    canHq: meta?.canHq ?? false,
     sources,
     market,
   });
