@@ -81,15 +81,15 @@ export function Sidebar() {
     <aside className="hidden md:flex md:flex-col fixed md:relative w-[220px] min-w-[220px] h-screen md:h-full sticky top-0 bg-bg-card border-r border-border-base z-20">
       {/* Branding — qiqirn banner art behind the title, darkened for legibility */}
       <div
-        className="relative px-4 pt-3 pb-3 border-b border-border-base flex-shrink-0 bg-bg-card bg-cover bg-center"
+        className="relative px-4 pt-2 pb-2 border-b border-border-base flex-shrink-0 bg-bg-card bg-cover bg-center"
         style={{ backgroundImage: 'url(/qiqirn-banner.png)' }}
       >
         <div className="absolute inset-0 bg-gradient-to-r from-bg-card via-bg-card/80 to-bg-card/30" aria-hidden />
         <div className="relative">
-          <div className="font-mono text-[13px] tracking-widest text-aether uppercase mb-1 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
+          <div className="font-mono text-[11px] tracking-widest text-aether uppercase mb-0.5 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
             clink-clink
           </div>
-          <h1 className="font-display font-semibold text-xl tracking-wide leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
+          <h1 className="font-display font-semibold text-lg tracking-wide leading-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
             <span className="text-gold italic">qiqirn.tools</span>
           </h1>
         </div>
