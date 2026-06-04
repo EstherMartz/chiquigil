@@ -4,6 +4,9 @@ import { cheapestWorld } from '../lib/cheapestWorld';
 import type { MarketData } from '../lib/universalis';
 import { priceRecipe, jobNameOf } from './_item-sources-core';
 import { categoryLabel } from '../lib/itemSearchCategories';
+import { computeVerdict } from '../features/items/verdict/computeVerdict';
+
+const HOME_WORLD = process.env.HOME_WORLD ?? 'Phantom';
 
 interface SharedCache {
   phantom: MarketData;
@@ -76,6 +79,15 @@ interface ItemSourcesResponse {
   rarity: number;
   canHq: boolean;
   sources: (RecipeSource | VendorSource | GatheringSource | SpecialShopSource | CompanyCraftSource)[];
+  market: {
+    velocity: number;
+    listingCount: number;
+    minNQ: number | null;
+    cheapestWorld: string | null;
+    cheapestPrice: number | null;
+  } | null;
+  verdict: Record<string, unknown> | null;
+  runnerUp: Record<string, unknown> | null;
 }
 
 async function handler(req: any, res: any) {
@@ -216,6 +228,41 @@ async function handler(req: any, res: any) {
 
   const meta = snapshots.itemsById.get(itemId);
 
+  // Verdict — reuse the web app's tested computeVerdict. computeVerdict itself
+  // returns an "untraded" result when there is no usable home price, so we only
+  // skip it entirely when there is neither market data nor a recipe to assess.
+  const phantomItem = cache.phantom?.[String(itemId)];
+  let verdict: Record<string, unknown> | null = null;
+  let runnerUp: Record<string, unknown> | null = null;
+  if (phantomItem || primaryRecipe) {
+    const vr = computeVerdict({
+      phantom: phantomItem,
+      region: cache.region?.[String(itemId)],
+      recipe: primaryRecipe ?? undefined,
+      vendorPrice: snapshots.vendorMap.get(itemId),
+      materialCost: primaryMaterialCost,
+      homeWorld: HOME_WORLD,
+      canHq: meta?.canHq ?? false,
+      now: Date.now(),
+    });
+    verdict = {
+      headline: vr.best.headline,
+      rationale: vr.best.rationale,
+      bestPlay: vr.best.bestPlay,
+      bestPlayDetail: vr.best.bestPlayDetail,
+      netPerUnit: Math.round(vr.best.netPerUnit),
+      gilPerDay: Math.round(vr.best.gilPerDay),
+      roi: vr.best.roi,
+      risk: vr.best.risk,
+      tone: vr.best.tone,
+      quality: vr.best.quality,
+      kind: vr.best.kind,
+    };
+    runnerUp = vr.runnerUp
+      ? { bestPlay: vr.runnerUp.bestPlay, gilPerDay: Math.round(vr.runnerUp.gilPerDay), kind: vr.runnerUp.kind }
+      : null;
+  }
+
   res.setHeader('Cache-Control', 'public, max-age=600');
   return res.status(200).json({
     itemId,
@@ -226,6 +273,8 @@ async function handler(req: any, res: any) {
     canHq: meta?.canHq ?? false,
     sources,
     market,
+    verdict,
+    runnerUp,
   });
 }
 
