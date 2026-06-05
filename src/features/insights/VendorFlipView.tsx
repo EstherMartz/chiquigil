@@ -9,12 +9,13 @@ import { runVendorFlip } from '../queries/runVendorFlip';
 import { VendorFlipResults } from '../queries/VendorFlipResults';
 import { defaultVendorFlipFilter, type VendorFlipFilter, type VendorFlipSort, type HqMode } from '../queries/types';
 import { CRYSTALS_SEARCH_CATEGORY } from '../queries/commonFilters';
-import { Spinner, SpinGlyph } from '../../components/Spinner';
+import { Spinner } from '../../components/Spinner';
 import { StatusBanner } from '../../components/StatusBanner';
 import { EmptyState } from '../../components/EmptyState';
 import { useInitialScan } from '../queries/useInitialScan';
 import { CategorySelect } from '../../components/CategorySelect';
 import { ITEM_SEARCH_CATEGORIES, categoryLabel, CATEGORY_GROUPS } from '../../lib/itemSearchCategories';
+import { VendorRefreshControl } from './VendorRefreshControl';
 
 interface RunResult {
   saleMap: MarketData;
@@ -27,6 +28,7 @@ export function VendorFlipView() {
   const vendors = useVendorShopSnapshot();
   const [filter, setFilter] = useState<VendorFlipFilter>(defaultVendorFlipFilter());
   const [sort, setSort] = useState<VendorFlipSort>(defaultVendorFlipFilter().sort);
+  const [lastRefreshTs, setLastRefreshTs] = useState<number | null>(null);
 
   const scanIds = useMemo(() => {
     if (!snapshot.data || !vendors.data) return [];
@@ -49,6 +51,7 @@ export function VendorFlipView() {
       );
       return { saleMap: sale.data, skipped: sale.errors.length };
     },
+    onSuccess: () => setLastRefreshTs(Date.now()),
   });
 
   const rows = useMemo(() => {
@@ -58,29 +61,34 @@ export function VendorFlipView() {
 
   const ready = snapshot.data != null && vendors.data != null;
 
-  useInitialScan(ready, () => { run.reset(); run.mutate(); });
+  useInitialScan(ready, () => { run.mutate(); });
 
   return (
     <div className="space-y-4">
       <FilterBar
         value={filter}
         onChange={setFilter}
-        onRun={() => { run.reset(); run.mutate(); }}
-        busy={run.isPending}
-        notReady={!snapshot.data || !vendors.data}
       />
 
-      <div className="font-mono text-[10px] text-text-low">
-        {vendors.isLoading
-          ? 'Loading vendor catalog…'
-          : `${scanIds.length.toLocaleString()} candidate items`}
-        {run.data && <> · {rows.length.toLocaleString()} results</>}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="font-mono text-[10px] text-text-low">
+          {vendors.isLoading
+            ? 'Loading vendor catalog…'
+            : `${scanIds.length.toLocaleString()} candidate items`}
+          {run.data && <> · {rows.length.toLocaleString()} results</>}
+        </div>
+        <VendorRefreshControl
+          onRefresh={() => run.mutate()}
+          busy={run.isPending}
+          notReady={!snapshot.data || !vendors.data}
+          lastRefreshTs={lastRefreshTs}
+        />
       </div>
 
       {vendors.isError && (
         <StatusBanner kind="error">Vendor catalog fetch failed: {(vendors.error as Error).message}</StatusBanner>
       )}
-      {run.isPending && <Spinner label={`Fetching ${world} prices for ${scanIds.length} items…`} />}
+      {run.isPending && !run.data && <Spinner label={`Fetching ${world} prices for ${scanIds.length} items…`} />}
       {run.isError && <StatusBanner kind="error">Universalis fetch failed: {(run.error as Error).message}</StatusBanner>}
       {run.data && run.data.skipped > 0 && (
         <StatusBanner kind="error">{run.data.skipped} batch(es) skipped (Universalis error)</StatusBanner>
@@ -108,12 +116,9 @@ export function VendorFlipView() {
   );
 }
 
-function FilterBar({ value, onChange, onRun, busy, notReady }: {
+function FilterBar({ value, onChange }: {
   value: VendorFlipFilter;
   onChange: (f: VendorFlipFilter) => void;
-  onRun: () => void;
-  busy: boolean;
-  notReady: boolean;
 }) {
   return (
     <div className="border border-border-base bg-bg-card p-3 space-y-3">
@@ -181,16 +186,6 @@ function FilterBar({ value, onChange, onRun, busy, notReady }: {
               </button>
             ))}
           </div>
-        </div>
-        <div className="flex gap-2 w-full sm:w-auto sm:ml-auto order-last">
-          <button
-            type="button"
-            onClick={onRun} disabled={busy || notReady}
-            title={notReady ? 'Loading vendor catalog…' : 'Re-fetch live market prices'}
-            className="font-mono text-[10px] tracking-widest uppercase bg-gold text-bg-deep px-4 py-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
-          >
-            {busy ? <>Refreshing…<SpinGlyph /></> : 'Refresh prices'}
-          </button>
         </div>
       </div>
     </div>

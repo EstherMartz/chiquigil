@@ -71,9 +71,8 @@ describe('VendorFlipView', () => {
     expect(screen.getByText(/2 candidate items/i)).toBeInTheDocument();
   });
 
-  it('runs the scan, fetches home-world prices, and renders rows', async () => {
+  it('auto-scans on load, fetches home-world prices, and renders rows', async () => {
     renderView();
-    fireEvent.click(screen.getAllByRole('button', { name: /refresh prices/i })[0]);
     await waitFor(() => {
       expect(screen.getByText('Widget')).toBeInTheDocument();
       expect(screen.getByText('Gizmo')).toBeInTheDocument();
