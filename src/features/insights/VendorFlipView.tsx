@@ -14,7 +14,7 @@ import { StatusBanner } from '../../components/StatusBanner';
 import { EmptyState } from '../../components/EmptyState';
 import { useInitialScan } from '../queries/useInitialScan';
 import { CategorySelect } from '../../components/CategorySelect';
-import { ITEM_SEARCH_CATEGORIES, categoryLabel } from '../../lib/itemSearchCategories';
+import { ITEM_SEARCH_CATEGORIES, categoryLabel, CATEGORY_GROUPS } from '../../lib/itemSearchCategories';
 
 interface RunResult {
   saleMap: MarketData;
@@ -146,6 +146,7 @@ function FilterBar({ value, onChange, onRun, onRefreshVendors, busy, notReady, s
           selected={value.searchCategories}
           onChange={(ids) => onChange({ ...value, searchCategories: ids })}
           placeholder="Search categories…"
+          groups={CATEGORY_GROUPS}
         />
       </div>
       <div className="flex flex-wrap items-end gap-3 justify-between">

@@ -105,4 +105,17 @@ describe('VendorFlipView', () => {
       expect(screen.getByText(/filters changed — run scan to refresh/i)).toBeInTheDocument(),
     );
   });
+
+  it('exposes a Housing group chip that marks the scan stale when selected', async () => {
+    renderView();
+    fireEvent.click(screen.getAllByRole('button', { name: /run scan/i })[0]);
+    await waitFor(() => expect(screen.getByText('Widget')).toBeInTheDocument());
+
+    fireEvent.focus(screen.getByPlaceholderText(/search categories/i));
+    fireEvent.click(screen.getByRole('button', { name: 'Housing' }));
+
+    await waitFor(() =>
+      expect(screen.getByText(/filters changed — run scan to refresh/i)).toBeInTheDocument(),
+    );
+  });
 });

@@ -1,6 +1,6 @@
 import type { ChangeEvent } from 'react';
 import { useState } from 'react';
-import { ITEM_SEARCH_CATEGORIES, categoryLabel } from '../../lib/itemSearchCategories';
+import { ITEM_SEARCH_CATEGORIES, categoryLabel, CATEGORY_GROUPS } from '../../lib/itemSearchCategories';
 import type { HqMode, QueryFilter, QueryMode, QueryScope, QuerySort } from './types';
 import { btnPrimary } from '../../components/buttonStyles';
 import { CategorySelect } from '../../components/CategorySelect';
@@ -51,6 +51,7 @@ export function QueryBuilder({ value, onChange, onRun, busy, stale }: Props) {
           selected={value.searchCategories}
           onChange={(ids) => patch({ searchCategories: ids })}
           placeholder="Search categories…"
+          groups={CATEGORY_GROUPS}
         />
       </div>
 
