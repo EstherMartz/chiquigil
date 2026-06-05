@@ -106,3 +106,20 @@ export function categoriesByGroup(group: ItemSearchCategoryEntry['group']): numb
 export function categoryLabel(id: number): string {
   return ITEM_SEARCH_CATEGORIES.find((c) => c.id === id)?.name ?? `SC ${id}`;
 }
+
+export interface CategoryGroup {
+  label: ItemSearchCategoryEntry['group'];
+  ids: number[];
+}
+
+/** Each distinct `group`, in first-seen order, with its member category ids. */
+export const CATEGORY_GROUPS: CategoryGroup[] = (() => {
+  const order: ItemSearchCategoryEntry['group'][] = [];
+  const byGroup = new Map<ItemSearchCategoryEntry['group'], number[]>();
+  for (const c of ITEM_SEARCH_CATEGORIES) {
+    let ids = byGroup.get(c.group);
+    if (!ids) { ids = []; byGroup.set(c.group, ids); order.push(c.group); }
+    ids.push(c.id);
+  }
+  return order.map((label) => ({ label, ids: byGroup.get(label)! }));
+})();
