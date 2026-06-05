@@ -10,6 +10,7 @@ interface Props {
   selected: number[];
   onChange: (ids: number[]) => void;
   placeholder?: string;
+  groups?: { label: string; ids: number[] }[];
 }
 
 export function CategorySelect({
@@ -17,6 +18,7 @@ export function CategorySelect({
   selected,
   onChange,
   placeholder = 'Search categories...',
+  groups,
 }: Props) {
   const [searchText, setSearchText] = useState('');
   const [isOpen, setIsOpen] = useState(false);
@@ -51,6 +53,24 @@ export function CategorySelect({
   // Remove individual pill
   const handleRemovePill = (id: number) => {
     onChange(selected.filter(sid => sid !== id));
+  };
+
+  // Tri-state for a group: 'active' (all ids selected), 'mixed' (some), 'none'.
+  const groupState = (ids: number[]): 'active' | 'mixed' | 'none' => {
+    const n = ids.reduce((acc, id) => acc + (selected.includes(id) ? 1 : 0), 0);
+    if (n === 0) return 'none';
+    return n === ids.length ? 'active' : 'mixed';
+  };
+
+  // Toggle a whole group: remove all if fully selected, otherwise add all.
+  const handleToggleGroup = (ids: number[]) => {
+    if (ids.every((id) => selected.includes(id))) {
+      onChange(selected.filter((id) => !ids.includes(id)));
+    } else {
+      const next = new Set(selected);
+      ids.forEach((id) => next.add(id));
+      onChange([...next]);
+    }
   };
 
   // Close dropdown when clicking outside
@@ -88,6 +108,30 @@ export function CategorySelect({
       {/* Dropdown */}
       {isOpen && (
         <div className="absolute z-20 mt-1 w-full bg-bg-card-hi border border-border-hi max-h-60 overflow-y-auto">
+          {groups && groups.length > 0 && (
+            <div className="flex flex-wrap gap-1 p-2 border-b border-border-base">
+              {groups.map((g) => {
+                const state = groupState(g.ids);
+                const cls =
+                  state === 'active'
+                    ? 'border-gold text-gold'
+                    : state === 'mixed'
+                    ? 'border-gold/50 text-gold/70'
+                    : 'border-border-base text-text-dim hover:text-aether';
+                return (
+                  <button
+                    key={g.label}
+                    type="button"
+                    aria-pressed={state === 'active' ? 'true' : state === 'mixed' ? 'mixed' : 'false'}
+                    onClick={() => handleToggleGroup(g.ids)}
+                    className={`font-mono text-[10px] tracking-widest uppercase px-2 py-0.5 border ${cls}`}
+                  >
+                    {g.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
           {filteredCategories.length > 0 ? (
             filteredCategories.map(category => (
               <label
