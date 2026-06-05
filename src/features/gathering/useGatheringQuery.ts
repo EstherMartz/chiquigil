@@ -3,6 +3,7 @@ import { useItemSnapshot } from '../queries/useItemSnapshot';
 import { useGatheringCatalog } from '../queries/useGatheringCatalog';
 import { useSettingsStore } from '../settings/store';
 import { runQuery } from '../queries/runQuery';
+import { CRYSTALS_SEARCH_CATEGORY } from '../queries/commonFilters';
 import { fetchInBatches } from '../../lib/universalisBulk';
 import { fetchMarketData, type MarketData } from '../../lib/universalis';
 import type { QueryFilter, QueryResultRow } from '../queries/types';
@@ -44,7 +45,7 @@ export interface UseGatheringQueryResult {
 export function useGatheringQuery(): UseGatheringQueryResult {
   const snapshot = useItemSnapshot();
   const catalog = useGatheringCatalog();
-  const { world } = useSettingsStore();
+  const { world, hideCrystals } = useSettingsStore();
 
   const mutation = useMutation<RunResult>({
     mutationFn: async () => {
@@ -52,6 +53,7 @@ export function useGatheringQuery(): UseGatheringQueryResult {
       if (!catalog.data) throw new Error('Gathering catalog not ready');
       const ids: number[] = [];
       for (const item of snapshot.data.items) {
+        if (hideCrystals && item.sc === CRYSTALS_SEARCH_CATEGORY) continue;
         if (catalog.data.has(item.id)) ids.push(item.id);
       }
       const result = await fetchInBatches<MarketData[string]>(

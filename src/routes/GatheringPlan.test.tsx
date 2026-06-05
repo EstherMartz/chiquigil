@@ -101,6 +101,59 @@ describe('GatheringPlan route', () => {
     expect(screen.getByRole('button', { name: /copy gbr clipboard string/i })).not.toBeDisabled();
   });
 
+  // A fetch stub that faithfully returns ONLY the item ids present in the
+  // requested Universalis URL (real Universalis never returns unrequested ids).
+  function stubFaithfulMarketFetch() {
+    const allItems: Record<string, unknown> = {
+      '5544': { listings: [{ hq: false, pricePerUnit: 100 }], recentHistory: Array.from({ length: 10 }, () => ({ hq: false, pricePerUnit: 100 })), regularSaleVelocity: 5, averagePriceNQ: 110 },
+      '2': { listings: [{ hq: false, pricePerUnit: 80 }], recentHistory: Array.from({ length: 10 }, () => ({ hq: false, pricePerUnit: 80 })), regularSaleVelocity: 9, averagePriceNQ: 88 },
+    };
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      const idsPart = url.split('?')[0].split('/').pop() ?? '';
+      const requested = new Set(idsPart.split(','));
+      const items = Object.fromEntries(Object.entries(allItems).filter(([id]) => requested.has(id)));
+      return { ok: true, json: async () => ({ items }) };
+    }));
+  }
+
+  const crystalSnapshot: SnapshotItem[] = [
+    { id: 5544, name: 'Cobalt Ore', sc: 1, ui: 1, ilvl: 1, canHq: false },
+    { id: 2, name: 'Fire Shard', sc: 58, ui: 1, ilvl: 1, canHq: false },
+  ];
+  const crystalCatalog: [number, { level: number; timed: boolean; hidden: boolean }][] = [
+    [5544, { level: 50, timed: false, hidden: false }],
+    [2, { level: 1, timed: false, hidden: false }],
+  ];
+
+  it('omits crystals from the plan when hideCrystals is on', async () => {
+    // hideCrystals defaults to true (set in beforeEach via defaultSettings()).
+    await putCachedItems(crystalSnapshot);
+    await putCachedGatheringCatalog(crystalCatalog);
+    stubFaithfulMarketFetch();
+
+    render(withProviders(<GatheringPlan />));
+    const runBtn = await screen.findByRole('button', { name: /run scan/i });
+    await waitFor(() => expect(runBtn).not.toBeDisabled());
+    fireEvent.click(runBtn);
+
+    await waitFor(() => expect(screen.getByText('Cobalt Ore')).toBeInTheDocument());
+    expect(screen.queryByText('Fire Shard')).not.toBeInTheDocument();
+  });
+
+  it('includes crystals in the plan when hideCrystals is off', async () => {
+    useSettingsStore.setState({ hideCrystals: false });
+    await putCachedItems(crystalSnapshot);
+    await putCachedGatheringCatalog(crystalCatalog);
+    stubFaithfulMarketFetch();
+
+    render(withProviders(<GatheringPlan />));
+    const runBtn = await screen.findByRole('button', { name: /run scan/i });
+    await waitFor(() => expect(runBtn).not.toBeDisabled());
+    fireEvent.click(runBtn);
+
+    await waitFor(() => expect(screen.getByText('Fire Shard')).toBeInTheDocument());
+  });
+
   it('disables Run scan until snapshot and catalog are ready', () => {
     // No seeded caches; fetch fails so they never resolve.
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('no network')));
