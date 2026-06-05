@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { useSettingsStore } from '../settings/store';
 import { useItemSnapshot } from '../queries/useItemSnapshot';
-import { useVendorShopSnapshot, useRefreshVendorShopSnapshot } from '../queries/useVendorShopSnapshot';
+import { useVendorShopSnapshot } from '../queries/useVendorShopSnapshot';
 import { fetchInBatches } from '../../lib/universalisBulk';
 import { fetchMarketData, type MarketData } from '../../lib/universalis';
 import { runVendorFlip } from '../queries/runVendorFlip';
@@ -19,60 +19,44 @@ import { ITEM_SEARCH_CATEGORIES, categoryLabel, CATEGORY_GROUPS } from '../../li
 interface RunResult {
   saleMap: MarketData;
   skipped: number;
-  filterAtRun: VendorFlipFilter;
-}
-
-function scanParamsChanged(a: VendorFlipFilter, b: VendorFlipFilter): boolean {
-  return a.minProfit !== b.minProfit
-    || a.minMarkup !== b.minMarkup
-    || a.minVelocity !== b.minVelocity
-    || a.maxListings !== b.maxListings
-    || a.hq !== b.hq
-    || a.searchCategories.length !== b.searchCategories.length
-    || a.searchCategories.some((v, i) => v !== b.searchCategories[i]);
 }
 
 export function VendorFlipView() {
   const { world, hideCrystals } = useSettingsStore();
   const snapshot = useItemSnapshot();
   const vendors = useVendorShopSnapshot();
-  const refreshVendors = useRefreshVendorShopSnapshot();
   const [filter, setFilter] = useState<VendorFlipFilter>(defaultVendorFlipFilter());
   const [sort, setSort] = useState<VendorFlipSort>(defaultVendorFlipFilter().sort);
 
-  const candidateIds = useMemo(() => {
+  const scanIds = useMemo(() => {
     if (!snapshot.data || !vendors.data) return [];
-    const catSet = filter.searchCategories.length ? new Set(filter.searchCategories) : null;
     const out: number[] = [];
     for (const item of snapshot.data.items) {
       if (hideCrystals && item.sc === CRYSTALS_SEARCH_CATEGORY) continue;
       if (!vendors.data.snapshot.has(item.id)) continue;
-      if (catSet && !catSet.has(item.sc)) continue;
-      if (filter.hq === 'hq' && !item.canHq) continue;
       out.push(item.id);
     }
     return out;
-  }, [snapshot.data, vendors.data, filter.searchCategories, filter.hq, hideCrystals]);
+  }, [snapshot.data, vendors.data, hideCrystals]);
 
   const run = useMutation<RunResult>({
     mutationFn: async () => {
       if (!snapshot.data || !vendors.data) throw new Error('Snapshot not ready');
       const sale = await fetchInBatches<MarketData[string]>(
-        candidateIds,
+        scanIds,
         (chunk) => fetchMarketData(world, chunk),
         { chunkSize: 100, concurrency: 4 },
       );
-      return { saleMap: sale.data, skipped: sale.errors.length, filterAtRun: filter };
+      return { saleMap: sale.data, skipped: sale.errors.length };
     },
   });
 
   const rows = useMemo(() => {
     if (!snapshot.data || !vendors.data || !run.data) return [];
-    return runVendorFlip(snapshot.data.items, vendors.data.snapshot, run.data.saleMap, { ...run.data.filterAtRun, sort });
-  }, [snapshot.data, vendors.data, run.data, sort]);
+    return runVendorFlip(snapshot.data.items, vendors.data.snapshot, run.data.saleMap, { ...filter, sort });
+  }, [snapshot.data, vendors.data, run.data, filter, sort]);
 
   const ready = snapshot.data != null && vendors.data != null;
-  const stale = run.data != null && scanParamsChanged(run.data.filterAtRun, filter);
 
   useInitialScan(ready, () => { run.reset(); run.mutate(); });
 
@@ -82,23 +66,21 @@ export function VendorFlipView() {
         value={filter}
         onChange={setFilter}
         onRun={() => { run.reset(); run.mutate(); }}
-        onRefreshVendors={async () => { await refreshVendors(); }}
         busy={run.isPending}
         notReady={!snapshot.data || !vendors.data}
-        stale={stale}
       />
 
       <div className="font-mono text-[10px] text-text-low">
         {vendors.isLoading
           ? 'Loading vendor catalog…'
-          : `${candidateIds.length.toLocaleString()} candidate items`}
+          : `${scanIds.length.toLocaleString()} candidate items`}
         {run.data && <> · {rows.length.toLocaleString()} results</>}
       </div>
 
       {vendors.isError && (
         <StatusBanner kind="error">Vendor catalog fetch failed: {(vendors.error as Error).message}</StatusBanner>
       )}
-      {run.isPending && <Spinner label={`Fetching ${world} prices for ${candidateIds.length} items…`} />}
+      {run.isPending && <Spinner label={`Fetching ${world} prices for ${scanIds.length} items…`} />}
       {run.isError && <StatusBanner kind="error">Universalis fetch failed: {(run.error as Error).message}</StatusBanner>}
       {run.data && run.data.skipped > 0 && (
         <StatusBanner kind="error">{run.data.skipped} batch(es) skipped (Universalis error)</StatusBanner>
@@ -116,7 +98,7 @@ export function VendorFlipView() {
       {run.data && (
         <VendorFlipResults
           rows={rows}
-          totalCandidates={candidateIds.length}
+          totalCandidates={scanIds.length}
           skippedChunks={run.data.skipped}
           sort={sort}
           onSortChange={setSort}
@@ -126,14 +108,12 @@ export function VendorFlipView() {
   );
 }
 
-function FilterBar({ value, onChange, onRun, onRefreshVendors, busy, notReady, stale }: {
+function FilterBar({ value, onChange, onRun, busy, notReady }: {
   value: VendorFlipFilter;
   onChange: (f: VendorFlipFilter) => void;
   onRun: () => void;
-  onRefreshVendors: () => Promise<void>;
   busy: boolean;
   notReady: boolean;
-  stale: boolean;
 }) {
   return (
     <div className="border border-border-base bg-bg-card p-3 space-y-3">
@@ -205,27 +185,12 @@ function FilterBar({ value, onChange, onRun, onRefreshVendors, busy, notReady, s
         <div className="flex gap-2 w-full sm:w-auto sm:ml-auto order-last">
           <button
             type="button"
-            onClick={() => { void onRefreshVendors(); }}
-            className="font-mono text-[10px] tracking-widest uppercase border border-border-base text-text-dim px-3 py-2 hover:text-aether"
-            title="Re-fetch the gil-shop catalog"
+            onClick={onRun} disabled={busy || notReady}
+            title={notReady ? 'Loading vendor catalog…' : 'Re-fetch live market prices'}
+            className="font-mono text-[10px] tracking-widest uppercase bg-gold text-bg-deep px-4 py-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
           >
-            ⟳ Vendors
+            {busy ? <>Refreshing…<SpinGlyph /></> : 'Refresh prices'}
           </button>
-          <div className="flex flex-col items-stretch gap-1 flex-1 sm:flex-initial">
-            {stale && !busy && (
-              <span className="font-mono text-[10px] tracking-widest uppercase text-gold/80 text-right">
-                Filters changed — Run scan to refresh
-              </span>
-            )}
-            <button
-              type="button"
-              onClick={onRun} disabled={busy || notReady}
-              title={notReady ? 'Loading vendor catalog…' : undefined}
-              className="font-mono text-[10px] tracking-widest uppercase bg-gold text-bg-deep px-4 py-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
-            >
-              {busy ? <>Running…<SpinGlyph /></> : 'Run scan'}
-            </button>
-          </div>
         </div>
       </div>
     </div>

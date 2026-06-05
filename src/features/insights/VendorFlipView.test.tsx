@@ -22,7 +22,6 @@ vi.mock('../queries/useVendorShopSnapshot', () => ({
     isError: false,
     error: null,
   }),
-  useRefreshVendorShopSnapshot: () => async () => {},
 }));
 
 vi.mock('../settings/store', () => ({
@@ -68,14 +67,13 @@ beforeEach(() => {
 describe('VendorFlipView', () => {
   it('renders the filter strip + initial idle state with candidate count', () => {
     renderView();
-    // Two "Run scan" buttons: FilterBar primary + EmptyState CTA. Both should be present.
-    expect(screen.getAllByRole('button', { name: /run scan/i }).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByRole('button', { name: /refresh prices/i }).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText(/2 candidate items/i)).toBeInTheDocument();
   });
 
   it('runs the scan, fetches home-world prices, and renders rows', async () => {
     renderView();
-    fireEvent.click(screen.getAllByRole('button', { name: /run scan/i })[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: /refresh prices/i })[0]);
     await waitFor(() => {
       expect(screen.getByText('Widget')).toBeInTheDocument();
       expect(screen.getByText('Gizmo')).toBeInTheDocument();
@@ -88,34 +86,32 @@ describe('VendorFlipView', () => {
     expect(screen.getByPlaceholderText(/search categories/i)).toBeInTheDocument();
   });
 
-  it('marks the scan stale when a category is selected after a scan', async () => {
+  it('updates results live when Min profit is raised — no refetch', async () => {
     renderView();
-    // Run an initial scan so stale-detection can apply (stale requires run.data != null).
-    fireEvent.click(screen.getAllByRole('button', { name: /run scan/i })[0]);
     await waitFor(() => expect(screen.getByText('Widget')).toBeInTheDocument());
+    const callsBefore = fetchMarketDataMock.mock.calls.length;
 
-    // Open the category dropdown and narrow to a single, uniquely-named category.
-    const search = screen.getByPlaceholderText(/search categories/i);
-    fireEvent.focus(search);
-    fireEvent.change(search, { target: { value: 'Primary Arms' } });
-    fireEvent.click(screen.getByRole('checkbox'));
+    // Each fixture row profits 900/u; raising the floor above that drops them live.
+    fireEvent.change(screen.getByLabelText(/min profit/i), { target: { value: '5000' } });
 
-    // Changing a scan parameter should surface the "Run scan to refresh" prompt.
-    await waitFor(() =>
-      expect(screen.getByText(/filters changed — run scan to refresh/i)).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.queryByText('Widget')).not.toBeInTheDocument());
+    expect(fetchMarketDataMock.mock.calls.length).toBe(callsBefore);
   });
 
-  it('exposes a Housing group chip that marks the scan stale when selected', async () => {
+  it('applies a group chip live without refetching', async () => {
     renderView();
-    fireEvent.click(screen.getAllByRole('button', { name: /run scan/i })[0]);
     await waitFor(() => expect(screen.getByText('Widget')).toBeInTheDocument());
+    const callsBefore = fetchMarketDataMock.mock.calls.length;
 
-    fireEvent.focus(screen.getByPlaceholderText(/search categories/i));
+    // Fixture items are category 1 (Primary Arms); selecting Housing yields no matches.
     fireEvent.click(screen.getByRole('button', { name: 'Housing' }));
 
-    await waitFor(() =>
-      expect(screen.getByText(/filters changed — run scan to refresh/i)).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.queryByText('Widget')).not.toBeInTheDocument());
+    expect(fetchMarketDataMock.mock.calls.length).toBe(callsBefore);
+  });
+
+  it('does not render a Vendors button', () => {
+    renderView();
+    expect(screen.queryByRole('button', { name: /vendors/i })).not.toBeInTheDocument();
   });
 });
