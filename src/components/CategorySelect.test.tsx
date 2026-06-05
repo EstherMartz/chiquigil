@@ -28,40 +28,36 @@ function Harness({ initial = [] as number[], withGroups = true }) {
   );
 }
 
-function openDropdown() {
-  fireEvent.focus(screen.getByPlaceholderText(/search categories/i));
-}
-
 describe('CategorySelect group chips', () => {
+  it('renders group chips without opening the dropdown', () => {
+    render(<Harness />);
+    expect(screen.getByRole('button', { name: 'AB' })).toBeInTheDocument();
+  });
+
   it('selecting a group chip adds all its category ids', () => {
     render(<Harness />);
-    openDropdown();
     fireEvent.click(screen.getByRole('button', { name: 'AB' }));
     expect(screen.getByTestId('sel').textContent).toBe('1,2');
   });
 
   it('clicking an active group chip removes all its ids (toggle off)', () => {
     render(<Harness initial={[1, 2]} />);
-    openDropdown();
     fireEvent.click(screen.getByRole('button', { name: 'AB' }));
     expect(screen.getByTestId('sel').textContent).toBe('');
   });
 
   it('marks a fully-selected group chip active (aria-pressed=true)', () => {
     render(<Harness initial={[1, 2]} />);
-    openDropdown();
     expect(screen.getByRole('button', { name: 'AB' })).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('marks a partially-selected group chip mixed (aria-pressed=mixed)', () => {
     render(<Harness initial={[1]} />);
-    openDropdown();
     expect(screen.getByRole('button', { name: 'AB' })).toHaveAttribute('aria-pressed', 'mixed');
   });
 
   it('renders no group chips when groups prop is omitted', () => {
     render(<Harness withGroups={false} />);
-    openDropdown();
     expect(screen.queryByRole('button', { name: 'AB' })).not.toBeInTheDocument();
   });
 });

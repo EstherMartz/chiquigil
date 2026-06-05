@@ -94,6 +94,32 @@ export function CategorySelect({
 
   return (
     <div ref={containerRef} className="relative">
+      {/* Group quick-select chips — always visible */}
+      {groups && groups.length > 0 && (
+        <div className="flex flex-wrap gap-1 mb-2">
+          {groups.map((g) => {
+            const state = groupState(g.ids);
+            const cls =
+              state === 'active'
+                ? 'border-gold text-gold'
+                : state === 'mixed'
+                ? 'border-gold/50 text-gold/70'
+                : 'border-border-base text-text-dim hover:text-aether';
+            return (
+              <button
+                key={g.label}
+                type="button"
+                aria-pressed={state === 'active' ? 'true' : state === 'mixed' ? 'mixed' : 'false'}
+                onClick={() => handleToggleGroup(g.ids)}
+                className={`font-mono text-[10px] tracking-widest uppercase px-2 py-0.5 border ${cls}`}
+              >
+                {g.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* Input field */}
       <input
         ref={inputRef}
@@ -108,30 +134,6 @@ export function CategorySelect({
       {/* Dropdown */}
       {isOpen && (
         <div className="absolute z-20 mt-1 w-full bg-bg-card-hi border border-border-hi max-h-60 overflow-y-auto">
-          {groups && groups.length > 0 && (
-            <div className="flex flex-wrap gap-1 p-2 border-b border-border-base">
-              {groups.map((g) => {
-                const state = groupState(g.ids);
-                const cls =
-                  state === 'active'
-                    ? 'border-gold text-gold'
-                    : state === 'mixed'
-                    ? 'border-gold/50 text-gold/70'
-                    : 'border-border-base text-text-dim hover:text-aether';
-                return (
-                  <button
-                    key={g.label}
-                    type="button"
-                    aria-pressed={state === 'active' ? 'true' : state === 'mixed' ? 'mixed' : 'false'}
-                    onClick={() => handleToggleGroup(g.ids)}
-                    className={`font-mono text-[10px] tracking-widest uppercase px-2 py-0.5 border ${cls}`}
-                  >
-                    {g.label}
-                  </button>
-                );
-              })}
-            </div>
-          )}
           {filteredCategories.length > 0 ? (
             filteredCategories.map(category => (
               <label
