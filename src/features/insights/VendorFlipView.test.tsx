@@ -87,4 +87,22 @@ describe('VendorFlipView', () => {
     renderView();
     expect(screen.getByPlaceholderText(/search categories/i)).toBeInTheDocument();
   });
+
+  it('marks the scan stale when a category is selected after a scan', async () => {
+    renderView();
+    // Run an initial scan so stale-detection can apply (stale requires run.data != null).
+    fireEvent.click(screen.getAllByRole('button', { name: /run scan/i })[0]);
+    await waitFor(() => expect(screen.getByText('Widget')).toBeInTheDocument());
+
+    // Open the category dropdown and narrow to a single, uniquely-named category.
+    const search = screen.getByPlaceholderText(/search categories/i);
+    fireEvent.focus(search);
+    fireEvent.change(search, { target: { value: 'Primary Arms' } });
+    fireEvent.click(screen.getByRole('checkbox'));
+
+    // Changing a scan parameter should surface the "Run scan to refresh" prompt.
+    await waitFor(() =>
+      expect(screen.getByText(/filters changed — run scan to refresh/i)).toBeInTheDocument(),
+    );
+  });
 });
