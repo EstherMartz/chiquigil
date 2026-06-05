@@ -13,6 +13,8 @@ import { Spinner, SpinGlyph } from '../../components/Spinner';
 import { StatusBanner } from '../../components/StatusBanner';
 import { EmptyState } from '../../components/EmptyState';
 import { useInitialScan } from '../queries/useInitialScan';
+import { CategorySelect } from '../../components/CategorySelect';
+import { ITEM_SEARCH_CATEGORIES, categoryLabel } from '../../lib/itemSearchCategories';
 
 interface RunResult {
   saleMap: MarketData;
@@ -134,82 +136,95 @@ function FilterBar({ value, onChange, onRun, onRefreshVendors, busy, notReady, s
   stale: boolean;
 }) {
   return (
-    <div className="flex flex-wrap items-end gap-3 p-3 border border-border-base bg-bg-card justify-between">
-      <label className="block">
-        <span className="font-mono text-[13px] tracking-widest text-text-low uppercase">Min profit (gil/u)</span>
-        <input
-          type="number" inputMode="decimal" min={0} step={100} value={value.minProfit}
-          onChange={(e) => onChange({ ...value, minProfit: Math.max(0, Number(e.target.value) || 0) })}
-          className="mt-1 block w-28 bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
+    <div className="border border-border-base bg-bg-card p-3 space-y-3">
+      <div>
+        <label className="font-mono text-[13px] tracking-widest text-text-low uppercase block mb-1">
+          Categories ({value.searchCategories.length || 'all'})
+        </label>
+        <CategorySelect
+          categories={ITEM_SEARCH_CATEGORIES.map((c) => ({ id: c.id, name: categoryLabel(c.id) }))}
+          selected={value.searchCategories}
+          onChange={(ids) => onChange({ ...value, searchCategories: ids })}
+          placeholder="Search categories…"
         />
-      </label>
-      <label className="block">
-        <span className="font-mono text-[13px] tracking-widest text-text-low uppercase">Min markup (×)</span>
-        <input
-          type="number" inputMode="decimal" min={1} step={0.5} value={value.minMarkup}
-          onChange={(e) => onChange({ ...value, minMarkup: Math.max(1, Number(e.target.value) || 1) })}
-          className="mt-1 block w-28 bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
-        />
-      </label>
-      <label className="block">
-        <span className="font-mono text-[13px] tracking-widest text-text-low uppercase">Min sales/day</span>
-        <input
-          type="number" inputMode="decimal" min={0} step={0.1} value={value.minVelocity}
-          onChange={(e) => onChange({ ...value, minVelocity: Math.max(0, Number(e.target.value) || 0) })}
-          className="mt-1 block w-28 bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
-        />
-      </label>
-      <label className="block">
-        <span className="font-mono text-[13px] tracking-widest text-text-low uppercase">Max listings</span>
-        <input
-          type="number" inputMode="decimal" min={0} step={1} value={value.maxListings ?? ''}
-          onChange={(e) => {
-            const n = Number(e.target.value);
-            onChange({ ...value, maxListings: Number.isFinite(n) && n > 0 ? n : null });
-          }}
-          placeholder="∞"
-          className="mt-1 block w-28 bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
-        />
-      </label>
-      <div className="flex flex-col gap-1">
-        <span className="font-mono text-[13px] tracking-widest text-text-low uppercase">HQ mode</span>
-        <div className="flex gap-2">
-          {(['nq', 'hq', 'either'] as HqMode[]).map((mode) => (
-            <button
-              key={mode} type="button"
-              onClick={() => onChange({ ...value, hq: mode })}
-              className={`font-mono text-[10px] tracking-widest uppercase px-3 py-2 border ${
-                value.hq === mode ? 'border-gold text-gold' : 'border-border-base text-text-dim hover:text-aether'
-              }`}
-            >
-              {mode === 'either' ? 'Either' : mode.toUpperCase()}
-            </button>
-          ))}
-        </div>
       </div>
-      <div className="flex gap-2 w-full sm:w-auto sm:ml-auto order-last">
-        <button
-          type="button"
-          onClick={() => { void onRefreshVendors(); }}
-          className="font-mono text-[10px] tracking-widest uppercase border border-border-base text-text-dim px-3 py-2 hover:text-aether"
-          title="Re-fetch the gil-shop catalog"
-        >
-          ⟳ Vendors
-        </button>
-        <div className="flex flex-col items-stretch gap-1 flex-1 sm:flex-initial">
-          {stale && !busy && (
-            <span className="font-mono text-[10px] tracking-widest uppercase text-gold/80 text-right">
-              Filters changed — Run scan to refresh
-            </span>
-          )}
+      <div className="flex flex-wrap items-end gap-3 justify-between">
+        <label className="block">
+          <span className="font-mono text-[13px] tracking-widest text-text-low uppercase">Min profit (gil/u)</span>
+          <input
+            type="number" inputMode="decimal" min={0} step={100} value={value.minProfit}
+            onChange={(e) => onChange({ ...value, minProfit: Math.max(0, Number(e.target.value) || 0) })}
+            className="mt-1 block w-28 bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
+          />
+        </label>
+        <label className="block">
+          <span className="font-mono text-[13px] tracking-widest text-text-low uppercase">Min markup (×)</span>
+          <input
+            type="number" inputMode="decimal" min={1} step={0.5} value={value.minMarkup}
+            onChange={(e) => onChange({ ...value, minMarkup: Math.max(1, Number(e.target.value) || 1) })}
+            className="mt-1 block w-28 bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
+          />
+        </label>
+        <label className="block">
+          <span className="font-mono text-[13px] tracking-widest text-text-low uppercase">Min sales/day</span>
+          <input
+            type="number" inputMode="decimal" min={0} step={0.1} value={value.minVelocity}
+            onChange={(e) => onChange({ ...value, minVelocity: Math.max(0, Number(e.target.value) || 0) })}
+            className="mt-1 block w-28 bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
+          />
+        </label>
+        <label className="block">
+          <span className="font-mono text-[13px] tracking-widest text-text-low uppercase">Max listings</span>
+          <input
+            type="number" inputMode="decimal" min={0} step={1} value={value.maxListings ?? ''}
+            onChange={(e) => {
+              const n = Number(e.target.value);
+              onChange({ ...value, maxListings: Number.isFinite(n) && n > 0 ? n : null });
+            }}
+            placeholder="∞"
+            className="mt-1 block w-28 bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
+          />
+        </label>
+        <div className="flex flex-col gap-1">
+          <span className="font-mono text-[13px] tracking-widest text-text-low uppercase">HQ mode</span>
+          <div className="flex gap-2">
+            {(['nq', 'hq', 'either'] as HqMode[]).map((mode) => (
+              <button
+                key={mode} type="button"
+                onClick={() => onChange({ ...value, hq: mode })}
+                className={`font-mono text-[10px] tracking-widest uppercase px-3 py-2 border ${
+                  value.hq === mode ? 'border-gold text-gold' : 'border-border-base text-text-dim hover:text-aether'
+                }`}
+              >
+                {mode === 'either' ? 'Either' : mode.toUpperCase()}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="flex gap-2 w-full sm:w-auto sm:ml-auto order-last">
           <button
             type="button"
-            onClick={onRun} disabled={busy || notReady}
-            title={notReady ? 'Loading vendor catalog…' : undefined}
-            className="font-mono text-[10px] tracking-widest uppercase bg-gold text-bg-deep px-4 py-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+            onClick={() => { void onRefreshVendors(); }}
+            className="font-mono text-[10px] tracking-widest uppercase border border-border-base text-text-dim px-3 py-2 hover:text-aether"
+            title="Re-fetch the gil-shop catalog"
           >
-            {busy ? <>Running…<SpinGlyph /></> : 'Run scan'}
+            ⟳ Vendors
           </button>
+          <div className="flex flex-col items-stretch gap-1 flex-1 sm:flex-initial">
+            {stale && !busy && (
+              <span className="font-mono text-[10px] tracking-widest uppercase text-gold/80 text-right">
+                Filters changed — Run scan to refresh
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={onRun} disabled={busy || notReady}
+              title={notReady ? 'Loading vendor catalog…' : undefined}
+              className="font-mono text-[10px] tracking-widest uppercase bg-gold text-bg-deep px-4 py-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+            >
+              {busy ? <>Running…<SpinGlyph /></> : 'Run scan'}
+            </button>
+          </div>
         </div>
       </div>
     </div>

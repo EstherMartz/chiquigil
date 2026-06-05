@@ -82,4 +82,9 @@ describe('VendorFlipView', () => {
     });
     expect(fetchMarketDataMock).toHaveBeenCalledWith('Phantom', expect.arrayContaining([100, 200]));
   });
+
+  it('renders the category filter control', () => {
+    renderView();
+    expect(screen.getByPlaceholderText(/search categories/i)).toBeInTheDocument();
+  });
 });
