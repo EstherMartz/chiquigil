@@ -2,26 +2,6 @@ import { loadSnapshots } from '../bot/loadSnapshots';
 import { buildBreakdown } from '../bot/craftSourcing';
 import type { MarketBundle } from '../features/watchlist/useMarketData';
 
-interface CraftBreakdownResponse {
-  itemId: number;
-  itemName: string;
-  quantity: number;
-  crafts: Array<{
-    itemId: number;
-    itemName: string;
-    qty: number;
-    source: string;
-  }>;
-  acquire: Array<{
-    itemId: number;
-    itemName: string;
-    qtyNeeded: number;
-    source: string;
-    meta: Record<string, any>;
-  }>;
-  totalCost?: number;
-}
-
 async function handler(req: any, res: any) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });

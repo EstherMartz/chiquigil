@@ -12,7 +12,6 @@ import {
   handleCraftSetup,
   handleCraftClaim,
   handleSetupView,
-  handleSetupSubmit,
   postChannelSetup,
 } from '../bot/craftCommands';
 import {
@@ -26,7 +25,6 @@ import { loadSnapshots } from '../bot/loadSnapshots';
 import { buildNameIndex, fuzzySearchItems } from '../bot/nameIndex';
 import { openCraftStore } from '../bot/craftStore';
 import { fetchMarketForOutputs } from '../bot/marketFetch';
-import * as discordApi from '../bot/discordApi';
 import type { ToolDeps } from '../bot/tools';
 import type { CraftCommandDeps } from '../bot/craftCommands';
 import type { CraftInteractionDeps } from '../bot/craftInteractions';
@@ -560,7 +558,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       waitUntil(
         (async () => {
           try {
-            const [snapshots, cache, store] = await Promise.all([
+            const [snapshots, _cache, store] = await Promise.all([
               loadSnapshots(baseUrl),
               loadMarketCache(),
               getCraftStore(),
@@ -671,7 +669,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       waitUntil(
         (async () => {
           try {
-            const [snapshots, cache, store] = await Promise.all([
+            const [snapshots, _cache, store] = await Promise.all([
               loadSnapshots(baseUrl),
               loadMarketCache(),
               getCraftStore(),
@@ -753,7 +751,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     waitUntil(
       (async () => {
         try {
-          const [snapshots, cache, store] = await Promise.all([
+          const [snapshots, _cache, store] = await Promise.all([
             loadSnapshots(baseUrl),
             loadMarketCache(),
             getCraftStore(),
@@ -836,17 +834,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   } else {
     return res.status(400).json({ error: 'Unsupported interaction type' });
   }
-}
-
-function findFocusedOption(options: any[]): { name: string; value: unknown } | null {
-  for (const opt of options) {
-    if (opt?.focused) return { name: opt.name, value: opt.value };
-    if (Array.isArray(opt?.options)) {
-      const nested = findFocusedOption(opt.options);
-      if (nested) return nested;
-    }
-  }
-  return null;
 }
 
 async function editOriginalResponse(

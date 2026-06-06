@@ -237,7 +237,7 @@ export async function buildGatheringCatalog(opts: BuildOpts = {}): Promise<Gathe
   for (const b of bases) {
     const set = new Set<number>();
     for (const [key, raw] of Object.entries(b.fields)) {
-      if (!/^Item(\b|[\[0-9])/.test(key)) continue;
+      if (!/^Item(\b|[[0-9])/.test(key)) continue;
       collect(raw, set);
     }
     if (set.size > 0) baseItems.set(b.row_id, set);
