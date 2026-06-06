@@ -1,8 +1,17 @@
 # Refreshing the Glamour Demand data
 
-The Glamour Demand page reads `public/data/snapshots/glamours.json`, a ranking of
-gear by how often it appears across Eorzea Collection's all-time most-loved
-glamours. Refresh it roughly monthly and commit the result.
+The Glamour Demand page reads **two** rankings of gear by how often it appears
+across Eorzea Collection's most-loved glamours, with an in-page toggle between
+them:
+
+| Window | File | `datePeriod` param |
+|--------|------|--------------------|
+| All-time | `public/data/snapshots/glamours.json` | `any` |
+| Last month (default view) | `public/data/snapshots/glamours-recent.json` | `past-month` |
+
+Refresh both roughly monthly and commit the results. The scrape method is
+identical for each — only the `datePeriod` value in the list URL and the output
+filename change.
 
 ## ⚠️ Cloudflare blocks plain HTTP scraping
 

@@ -144,4 +144,26 @@ describe('loadStaticGlamourRanking', () => {
     const got = await loadStaticGlamourRanking();
     expect(got).toEqual({ generatedAt: 'x', ranking: [] });
   });
+
+  it("period='recent' loads glamours-recent.json", async () => {
+    mockFetch({
+      '/data/snapshots/glamours-recent.json': {
+        status: 200,
+        body: { generated_at: '2026-06-06T00:00:00Z', ranking: [{ item: 'Story-spinner Chestwrap', uses: 8 }] },
+      },
+    });
+    const got = await loadStaticGlamourRanking('recent');
+    expect(got).toEqual({
+      generatedAt: '2026-06-06T00:00:00Z',
+      ranking: [{ item: 'Story-spinner Chestwrap', uses: 8 }],
+    });
+  });
+
+  it("period='all' (default) loads glamours.json, not the recent file", async () => {
+    mockFetch({
+      '/data/snapshots/glamours.json': { status: 200, body: { generated_at: 'a', ranking: [] } },
+      '/data/snapshots/glamours-recent.json': { status: 200, body: { generated_at: 'r', ranking: [{ item: 'x', uses: 1 }] } },
+    });
+    expect((await loadStaticGlamourRanking('all'))!.generatedAt).toBe('a');
+  });
 });

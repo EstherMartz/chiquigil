@@ -94,14 +94,25 @@ export interface GlamourRankingData {
   ranking: RawGlamourEntry[];
 }
 
+/** Which glamour-usage window to load: all-time vs the last-month scrape. */
+export type GlamourPeriod = 'all' | 'recent';
+
+const GLAMOUR_FILES: Record<GlamourPeriod, string> = {
+  all: 'glamours.json',
+  recent: 'glamours-recent.json',
+};
+
 /**
- * Loads the Eorzea Collection glamour-item ranking produced by the standalone
- * Python scraper (see docs/scraping-glamours.md). Plain fetch, null on failure —
- * the page treats null as "no data yet" and shows an empty state.
+ * Loads an Eorzea Collection glamour-item ranking produced by the standalone
+ * scraper (see docs/scraping-glamours.md). `period` selects the all-time vs
+ * last-month window. Plain fetch, null on failure — the page treats null as
+ * "no data yet" and shows an empty state.
  */
-export async function loadStaticGlamourRanking(): Promise<GlamourRankingData | null> {
+export async function loadStaticGlamourRanking(
+  period: GlamourPeriod = 'all',
+): Promise<GlamourRankingData | null> {
   const raw = await load<{ generated_at?: string; ranking?: RawGlamourEntry[] }>(
-    `${BASE}/glamours.json`,
+    `${BASE}/${GLAMOUR_FILES[period]}`,
   );
   if (!raw) return null;
   return {

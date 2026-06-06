@@ -34,6 +34,7 @@ const NAV_GROUPS: NavGroup[] = [
       { label: 'Housing', path: '/housing' },
       { label: 'Glamour Demand', path: '/glamour' },
       { label: 'Submarines', path: '/submarines' },
+      { label: 'Travel Planner', path: '/travel' },
     ],
   },
   {
