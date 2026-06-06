@@ -36,7 +36,7 @@ export const ComparePathsSection = forwardRef<HTMLDivElement, { itemId: number |
             <div className="border-l-[3px] border-l-aether bg-bg-card border border-border-base px-4 py-3 mb-4 text-sm text-text-cream">
               {comparison.summary}
             </div>
-            <div className="flex gap-3 overflow-x-auto pb-2 md:flex-row flex-col">
+            <div className="grid gap-3 items-stretch [grid-template-columns:repeat(auto-fit,minmax(15rem,1fr))]">
               {comparison.cards.map((card) => (
                 <PathCardView
                   key={card.id}

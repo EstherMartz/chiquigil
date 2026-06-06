@@ -23,6 +23,16 @@ function fmtHours(h: number): string {
   return `~${(h / 24).toFixed(1)}d`;
 }
 
+/**
+ * Listing cadence. For big stacks the per-day rate rounds to "0.0", which reads
+ * as broken — invert it to "1 list / N days" when you'd list less than daily.
+ */
+function fmtThroughput(listsPerDay: number): string {
+  if (listsPerDay >= 1) return `~${listsPerDay.toFixed(1)} lists/day`;
+  if (listsPerDay > 0) return `~1 list / ${Math.round(1 / listsPerDay)}d`;
+  return '—';
+}
+
 export function PathCardView({ card, isWinner, quantity }: {
   card: PathCard;
   isWinner: boolean;
@@ -33,7 +43,7 @@ export function PathCardView({ card, isWinner, quantity }: {
   const border = isWinner ? 'border-l-[3px] border-l-aether' : 'border-l border-l-border-base';
 
   return (
-    <div className={`flex-shrink-0 w-[260px] border border-border-base ${border} bg-bg-card p-4 space-y-3`}>
+    <div className={`border border-border-base ${border} bg-bg-card p-4 space-y-3`}>
       <div className="flex items-start justify-between gap-2">
         <span className="font-mono text-[10px] tracking-widest uppercase text-aether">{card.label}</span>
         {isWinner && (
@@ -65,7 +75,7 @@ export function PathCardView({ card, isWinner, quantity }: {
           <Row label="Vol @ best">{card.stack.volumeAtBest}</Row>
           <Row label="Listed @ best">{card.stack.listedAtBest}</Row>
           {card.stack.dominantStack > 1 && (
-            <Row label="Throughput">~{card.stack.listingEventsPerDay.toFixed(1)} lists/day</Row>
+            <Row label="Throughput">{fmtThroughput(card.stack.listingEventsPerDay)}</Row>
           )}
         </div>
       )}
