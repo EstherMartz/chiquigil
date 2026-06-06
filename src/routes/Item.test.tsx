@@ -110,8 +110,11 @@ describe('Item route', () => {
     await waitFor(() => {
       expect(screen.getByText(/used in 1 recipe/i)).toBeInTheDocument();
     });
-    const resultLink = await screen.findByRole('link', { name: /maple lumber/i });
-    expect(resultLink.getAttribute('href')).toBe('/item/10');
+    // Result links to /item/10 (appears in both the "used in" section and the
+    // Compare Paths craft-output card, so allow multiple matches).
+    const resultLinks = await screen.findAllByRole('link', { name: /maple lumber/i });
+    expect(resultLinks.length).toBeGreaterThan(0);
+    expect(resultLinks.every((l) => l.getAttribute('href') === '/item/10')).toBe(true);
   });
 
   it('renders the Add to watchlist button on the item header', async () => {
