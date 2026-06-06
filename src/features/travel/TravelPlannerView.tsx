@@ -7,7 +7,7 @@ import { fetchInBatches } from '../../lib/universalisBulk';
 import { fetchMarketData, type MarketData } from '../../lib/universalis';
 import { useInitialScan } from '../queries/useInitialScan';
 import { CRYSTALS_SEARCH_CATEGORY } from '../queries/commonFilters';
-import { TRAVEL_WORLDS, dcOfTravel } from '../../lib/travelWorlds';
+import { EU_WORLDS, dcOf } from '../../lib/europeWorlds';
 import { planTravel } from './planTravel';
 import { TravelResults } from './TravelResults';
 import type { HqMode, TravelMetric, TravelPlan } from './types';
@@ -17,6 +17,13 @@ import { StatusBanner } from '../../components/StatusBanner';
 import { EmptyState } from '../../components/EmptyState';
 
 const MAX_CANDIDATES = 500;
+
+/**
+ * Destination books come from the region-scope cache (every world you can
+ * DC-travel to lives in your physical region). Must match the scope seeded at
+ * startup in main.tsx (`loadSharedMarketCache(world, dc, 'Europe')`).
+ */
+const REGION = 'Europe';
 
 interface RunResult {
   destMarket: MarketData;
@@ -31,10 +38,10 @@ export function TravelPlannerView() {
   const watchlistItems = useSelectedItems();
 
   const destChoices = useMemo(
-    () => [...TRAVEL_WORLDS]
+    () => [...EU_WORLDS]
       .filter((w) => w !== world)
       .sort((a, b) => {
-        const da = dcOfTravel(a)!, db = dcOfTravel(b)!;
+        const da = dcOf(a)!, db = dcOf(b)!;
         return da === db ? a.localeCompare(b) : da.localeCompare(db);
       }),
     [world],
@@ -67,8 +74,10 @@ export function TravelPlannerView() {
     mutationFn: async () => {
       if (!snapshot.data) throw new Error('Item snapshot not ready');
       if (!dest) throw new Error('Pick a destination world');
+      // Destination listings come from the region-scope cache (filtered to the
+      // chosen world in planTravel); the per-world scope is never seeded.
       const [destRes, homeRes] = await Promise.all([
-        fetchInBatches<MarketData[string]>(candidateIds, (chunk) => fetchMarketData(dest, chunk), { chunkSize: 100, concurrency: 4 }),
+        fetchInBatches<MarketData[string]>(candidateIds, (chunk) => fetchMarketData(REGION, chunk), { chunkSize: 100, concurrency: 4 }),
         fetchInBatches<MarketData[string]>(candidateIds, (chunk) => fetchMarketData(world, chunk), { chunkSize: 100, concurrency: 4 }),
       ]);
       return {
@@ -83,7 +92,7 @@ export function TravelPlannerView() {
   const plan = useMemo<TravelPlan | null>(() => {
     if (!snapshot.data || !run.data) return null;
     return planTravel(snapshot.data.items, run.data.destMarket, run.data.homeMarket, {
-      homeWorld: world, budget, metric, hq, minVelocity, horizonDays, applyMarketTax,
+      homeWorld: world, destWorld: run.data.destWorld, budget, metric, hq, minVelocity, horizonDays, applyMarketTax,
     });
   }, [snapshot.data, run.data, world, budget, metric, hq, minVelocity, horizonDays, applyMarketTax]);
 
@@ -167,7 +176,7 @@ function FilterBar(props: {
           className="mt-1 block w-44 bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
         >
           {props.destChoices.map((w) => (
-            <option key={w} value={w}>{w} ({dcOfTravel(w)})</option>
+            <option key={w} value={w}>{w} ({dcOf(w)})</option>
           ))}
         </select>
       </label>

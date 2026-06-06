@@ -43,6 +43,7 @@ export function planTravel(
     const cap = Math.max(1, Math.ceil(home.velocity * opts.horizonDays));
 
     const listings = dest.worldListings
+      .filter((l) => l.world === opts.destWorld)
       .filter((l) => (opts.hq === 'hq' ? l.hq : opts.hq === 'nq' ? !l.hq : true))
       .slice()
       .sort((a, b) => a.price - b.price);

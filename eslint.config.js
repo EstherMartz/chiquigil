@@ -16,6 +16,7 @@ export default tseslint.config(
       'reference',
       'public',
       '.worktrees',
+      '.claude',
     ],
   },
   {

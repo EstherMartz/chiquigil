@@ -29,7 +29,7 @@ const items: SnapshotItem[] = [
 ];
 
 const baseOpts: TravelOpts = {
-  homeWorld: 'Phantom', budget: null, metric: 'profit',
+  homeWorld: 'Phantom', destWorld: 'Lich', budget: null, metric: 'profit',
   hq: 'nq', minVelocity: 0, horizonDays: 7, applyMarketTax: false,
 };
 
@@ -43,6 +43,20 @@ describe('planTravel', () => {
     expect(plan.rows[0].cost).toBe(1800);
     expect(plan.rows[0].profit).toBe(1200); // 3 × (1000 − 600)
     expect(plan.totalProfit).toBe(1200);
+  });
+
+  it('only buys listings on the chosen destination world (region book is multi-world)', () => {
+    const home: MarketData = { 1: homeSell(1000, 5) };
+    // Region-scope book: cheaper on Cerberus, but we are traveling to Lich.
+    const region: MarketData = { 1: mkMarket({ worldListings: [
+      { world: 'Cerberus', price: 500, hq: false, quantity: 5 },
+      { world: 'Lich', price: 700, hq: false, quantity: 2 },
+    ] }) };
+    const plan = planTravel([items[0]], region, home, { ...baseOpts, destWorld: 'Lich' });
+    expect(plan.rows).toHaveLength(1);
+    expect(plan.rows[0].units).toBe(2);          // only Lich's 2 units, not Cerberus's
+    expect(plan.rows[0].avgBuyPrice).toBe(700);  // bought at Lich, not Cerberus 500
+    expect(plan.rows[0].profit).toBe(600);       // 2 × (1000 − 700)
   });
 
   it('respects the budget cap', () => {

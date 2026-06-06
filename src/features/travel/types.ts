@@ -7,6 +7,12 @@ export type TravelMetric = 'profit' | 'roi' | 'spread';
 export interface TravelOpts {
   /** The user's home world (where items are resold). */
   homeWorld: string;
+  /**
+   * The destination world being scouted. The destination book passed to
+   * planTravel is the region-scope market (listings span every world in the
+   * region), so we filter `worldListings` to this world to price the trip.
+   */
+  destWorld: string;
   /** Spend cap in gil. null or 0 = unlimited. */
   budget: number | null;
   /** Which metric orders the greedy allocation (and the resulting table). */
