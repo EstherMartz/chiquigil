@@ -405,7 +405,7 @@ export async function handleCraftRequestModal(
   }
 
   // Try exact/substring first, then fuzzy
-  let matches = searchItems(deps.nameIndex, itemQuery, 1);
+  const matches = searchItems(deps.nameIndex, itemQuery, 1);
   if (matches.length === 0) {
     const fuzzy = fuzzySearchItems(deps.nameIndex, itemQuery, 10);
     if (fuzzy.length === 0) {

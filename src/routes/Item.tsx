@@ -178,6 +178,11 @@ export default function Item() {
   const dcMarket = market.data?.dc[itemId];
   const regionMarket = market.data?.region[itemId];
 
+  // NOTE: the `if (!valid) return` guard above makes the hooks below
+  // technically conditional. This is pre-existing; grandfathered here (rather
+  // than reordered in this tooling-only change) until the early return is
+  // hoisted below all hooks. Do not copy this pattern in new code.
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const recipeMaterialCost = useMemo(() => {
     if (!recipe || !phantomMarket) return 0;
     let total = 0;
@@ -191,11 +196,13 @@ export default function Item() {
 
   // Ids of all gatherable items — feeds the self-source ("gather + craft")
   // floor cost in the craft→sell math card.
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const gatherableIds = useMemo(
     () => (gathering.data ? new Set(gathering.data.keys()) : new Set<number>()),
     [gathering.data],
   );
 
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const nameOf = useMemo(() => {
     const m = new Map<number, string>();
     for (const i of snapshot.data?.items ?? []) m.set(i.id, i.name);

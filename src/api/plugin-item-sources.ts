@@ -1,5 +1,4 @@
 import { loadSnapshots } from '../bot/loadSnapshots';
-import type { Recipe } from '../lib/recipes';
 import { cheapestWorld } from '../lib/cheapestWorld';
 import type { MarketData } from '../lib/universalis';
 import { priceRecipe, jobNameOf } from './_item-sources-core';
@@ -33,61 +32,6 @@ async function loadMarketCache(baseUrl: string): Promise<SharedCache> {
   } catch {
     return marketCache ?? { phantom: {}, dc: {}, region: {}, ts: 0 };
   }
-}
-
-interface RecipeSource {
-  type: 'recipe';
-  jobId: number;
-  jobName: string;
-  level: number;
-  ingredients: Array<{ itemId: number; itemName: string; qty: number; unitPrice: number | null; source: string }>;
-  materialCost: number;
-  outputQty: number;
-}
-
-interface VendorSource {
-  type: 'vendor';
-  npcId: number;
-  npcName: string;
-  price: number;
-}
-
-interface GatheringSource {
-  type: 'gather';
-  level: number;
-  timed: boolean;
-}
-
-interface SpecialShopSource {
-  type: 'special_shop';
-  currency: string;
-  currencyId: number;
-  cost: number;
-}
-
-interface CompanyCraftSource {
-  type: 'company_craft';
-  craftName: string;
-  ingredients: Array<{ itemId: number; itemName: string; qty: number }>;
-}
-
-interface ItemSourcesResponse {
-  itemId: number;
-  itemName: string;
-  ilvl: number;
-  category: string | null;
-  rarity: number;
-  canHq: boolean;
-  sources: (RecipeSource | VendorSource | GatheringSource | SpecialShopSource | CompanyCraftSource)[];
-  market: {
-    velocity: number;
-    listingCount: number;
-    minNQ: number | null;
-    cheapestWorld: string | null;
-    cheapestPrice: number | null;
-  } | null;
-  verdict: Record<string, unknown> | null;
-  runnerUp: Record<string, unknown> | null;
 }
 
 async function handler(req: any, res: any) {

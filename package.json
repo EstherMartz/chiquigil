@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc && vite build && npm run build:api",
     "build:api": "esbuild src/api/discord.ts src/api/refresh-cache.ts src/api/projects.ts src/api/plugin-claim.ts src/api/plugin-craftable.ts src/api/plugin-items.ts src/api/plugin-item-sources.ts src/api/plugin-craft-breakdown.ts src/api/plugin-trading-query.ts src/api/plugin-cleanup.ts src/api/plugin-projects.ts src/api/auth.ts --bundle --platform=node --format=esm --outdir=api --out-extension:.js=.mjs --packages=external",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "lint": "eslint . --max-warnings 0",
     "preview": "vite preview",
     "test": "vitest",
     "snapshots": "tsx scripts/bake-snapshots.ts",
@@ -29,6 +29,7 @@
     "zustand": "^5.0.13"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.4",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
@@ -37,12 +38,16 @@
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.5.0",
     "esbuild": "^0.28.0",
+    "eslint": "^9.39.4",
+    "eslint-plugin-react-hooks": "^5.2.0",
     "fake-indexeddb": "^6.2.5",
+    "globals": "^15.15.0",
     "jsdom": "^29.1.1",
     "postcss": "^8.5.14",
     "tailwindcss": "^3.4.19",
     "tsx": "^4.22.2",
     "typescript": "^5.2.2",
+    "typescript-eslint": "^8.60.1",
     "vite": "^5.0.8",
     "vitest": "^4.1.5"
   }
