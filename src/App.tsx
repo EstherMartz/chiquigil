@@ -36,6 +36,7 @@ import Heatmap from './routes/Heatmap';
 import GlamourDemand from './routes/GlamourDemand';
 import CraftBatch from './routes/CraftBatch';
 import BatchHistory from './routes/BatchHistory';
+import Compare from './routes/Compare';
 import Item from './routes/Item';
 import Settings from './routes/Settings';
 import Submarines from './routes/Submarines';
@@ -64,6 +65,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/gc-seals': 'GC Seals',
   '/craft-batch': 'Craft Batch',
   '/batch-history': 'Batch History',
+  '/compare': 'Compare Paths',
   '/cleanup': 'Cleanup',
   '/craft-from-inventory': 'Craft from Inventory',
   '/quest-items': 'GC Supply',
@@ -139,6 +141,7 @@ export default function App() {
                         <Route path="/gc-seals" element={<GcSeals />} />
                         <Route path="/craft-batch" element={<CraftBatch />} />
                         <Route path="/batch-history" element={<BatchHistory />} />
+                        <Route path="/compare" element={<Compare />} />
                         <Route path="/cleanup" element={<Cleanup />} />
                         <Route path="/craft-from-inventory" element={<CraftFromInventory />} />
                         <Route path="/quest-items" element={<QuestItems />} />
