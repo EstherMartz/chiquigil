@@ -108,3 +108,44 @@ export function sortHousingRows(rows: HousingRow[], key: HousingSortKey): Housin
     return bv - av;
   });
 }
+
+/**
+ * Of the visible ids, the unique ones not yet present in the momentum cache.
+ * A cached value of `null` (fetched but insufficient history) counts as already
+ * fetched, so we never re-request it.
+ */
+export function idsToFetch(visibleIds: number[], cache: Map<number, unknown>): number[] {
+  const out: number[] = [];
+  const seen = new Set<number>();
+  for (const id of visibleIds) {
+    if (seen.has(id) || cache.has(id)) continue;
+    seen.add(id);
+    out.push(id);
+  }
+  return out;
+}
+
+/**
+ * Fold freshly-fetched history into the momentum cache: every requested id gets
+ * a value (its 7-day delta, or `null` when a week had no sales), so requested-
+ * but-history-less ids resolve to `null` rather than staying absent (which would
+ * make idsToFetch request them forever). Prior cache entries are preserved.
+ */
+export function mergeDeltas(
+  cache: Map<number, number | null>,
+  requestedIds: number[],
+  history: Map<number, HistoryEntry[]>,
+  nowMs: number,
+): Map<number, number | null> {
+  const next = new Map(cache);
+  for (const id of requestedIds) {
+    next.set(id, computeWeekDelta(history.get(id) ?? [], nowMs));
+  }
+  return next;
+}
+
+/** Format a 7-day delta percent as a signed whole-percent string ("+12%", "-9%", "0%"). */
+export function fmtDelta(pct: number): string {
+  const rounded = Math.round(pct);
+  return `${rounded > 0 ? '+' : ''}${rounded}%`;
+}

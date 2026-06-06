@@ -8,7 +8,8 @@ import type { SnapshotItem } from '../../lib/itemSnapshot';
 import { fetchMarketData, type MarketData, type MarketItem } from '../../lib/universalis';
 import { furnishingCandidates, materialCandidates, allHousingCandidates, housingCategoryIds } from '../../lib/housingItems';
 import { categoryLabel } from '../../lib/itemSearchCategories';
-import { buildHousingRow, housingMaterialCost, collectRecipeIngredientIds, sortHousingRows, type HousingRow, type HousingSortKey } from './spikeSignal';
+import { buildHousingRow, housingMaterialCost, collectRecipeIngredientIds, sortHousingRows, fmtDelta, type HousingRow, type HousingSortKey } from './spikeSignal';
+import { useHousingMomentum } from './useHousingMomentum';
 import { ResultTableScaffold, EmptyResults } from '../queries/ResultTableScaffold';
 import { ItemNameLinks } from '../../components/ItemNameLinks';
 import { CategorySelect } from '../../components/CategorySelect';
@@ -41,6 +42,7 @@ export function HousingMarketView() {
   const [tab, setTab] = useState<Tab>('furnishings');
   const [housingCats, setHousingCats] = useState<number[]>([]);
   const [sortKey, setSortKey] = useState<HousingSortKey>('craftGilPerDay');
+  const [visibleIds, setVisibleIds] = useState<number[]>([]);
   const now = Date.now();
 
   function selectTab(next: Tab) {
@@ -111,6 +113,8 @@ export function HousingMarketView() {
     return sortHousingRows(built, sortKey);
   }, [items.data, recipes.data, marketScan.data, itemById, sortKey, now]);
 
+  const momentum = useHousingMomentum(world, `${world}:${tab}`, visibleIds);
+
   return (
     <div className="space-y-4">
       <div className="flex gap-2 flex-wrap">
@@ -159,6 +163,7 @@ export function HousingMarketView() {
           rows={rows}
           totalCandidates={candidateIds.length}
           skippedChunks={marketScan.data.skipped}
+          onVisibleRows={(vis) => setVisibleIds(vis.map((r) => r.id))}
           emptyState={<EmptyResults>No housing items matched. Try another tab or refresh.</EmptyResults>}
           renderTable={(visible) => (
             <table className="w-full text-sm">
@@ -167,6 +172,7 @@ export function HousingMarketView() {
                   <th className="px-3 py-2">Item</th>
                   <SortableHeader active={sortKey === 'price'} onClick={() => setSortKey('price')}>Price</SortableHeader>
                   <SortableHeader active={sortKey === 'velocity'} onClick={() => setSortKey('velocity')}>Sales/day</SortableHeader>
+                  <th className="px-3 py-2 text-right text-text-low">7d Δ</th>
                   <SortableHeader active={sortKey === 'craftMargin'} onClick={() => setSortKey('craftMargin')}>Craft margin</SortableHeader>
                   <SortableHeader active={sortKey === 'craftGilPerDay'} onClick={() => setSortKey('craftGilPerDay')}>Gil/day</SortableHeader>
                 </tr>
@@ -177,6 +183,7 @@ export function HousingMarketView() {
                     <td className="px-3 py-2"><ItemNameLinks id={r.id} name={r.name} /></td>
                     <td className="px-3 py-2 text-right font-mono tabular-nums">{r.price != null ? fmtGil(r.price) : '—'}</td>
                     <td className="px-3 py-2 text-right font-mono tabular-nums">{r.velocity.toFixed(1)}</td>
+                    <td className="px-3 py-2 text-right font-mono tabular-nums"><MomentumCell value={momentum.get(r.id)} /></td>
                     <td className="px-3 py-2 text-right font-mono tabular-nums">{r.craftMargin != null ? fmtGil(r.craftMargin) : '—'}</td>
                     <td className="px-3 py-2 text-right font-mono tabular-nums text-gold">{r.craftGilPerDay != null ? fmtGil(r.craftGilPerDay) : '—'}</td>
                   </tr>
@@ -204,4 +211,11 @@ function SortableHeader({ active, onClick, children }: {
       {children}{active ? ' ▼' : ''}
     </th>
   );
+}
+
+function MomentumCell({ value }: { value: number | null | undefined }) {
+  if (value === undefined) return <span className="text-text-low">…</span>;
+  if (value === null) return <span className="text-text-low">—</span>;
+  const cls = value > 0 ? 'text-jade' : value < 0 ? 'text-crimson' : 'text-text-dim';
+  return <span className={cls}>{fmtDelta(value)}</span>;
 }

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useEffect } from 'react';
 import { LoadMoreFooter } from '../../components/LoadMoreFooter';
 import { useLoadMore } from '../../lib/useLoadMore';
 import { ExportCsvButton } from '../../components/ExportCsvButton';
@@ -19,6 +20,9 @@ interface Props<T extends { id: number }> {
   renderMobile?: (visible: T[]) => ReactNode;
   csvColumns?: CsvColumn<T>[];
   csvFilename?: string;
+  /** Fires with the currently-visible (paginated) rows whenever that slice
+   *  changes — lets a parent enrich just the rows on screen. */
+  onVisibleRows?: (visible: T[]) => void;
 }
 
 /**
@@ -28,9 +32,14 @@ interface Props<T extends { id: number }> {
  * differ — but everything around the table is now one piece.
  */
 export function ResultTableScaffold<T extends { id: number }>({
-  rows, totalCandidates, skippedChunks, emptyState, renderTable, renderMobile, csvColumns, csvFilename,
+  rows, totalCandidates, skippedChunks, emptyState, renderTable, renderMobile, csvColumns, csvFilename, onVisibleRows,
 }: Props<T>) {
   const lm = useLoadMore(rows, 25);
+  const visibleSig = lm.visible.map((r) => r.id).join(',');
+  useEffect(() => {
+    onVisibleRows?.(lm.visible);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visibleSig]);
   if (rows.length === 0) return <>{emptyState}</>;
   const tableWrapClass = renderMobile
     ? 'hidden md:block border border-border-base bg-bg-card overflow-x-auto'
