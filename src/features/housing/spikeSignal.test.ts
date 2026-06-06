@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildHousingRow, housingMaterialCost, collectRecipeIngredientIds, sortHousingRows, type HousingRow } from './spikeSignal';
+import { buildHousingRow, housingMaterialCost, collectRecipeIngredientIds, sortHousingRows, idsToFetch, mergeDeltas, fmtDelta, type HousingRow } from './spikeSignal';
 import type { SnapshotItem } from '../../lib/itemSnapshot';
 import type { MarketItem, MarketData } from '../../lib/universalis';
 import type { Recipe } from '../../lib/recipes';
@@ -121,5 +121,52 @@ describe('sortHousingRows', () => {
   it('sorts by a numeric key descending, nulls last', () => {
     expect(sortHousingRows(rows, 'momentumPct').map((r) => r.id)).toEqual([2, 1, 3]);
     expect(sortHousingRows(rows, 'craftGilPerDay').map((r) => r.id)).toEqual([1, 2, 3]);
+  });
+});
+
+describe('idsToFetch', () => {
+  it('returns visible ids not present as keys in the cache', () => {
+    const cache = new Map<number, number | null>([[1, 5], [2, null]]);
+    expect(idsToFetch([1, 2, 3, 4], cache)).toEqual([3, 4]);
+  });
+  it('dedupes and returns empty when all are cached', () => {
+    const cache = new Map<number, number | null>([[1, 5]]);
+    expect(idsToFetch([1, 1], cache)).toEqual([]);
+  });
+  it('treats a cached null (insufficient history) as already fetched', () => {
+    const cache = new Map<number, number | null>([[7, null]]);
+    expect(idsToFetch([7], cache)).toEqual([]);
+  });
+});
+
+describe('mergeDeltas', () => {
+  const DAY = 86_400_000;
+  const NOW = 1_000 * DAY;
+  const entries = [
+    { pricePerUnit: 120, quantity: 1, timestamp: (NOW - 2 * DAY) / 1000, hq: false },
+    { pricePerUnit: 100, quantity: 1, timestamp: (NOW - 9 * DAY) / 1000, hq: false },
+  ];
+  it('computes a delta for each requested id and null when no history', () => {
+    const history = new Map([[1, entries]]);
+    const out = mergeDeltas(new Map(), [1, 2], history, NOW);
+    expect(out.get(1)).toBeCloseTo(20, 5);
+    expect(out.get(2)).toBeNull();
+  });
+  it('preserves prior cache entries', () => {
+    const out = mergeDeltas(new Map([[9, 3]]), [1], new Map(), NOW);
+    expect(out.get(9)).toBe(3);
+    expect(out.get(1)).toBeNull();
+  });
+});
+
+describe('fmtDelta', () => {
+  it('prefixes a + for gains and rounds to whole percent', () => {
+    expect(fmtDelta(12.4)).toBe('+12%');
+  });
+  it('keeps the minus for losses', () => {
+    expect(fmtDelta(-8.6)).toBe('-9%');
+  });
+  it('shows 0% without a sign', () => {
+    expect(fmtDelta(0)).toBe('0%');
   });
 });
