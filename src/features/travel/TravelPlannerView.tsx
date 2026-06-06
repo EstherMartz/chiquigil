@@ -4,7 +4,8 @@ import { useSettingsStore } from '../settings/store';
 import { useItemSnapshot } from '../queries/useItemSnapshot';
 import { useSelectedItems } from '../items/useSelectedItems';
 import { fetchInBatches } from '../../lib/universalisBulk';
-import { fetchMarketData, type MarketData } from '../../lib/universalis';
+import { fetchMarketData, fetchMarketLive, type MarketData } from '../../lib/universalis';
+import { useCooldown } from '../../lib/useCooldown';
 import { useInitialScan } from '../queries/useInitialScan';
 import { CRYSTALS_SEARCH_CATEGORY } from '../queries/commonFilters';
 import { EU_WORLDS, dcOf } from '../../lib/europeWorlds';
@@ -70,22 +71,34 @@ export function TravelPlannerView() {
     return [...ids];
   }, [snapshot.data, watchlistItems, hideCrystals, hq]);
 
-  const run = useMutation<RunResult>({
-    mutationFn: async () => {
+  const cooldown = useCooldown(60_000);
+  const [liveAt, setLiveAt] = useState<number | null>(null);
+
+  // `live` = pull straight from Universalis; otherwise read the hourly cache.
+  // Destination listings come from the region scope (filtered to the chosen
+  // world in planTravel); the per-world scope is never seeded.
+  const run = useMutation<RunResult, Error, boolean>({
+    mutationFn: async (live: boolean) => {
       if (!snapshot.data) throw new Error('Item snapshot not ready');
       if (!dest) throw new Error('Pick a destination world');
-      // Destination listings come from the region-scope cache (filtered to the
-      // chosen world in planTravel); the per-world scope is never seeded.
+      const fetchScope = (scope: string) => (chunk: number[]) =>
+        live ? fetchMarketLive(scope, chunk) : fetchMarketData(scope, chunk);
+      if (live) {
+        // Fetch the two scopes sequentially at concurrency 6 → peak 6 connections,
+        // under Universalis's 8-connection cap (~5 requests/scope at 100 ids each).
+        const destRes = await fetchInBatches<MarketData[string]>(candidateIds, fetchScope(REGION), { chunkSize: 100, concurrency: 6 });
+        const homeRes = await fetchInBatches<MarketData[string]>(candidateIds, fetchScope(world), { chunkSize: 100, concurrency: 6 });
+        return { destMarket: destRes.data, homeMarket: homeRes.data, skipped: destRes.errors.length + homeRes.errors.length, destWorld: dest };
+      }
       const [destRes, homeRes] = await Promise.all([
-        fetchInBatches<MarketData[string]>(candidateIds, (chunk) => fetchMarketData(REGION, chunk), { chunkSize: 100, concurrency: 4 }),
-        fetchInBatches<MarketData[string]>(candidateIds, (chunk) => fetchMarketData(world, chunk), { chunkSize: 100, concurrency: 4 }),
+        fetchInBatches<MarketData[string]>(candidateIds, fetchScope(REGION), { chunkSize: 100, concurrency: 4 }),
+        fetchInBatches<MarketData[string]>(candidateIds, fetchScope(world), { chunkSize: 100, concurrency: 4 }),
       ]);
-      return {
-        destMarket: destRes.data,
-        homeMarket: homeRes.data,
-        skipped: destRes.errors.length + homeRes.errors.length,
-        destWorld: dest,
-      };
+      return { destMarket: destRes.data, homeMarket: homeRes.data, skipped: destRes.errors.length + homeRes.errors.length, destWorld: dest };
+    },
+    onSuccess: (_data, live) => {
+      setLiveAt(live ? Date.now() : null);
+      if (live) cooldown.start();
     },
   });
 
@@ -97,7 +110,13 @@ export function TravelPlannerView() {
   }, [snapshot.data, run.data, world, budget, metric, hq, minVelocity, horizonDays, applyMarketTax]);
 
   const ready = snapshot.data != null && dest !== '';
-  useInitialScan(ready, () => { run.reset(); run.mutate(); });
+  useInitialScan(ready, () => { run.reset(); run.mutate(false); });
+
+  // run.variables is the `live` flag of the most recent mutate — use it to label
+  // which button is busy.
+  const isLiveRun = run.variables === true;
+  const runBusy = run.isPending && !isLiveRun;
+  const liveBusy = run.isPending && isLiveRun;
 
   return (
     <div className="space-y-4">
@@ -108,11 +127,14 @@ export function TravelPlannerView() {
         hq={hq} onHq={setHq}
         minVelocity={minVelocity} onMinVelocity={setMinVelocity}
         horizonDays={horizonDays} onHorizon={setHorizonDays}
-        onRun={() => { run.reset(); run.mutate(); }}
-        busy={run.isPending} notReady={!snapshot.data}
+        onRun={() => { run.reset(); run.mutate(false); }}
+        onLive={() => { run.reset(); run.mutate(true); }}
+        pending={run.isPending} runBusy={runBusy} liveBusy={liveBusy}
+        liveOnCooldown={cooldown.onCooldown} liveSecondsLeft={cooldown.secondsLeft}
+        liveAt={liveAt} notReady={!snapshot.data}
       />
 
-      {run.isPending && <Spinner label={`Pricing ${candidateIds.length} items on ${dest} and ${world}…`} />}
+      {run.isPending && <Spinner label={`${isLiveRun ? 'Live · ' : ''}Pricing ${candidateIds.length} items on ${dest} and ${world}…`} />}
       {run.isError && <StatusBanner kind="error">Scan failed: {(run.error as Error).message}</StatusBanner>}
 
       {!run.data && !run.isPending && (
@@ -159,7 +181,10 @@ function FilterBar(props: {
   hq: HqMode; onHq: (m: HqMode) => void;
   minVelocity: number; onMinVelocity: (n: number) => void;
   horizonDays: number; onHorizon: (n: number) => void;
-  onRun: () => void; busy: boolean; notReady: boolean;
+  onRun: () => void; onLive: () => void;
+  pending: boolean; runBusy: boolean; liveBusy: boolean;
+  liveOnCooldown: boolean; liveSecondsLeft: number; liveAt: number | null;
+  notReady: boolean;
 }) {
   const metrics: { id: TravelMetric; label: string }[] = [
     { id: 'profit', label: 'Profit' },
@@ -225,11 +250,28 @@ function FilterBar(props: {
           className="mt-1 block w-28 bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors" />
       </label>
       <div className="flex flex-col items-stretch gap-1 w-full sm:w-auto sm:ml-auto order-last">
-        <button type="button" onClick={props.onRun} disabled={props.busy || props.notReady}
-          className="font-mono text-[10px] tracking-widest uppercase bg-gold text-bg-deep px-4 py-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity">
-          {props.busy ? <>Running…<SpinGlyph /></> : 'Run scan'}
-        </button>
+        {props.liveAt != null && (
+          <span className="font-mono text-[9px] tracking-widest uppercase text-jade text-right" title="Results use live Universalis prices">
+            Live · {fmtClock(props.liveAt)}
+          </span>
+        )}
+        <div className="flex gap-2">
+          <button type="button" onClick={props.onRun} disabled={props.pending || props.notReady}
+            className="flex-1 font-mono text-[10px] tracking-widest uppercase bg-gold text-bg-deep px-4 py-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity">
+            {props.runBusy ? <>Running…<SpinGlyph /></> : 'Run scan'}
+          </button>
+          <button type="button" onClick={props.onLive}
+            disabled={props.pending || props.notReady || props.liveOnCooldown}
+            title="Pull current prices from Universalis (~10 listings/item, a bit shallower than the hourly cache). One refresh per minute."
+            className="flex-1 font-mono text-[10px] tracking-widest uppercase border border-jade/60 text-jade px-4 py-2 hover:bg-jade/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap">
+            {props.liveOnCooldown ? `Wait ${props.liveSecondsLeft}s` : props.liveBusy ? <>Refreshing…<SpinGlyph /></> : '↻ Live prices'}
+          </button>
+        </div>
       </div>
     </div>
   );
+}
+
+function fmtClock(ts: number): string {
+  return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
