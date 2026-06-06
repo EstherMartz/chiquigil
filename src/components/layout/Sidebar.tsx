@@ -41,6 +41,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'Planning',
     items: [
       { label: 'Projects', path: '/projects' },
+      { label: 'Craft Lists', path: '/craft-lists' },
       { label: 'Watchlist', path: '/watchlist' },
       { label: 'Discover', path: '/discover' },
       { label: 'Batch', path: '/craft-batch' },

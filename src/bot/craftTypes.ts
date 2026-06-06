@@ -80,3 +80,33 @@ export interface StoredTask {
   status: 'open' | 'claimed' | 'done';
   updatedAt: number;
 }
+
+// ── Crafting Lists (Teamcraft-style personal lists) ────────────────────────
+export interface NewListItem {
+  itemId: number;
+  itemName: string;
+  qty: number;
+  isHq: boolean;
+}
+
+export interface StoredListItem extends NewListItem {
+  id: number;
+  position: number;
+}
+
+export interface StoredList {
+  id: string;
+  ownerId: string;
+  name: string;
+  createdAt: number;
+  updatedAt: number;
+  items: StoredListItem[];
+}
+
+export interface ListSummary {
+  id: string;
+  name: string;
+  itemCount: number;
+  createdAt: number;
+  updatedAt: number;
+}

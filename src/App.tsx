@@ -43,6 +43,9 @@ import Submarines from './routes/Submarines';
 import Planner from './routes/Planner';
 import Projects from './routes/Projects';
 import Project from './routes/Project';
+import CraftLists from './routes/CraftLists';
+import YourLists from './routes/YourLists';
+import ListDetail from './routes/ListDetail';
 import Admin from './routes/Admin';
 
 const PAGE_TITLES: Record<string, string> = {
@@ -75,6 +78,8 @@ const PAGE_TITLES: Record<string, string> = {
   '/submarines': 'Submarines',
   '/planner': 'Plan',
   '/projects': 'Projects',
+  '/craft-lists': 'Craft Lists',
+  '/craft-lists/saved': 'Your Lists',
   '/admin': 'Admin',
 };
 
@@ -86,6 +91,7 @@ function DocumentTitle() {
     if (!page) {
       if (pathname.startsWith('/item/')) page = 'Item';
       else if (pathname.startsWith('/projects/')) page = 'Project';
+      else if (pathname.startsWith('/craft-lists/')) page = 'Craft List';
     }
     document.title = page ? `${page} — ${base}` : base;
   }, [pathname]);
@@ -156,6 +162,9 @@ export default function App() {
                         <Route path="/planner" element={<Planner />} />
                         <Route path="/projects" element={<Projects />} />
                         <Route path="/projects/:id" element={<Project />} />
+                        <Route path="/craft-lists" element={<CraftLists />} />
+                        <Route path="/craft-lists/saved" element={<YourLists />} />
+                        <Route path="/craft-lists/:id" element={<ListDetail />} />
                       </Routes>
                     </ErrorBoundary>
                   </div>
