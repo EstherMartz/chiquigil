@@ -27,6 +27,7 @@ import { VerdictCard } from '../features/items/VerdictCard';
 import { MarketSnapshotRow } from '../features/items/MarketSnapshotRow';
 import { LiveRefreshBar } from '../features/items/LiveRefreshBar';
 import { findItemCurrencyOffers } from '../features/items/currencyOffers';
+import { findBestSingleStopFor } from '../features/items/materialCost';
 import { AddToWatchlistButton } from '../features/items/AddToWatchlistButton';
 import { AddToShoppingListButton } from '../features/shoppingList/AddToShoppingListButton';
 import { PluginItemActions } from '../features/plugin/PluginItemActions';
@@ -686,33 +687,6 @@ function SourcesBlock({ itemId, itemName, gather }: {
       </div>
     </footer>
   );
-}
-
-export function findBestSingleStopFor(
-  ingredients: Recipe['ingredients'],
-  regionByIngId: Record<string, MarketItem | undefined>,
-  homeWorld: string,
-  homeBasketCost: number,
-): { world: string; cost: number } {
-  let best = { world: homeWorld, cost: homeBasketCost };
-  const worlds = new Set<string>();
-  for (const ing of ingredients) {
-    const m = regionByIngId[ing.itemId];
-    if (!m) continue;
-    for (const l of m.worldListings) if (!l.hq) worlds.add(l.world);
-  }
-  for (const world of worlds) {
-    let total = 0;
-    let complete = true;
-    for (const ing of ingredients) {
-      const m = regionByIngId[ing.itemId];
-      const here = m?.worldListings.filter((l) => !l.hq && l.world === world) ?? [];
-      if (here.length === 0) { complete = false; break; }
-      total += Math.min(...here.map((l) => l.price)) * ing.amount;
-    }
-    if (complete && total < best.cost) best = { world, cost: total };
-  }
-  return best;
 }
 
 function MaterialShoppingBlock({
