@@ -30,7 +30,9 @@ describe('resolveGlamourRanking', () => {
 
   it('strips the FFXIV HQ glyph (U+E03C) when matching', () => {
     const items = [item(10, 'Dream Hat', 31)];
-    const out = resolveGlamourRanking([{ item: 'Dream Hat', uses: 1 }], items);
+    // Input carries the FFXIV HQ glyph (U+E03C) that Eorzea Collection embeds;
+    // it must be stripped before matching against the clean snapshot name.
+    const out = resolveGlamourRanking([{ item: 'Dream Hat', uses: 1 }], items);
     expect(out.rows).toHaveLength(1);
     expect(out.rows[0].id).toBe(10);
     expect(out.matched).toBe(1);
