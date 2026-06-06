@@ -57,8 +57,10 @@ function marketUnit(itemId: number, market: MarketData): number {
 
 /**
  * Gil cost to *self-source* one unit: gatherable and currency-obtainable
- * ingredients cost 0 gil, craftable ones recurse (÷ the sub-recipe's yield),
- * everything else falls back to its market buy price. Cycle-protected.
+ * ingredients cost 0 gil (earned by playing — costs time/currency, not gil),
+ * craftable ones recurse into their own self-source cost (÷ the sub-recipe's
+ * yield), everything else falls back to its market buy price. Full-depth, with
+ * cycle protection. Returns the floor cost in gil of making one yourself.
  */
 export function selfSourceCost(
   recipe: Recipe,
@@ -100,15 +102,24 @@ export interface BreakdownRow {
   itemId: number;
   amount: number;
   kind: IngredientSourceKind;
+  /** Self-source cost per unit (0 for gather/currency, sub-cost÷yield for craft, market for buy). */
   unitCost: number;
   lineCost: number;
+  /** Sub-recipe yield (units per synth) for craftable rows — for the "÷N" hint. */
   yield?: number;
+  /** For currency rows: the currency label + cost per unit (e.g. "P-Craft", 120). */
   currencyLabel?: string;
   currencyCost?: number;
+  /** Nested breakdown of a craftable ingredient's own mats (full depth). */
   children?: BreakdownRow[];
 }
 
-/** Recursive self-source breakdown, mirroring selfSourceCost so costs reconcile. */
+/**
+ * Recursive self-source breakdown: each ingredient classified gather / currency
+ * / craft / buy with its per-unit + line cost, craftable ingredients carrying
+ * their own nested children (full depth, cycle-guarded). Mirrors selfSourceCost
+ * so the tree's costs reconcile with it.
+ */
 export function selfSourceBreakdown(
   recipe: Recipe,
   recipeMap: Map<number, Recipe | null>,
