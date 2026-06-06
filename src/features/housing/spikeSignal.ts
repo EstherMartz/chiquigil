@@ -40,19 +40,32 @@ export function collectRecipeIngredientIds(
 }
 
 /**
- * Total lowest-listing cost of a recipe's ingredients.
- *
- * Returns `null` if any ingredient has no usable market price (missing from the
- * cache, or both minNQ/minHQ null). A real listing is never 0 gil, so treating a
- * missing ingredient as free would silently understate the total and overstate
- * the displayed craft margin — better to surface "can't compute" (rendered as "—")
- * than a fabricated profit. An empty ingredient list returns 0 (nothing to buy).
+ * Per-unit price for a single ingredient: the DC-wide cheapest current listing
+ * (`minNQ ?? minHQ`), falling back to the home-world recent average
+ * (`avgNQ ?? avgHQ`) when the mat is momentarily unlisted DC-wide. Both are real
+ * price signals — furnishing mats are bought DC-wide (you travel for them), and
+ * the home average is a sane estimate when nothing is currently listed. Mirrors
+ * the DC-min → home-avg precedence the regular craft views use (`unitCost` in
+ * computeProfit). Returns null only when neither signal exists.
  */
-export function housingMaterialCost(recipe: Recipe, market: MarketData): number | null {
+function ingredientUnitPrice(dc: MarketItem | undefined, home: MarketItem | undefined): number | null {
+  const dcMin = dc?.minNQ ?? dc?.minHQ ?? null;
+  if (dcMin != null) return dcMin;
+  return home?.avgNQ ?? home?.avgHQ ?? null;
+}
+
+/**
+ * Total cost of a recipe's ingredients, each priced via ingredientUnitPrice
+ * (DC-cheapest, then home-average). Returns `null` if any single ingredient
+ * can't be priced at all — a real listing is never 0 gil, so treating a missing
+ * mat as free would understate the total and overstate the displayed craft
+ * margin; better to surface "—" than a fabricated profit. An empty ingredient
+ * list returns 0 (nothing to buy).
+ */
+export function housingMaterialCost(recipe: Recipe, dcMarket: MarketData, homeMarket: MarketData): number | null {
   let total = 0;
   for (const ing of recipe.ingredients) {
-    const m = market[String(ing.itemId)];
-    const px = m ? (m.minNQ ?? m.minHQ ?? null) : null;
+    const px = ingredientUnitPrice(dcMarket[String(ing.itemId)], homeMarket[String(ing.itemId)]);
     if (px == null) return null;
     total += px * ing.amount;
   }

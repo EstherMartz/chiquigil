@@ -23,11 +23,13 @@ const TABS: { id: Tab; label: string; sort: HousingSortKey }[] = [
   { id: 'all', label: 'All housing', sort: 'velocity' },
 ];
 
-const MAX_CANDIDATES = 400;
 const SCAN_STALE_MS = 5 * 60 * 1000; // re-opening a tab within 5 min serves cache
 
 interface MarketScanResult {
+  /** Home-world prices (sale side + the home-average mat fallback). */
   market: MarketData;
+  /** DC-wide prices (the cheapest-mat side of the craft margin). */
+  dcMarket: MarketData;
   ids: number[];
   skipped: number;
 }
@@ -78,16 +80,20 @@ export function HousingMarketView() {
     enabled: !notReady,
     staleTime: SCAN_STALE_MS,
     queryFn: async () => {
-      const ids = candidateIds.slice(0, MAX_CANDIDATES);
+      const ids = candidateIds;
       // Also fetch prices for each candidate's recipe ingredients — they aren't
       // furnishings, so they're absent from `ids`, and without them
       // housingMaterialCost can't price any recipe (every craft margin null).
       const ingredientIds = recipes.data ? collectRecipeIngredientIds(ids, recipes.data) : [];
       const fetchIds = [...new Set([...ids, ...ingredientIds])];
-      const market = await fetchInBatches<MarketItem>(
-        fetchIds, (chunk) => fetchMarketData(world, chunk), { chunkSize: 100, concurrency: 4 },
-      );
-      return { market: market.data, ids, skipped: market.errors.length };
+      // Both scopes are cache-only (in-memory map reads, no network), so fetching
+      // the whole candidate set on two scopes is cheap. Home prices the sale side
+      // + the mat-cost home-average fallback; DC prices the cheapest-mat side.
+      const [home, dcScan] = await Promise.all([
+        fetchInBatches<MarketItem>(fetchIds, (chunk) => fetchMarketData(world, chunk), { chunkSize: 100, concurrency: 4 }),
+        fetchInBatches<MarketItem>(fetchIds, (chunk) => fetchMarketData(dc, chunk), { chunkSize: 100, concurrency: 4 }),
+      ]);
+      return { market: home.data, dcMarket: dcScan.data, ids, skipped: home.errors.length + dcScan.errors.length };
     },
   });
 
@@ -99,7 +105,7 @@ export function HousingMarketView() {
       if (!item) return [];
       const market = marketScan.data!.market[String(id)];
       const recipe = recipes.data!.get(id);
-      const materialCost = recipe ? housingMaterialCost(recipe, marketScan.data!.market) : 0;
+      const materialCost = recipe ? housingMaterialCost(recipe, marketScan.data!.dcMarket, marketScan.data!.market) : 0;
       return [buildHousingRow({ item, market, recipe, materialCost, history: undefined, now })];
     });
     return sortHousingRows(built, sortKey);
@@ -143,7 +149,6 @@ export function HousingMarketView() {
 
       <div className="font-mono text-[10px] text-text-low">
         {notReady ? 'Loading catalog…' : `${candidateIds.length.toLocaleString()} candidate items`}
-        {candidateIds.length > MAX_CANDIDATES && <span className="text-gold"> · showing first {MAX_CANDIDATES} — narrow with the filter</span>}
       </div>
 
       {marketScan.isLoading && <Spinner label="Fetching prices…" />}
@@ -152,7 +157,7 @@ export function HousingMarketView() {
       {marketScan.data && (
         <ResultTableScaffold<HousingRow>
           rows={rows}
-          totalCandidates={Math.min(candidateIds.length, MAX_CANDIDATES)}
+          totalCandidates={candidateIds.length}
           skippedChunks={marketScan.data.skipped}
           emptyState={<EmptyResults>No housing items matched. Try another tab or refresh.</EmptyResults>}
           renderTable={(visible) => (

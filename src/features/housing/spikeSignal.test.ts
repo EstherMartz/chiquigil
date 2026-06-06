@@ -22,28 +22,39 @@ const recipe = { itemResultId: 1, classJob: 'CRP', recipeLevel: 1, ingredients: 
 const twoIngRecipe = { itemResultId: 1, classJob: 'CRP', recipeLevel: 1, ingredients: [{ itemId: 10, amount: 2 }, { itemId: 11, amount: 3 }] } as Recipe;
 
 describe('housingMaterialCost', () => {
-  it('sums lowest ingredient prices times amount', () => {
-    const market: MarketData = { '10': mkt({ minNQ: 50 }) };
-    expect(housingMaterialCost(recipe, market)).toBe(100);
+  it('sums the DC-cheapest ingredient prices times amount', () => {
+    const dc: MarketData = { '10': mkt({ minNQ: 50 }) };
+    expect(housingMaterialCost(recipe, dc, {})).toBe(100);
   });
-  it('falls back to minHQ when minNQ is null', () => {
-    const market: MarketData = { '10': mkt({ minNQ: null, minHQ: 70 }) };
-    expect(housingMaterialCost(recipe, market)).toBe(140);
+  it('falls back to DC minHQ when DC minNQ is null', () => {
+    const dc: MarketData = { '10': mkt({ minNQ: null, minHQ: 70 }) };
+    expect(housingMaterialCost(recipe, dc, {})).toBe(140);
   });
-  it('returns null when an ingredient is missing from the market cache', () => {
-    expect(housingMaterialCost(recipe, {})).toBeNull();
+  it('falls back to the home average when the mat is unlisted DC-wide', () => {
+    const dc: MarketData = { '10': mkt({ minNQ: null, minHQ: null }) };
+    const home: MarketData = { '10': mkt({ avgNQ: 60 }) };
+    expect(housingMaterialCost(recipe, dc, home)).toBe(120);
   });
-  it('returns null when an ingredient has no usable price (all fields null)', () => {
-    const market: MarketData = { '10': mkt({ minNQ: null, minHQ: null }) };
-    expect(housingMaterialCost(recipe, market)).toBeNull();
+  it('prefers a DC listing over the home average', () => {
+    const dc: MarketData = { '10': mkt({ minNQ: 50 }) };
+    const home: MarketData = { '10': mkt({ avgNQ: 999 }) };
+    expect(housingMaterialCost(recipe, dc, home)).toBe(100);
+  });
+  it('returns null when an ingredient has neither a DC listing nor a home average', () => {
+    const dc: MarketData = { '10': mkt({ minNQ: null, minHQ: null }) };
+    const home: MarketData = { '10': mkt({ avgNQ: null, avgHQ: null }) };
+    expect(housingMaterialCost(recipe, dc, home)).toBeNull();
+  });
+  it('returns null when an ingredient is absent from both scopes', () => {
+    expect(housingMaterialCost(recipe, {}, {})).toBeNull();
   });
   it('returns null when only some ingredients are priced (never counts the missing one as free)', () => {
-    const market: MarketData = { '10': mkt({ minNQ: 50 }) }; // itemId 11 absent
-    expect(housingMaterialCost(twoIngRecipe, market)).toBeNull();
+    const dc: MarketData = { '10': mkt({ minNQ: 50 }) }; // itemId 11 absent from both
+    expect(housingMaterialCost(twoIngRecipe, dc, {})).toBeNull();
   });
   it('returns 0 for a recipe with no ingredients (nothing to buy)', () => {
     const empty = { ...recipe, ingredients: [] } as Recipe;
-    expect(housingMaterialCost(empty, {})).toBe(0);
+    expect(housingMaterialCost(empty, {}, {})).toBe(0);
   });
 });
 
