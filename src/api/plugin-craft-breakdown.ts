@@ -1,8 +1,30 @@
 import { loadSnapshots } from '../bot/loadSnapshots';
 import { buildBreakdown } from '../bot/craftSourcing';
 import type { MarketBundle } from '../features/watchlist/useMarketData';
+import type { Recipe } from '../lib/recipes';
+import type { ResolveDeps } from '../features/craftLists/resolveList';
+import { validateBreakdownItems, buildListBreakdown } from './_list-breakdown-core';
 
 async function handler(req: any, res: any) {
+  // ── POST: whole-list breakdown (plugin Crafting Lists) ─────────────────────
+  if (req.method === 'POST') {
+    const items = validateBreakdownItems((req.body ?? {}).items);
+    if (!items) {
+      return res.status(400).json({ error: 'items must be a 1–200 entry array of { itemId, qty, hq? }' });
+    }
+    const baseUrl = process.env.VITE_APP_URL ?? 'https://qiqirn.tools';
+    const snapshots = await loadSnapshots(baseUrl);
+    const deps: ResolveDeps = {
+      recipes: snapshots.recipes as Map<number, Recipe | null>,
+      gathering: snapshots.gatheringCatalog,
+      vendorMap: snapshots.vendorMap,
+      specialShop: snapshots.specialShop,
+      itemsById: snapshots.itemsById,
+    };
+    res.setHeader('Cache-Control', 'no-store');
+    return res.status(200).json(buildListBreakdown(items, deps));
+  }
+
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
