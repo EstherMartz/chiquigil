@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useSettingsStore } from '../features/settings/store';
@@ -13,6 +13,7 @@ import { useLeveUsedInIndex } from '../features/items/useLeveUsedInIndex';
 import { DeliverablesBlock } from '../features/items/DeliverablesBlock';
 import { CraftTreeBlock } from '../features/items/CraftTreeBlock';
 import { CraftSellMathCard } from '../features/items/CraftSellMathCard';
+import { ComparePathsSection } from '../features/compare/ComparePathsSection';
 import { IngredientBreakdownModal } from '../features/items/IngredientBreakdownModal';
 import { explode } from '../bot/craftExplode';
 import { useMarketData } from '../features/watchlist/useMarketData';
@@ -93,6 +94,8 @@ export default function Item() {
   const recipe = valid && recipes.data ? recipes.data.get(itemId) : undefined;
 
   const usedIn = valid ? (usedInIdx.data.get(itemId) ?? []) : [];
+  const compareRef = useRef<HTMLDivElement>(null);
+  const canCompare = !!recipe || usedIn.length > 0;
   const gcSupplyDeliverables = valid ? (gcSupplyIdx.data.get(itemId) ?? []) : [];
   const leveDeliverables = valid ? (leveIdx.data.get(itemId) ?? []) : [];
   const questDeliverables = garland.data?.usedInQuests ?? [];
@@ -236,6 +239,8 @@ export default function Item() {
         world={world}
         dc={dc}
         updatedMs={phantomMarket?.lastUploadTime ?? null}
+        canCompare={canCompare}
+        onCompare={() => compareRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
       />
 
       {snapshot.isLoading && (
@@ -379,6 +384,8 @@ export default function Item() {
         gather={gather}
       />
 
+      {canCompare && <ComparePathsSection ref={compareRef} itemId={itemId} />}
+
       {showBreakdown && recipe && recipes.data && market.data && (
         <IngredientBreakdownModal
           itemId={itemId}
@@ -396,9 +403,10 @@ export default function Item() {
   );
 }
 
-function HeaderBlock({ name, ilvl, sc, canHq, rarity, itemId, recipe, world, dc, updatedMs }: {
+function HeaderBlock({ name, ilvl, sc, canHq, rarity, itemId, recipe, world, dc, updatedMs, canCompare, onCompare }: {
   name: string; ilvl: number; sc: number; canHq: boolean; rarity: number | undefined; itemId: number; recipe: Recipe | null;
   world: string; dc: string; updatedMs: number | null;
+  canCompare: boolean; onCompare: () => void;
 }) {
   const rarityBorder = rarityBorderLeftClass(rarity);
   const rarityName = rarityTextClass(rarity);
@@ -430,6 +438,16 @@ function HeaderBlock({ name, ilvl, sc, canHq, rarity, itemId, recipe, world, dc,
         <div className="flex flex-wrap gap-2">
           <AddToWatchlistButton itemId={itemId} itemName={name} ilvl={ilvl} recipe={recipe} sc={sc} />
           <AddToShoppingListButton itemId={itemId} />
+          {canCompare && (
+            <button
+              type="button"
+              onClick={onCompare}
+              className="font-mono text-[10px] tracking-widest uppercase border border-aether text-aether px-3 py-2 hover:bg-aether hover:text-bg-deep transition-colors"
+              title="Compare what to do with this item"
+            >
+              + Compare Paths
+            </button>
+          )}
           <PluginItemActions itemId={itemId} />
           <Link
             to="/projects"
