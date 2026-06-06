@@ -98,3 +98,69 @@ describe('craftEffort', () => {
     expect(craftEffort(recipe([{ itemId: 1, amount: 1 }, { itemId: 2, amount: 1 }]), market)).toBe('gather-craft');
   });
 });
+
+import { daysToClear, pickWinner, quantityWarnings, buildSummaryLine } from './comparePaths';
+import type { PathCard } from './comparePaths';
+
+const card = (over: Partial<PathCard>): PathCard => ({
+  id: 'x', kind: 'sell-raw', label: 'L', itemId: 1, itemName: 'N',
+  salePrice: 0, matCost: 0, profitPerUnit: 0, velocity: 0,
+  unitsMovedPerDay: 0, gilPerDay: 0, timeToSellHours: 0, stack: null,
+  risk: '', effort: 'none', ...over,
+});
+
+describe('daysToClear', () => {
+  it('is qty / throughput for a market path', () => {
+    expect(daysToClear(card({ unitsMovedPerDay: 4 }), 20)).toBe(5);
+  });
+  it('is 0 (instant) for vendor', () => {
+    expect(daysToClear(card({ kind: 'vendor' }), 20)).toBe(0);
+  });
+  it('is Infinity when a market path has no throughput', () => {
+    expect(daysToClear(card({ kind: 'sell-raw', unitsMovedPerDay: 0 }), 20)).toBe(Infinity);
+  });
+});
+
+describe('pickWinner', () => {
+  it('picks the highest gil/day', () => {
+    const a = card({ id: 'a', gilPerDay: 100 });
+    const b = card({ id: 'b', gilPerDay: 300 });
+    expect(pickWinner([a, b], 1)).toBe('b');
+  });
+  it('falls back to vendor when all market paths lose money', () => {
+    const sell = card({ id: 'sell-raw', kind: 'sell-raw', gilPerDay: -50, unitsMovedPerDay: 0 });
+    const vendor = card({ id: 'vendor', kind: 'vendor', gilPerDay: 0, profitPerUnit: 12 });
+    expect(pickWinner([sell, vendor], 1)).toBe('vendor');
+  });
+  it('tiebreaks equal gil/day by fewer days to clear', () => {
+    const slow = card({ id: 'slow', gilPerDay: 100, unitsMovedPerDay: 1 });
+    const fast = card({ id: 'fast', gilPerDay: 100, unitsMovedPerDay: 10 });
+    expect(pickWinner([slow, fast], 50)).toBe('fast');
+  });
+});
+
+describe('quantityWarnings', () => {
+  it('flags overcrowding when clearing takes > 14 days', () => {
+    const c = card({ kind: 'sell-raw', unitsMovedPerDay: 1, velocity: 1 });
+    const w = quantityWarnings(c, 30);
+    expect(w.overcrowding).toContain('30');
+  });
+  it('flags flood when qty exceeds a week of velocity', () => {
+    const c = card({ kind: 'craft-output', velocity: 2, unitsMovedPerDay: 2 });
+    const w = quantityWarnings(c, 100);
+    expect(w.flood).toBeTruthy();
+  });
+  it('no warnings at quantity 1', () => {
+    expect(quantityWarnings(card({ unitsMovedPerDay: 0.01 }), 1)).toEqual({});
+  });
+});
+
+describe('buildSummaryLine', () => {
+  it('names the winning path', () => {
+    const sell = card({ id: 'sell-raw', label: 'Sell raw (MB)', gilPerDay: 86_000, unitsMovedPerDay: 50 });
+    const craft = card({ id: 'craft-50', label: 'Craft → Ingot', gilPerDay: 40_000, unitsMovedPerDay: 2 });
+    const line = buildSummaryLine([sell, craft], 'sell-raw', 1);
+    expect(line).toContain('Best play');
+    expect(line).toContain('Sell raw (MB)');
+  });
+});
