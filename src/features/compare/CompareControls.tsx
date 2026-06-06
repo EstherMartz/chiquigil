@@ -28,11 +28,12 @@ export function CompareControls({
       </label>
       <div className="flex flex-col gap-1">
         <span className="font-mono text-[10px] tracking-widest uppercase text-text-low">Materials from</span>
-        <div className="flex">
+        <div className="flex" role="group" aria-label="Materials from">
           {SOURCE_OPTS.map((o) => (
             <button
               key={o.value}
               type="button"
+              aria-pressed={materialSource === o.value}
               onClick={() => onMaterialSource(o.value)}
               className={`font-mono text-[10px] tracking-widest uppercase px-3 py-2 border border-border-base -ml-px first:ml-0 transition-colors ${
                 materialSource === o.value ? 'bg-aether text-bg-deep border-aether' : 'text-text-dim hover:text-aether'
