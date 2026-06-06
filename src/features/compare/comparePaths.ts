@@ -138,3 +138,66 @@ export function craftEffort(
   }
   return 'craft';
 }
+
+const EFFORT_RANK: Record<Effort, number> = { none: 0, craft: 1, 'gather-craft': 2 };
+
+export function daysToClear(card: PathCard, qty: number): number {
+  if (card.kind === 'vendor') return 0;
+  return card.unitsMovedPerDay > 0 ? qty / card.unitsMovedPerDay : Infinity;
+}
+
+export function pickWinner(cards: PathCard[], qty: number): string | null {
+  if (cards.length === 0) return null;
+  const ranked = [...cards].sort((a, b) => {
+    if (b.gilPerDay !== a.gilPerDay) return b.gilPerDay - a.gilPerDay;
+    const da = daysToClear(a, qty);
+    const db = daysToClear(b, qty);
+    if (da !== db) return da - db;
+    return EFFORT_RANK[a.effort] - EFFORT_RANK[b.effort];
+  });
+  return ranked[0].id;
+}
+
+export interface QtyWarnings { overcrowding?: string; flood?: string }
+
+export function quantityWarnings(card: PathCard, qty: number): QtyWarnings {
+  if (qty <= 1) return {};
+  const out: QtyWarnings = {};
+  if (card.kind !== 'vendor') {
+    const d = daysToClear(card, qty);
+    if (Number.isFinite(d) && d > 14) {
+      out.overcrowding = `At ${card.unitsMovedPerDay.toFixed(1)}/day, ${qty} units would take ~${d.toFixed(1)} days to sell. Consider splitting or choosing a faster path.`;
+    }
+    if (card.velocity > 0 && qty > card.velocity * 7) {
+      out.flood = 'Crafting this many would likely flood the market.';
+    }
+  }
+  return out;
+}
+
+function fmtK(n: number): string {
+  const abs = Math.abs(n);
+  if (abs >= 1000) return `${Math.round(n / 100) / 10}k`;
+  return String(Math.round(n));
+}
+
+function clearsPhrase(card: PathCard, qty: number): string {
+  const d = daysToClear(card, qty);
+  if (card.kind === 'vendor') return 'clears instantly';
+  if (!Number.isFinite(d)) return 'no recent demand';
+  if (d < 1) return 'clears in under a day';
+  return `clears in ~${d.toFixed(1)} days`;
+}
+
+export function buildSummaryLine(cards: PathCard[], winnerId: string | null, qty: number): string {
+  const winner = cards.find((c) => c.id === winnerId);
+  if (!winner) return 'No viable path found.';
+  let line = `Best play: ${winner.label} — ${fmtK(winner.gilPerDay)}/day, ${clearsPhrase(winner, qty)}.`;
+  const runnerUp = cards
+    .filter((c) => c.id !== winner.id && c.kind !== 'vendor')
+    .sort((a, b) => b.profitPerUnit - a.profitPerUnit)[0];
+  if (runnerUp && runnerUp.profitPerUnit > winner.profitPerUnit) {
+    line += ` ${runnerUp.label} yields more per unit but ${clearsPhrase(runnerUp, qty)}.`;
+  }
+  return line;
+}
