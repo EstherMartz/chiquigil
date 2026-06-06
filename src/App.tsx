@@ -32,6 +32,7 @@ import CraftFromInventory from './routes/CraftFromInventory';
 import QuestItems from './routes/QuestItems';
 import Housing from './routes/Housing';
 import Heatmap from './routes/Heatmap';
+import GlamourDemand from './routes/GlamourDemand';
 import CraftBatch from './routes/CraftBatch';
 import BatchHistory from './routes/BatchHistory';
 import Item from './routes/Item';
@@ -65,6 +66,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/craft-from-inventory': 'Craft from Inventory',
   '/quest-items': 'GC Supply',
   '/heatmap': 'Heatmap',
+  '/glamour': 'Glamour Demand',
   '/settings': 'Settings',
   '/submarines': 'Submarines',
   '/planner': 'Plan',
@@ -138,6 +140,7 @@ export default function App() {
                         <Route path="/craft-from-inventory" element={<CraftFromInventory />} />
                         <Route path="/quest-items" element={<QuestItems />} />
                         <Route path="/heatmap" element={<Heatmap />} />
+                        <Route path="/glamour" element={<GlamourDemand />} />
                         <Route path="/item/:id" element={<Item />} />
                         <Route path="/queries" element={<Navigate to="/crafts" replace />} />
                         <Route path="/insights" element={<Navigate to="/trading" replace />} />
