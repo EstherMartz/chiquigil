@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { useSettingsStore } from '../settings/store';
 import { useItemSnapshot } from '../queries/useItemSnapshot';
@@ -6,7 +6,7 @@ import { useGlamourSnapshot } from '../queries/useGlamourSnapshot';
 import { resolveGlamourRanking } from './resolveGlamourRanking';
 import { fetchInBatches } from '../../lib/universalisBulk';
 import { fetchMarketData, type MarketData, type MarketItem } from '../../lib/universalis';
-import { useInitialScan } from '../queries/useInitialScan';
+import type { GlamourPeriod } from '../../lib/staticSnapshots';
 import { CategorySelect } from '../../components/CategorySelect';
 import { categoryLabel } from '../../lib/itemSearchCategories';
 import { ItemNameLinks } from '../../components/ItemNameLinks';
@@ -35,10 +35,13 @@ function relativeAge(iso: string | null): string | null {
   return months === 1 ? '1 month ago' : `${months} months ago`;
 }
 
+const PERIOD_LABEL: Record<GlamourPeriod, string> = { recent: 'Last month', all: 'All-time' };
+
 export function GlamourDemandView() {
   const { world } = useSettingsStore();
+  const [period, setPeriod] = useState<GlamourPeriod>('recent');
   const itemSnap = useItemSnapshot();
-  const glamour = useGlamourSnapshot();
+  const glamour = useGlamourSnapshot(period);
   const [selectedCats, setSelectedCats] = useState<number[]>([]);
   const [sort, setSort] = useState<SortState>({ key: 'uses', dir: 'desc' });
 
@@ -64,7 +67,14 @@ export function GlamourDemandView() {
   });
 
   const ready = itemSnap.data != null && glamour.data != null && resolvedIds.length > 0;
-  useInitialScan(ready, () => scan.mutate());
+
+  // Auto-scan prices whenever the resolved item set changes — on first load and
+  // on every period toggle (the snapshot object identity changes per window).
+  const scanMutate = scan.mutate;
+  useEffect(() => {
+    if (ready) scanMutate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [glamour.data, itemSnap.data]);
 
   const categories = useMemo(() => {
     const ids = [...new Set(resolution.rows.map((r) => r.sc))];
@@ -104,10 +114,11 @@ export function GlamourDemandView() {
   if (glamour.data && glamour.data.ranking.length === 0) {
     return (
       <div className="max-w-[100rem] mx-auto px-4 space-y-4">
-        <Header age={null} resolution={resolution} />
+        <Header age={null} resolution={resolution} period={period} />
+        <PeriodToggle period={period} onChange={setPeriod} />
         <EmptyState
           icon="✦"
-          message="No glamour ranking data yet. Run the Eorzea Collection scraper (see docs/scraping-glamours.md) and commit public/data/snapshots/glamours.json."
+          message={`No ${PERIOD_LABEL[period].toLowerCase()} glamour data yet. Run the scraper (see docs/scraping-glamours.md) and commit the snapshot, or switch window above.`}
         />
       </div>
     );
@@ -115,7 +126,8 @@ export function GlamourDemandView() {
 
   return (
     <div className="max-w-[100rem] mx-auto px-4 space-y-4">
-      <Header age={age} resolution={resolution} />
+      <Header age={age} resolution={resolution} period={period} />
+      <PeriodToggle period={period} onChange={setPeriod} />
 
       {categories.length > 0 && (
         <div className="max-w-md">
@@ -196,17 +208,41 @@ export function GlamourDemandView() {
   );
 }
 
-function Header({ age, resolution }: { age: string | null; resolution: { matched: number; unmatched: number; untradeable: number } }) {
+function Header({ age, resolution, period }: { age: string | null; resolution: { matched: number; unmatched: number; untradeable: number }; period: GlamourPeriod }) {
+  const windowLabel = period === 'recent' ? "the last month's" : 'all-time';
   return (
     <div>
       <h2 className="font-display text-lg text-gold tracking-wide">Glamour Demand</h2>
       <p className="font-mono text-[11px] text-text-low max-w-prose">
-        Tradeable gear ranked by how often it appears in Eorzea Collection's most-loved glamours.
+        Tradeable gear ranked by how often it appears in {windowLabel} most-loved Eorzea Collection glamours.
         {age ? ` Scraped ${age}.` : ''}
       </p>
       <p className="font-mono text-[10px] text-text-low mt-1">
         {resolution.matched} ranked · {resolution.unmatched} unmatched · {resolution.untradeable} untradeable hidden
       </p>
+    </div>
+  );
+}
+
+function PeriodToggle({ period, onChange }: { period: GlamourPeriod; onChange: (p: GlamourPeriod) => void }) {
+  const opts: { value: GlamourPeriod; label: string }[] = [
+    { value: 'recent', label: 'Last month' },
+    { value: 'all', label: 'All-time' },
+  ];
+  return (
+    <div className="flex gap-2">
+      {opts.map((o) => (
+        <button
+          key={o.value}
+          type="button"
+          onClick={() => onChange(o.value)}
+          className={`font-mono text-[10px] tracking-widest uppercase px-3 py-1 border transition-colors ${
+            period === o.value ? 'border-gold text-gold' : 'border-border-base text-text-dim hover:text-aether'
+          }`}
+        >
+          {o.label}
+        </button>
+      ))}
     </div>
   );
 }
