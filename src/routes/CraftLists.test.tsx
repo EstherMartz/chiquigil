@@ -20,9 +20,6 @@ vi.mock('../features/queries/useItemSnapshot', () => ({
 vi.mock('../features/queries/useRecipeSnapshot', () => ({
   useRecipeSnapshot: () => ({ data: new Map() }),
 }));
-vi.mock('../features/queries/useSnapshotById', () => ({
-  useSnapshotById: () => new Map(),
-}));
 
 const createMut = vi.fn();
 vi.mock('../features/craftLists/useCraftLists', () => ({
