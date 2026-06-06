@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { fetchLists, fetchList, createListReq, updateListReq, deleteListReq } from './useCraftLists';
+import { fetchLists, fetchList, createListReq } from './useCraftLists';
 
 afterEach(() => { vi.restoreAllMocks(); });
 
