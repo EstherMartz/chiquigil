@@ -35,9 +35,12 @@ export function runGcSeals(
     let nqListings = m.worldListings.filter((l) => !l.hq);
     if (nqListings.length === 0) continue;
 
-    // For 'home' scope, filter to only home-world listings.
+    // For 'home' scope, exclude listings explicitly on other worlds. Universalis
+    // omits worldName on single-world queries, so home-world data arrives with
+    // world === '' — those rows ARE home-world listings (fetched from the home
+    // world only) and must be kept, alongside any explicitly home-tagged rows.
     if (filter.scope === 'home') {
-      nqListings = nqListings.filter((l) => l.world === homeWorld);
+      nqListings = nqListings.filter((l) => l.world === '' || l.world === homeWorld);
       if (nqListings.length === 0) continue;
     }
 

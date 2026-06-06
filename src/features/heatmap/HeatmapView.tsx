@@ -9,60 +9,23 @@ import { useSpecialShopSnapshot } from '../queries/useSpecialShopSnapshot';
 import { useGatheringCatalog } from '../queries/useGatheringCatalog';
 import { fetchInBatches } from '../../lib/universalisBulk';
 import { fetchMarketData, type MarketItem } from '../../lib/universalis';
-import { buildHeatmapCells, type HeatmapCell, type CellKind } from './buildHeatmapData';
+import { buildHeatmapCells, CURATED_VIEWS, type HeatmapCell, type CellKind } from './buildHeatmapData';
 import { HeatmapChart, KIND_BASE, KIND_LABEL } from './HeatmapChart';
 import { CRYSTALS_SEARCH_CATEGORY } from '../queries/commonFilters';
 import { Spinner } from '../../components/Spinner';
 import { StatusBanner } from '../../components/StatusBanner';
 import { fmtGil } from '../../lib/format';
 
-const TOP_MOVERS_LIMIT = 200;
+// How many tiles the chart renders. A readability cap on the treemap only —
+// presets filter the full population first, so low-velocity kinds (crafts) are
+// never starved by this limit.
+const CHART_CELL_LIMIT = 200;
 
 interface RunResult {
   cells: HeatmapCell[];
   skipped: number;
   scannedAt: number;
 }
-
-interface CuratedView {
-  id: string;
-  label: string;
-  sub: string;
-  apply: (cells: HeatmapCell[]) => HeatmapCell[];
-}
-
-const CURATED_VIEWS: CuratedView[] = [
-  {
-    id: 'hot-crafts',
-    label: 'Hot crafts',
-    sub: 'margin ≥ 20%, vel ≥ 5/day',
-    apply: (cells) => cells.filter((c) => c.kind === 'craft' && (c.margin ?? 0) >= 0.2 && c.velocity >= 5),
-  },
-  {
-    id: 'vendor-flips',
-    label: 'Vendor flips',
-    sub: 'NPC-sourced items moving on MB',
-    apply: (cells) => cells.filter((c) => c.kind === 'vendor'),
-  },
-  {
-    id: 'gathering',
-    label: 'Gathering plays',
-    sub: 'gatherable raw materials',
-    apply: (cells) => cells.filter((c) => c.kind === 'gather'),
-  },
-  {
-    id: 'materials',
-    label: 'Materials demand',
-    sub: 'raw / crystal materials in flow',
-    apply: (cells) => cells.filter((c) => c.tags.has('material')),
-  },
-  {
-    id: 'everything',
-    label: 'Everything',
-    sub: 'top movers, no filter',
-    apply: (cells) => cells,
-  },
-];
 
 function median(values: number[]): number {
   if (values.length === 0) return 0;
@@ -148,9 +111,8 @@ export function HeatmapView() {
         skipped += ingResult.errors.length;
       }
 
-      let cells = buildHeatmapCells(candidateItems, sale.data, recipes.data, sourceSets);
+      const cells = buildHeatmapCells(candidateItems, sale.data, recipes.data, sourceSets);
       cells.sort((a, b) => b.velocity - a.velocity);
-      cells = cells.slice(0, TOP_MOVERS_LIMIT);
       return { cells, skipped, scannedAt: Date.now() };
     },
   });
@@ -179,6 +141,12 @@ export function HeatmapView() {
     if (!run.data) return [];
     return currentView.apply(run.data.cells);
   }, [run.data, currentView]);
+
+  // The treemap caps at CHART_CELL_LIMIT tiles for readability; stats and the
+  // leaderboard still reflect the full filtered population. filteredCells is
+  // velocity-sorted (cells are pre-sorted, .filter preserves order), so this is
+  // the busiest N in the current view.
+  const chartCells = useMemo(() => filteredCells.slice(0, CHART_CELL_LIMIT), [filteredCells]);
 
   const viewCount = useMemo(() => {
     if (!run.data) return new Map<string, number>();
@@ -329,7 +297,7 @@ export function HeatmapView() {
       {/* Main grid: heatmap + leaderboard sidebar */}
       {run.data && filteredCells.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
-          <HeatmapChart cells={filteredCells} />
+          <HeatmapChart cells={chartCells} />
           <aside className="space-y-3">
             <div className="border border-border-base bg-bg-card p-3">
               <h3 className="font-mono text-[10px] tracking-widest uppercase text-gold mb-2">

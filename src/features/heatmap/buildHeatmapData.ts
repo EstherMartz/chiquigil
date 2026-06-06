@@ -153,3 +153,47 @@ export function buildHeatmapCells(
 
   return out;
 }
+
+export interface CuratedView {
+  id: string;
+  label: string;
+  sub: string;
+  apply: (cells: HeatmapCell[]) => HeatmapCell[];
+}
+
+// Curated presets. Each filters the FULL cell population (the chart caps the
+// render separately) — filtering a velocity-truncated slice would starve
+// low-velocity kinds like 'craft', whose profitable items rarely crack the
+// busiest items by raw sales velocity.
+export const CURATED_VIEWS: CuratedView[] = [
+  {
+    id: 'hot-crafts',
+    label: 'Hot crafts',
+    sub: 'margin ≥ 20%, vel ≥ 1/day',
+    apply: (cells) => cells.filter((c) => c.kind === 'craft' && (c.margin ?? 0) >= 0.2 && c.velocity >= 1),
+  },
+  {
+    id: 'vendor-flips',
+    label: 'Vendor flips',
+    sub: 'NPC-sourced items moving on MB',
+    apply: (cells) => cells.filter((c) => c.kind === 'vendor'),
+  },
+  {
+    id: 'gathering',
+    label: 'Gathering plays',
+    sub: 'gatherable raw materials',
+    apply: (cells) => cells.filter((c) => c.kind === 'gather'),
+  },
+  {
+    id: 'materials',
+    label: 'Materials demand',
+    sub: 'raw / crystal materials in flow',
+    apply: (cells) => cells.filter((c) => c.tags.has('material')),
+  },
+  {
+    id: 'everything',
+    label: 'Everything',
+    sub: 'top movers, no filter',
+    apply: (cells) => cells,
+  },
+];

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildHeatmapCells } from './buildHeatmapData';
+import { buildHeatmapCells, CURATED_VIEWS, type HeatmapCell } from './buildHeatmapData';
 import type { MarketItem } from '../../lib/universalis';
 import type { SnapshotItem } from '../../lib/itemSnapshot';
 import type { Recipe } from '../../lib/recipes';
@@ -143,5 +143,36 @@ describe('buildHeatmapCells', () => {
     ]);
     const cells = buildHeatmapCells(items, market, recipes);
     expect(cells[0].tier).toBe('D');
+  });
+});
+
+describe('CURATED_VIEWS hot-crafts preset', () => {
+  const hotCrafts = CURATED_VIEWS.find((v) => v.id === 'hot-crafts')!;
+
+  function cell(over: Partial<HeatmapCell>): HeatmapCell {
+    return {
+      id: 1, name: 'X', area: 1, salePrice: 1000, velocity: 2, margin: 0.5,
+      craftable: true, tags: new Set(), kind: 'craft', tier: 'A', ...over,
+    };
+  }
+
+  it('keeps a profitable, low-velocity craft (vel ≥ 1, not the old ≥ 5 floor)', () => {
+    // The previous ≥5/day floor excluded profitable craftables, which on a single
+    // home world almost never reach 5 sales/day. A 2/day, 50%-margin craft is a
+    // textbook "hot craft" and must survive.
+    const out = hotCrafts.apply([cell({ velocity: 2, margin: 0.5 })]);
+    expect(out).toHaveLength(1);
+  });
+
+  it('drops crafts below the 20% margin floor', () => {
+    expect(hotCrafts.apply([cell({ velocity: 5, margin: 0.1 })])).toEqual([]);
+  });
+
+  it('drops crafts that barely move (velocity < 1/day)', () => {
+    expect(hotCrafts.apply([cell({ velocity: 0.5, margin: 0.8 })])).toEqual([]);
+  });
+
+  it('drops non-craft kinds even when margin/velocity qualify', () => {
+    expect(hotCrafts.apply([cell({ kind: 'vendor', velocity: 9, margin: 0.9 })])).toEqual([]);
   });
 });

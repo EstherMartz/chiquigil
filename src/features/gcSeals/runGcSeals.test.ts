@@ -123,6 +123,21 @@ describe('runGcSeals', () => {
     expect(out[0].price).toBe(500);
   });
 
+  it('treats empty-world listings as home (Universalis omits worldName on single-world queries)', () => {
+    // When the home scope is fetched, Universalis returns a single-world payload
+    // whose listings carry no worldName, so they parse to world === ''. Those
+    // rows ARE home-world listings and must not be filtered out.
+    const snapshot: SnapshotItem[] = [
+      { id: 1, name: 'Gear', sc: 33, ui: 0, ilvl: 90, canHq: false },
+    ];
+    const priceMap: MarketData = {
+      1: mkSale({ worldListings: [listing('', 500), listing('', 800)] }),
+    };
+    const out = runGcSeals(snapshot, priceMap, 'Phantom', baseFilter);
+    expect(out).toHaveLength(1);
+    expect(out[0].price).toBe(500);
+  });
+
   it('drops items with no home-world listing when scope=home', () => {
     const snapshot: SnapshotItem[] = [
       { id: 1, name: 'Gear', sc: 33, ui: 0, ilvl: 90, canHq: false },
