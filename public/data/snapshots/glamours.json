@@ -1,15 +1,4896 @@
 {
-  "generated_at": "2026-06-01T00:00:00Z",
+  "generated_at": "2026-06-06T10:51:55.671Z",
   "pages_scraped": 10,
   "glamours_checked": 360,
-  "unique_items": 6,
+  "unique_items": 1222,
   "ranking": [
-    { "item": "Dream Hat", "uses": 87 },
-    { "item": "Company Hat", "uses": 71 },
-    { "item": "Leather Calot", "uses": 54 },
-    { "item": "Usagi Kabuto", "uses": 33 },
-    { "item": "Hempen Coif", "uses": 21 },
-    { "item": "Dated Sheepskin Pot Helm", "uses": 12 },
-    { "item": "Totally Not A Real Item Name", "uses": 4 }
+    {
+      "item": "The Emperor's New Ring",
+      "uses": 43
+    },
+    {
+      "item": "No.2 Type B Boots",
+      "uses": 35
+    },
+    {
+      "item": "The Emperor's New Bracelet",
+      "uses": 26
+    },
+    {
+      "item": "The Emperor's New Necklace",
+      "uses": 25
+    },
+    {
+      "item": "False Nails",
+      "uses": 24
+    },
+    {
+      "item": "The Emperor's New Earrings",
+      "uses": 19
+    },
+    {
+      "item": "Far Eastern Schoolgirl's Hair Ribbon",
+      "uses": 15
+    },
+    {
+      "item": "Faire Kohakama",
+      "uses": 14
+    },
+    {
+      "item": "Eternity Ring",
+      "uses": 14
+    },
+    {
+      "item": "Bonewicca Protector's Sabatons",
+      "uses": 11
+    },
+    {
+      "item": "No.2 Type B Leggings",
+      "uses": 11
+    },
+    {
+      "item": "Far Eastern Beauty's Skirt",
+      "uses": 10
+    },
+    {
+      "item": "Dalmascan Draped Top",
+      "uses": 9
+    },
+    {
+      "item": "Thavnairian Armlets",
+      "uses": 9
+    },
+    {
+      "item": "Faerie Tale Princess's Heels",
+      "uses": 8
+    },
+    {
+      "item": "Calfskin Rider's Cap",
+      "uses": 8
+    },
+    {
+      "item": "Far Eastern Lady Errant's Gloves",
+      "uses": 8
+    },
+    {
+      "item": "Spriggan Bottoms",
+      "uses": 8
+    },
+    {
+      "item": "Makai Moon Guide's Fingerless Gloves",
+      "uses": 7
+    },
+    {
+      "item": "Ravel Keeper's Halfgloves of Healing",
+      "uses": 7
+    },
+    {
+      "item": "Ravel Keeper's Halfgloves of Casting",
+      "uses": 7
+    },
+    {
+      "item": "Bridesmaid's Tights",
+      "uses": 6
+    },
+    {
+      "item": "Peach Blossoms",
+      "uses": 6
+    },
+    {
+      "item": "High Allagan Earrings of Casting",
+      "uses": 6
+    },
+    {
+      "item": "Ishgardian Thighboots",
+      "uses": 6
+    },
+    {
+      "item": "Neo-Ishgardian Top of Healing",
+      "uses": 6
+    },
+    {
+      "item": "Far Eastern Maiden's Bottoms",
+      "uses": 6
+    },
+    {
+      "item": "White Beret",
+      "uses": 6
+    },
+    {
+      "item": "Far Eastern Noble's Armlets",
+      "uses": 6
+    },
+    {
+      "item": "Republican Medicus's Laurel Wreath",
+      "uses": 6
+    },
+    {
+      "item": "Southern Seas Skirt",
+      "uses": 6
+    },
+    {
+      "item": "Skallic Bottoms of Aiming",
+      "uses": 5
+    },
+    {
+      "item": "Griffin Leather Cuffs",
+      "uses": 5
+    },
+    {
+      "item": "Far Eastern Maiden's Boots",
+      "uses": 5
+    },
+    {
+      "item": "Nezha Lady's Gloves",
+      "uses": 5
+    },
+    {
+      "item": "Bunny Chief Tights",
+      "uses": 5
+    },
+    {
+      "item": "Summer's Flame Top",
+      "uses": 5
+    },
+    {
+      "item": "Classic Spectacles",
+      "uses": 5
+    },
+    {
+      "item": "Quaintrelle's Hat",
+      "uses": 5
+    },
+    {
+      "item": "Coronal Wristband",
+      "uses": 5
+    },
+    {
+      "item": "Taffeta Loincloth",
+      "uses": 5
+    },
+    {
+      "item": "Thavnairian Headdress",
+      "uses": 5
+    },
+    {
+      "item": "Songbird Hat",
+      "uses": 5
+    },
+    {
+      "item": "Songbird Skirt",
+      "uses": 5
+    },
+    {
+      "item": "Augmented Torrent Armguards of Aiming",
+      "uses": 5
+    },
+    {
+      "item": "Demonic Gloves",
+      "uses": 5
+    },
+    {
+      "item": "Frontier Ribbon",
+      "uses": 5
+    },
+    {
+      "item": "Bonewicca Soother's Sabatons",
+      "uses": 4
+    },
+    {
+      "item": "Deepgold Wings of Fending",
+      "uses": 4
+    },
+    {
+      "item": "Holy Rainbow Bottoms",
+      "uses": 4
+    },
+    {
+      "item": "High Summoner's Boots",
+      "uses": 4
+    },
+    {
+      "item": "Veil of Eternal Devotion",
+      "uses": 4
+    },
+    {
+      "item": "Orison Fingerless Gloves",
+      "uses": 4
+    },
+    {
+      "item": "Pink Cherry Blossom Corsage",
+      "uses": 4
+    },
+    {
+      "item": "Neo-Ishgardian Cap of Aiming",
+      "uses": 4
+    },
+    {
+      "item": "Far Eastern Beauty's Boots",
+      "uses": 4
+    },
+    {
+      "item": "Faire Joi",
+      "uses": 4
+    },
+    {
+      "item": "Angelic Thighboots",
+      "uses": 4
+    },
+    {
+      "item": "Idealized Fili Armlets",
+      "uses": 4
+    },
+    {
+      "item": "Shadowless Bottoms of Casting",
+      "uses": 4
+    },
+    {
+      "item": "Thavnairian Tights",
+      "uses": 4
+    },
+    {
+      "item": "Nezha Lady's Jacket",
+      "uses": 4
+    },
+    {
+      "item": "Dalmascan Leather Shoes",
+      "uses": 4
+    },
+    {
+      "item": "Shisui Mengu of Fending",
+      "uses": 4
+    },
+    {
+      "item": "Rebel Boots",
+      "uses": 4
+    },
+    {
+      "item": "Loyal Housemaid's Wristdresses",
+      "uses": 4
+    },
+    {
+      "item": "Loyal Housemaid's Pumps",
+      "uses": 4
+    },
+    {
+      "item": "Augmented Hellfire Armor of Fending",
+      "uses": 4
+    },
+    {
+      "item": "Spring Bottoms",
+      "uses": 4
+    },
+    {
+      "item": "Ivalician Holy Knight's Armor",
+      "uses": 4
+    },
+    {
+      "item": "Omega Gambison of Fending",
+      "uses": 4
+    },
+    {
+      "item": "Warg Pelt of Fending",
+      "uses": 4
+    },
+    {
+      "item": "Casual Boots",
+      "uses": 4
+    },
+    {
+      "item": "Demonic Horns",
+      "uses": 4
+    },
+    {
+      "item": "Best Man's Gaiters",
+      "uses": 4
+    },
+    {
+      "item": "Idealized Dancer's Headdress",
+      "uses": 4
+    },
+    {
+      "item": "Hempen Pantalettes",
+      "uses": 4
+    },
+    {
+      "item": "Far Eastern Lady's Loincloth",
+      "uses": 4
+    },
+    {
+      "item": "Crystarium Choker of Aiming",
+      "uses": 4
+    },
+    {
+      "item": "The Emperor's New Hat",
+      "uses": 4
+    },
+    {
+      "item": "Bridesmaid's Sandals",
+      "uses": 4
+    },
+    {
+      "item": "Hemiskin Brais of Maiming",
+      "uses": 4
+    },
+    {
+      "item": "Guardian Corps Skirt",
+      "uses": 4
+    },
+    {
+      "item": "Gloves of the White Griffin",
+      "uses": 3
+    },
+    {
+      "item": "The Emperor's New Breeches",
+      "uses": 3
+    },
+    {
+      "item": "Tights of Eternal Devotion",
+      "uses": 3
+    },
+    {
+      "item": "High Allagan Ring of Casting",
+      "uses": 3
+    },
+    {
+      "item": "Faerie Tale Princess's Tiara",
+      "uses": 3
+    },
+    {
+      "item": "YoRHa Type-51 Hood of Aiming",
+      "uses": 3
+    },
+    {
+      "item": "Skallic Ring of Aiming",
+      "uses": 3
+    },
+    {
+      "item": "Lakeland Ring of Aiming",
+      "uses": 3
+    },
+    {
+      "item": "Republican Sagittarius's Loincloth",
+      "uses": 3
+    },
+    {
+      "item": "Hemiskin Brais of Fending",
+      "uses": 3
+    },
+    {
+      "item": "Bluebird Earring",
+      "uses": 3
+    },
+    {
+      "item": "Shisui Kohakama of Healing",
+      "uses": 3
+    },
+    {
+      "item": "Leonhart Jacket",
+      "uses": 3
+    },
+    {
+      "item": "Republican Signifer's Horns",
+      "uses": 3
+    },
+    {
+      "item": "YoRHa Type-51 Boots of Casting",
+      "uses": 3
+    },
+    {
+      "item": "Elemental Coat of Casting +1",
+      "uses": 3
+    },
+    {
+      "item": "Augmented Crystarium Coat of Scouting",
+      "uses": 3
+    },
+    {
+      "item": "Replica Sky Pirate's Bottoms of Casting",
+      "uses": 3
+    },
+    {
+      "item": "YoRHa Type-51 Hood of Scouting",
+      "uses": 3
+    },
+    {
+      "item": "Whisperfine Woolen Boots",
+      "uses": 3
+    },
+    {
+      "item": "Fieldfiend's Shirt",
+      "uses": 3
+    },
+    {
+      "item": "Swallowskin Boots",
+      "uses": 3
+    },
+    {
+      "item": "Leonhart Gloves",
+      "uses": 3
+    },
+    {
+      "item": "Aka Oni Hara-ate",
+      "uses": 3
+    },
+    {
+      "item": "Cropped Fireglass Leather Slops",
+      "uses": 3
+    },
+    {
+      "item": "Anemos Constellation Armlets",
+      "uses": 3
+    },
+    {
+      "item": "Creed Wings",
+      "uses": 3
+    },
+    {
+      "item": "Raptorskin Skirt",
+      "uses": 3
+    },
+    {
+      "item": "Tamamo Headband",
+      "uses": 3
+    },
+    {
+      "item": "Replica Sky Pirate's Boots of Aiming",
+      "uses": 3
+    },
+    {
+      "item": "Fuga Hakama",
+      "uses": 3
+    },
+    {
+      "item": "Tantra Tantour",
+      "uses": 3
+    },
+    {
+      "item": "Dalmascan Draped Bottoms",
+      "uses": 3
+    },
+    {
+      "item": "Claws of the Beast",
+      "uses": 3
+    },
+    {
+      "item": "Ravel Keeper's Chestwrap of Aiming",
+      "uses": 3
+    },
+    {
+      "item": "Pagos Field Dressing",
+      "uses": 3
+    },
+    {
+      "item": "Housemaid's Brim",
+      "uses": 3
+    },
+    {
+      "item": "Alliance Jacket of Aiming",
+      "uses": 3
+    },
+    {
+      "item": "Punching Gloves",
+      "uses": 3
+    },
+    {
+      "item": "Miqo'te Loincloth",
+      "uses": 3
+    },
+    {
+      "item": "Summer's Flame Wrist Torque",
+      "uses": 3
+    },
+    {
+      "item": "Summer's Flame Sandals",
+      "uses": 3
+    },
+    {
+      "item": "Skallic Necklace of Aiming",
+      "uses": 3
+    },
+    {
+      "item": "Heirloom Jacket of Maiming",
+      "uses": 3
+    },
+    {
+      "item": "Quaintrelle's Ruffled Skirt",
+      "uses": 3
+    },
+    {
+      "item": "Bootlets of Eternal Passion",
+      "uses": 3
+    },
+    {
+      "item": "Winter Sweater",
+      "uses": 3
+    },
+    {
+      "item": "Collegiate Skirt",
+      "uses": 3
+    },
+    {
+      "item": "Idealized Gunslinger's Hat",
+      "uses": 3
+    },
+    {
+      "item": "Expeditioner's Pantalettes",
+      "uses": 3
+    },
+    {
+      "item": "Head Bandage",
+      "uses": 3
+    },
+    {
+      "item": "Scion Liberator's Fingerless Gloves",
+      "uses": 3
+    },
+    {
+      "item": "Survival Boots",
+      "uses": 3
+    },
+    {
+      "item": "Patrician's Bottoms",
+      "uses": 3
+    },
+    {
+      "item": "Housemaid's Pumps",
+      "uses": 3
+    },
+    {
+      "item": "Tishtrya",
+      "uses": 3
+    },
+    {
+      "item": "Serpent Elite's Circlet",
+      "uses": 3
+    },
+    {
+      "item": "Ingrimm Recollection",
+      "uses": 3
+    },
+    {
+      "item": "Pagos Culottes",
+      "uses": 3
+    },
+    {
+      "item": "Dirndl's Pumps",
+      "uses": 3
+    },
+    {
+      "item": "The Emperor's New Gloves",
+      "uses": 3
+    },
+    {
+      "item": "Alliance Coat of Healing",
+      "uses": 3
+    },
+    {
+      "item": "Far Eastern Lady's Crakows",
+      "uses": 3
+    },
+    {
+      "item": "Kupo Trousers",
+      "uses": 3
+    },
+    {
+      "item": "Bonewicca Soother's Mask",
+      "uses": 2
+    },
+    {
+      "item": "Edengrace Robe of Healing",
+      "uses": 2
+    },
+    {
+      "item": "Elemental Armor of Fending",
+      "uses": 2
+    },
+    {
+      "item": "Sequence",
+      "uses": 2
+    },
+    {
+      "item": "Cashmere Skirt of Healing",
+      "uses": 2
+    },
+    {
+      "item": "Gown of Light",
+      "uses": 2
+    },
+    {
+      "item": "Pagos Shirt",
+      "uses": 2
+    },
+    {
+      "item": "Scion Traveler's Boots",
+      "uses": 2
+    },
+    {
+      "item": "High Allagan Choker of Casting",
+      "uses": 2
+    },
+    {
+      "item": "Petalite Ring of Aiming",
+      "uses": 2
+    },
+    {
+      "item": "Fae Cane",
+      "uses": 2
+    },
+    {
+      "item": "Antiquated Myochin Jingasa",
+      "uses": 2
+    },
+    {
+      "item": "Rakshasa Hakama of Striking",
+      "uses": 2
+    },
+    {
+      "item": "Replica Sky Pirate's Jacket of Striking",
+      "uses": 2
+    },
+    {
+      "item": "Far Eastern Beauty's Hairpin",
+      "uses": 2
+    },
+    {
+      "item": "No.2 Type B Dress",
+      "uses": 2
+    },
+    {
+      "item": "Shadowless Mask of Fending",
+      "uses": 2
+    },
+    {
+      "item": "Flat Cap",
+      "uses": 2
+    },
+    {
+      "item": "Serpentskin Vest",
+      "uses": 2
+    },
+    {
+      "item": "Wind Silk Bottoms",
+      "uses": 2
+    },
+    {
+      "item": "Dirndl's Bodice",
+      "uses": 2
+    },
+    {
+      "item": "Neo-Ishgardian Gloves of Aiming",
+      "uses": 2
+    },
+    {
+      "item": "Antiquated Outsider",
+      "uses": 2
+    },
+    {
+      "item": "Augmented Ninja Hakama",
+      "uses": 2
+    },
+    {
+      "item": "YoRHa Type-51 Boots of Scouting",
+      "uses": 2
+    },
+    {
+      "item": "Faerie Tale Princess's Gloves",
+      "uses": 2
+    },
+    {
+      "item": "Fae Sword",
+      "uses": 2
+    },
+    {
+      "item": "Fae Shield",
+      "uses": 2
+    },
+    {
+      "item": "Idealized Fili Gilet",
+      "uses": 2
+    },
+    {
+      "item": "Shadowless Petasos of Healing",
+      "uses": 2
+    },
+    {
+      "item": "Ravel Keeper's Sandals of Healing",
+      "uses": 2
+    },
+    {
+      "item": "Edengate Sandals of Healing",
+      "uses": 2
+    },
+    {
+      "item": "Sharlayan Preceptor's Ring",
+      "uses": 2
+    },
+    {
+      "item": "Ala Mhigan Coat of Casting",
+      "uses": 2
+    },
+    {
+      "item": "Elemental Circlet of Casting +1",
+      "uses": 2
+    },
+    {
+      "item": "Augmented Shire Emissary's Gloves",
+      "uses": 2
+    },
+    {
+      "item": "Deepshadow Ring of Aiming",
+      "uses": 2
+    },
+    {
+      "item": "Star of the Nezha Lady",
+      "uses": 2
+    },
+    {
+      "item": "Brightlinen Long Gloves of Aiming",
+      "uses": 2
+    },
+    {
+      "item": "Oschon's Sollerets of Aiming",
+      "uses": 2
+    },
+    {
+      "item": "Warg Pelt of Healing",
+      "uses": 2
+    },
+    {
+      "item": "Ingrimm",
+      "uses": 2
+    },
+    {
+      "item": "Urban Boots",
+      "uses": 2
+    },
+    {
+      "item": "YoRHa Type-51 Halfslops of Scouting",
+      "uses": 2
+    },
+    {
+      "item": "Sasuke's Blades Zeta",
+      "uses": 2
+    },
+    {
+      "item": "Calfskin Rider's Jacket",
+      "uses": 2
+    },
+    {
+      "item": "Hempen Tights",
+      "uses": 2
+    },
+    {
+      "item": "Edencall Tunic of Casting",
+      "uses": 2
+    },
+    {
+      "item": "Warg Tights of Casting",
+      "uses": 2
+    },
+    {
+      "item": "Bunny Chief Pumps",
+      "uses": 2
+    },
+    {
+      "item": "Edenmete Coat of Fending",
+      "uses": 2
+    },
+    {
+      "item": "Smilodonskin Trousers of Fending",
+      "uses": 2
+    },
+    {
+      "item": "Calfskin Rider's Gloves",
+      "uses": 2
+    },
+    {
+      "item": "Far Eastern Lady Errant's Boots",
+      "uses": 2
+    },
+    {
+      "item": "Anemos Suspenders",
+      "uses": 2
+    },
+    {
+      "item": "Lakeland Ring of Healing",
+      "uses": 2
+    },
+    {
+      "item": "Halone's Mail of Fending",
+      "uses": 2
+    },
+    {
+      "item": "Gordian Greatsword",
+      "uses": 2
+    },
+    {
+      "item": "Republican Signifer's Fingerless Gloves",
+      "uses": 2
+    },
+    {
+      "item": "Idealized Estoqueur's Bliaud",
+      "uses": 2
+    },
+    {
+      "item": "Star Velvet Bottoms of Casting",
+      "uses": 2
+    },
+    {
+      "item": "Talekeeper",
+      "uses": 2
+    },
+    {
+      "item": "Rainbow Hydrangea Corsage",
+      "uses": 2
+    },
+    {
+      "item": "Ala Mhigan Gown",
+      "uses": 2
+    },
+    {
+      "item": "Voeburtite Gauntlets of Fending",
+      "uses": 2
+    },
+    {
+      "item": "Warg Pelt of Casting",
+      "uses": 2
+    },
+    {
+      "item": "Wolfliege Thighboots",
+      "uses": 2
+    },
+    {
+      "item": "Idealized Dancer's Armlets",
+      "uses": 2
+    },
+    {
+      "item": "Republican Signifer's Chiton",
+      "uses": 2
+    },
+    {
+      "item": "Chaos Gauntlets",
+      "uses": 2
+    },
+    {
+      "item": "Red Ribbon",
+      "uses": 2
+    },
+    {
+      "item": "Virtu Duelist's Tabard",
+      "uses": 2
+    },
+    {
+      "item": "Tropaios Rapier",
+      "uses": 2
+    },
+    {
+      "item": "Yanxian Merchant's Haori",
+      "uses": 2
+    },
+    {
+      "item": "Lakeland Necklace of Slaying",
+      "uses": 2
+    },
+    {
+      "item": "Palladium Circlet of Striking",
+      "uses": 2
+    },
+    {
+      "item": "Hard Leather Ringbands",
+      "uses": 2
+    },
+    {
+      "item": "Brightlinen Bottoms of Striking",
+      "uses": 2
+    },
+    {
+      "item": "True Griffin Caligae of Striking",
+      "uses": 2
+    },
+    {
+      "item": "Uraeus Coat",
+      "uses": 2
+    },
+    {
+      "item": "Far Eastern Lady Errant's Skirt",
+      "uses": 2
+    },
+    {
+      "item": "Faire Zori",
+      "uses": 2
+    },
+    {
+      "item": "Thavnairian Bustier",
+      "uses": 2
+    },
+    {
+      "item": "Southern Seas Swimsuit",
+      "uses": 2
+    },
+    {
+      "item": "Edengrace Thighboots of Casting",
+      "uses": 2
+    },
+    {
+      "item": "Welkin Hat",
+      "uses": 2
+    },
+    {
+      "item": "Kupo Jacket",
+      "uses": 2
+    },
+    {
+      "item": "Viera Pantalettes",
+      "uses": 2
+    },
+    {
+      "item": "Lazurite Ring of Aiming",
+      "uses": 2
+    },
+    {
+      "item": "Idealized Dancer's Casaque",
+      "uses": 2
+    },
+    {
+      "item": "Anemos Constellation Gaskins",
+      "uses": 2
+    },
+    {
+      "item": "YoRHa Type-51 Boots of Healing",
+      "uses": 2
+    },
+    {
+      "item": "Petalite Ring of Healing",
+      "uses": 2
+    },
+    {
+      "item": "Lakeland Necklace of Aiming",
+      "uses": 2
+    },
+    {
+      "item": "Scion Sorceress's Shadowtalons",
+      "uses": 2
+    },
+    {
+      "item": "Radiant's Earrings of Fending",
+      "uses": 2
+    },
+    {
+      "item": "Neo-Ishgardian Bottoms of Aiming",
+      "uses": 2
+    },
+    {
+      "item": "Midan Metal Musketoon",
+      "uses": 2
+    },
+    {
+      "item": "Replica Nothung",
+      "uses": 2
+    },
+    {
+      "item": "Demonic Thighboots",
+      "uses": 2
+    },
+    {
+      "item": "Miqo'te Separates",
+      "uses": 2
+    },
+    {
+      "item": "Werewolf Legs",
+      "uses": 2
+    },
+    {
+      "item": "Black Carnation Earring",
+      "uses": 2
+    },
+    {
+      "item": "White Hyacinth Corsage",
+      "uses": 2
+    },
+    {
+      "item": "YoRHa Type-53 Cloak of Aiming",
+      "uses": 2
+    },
+    {
+      "item": "Linen Shortgloves",
+      "uses": 2
+    },
+    {
+      "item": "Idealized Dancer's Bottoms",
+      "uses": 2
+    },
+    {
+      "item": "Star Velvet Himation of Healing",
+      "uses": 2
+    },
+    {
+      "item": "Hempen Camise",
+      "uses": 2
+    },
+    {
+      "item": "Skyworker's Bottoms",
+      "uses": 2
+    },
+    {
+      "item": "Anemos Duelist's Chapeau",
+      "uses": 2
+    },
+    {
+      "item": "Duelist's Thighboots",
+      "uses": 2
+    },
+    {
+      "item": "Street Jacket",
+      "uses": 2
+    },
+    {
+      "item": "Bozjan Armguards of Aiming",
+      "uses": 2
+    },
+    {
+      "item": "Star Velvet Long Gloves of Healing",
+      "uses": 2
+    },
+    {
+      "item": "Neo-Ishgardian Bottoms of Healing",
+      "uses": 2
+    },
+    {
+      "item": "Ultima Horns",
+      "uses": 2
+    },
+    {
+      "item": "Nightsteel Gauntlets of Maiming",
+      "uses": 2
+    },
+    {
+      "item": "Tantalus Vest",
+      "uses": 2
+    },
+    {
+      "item": "Allagan Earrings of Casting",
+      "uses": 2
+    },
+    {
+      "item": "Allagan Ring of Casting",
+      "uses": 2
+    },
+    {
+      "item": "White Campanula Corsage",
+      "uses": 2
+    },
+    {
+      "item": "Dirndl's Wrist Torque",
+      "uses": 2
+    },
+    {
+      "item": "Boarskin Choker",
+      "uses": 2
+    },
+    {
+      "item": "Kotetsu",
+      "uses": 2
+    },
+    {
+      "item": "High Steel Sollerets of Maiming",
+      "uses": 2
+    },
+    {
+      "item": "Ao Dai",
+      "uses": 2
+    },
+    {
+      "item": "The King's Tathlums",
+      "uses": 2
+    },
+    {
+      "item": "Bozjan Coat of Casting",
+      "uses": 2
+    },
+    {
+      "item": "Ravel Keeper's Vest of Fending",
+      "uses": 2
+    },
+    {
+      "item": "Nomad's Armguards of Fending",
+      "uses": 2
+    },
+    {
+      "item": "Woad Skyraider's Breeches",
+      "uses": 2
+    },
+    {
+      "item": "Goatskin Choker",
+      "uses": 2
+    },
+    {
+      "item": "Scion Traveler's Jacket",
+      "uses": 2
+    },
+    {
+      "item": "Edenchoir Gauntlets of Fending",
+      "uses": 2
+    },
+    {
+      "item": "Dai-ryumyaku Hachigane of Fending",
+      "uses": 2
+    },
+    {
+      "item": "Edengate Greaves of Fending",
+      "uses": 2
+    },
+    {
+      "item": "High Summoner's Armlets",
+      "uses": 2
+    },
+    {
+      "item": "Bonewicca Shadow's Chestpiece",
+      "uses": 2
+    },
+    {
+      "item": "Tsukuyomi's Kunai",
+      "uses": 2
+    },
+    {
+      "item": "Makai Markswoman's Ribbon",
+      "uses": 2
+    },
+    {
+      "item": "Anemos Hat",
+      "uses": 2
+    },
+    {
+      "item": "Scion Liberator's Earrings",
+      "uses": 2
+    },
+    {
+      "item": "Heirloom Ring of Healing",
+      "uses": 2
+    },
+    {
+      "item": "Neo-Ishgardian Boots of Aiming",
+      "uses": 2
+    },
+    {
+      "item": "Augmented Deepshadow Coat of Aiming",
+      "uses": 2
+    },
+    {
+      "item": "Ramie Ribbon of Healing",
+      "uses": 2
+    },
+    {
+      "item": "Hraesvelgr Gloves",
+      "uses": 2
+    },
+    {
+      "item": "Sable Death Mask",
+      "uses": 2
+    },
+    {
+      "item": "Late Allagan Gloves of Fending",
+      "uses": 2
+    },
+    {
+      "item": "Late Allagan Bottoms of Fending",
+      "uses": 2
+    },
+    {
+      "item": "Doman Iron Gauntlets of Maiming",
+      "uses": 2
+    },
+    {
+      "item": "Heirloom Greaves of Maiming",
+      "uses": 2
+    },
+    {
+      "item": "Nabaath Cap of Healing",
+      "uses": 2
+    },
+    {
+      "item": "Scion Hearer's Hood",
+      "uses": 2
+    },
+    {
+      "item": "Bonewicca Wildling's Gauntlets",
+      "uses": 2
+    },
+    {
+      "item": "The Emperor's New Fists",
+      "uses": 2
+    },
+    {
+      "item": "The Emperor's New Shield",
+      "uses": 2
+    },
+    {
+      "item": "Black Summer Halter",
+      "uses": 2
+    },
+    {
+      "item": "Scion Sorceress's High Boots",
+      "uses": 2
+    },
+    {
+      "item": "Guardian Corps Gauntlets",
+      "uses": 2
+    },
+    {
+      "item": "Bonewicca Skinner's Sabatons",
+      "uses": 2
+    },
+    {
+      "item": "Faerie Tale Prince's Circlet",
+      "uses": 2
+    },
+    {
+      "item": "Bonewicca Skinner's Visor",
+      "uses": 2
+    },
+    {
+      "item": "Idealized Pteroslaver Mail",
+      "uses": 2
+    },
+    {
+      "item": "Songbird Boots",
+      "uses": 2
+    },
+    {
+      "item": "Bonewicca Soother's Chestpiece",
+      "uses": 2
+    },
+    {
+      "item": "Far Eastern Matriarch's Sun Hat",
+      "uses": 2
+    },
+    {
+      "item": "Witch's Coatee",
+      "uses": 2
+    },
+    {
+      "item": "Skyworker's Singlet",
+      "uses": 2
+    },
+    {
+      "item": "Hannish Wool Autumn Shirt",
+      "uses": 2
+    },
+    {
+      "item": "Viera Sandals",
+      "uses": 2
+    },
+    {
+      "item": "Crystarium Ring of Aiming",
+      "uses": 2
+    },
+    {
+      "item": "Scion Healer's Halftights",
+      "uses": 2
+    },
+    {
+      "item": "Exclusive Far Eastern Journey Circlet",
+      "uses": 2
+    },
+    {
+      "item": "Exclusive Far Eastern Journey Jacket",
+      "uses": 2
+    },
+    {
+      "item": "High House Cloche",
+      "uses": 2
+    },
+    {
+      "item": "No.2 Type B Goggles",
+      "uses": 2
+    },
+    {
+      "item": "Orthodox Greaves of Fending",
+      "uses": 2
+    },
+    {
+      "item": "YoRHa Type-51 Boots of Aiming",
+      "uses": 2
+    },
+    {
+      "item": "Etheirys Ring of Casting",
+      "uses": 2
+    },
+    {
+      "item": "Aoidos' Tights",
+      "uses": 2
+    },
+    {
+      "item": "YoRHa Type-51 Boots of Fending",
+      "uses": 2
+    },
+    {
+      "item": "Asphodelos Ring of Fending",
+      "uses": 2
+    },
+    {
+      "item": "Bootlets of Eternal Devotion",
+      "uses": 2
+    },
+    {
+      "item": "YoRHa Type-55 Thighboots of Maiming",
+      "uses": 2
+    },
+    {
+      "item": "Durium Hairpin of Maiming",
+      "uses": 2
+    },
+    {
+      "item": "Omicron Ring of Healing",
+      "uses": 2
+    },
+    {
+      "item": "Nirvana Zeta",
+      "uses": 1
+    },
+    {
+      "item": "Yama Earring of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Elemental Gauntlets of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Srivatsa",
+      "uses": 1
+    },
+    {
+      "item": "Star Velvet Hood of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Omega Jacket of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Darklight Gloves of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Mimesis Lux",
+      "uses": 1
+    },
+    {
+      "item": "Skallic Jacket of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Orison Thighboots",
+      "uses": 1
+    },
+    {
+      "item": "Aetheryte Earring",
+      "uses": 1
+    },
+    {
+      "item": "Deepshadow Halfmask of Striking",
+      "uses": 1
+    },
+    {
+      "item": "Wyvernskin Gloves of Striking",
+      "uses": 1
+    },
+    {
+      "item": "Alexandrian Metal Katana",
+      "uses": 1
+    },
+    {
+      "item": "High Allagan Bracelets of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Songbird Jacket",
+      "uses": 1
+    },
+    {
+      "item": "Nezha Lady's Slops",
+      "uses": 1
+    },
+    {
+      "item": "Doman Iron Glaives",
+      "uses": 1
+    },
+    {
+      "item": "Nabaath Earrings of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Chrysolite Bracelet of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Edencall Wings of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Omega Coat of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Anemos Seventh Heaven Thighboots",
+      "uses": 1
+    },
+    {
+      "item": "Skallic Coat of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Songbird Gloves",
+      "uses": 1
+    },
+    {
+      "item": "Edenchoir Gunblade",
+      "uses": 1
+    },
+    {
+      "item": "Angelic Chaplets",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Choral Tights",
+      "uses": 1
+    },
+    {
+      "item": "Unfinished Artemis Bow Replica",
+      "uses": 1
+    },
+    {
+      "item": "Atrociraptorskin Necklace of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Alliance Vest of Striking",
+      "uses": 1
+    },
+    {
+      "item": "Antiquated Myochin Tekko",
+      "uses": 1
+    },
+    {
+      "item": "Taoist's Shoes",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Hellfire Katana",
+      "uses": 1
+    },
+    {
+      "item": "Hard Leather Sandals",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Cryptlurker's War Quoits",
+      "uses": 1
+    },
+    {
+      "item": "Antiquated Abyss Cuirass",
+      "uses": 1
+    },
+    {
+      "item": "Antiquated Abyss Gauntlets",
+      "uses": 1
+    },
+    {
+      "item": "Expeditioner's Moccasins",
+      "uses": 1
+    },
+    {
+      "item": "Shire Conservator's Ring",
+      "uses": 1
+    },
+    {
+      "item": "Evenstar Hat",
+      "uses": 1
+    },
+    {
+      "item": "Weathered Estoqueur's Bliaud",
+      "uses": 1
+    },
+    {
+      "item": "Valentione Rose Ribboned Gloves",
+      "uses": 1
+    },
+    {
+      "item": "Valentione Rose Tights",
+      "uses": 1
+    },
+    {
+      "item": "Antiquated Duelist's Thighboots",
+      "uses": 1
+    },
+    {
+      "item": "Ribbon",
+      "uses": 1
+    },
+    {
+      "item": "Quan",
+      "uses": 1
+    },
+    {
+      "item": "Weathered Wristlets",
+      "uses": 1
+    },
+    {
+      "item": "Holy Rainbow Scarf of Scouting",
+      "uses": 1
+    },
+    {
+      "item": "YoRHa Type-51 Jacket of Scouting",
+      "uses": 1
+    },
+    {
+      "item": "Hempen Dress Gloves",
+      "uses": 1
+    },
+    {
+      "item": "Elemental Armor of Fending +1",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Scaevan Headgear of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Scaevan Greaves of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Weathered Rosenbogen",
+      "uses": 1
+    },
+    {
+      "item": "YoRHa Type-53 Halfrobe of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Koppranickel Temple Chain",
+      "uses": 1
+    },
+    {
+      "item": "Thavnairian Bolero",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Healer's Gloves",
+      "uses": 1
+    },
+    {
+      "item": "Sharpened Cane of the White Tsar Replica",
+      "uses": 1
+    },
+    {
+      "item": "Woad Skydruid's Earrings",
+      "uses": 1
+    },
+    {
+      "item": "Edengate Choker of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Edengate Bracelet of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Wolfseye Long Gloves",
+      "uses": 1
+    },
+    {
+      "item": "Fae Rod",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Torrent Halfmask of Scouting",
+      "uses": 1
+    },
+    {
+      "item": "Honeshirazu",
+      "uses": 1
+    },
+    {
+      "item": "Black Painted Moogle Mask",
+      "uses": 1
+    },
+    {
+      "item": "Far Eastern Journey Jacket",
+      "uses": 1
+    },
+    {
+      "item": "Exclusive Far Eastern Journey Armlets",
+      "uses": 1
+    },
+    {
+      "item": "Gyosei",
+      "uses": 1
+    },
+    {
+      "item": "Ryumyaku Earring of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Cryptlurker's Corselet of Scouting",
+      "uses": 1
+    },
+    {
+      "item": "Ravel Keeper's Armlets of Scouting",
+      "uses": 1
+    },
+    {
+      "item": "Exarchic Bottoms of Scouting",
+      "uses": 1
+    },
+    {
+      "item": "Exarchic Boots of Scouting",
+      "uses": 1
+    },
+    {
+      "item": "Cryptlurker's Cleavers",
+      "uses": 1
+    },
+    {
+      "item": "Makai Markswoman's Quartertights",
+      "uses": 1
+    },
+    {
+      "item": "Spriggan Jacket",
+      "uses": 1
+    },
+    {
+      "item": "Far Eastern Socialite's Gloves",
+      "uses": 1
+    },
+    {
+      "item": "Ramie Ribbon of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Fieldkeep's Canotier",
+      "uses": 1
+    },
+    {
+      "item": "Red Tulip Corsage",
+      "uses": 1
+    },
+    {
+      "item": "Housemaid's Bloomers",
+      "uses": 1
+    },
+    {
+      "item": "Redbill Scarf",
+      "uses": 1
+    },
+    {
+      "item": "South Seas Talisman",
+      "uses": 1
+    },
+    {
+      "item": "Doman Liege's Kote",
+      "uses": 1
+    },
+    {
+      "item": "Woad Skydruid's Breeches",
+      "uses": 1
+    },
+    {
+      "item": "YoRHa Type-51 Cap of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Raincoat",
+      "uses": 1
+    },
+    {
+      "item": "Skallic Armguards of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Deepshadow Scale Mail of Scouting",
+      "uses": 1
+    },
+    {
+      "item": "Molybdenum Armguards of Scouting",
+      "uses": 1
+    },
+    {
+      "item": "Bonewicca Whisperer's Mask",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Deepshadow Scythe",
+      "uses": 1
+    },
+    {
+      "item": "Valentione Rose Ribboned Hat",
+      "uses": 1
+    },
+    {
+      "item": "Edenmorn Gown of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Red Carnation Earring",
+      "uses": 1
+    },
+    {
+      "item": "Chaos Burgeonet",
+      "uses": 1
+    },
+    {
+      "item": "Exarchic Gauntlets of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Exarchic Sabatons of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Baldur Blade",
+      "uses": 1
+    },
+    {
+      "item": "Woad Skyhunter's Pelt",
+      "uses": 1
+    },
+    {
+      "item": "Republican Sagittarius's Chiton",
+      "uses": 1
+    },
+    {
+      "item": "Ravel Keeper's Armlets of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Ravel Keeper's Sandals of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Ala Mhigan Longbow",
+      "uses": 1
+    },
+    {
+      "item": "Tsukuyomi's Odachi",
+      "uses": 1
+    },
+    {
+      "item": "Ryumyaku Earring of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Ronkan Necklace of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Solstice",
+      "uses": 1
+    },
+    {
+      "item": "Makai Moon Guide's Circlet",
+      "uses": 1
+    },
+    {
+      "item": "Vintage Seneschal Coatee",
+      "uses": 1
+    },
+    {
+      "item": "Idealized Soothsayer's Skirt",
+      "uses": 1
+    },
+    {
+      "item": "Endless Summer Sandals",
+      "uses": 1
+    },
+    {
+      "item": "Pleiades Pagos",
+      "uses": 1
+    },
+    {
+      "item": "Crystarium Earrings of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Crystarium Ring of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Nightsteel Gauntlets of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Zantetsuken",
+      "uses": 1
+    },
+    {
+      "item": "Heroic Spirit Shield",
+      "uses": 1
+    },
+    {
+      "item": "Asuran Hachigane of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Noct Breeches",
+      "uses": 1
+    },
+    {
+      "item": "Immaculate Ear Cuffs of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Rakshasa Kanmuri of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Paglth'an Chestwrap of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Ruby Cotton Longkilt",
+      "uses": 1
+    },
+    {
+      "item": "Bonewicca Whisperer's Greaves",
+      "uses": 1
+    },
+    {
+      "item": "Facet Hat of Casting",
+      "uses": 1
+    },
+    {
+      "item": "YoRHa Type-51 Trousers of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Edengate Thighboots of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Pole of the Goddess",
+      "uses": 1
+    },
+    {
+      "item": "Edencall Hat of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Late Allagan Coat of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Boots of Eternal Devotion",
+      "uses": 1
+    },
+    {
+      "item": "Replica Allagan Cane",
+      "uses": 1
+    },
+    {
+      "item": "High Allagan Earrings of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Artisan's Sandals",
+      "uses": 1
+    },
+    {
+      "item": "Weathered Bodyguard's Blinder",
+      "uses": 1
+    },
+    {
+      "item": "Ivalician Ark Knight's Greaves",
+      "uses": 1
+    },
+    {
+      "item": "Fae Manatrigger",
+      "uses": 1
+    },
+    {
+      "item": "Scylla's Robe of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Kaladanda Replica",
+      "uses": 1
+    },
+    {
+      "item": "Warg Jacket of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Woad Skyhunter's Breeches",
+      "uses": 1
+    },
+    {
+      "item": "Ravel Keeper's Headband of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Kaladanda Lux Replica",
+      "uses": 1
+    },
+    {
+      "item": "Crown of Light",
+      "uses": 1
+    },
+    {
+      "item": "Omega Trousers of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Chaos Sollerets",
+      "uses": 1
+    },
+    {
+      "item": "Fae Guillotine",
+      "uses": 1
+    },
+    {
+      "item": "Warg Jacket of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Ravager's Chains",
+      "uses": 1
+    },
+    {
+      "item": "Ovim Wool Bottoms of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Titanium Sollerets of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Ravel Keeper's Axe",
+      "uses": 1
+    },
+    {
+      "item": "Lakeland Earring of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Deepshadow Armguards of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Militia Tights",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Deepshadow Greaves of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Radiant's Earrings of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Common Makai Manhandler's Fingerless Gloves",
+      "uses": 1
+    },
+    {
+      "item": "YoRHa Type-53 Breeches of Striking",
+      "uses": 1
+    },
+    {
+      "item": "Ruby Cotton Gilet of Striking",
+      "uses": 1
+    },
+    {
+      "item": "Werewolf Bottoms",
+      "uses": 1
+    },
+    {
+      "item": "Deepgold Blade",
+      "uses": 1
+    },
+    {
+      "item": "Paglth'an Chestpiece of Striking",
+      "uses": 1
+    },
+    {
+      "item": "Aetherial Boarskin Ringbands of Flames",
+      "uses": 1
+    },
+    {
+      "item": "Dojikiri Yasutsuna",
+      "uses": 1
+    },
+    {
+      "item": "Panegyrist's Earrings",
+      "uses": 1
+    },
+    {
+      "item": "Idealized Bhikku Cyclas",
+      "uses": 1
+    },
+    {
+      "item": "Peacock Gloves",
+      "uses": 1
+    },
+    {
+      "item": "Suzaku's Flame-kissed Pinions",
+      "uses": 1
+    },
+    {
+      "item": "Scion Rogue's Bandana",
+      "uses": 1
+    },
+    {
+      "item": "Valerian Rune Fencer's Wings",
+      "uses": 1
+    },
+    {
+      "item": "Bonewicca Skinner's Mail",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Slipstream Gauntlets of Maiming",
+      "uses": 1
+    },
+    {
+      "item": "Holy Lance",
+      "uses": 1
+    },
+    {
+      "item": "Peacock Hat",
+      "uses": 1
+    },
+    {
+      "item": "Faerie Tale Princess's Long Skirt",
+      "uses": 1
+    },
+    {
+      "item": "Prototype Midan Bracelets of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Midan Horn of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Exarchic Coat of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Goetia Gloves",
+      "uses": 1
+    },
+    {
+      "item": "Sophic Pole",
+      "uses": 1
+    },
+    {
+      "item": "Yasha Earring of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Angel Wings",
+      "uses": 1
+    },
+    {
+      "item": "Constellation Gaskins",
+      "uses": 1
+    },
+    {
+      "item": "Omega Jacket of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Viera Armlets",
+      "uses": 1
+    },
+    {
+      "item": "Omega Chakrams",
+      "uses": 1
+    },
+    {
+      "item": "Glass Pumpkin Earring",
+      "uses": 1
+    },
+    {
+      "item": "Koppranickel Necklace of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Republican Sagittarius's Headband",
+      "uses": 1
+    },
+    {
+      "item": "Ravel Keeper's Slops of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Sky Pirate's Boots of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Halone's Gauntlets of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Republican Hoplomachus's Loincloth",
+      "uses": 1
+    },
+    {
+      "item": "Enhancing Sword",
+      "uses": 1
+    },
+    {
+      "item": "Ritter Shield",
+      "uses": 1
+    },
+    {
+      "item": "Valerian Dark Priest's Earrings",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Crystarium Blinder of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Replica High Allagan Gloves of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Holy Rainbow Coatee",
+      "uses": 1
+    },
+    {
+      "item": "Crystarium Blinder of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Indigo Ramie Tabard of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Antiquated Storyteller's Bottoms",
+      "uses": 1
+    },
+    {
+      "item": "Antiquated Storyteller's Boots",
+      "uses": 1
+    },
+    {
+      "item": "White Oak Composite Bow",
+      "uses": 1
+    },
+    {
+      "item": "Wrangler's Earrings",
+      "uses": 1
+    },
+    {
+      "item": "YoRHa Type-53 Headband of Striking",
+      "uses": 1
+    },
+    {
+      "item": "YoRHa Type-51 Jacket of Striking",
+      "uses": 1
+    },
+    {
+      "item": "Genji Katana",
+      "uses": 1
+    },
+    {
+      "item": "Limbo Circlet of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Limbo Chiton of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Omega Armguards of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Edenmorn Sabatons of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Ktiseos Greatsword",
+      "uses": 1
+    },
+    {
+      "item": "Oasis Tunic",
+      "uses": 1
+    },
+    {
+      "item": "Ark Angel's Circlet of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Ephemerist's Armlets",
+      "uses": 1
+    },
+    {
+      "item": "Omega Trousers of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Warg Shoes of Scouting",
+      "uses": 1
+    },
+    {
+      "item": "Omega-M Ear Cuffs",
+      "uses": 1
+    },
+    {
+      "item": "Orthodox Tricorne of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Aoidos' Cloak",
+      "uses": 1
+    },
+    {
+      "item": "Alexandrian Gloves of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Antiquated Aoidos' Tights",
+      "uses": 1
+    },
+    {
+      "item": "Zelkova Longbow",
+      "uses": 1
+    },
+    {
+      "item": "Needle Ultima",
+      "uses": 1
+    },
+    {
+      "item": "Resshi Haori",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Bozjan Armguards of Striking",
+      "uses": 1
+    },
+    {
+      "item": "Exclusive Far Eastern Journey Shoes",
+      "uses": 1
+    },
+    {
+      "item": "Tsukuyomi's Moonlit Chokuto",
+      "uses": 1
+    },
+    {
+      "item": "Replica Sky Pirate's Shoes of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Rebel Coat",
+      "uses": 1
+    },
+    {
+      "item": "Bohemian's Gloves",
+      "uses": 1
+    },
+    {
+      "item": "Bonewicca Necklace of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Idealized Ebers Armlets",
+      "uses": 1
+    },
+    {
+      "item": "Theophany Thighboots",
+      "uses": 1
+    },
+    {
+      "item": "Origenics Choker of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Arhat Hanbo of Striking",
+      "uses": 1
+    },
+    {
+      "item": "Late Allagan Armor of Striking",
+      "uses": 1
+    },
+    {
+      "item": "Late Allagan Gloves of Striking",
+      "uses": 1
+    },
+    {
+      "item": "Late Allagan Bottoms of Striking",
+      "uses": 1
+    },
+    {
+      "item": "Late Allagan Sollerets of Striking",
+      "uses": 1
+    },
+    {
+      "item": "Pearl Roselle Capeline",
+      "uses": 1
+    },
+    {
+      "item": "Cape of Happiness",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Law's Order Spear",
+      "uses": 1
+    },
+    {
+      "item": "Horos Casaque",
+      "uses": 1
+    },
+    {
+      "item": "Moonward Armlets of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Frontier Pumps",
+      "uses": 1
+    },
+    {
+      "item": "Pearl Earrings",
+      "uses": 1
+    },
+    {
+      "item": "Mheg Deaca Circlet",
+      "uses": 1
+    },
+    {
+      "item": "Thavnairian Gloves",
+      "uses": 1
+    },
+    {
+      "item": "The Forgiven's Sandals of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Neo-Ishgardian Earring of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Neo-Ishgardian Ring of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Bunny Chief Bustier",
+      "uses": 1
+    },
+    {
+      "item": "Rainmaker",
+      "uses": 1
+    },
+    {
+      "item": "Tantalus Cuffs",
+      "uses": 1
+    },
+    {
+      "item": "Far Eastern Schoolgirl's Boots",
+      "uses": 1
+    },
+    {
+      "item": "Vampire's Vest",
+      "uses": 1
+    },
+    {
+      "item": "Murgleis",
+      "uses": 1
+    },
+    {
+      "item": "Exarchic Earrings of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Crystarium Ring of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Hakama #55",
+      "uses": 1
+    },
+    {
+      "item": "Pagos Sandals",
+      "uses": 1
+    },
+    {
+      "item": "Legacy Warrior Coronet",
+      "uses": 1
+    },
+    {
+      "item": "Omicron Gambison of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Omicron Armguards of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Chromite Sabatons of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Lakeland Hood of Fending",
+      "uses": 1
+    },
+    {
+      "item": "True Linen Skirt of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Blackbosom Soul Reaper",
+      "uses": 1
+    },
+    {
+      "item": "Appointed Cap",
+      "uses": 1
+    },
+    {
+      "item": "Pioneer's Bottoms",
+      "uses": 1
+    },
+    {
+      "item": "Ataktos",
+      "uses": 1
+    },
+    {
+      "item": "Moonward Ring of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Deepshadow Hood of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Idealized Soothsayer's Armlets",
+      "uses": 1
+    },
+    {
+      "item": "Muspell",
+      "uses": 1
+    },
+    {
+      "item": "Caller's Armlets",
+      "uses": 1
+    },
+    {
+      "item": "Gambler's Boots",
+      "uses": 1
+    },
+    {
+      "item": "Dead Hive Grimoire",
+      "uses": 1
+    },
+    {
+      "item": "Reindeer Antler Headband",
+      "uses": 1
+    },
+    {
+      "item": "Elktail Robe",
+      "uses": 1
+    },
+    {
+      "item": "Reindeer Gloves",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Scholar's Culottes",
+      "uses": 1
+    },
+    {
+      "item": "Reindeer Hooves",
+      "uses": 1
+    },
+    {
+      "item": "Oschon Roselle Capeline",
+      "uses": 1
+    },
+    {
+      "item": "Spriggan Boots",
+      "uses": 1
+    },
+    {
+      "item": "Fieldsoph's Hatchet",
+      "uses": 1
+    },
+    {
+      "item": "Immaculate Ear Cuffs of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Cryptlurker's Elmo of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Bozjan Coat of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Neo-Ishgardian Gauntlets of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Toadskin Boots",
+      "uses": 1
+    },
+    {
+      "item": "Blunt Goblin Longsword",
+      "uses": 1
+    },
+    {
+      "item": "Baldur Shield",
+      "uses": 1
+    },
+    {
+      "item": "Indigo Ramie Skirt of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Rathalos Mail [M]",
+      "uses": 1
+    },
+    {
+      "item": "Antiquated Dragonlancer's Cuissots",
+      "uses": 1
+    },
+    {
+      "item": "Doman Iron Greaves of Maiming",
+      "uses": 1
+    },
+    {
+      "item": "Seeing Horde Spear",
+      "uses": 1
+    },
+    {
+      "item": "Serpentskin Bootlets of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Lunaris Rod Awoken Replica",
+      "uses": 1
+    },
+    {
+      "item": "Allagan Bracelets of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Summer's Flame Hat",
+      "uses": 1
+    },
+    {
+      "item": "Myochin Jingasa",
+      "uses": 1
+    },
+    {
+      "item": "Ravel Keeper's Chestwrap of Striking",
+      "uses": 1
+    },
+    {
+      "item": "Foestriker's Mitts",
+      "uses": 1
+    },
+    {
+      "item": "Fistfighter's Jackboots",
+      "uses": 1
+    },
+    {
+      "item": "Omega Circlet of Maiming",
+      "uses": 1
+    },
+    {
+      "item": "Ivalician Royal Knight's Armor",
+      "uses": 1
+    },
+    {
+      "item": "High Steel Gauntlets of Maiming",
+      "uses": 1
+    },
+    {
+      "item": "Demonic Slops",
+      "uses": 1
+    },
+    {
+      "item": "Zurvanite Pike",
+      "uses": 1
+    },
+    {
+      "item": "Black Brightlily Corsage",
+      "uses": 1
+    },
+    {
+      "item": "Makai Moon Guide's Gown",
+      "uses": 1
+    },
+    {
+      "item": "Seeing Horde Star Globe",
+      "uses": 1
+    },
+    {
+      "item": "Whisperfine Woolen Coat",
+      "uses": 1
+    },
+    {
+      "item": "Expeditioner's Gloves",
+      "uses": 1
+    },
+    {
+      "item": "Anemos Myochin Jingasa",
+      "uses": 1
+    },
+    {
+      "item": "Nomad's Armlets of Striking",
+      "uses": 1
+    },
+    {
+      "item": "Antiquated Myochin Geta",
+      "uses": 1
+    },
+    {
+      "item": "Red Dahlia Corsage",
+      "uses": 1
+    },
+    {
+      "item": "Batliege Osode",
+      "uses": 1
+    },
+    {
+      "item": "Nightsteel Daggers",
+      "uses": 1
+    },
+    {
+      "item": "White Triteleia Earring",
+      "uses": 1
+    },
+    {
+      "item": "Vortex Ring of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Brightlinen Hood of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Platinum Earrings of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Lunar Envoy's Necklace of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Crystarium Halfmask of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Augmented True Linen Gloves of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Weathered Evenstar Tights",
+      "uses": 1
+    },
+    {
+      "item": "Republican Signifer's Caligae",
+      "uses": 1
+    },
+    {
+      "item": "Edenchoir Rapier",
+      "uses": 1
+    },
+    {
+      "item": "Iron Scale Greaves",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Law's Order Labrys",
+      "uses": 1
+    },
+    {
+      "item": "Hoplite Earrings",
+      "uses": 1
+    },
+    {
+      "item": "Hard Leather Choker",
+      "uses": 1
+    },
+    {
+      "item": "Extreme Survival Shirt",
+      "uses": 1
+    },
+    {
+      "item": "Fingerless Boarskin Gloves",
+      "uses": 1
+    },
+    {
+      "item": "Idealized Chevalier's Poleyns",
+      "uses": 1
+    },
+    {
+      "item": "Calfskin Rider's Shoes",
+      "uses": 1
+    },
+    {
+      "item": "True Griffin Hat of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Seventh Heaven Thighboots",
+      "uses": 1
+    },
+    {
+      "item": "Cane of the Goddess",
+      "uses": 1
+    },
+    {
+      "item": "Ravel Keeper's Sandals of Striking",
+      "uses": 1
+    },
+    {
+      "item": "Acantha Shavers",
+      "uses": 1
+    },
+    {
+      "item": "Edengate Choker of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Neo-Ishgardian Top of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Replica Sky Pirate's Jacket of Scouting",
+      "uses": 1
+    },
+    {
+      "item": "Idealized Gunslinger's Halfgloves",
+      "uses": 1
+    },
+    {
+      "item": "Scion Healer's Highboots",
+      "uses": 1
+    },
+    {
+      "item": "Fuma Koromo",
+      "uses": 1
+    },
+    {
+      "item": "Shisui Kohakama of Scouting",
+      "uses": 1
+    },
+    {
+      "item": "Chivalrous Sollerets +2",
+      "uses": 1
+    },
+    {
+      "item": "Aettir Replica",
+      "uses": 1
+    },
+    {
+      "item": "Priwen Replica",
+      "uses": 1
+    },
+    {
+      "item": "Slothskin Boots of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Ravel Keeper's Earring of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Yanxian Hachigane of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Lucian Prince's Fingerless Glove",
+      "uses": 1
+    },
+    {
+      "item": "Omega Claymore",
+      "uses": 1
+    },
+    {
+      "item": "Shadowless Gloves of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Bozjan Trousers of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Murgleis Anemos",
+      "uses": 1
+    },
+    {
+      "item": "Gauntlets of Light",
+      "uses": 1
+    },
+    {
+      "item": "Griffin Leather Skirt of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Summer Morning Halter",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Ironworks Brais of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "White Moth Orchid Earring",
+      "uses": 1
+    },
+    {
+      "item": "Dragonskin Choker",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Cryptlurker's Ring of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Little Lady's Clogs",
+      "uses": 1
+    },
+    {
+      "item": "Suzaku's Cane",
+      "uses": 1
+    },
+    {
+      "item": "Namazu Bell",
+      "uses": 1
+    },
+    {
+      "item": "Archaeoskin Boots of Scouting",
+      "uses": 1
+    },
+    {
+      "item": "Diamond Earring of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Saotome Jin-baori",
+      "uses": 1
+    },
+    {
+      "item": "Exarchic Armguards of Striking",
+      "uses": 1
+    },
+    {
+      "item": "YoRHa Type-51 Halfslops of Striking",
+      "uses": 1
+    },
+    {
+      "item": "Dead Hive Katana",
+      "uses": 1
+    },
+    {
+      "item": "Late Allagan Gloves of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Late Allagan Sollerets of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Scaevan Magitek Chakrams",
+      "uses": 1
+    },
+    {
+      "item": "Angelic Slops",
+      "uses": 1
+    },
+    {
+      "item": "Cashmere Slops",
+      "uses": 1
+    },
+    {
+      "item": "Anemos Expeditionary's Boots",
+      "uses": 1
+    },
+    {
+      "item": "Exarchic Circlet of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Moonfire Sandals",
+      "uses": 1
+    },
+    {
+      "item": "Tidal Wave Cane",
+      "uses": 1
+    },
+    {
+      "item": "Crystarium Breeches of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Deepshadow Gloves of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Gaganaskin Chaps of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Gaganaskin Boots of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Deepshadow Pistol",
+      "uses": 1
+    },
+    {
+      "item": "Steerhide Shoes",
+      "uses": 1
+    },
+    {
+      "item": "Hraesvelgr Trousers",
+      "uses": 1
+    },
+    {
+      "item": "Law's Order Zweihander",
+      "uses": 1
+    },
+    {
+      "item": "Replica Allagan Visor of Maiming",
+      "uses": 1
+    },
+    {
+      "item": "High Steel Mail of Maiming",
+      "uses": 1
+    },
+    {
+      "item": "Gordian Gauntlets of Maiming",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Slipstream Breeches of Maiming",
+      "uses": 1
+    },
+    {
+      "item": "Seiryu's Lance",
+      "uses": 1
+    },
+    {
+      "item": "Ravel Keeper's Earring of Slaying",
+      "uses": 1
+    },
+    {
+      "item": "Late Allagan Armor of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Late Allagan Sollerets of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Deepshadow Claymore",
+      "uses": 1
+    },
+    {
+      "item": "Scaevan Ear Cuff of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Cryptlurker's Helm of Maiming",
+      "uses": 1
+    },
+    {
+      "item": "Elemental Armor of Maiming",
+      "uses": 1
+    },
+    {
+      "item": "Dreizack Recollection",
+      "uses": 1
+    },
+    {
+      "item": "Serge Gambison of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Iridescent Bottoms of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Valerian Priest's Boots",
+      "uses": 1
+    },
+    {
+      "item": "Ravel Keeper's Codex",
+      "uses": 1
+    },
+    {
+      "item": "Replica Sky Rat Harness of Striking",
+      "uses": 1
+    },
+    {
+      "item": "Craftsman's Leather Trousers",
+      "uses": 1
+    },
+    {
+      "item": "Scion Adventurer's Jacket",
+      "uses": 1
+    },
+    {
+      "item": "Patrician's Gloves",
+      "uses": 1
+    },
+    {
+      "item": "Outsider Anemos",
+      "uses": 1
+    },
+    {
+      "item": "Alexandrian Earrings of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Ivalician Holy Knight's Gloves",
+      "uses": 1
+    },
+    {
+      "item": "Decorated Iron Scutum",
+      "uses": 1
+    },
+    {
+      "item": "Anchorite's Cyclas",
+      "uses": 1
+    },
+    {
+      "item": "Facet Gaskins of Striking",
+      "uses": 1
+    },
+    {
+      "item": "Bonewicca Wildling's Greaves",
+      "uses": 1
+    },
+    {
+      "item": "Facet Earrings of Slaying",
+      "uses": 1
+    },
+    {
+      "item": "Anamnesis Choker of Slaying",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Hellfire Gauntlets of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Augmented True Linen Skirt of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Cryptlurker's Sword",
+      "uses": 1
+    },
+    {
+      "item": "Tights of Eternal Passion",
+      "uses": 1
+    },
+    {
+      "item": "Ruby Cotton Chasuble",
+      "uses": 1
+    },
+    {
+      "item": "Mheg Deaca Boots",
+      "uses": 1
+    },
+    {
+      "item": "Blade's Mercy",
+      "uses": 1
+    },
+    {
+      "item": "White Carnation Earring",
+      "uses": 1
+    },
+    {
+      "item": "Genji Oyoroi of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Ghost Barque Trousers of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Ryumyaku Sune-ate of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Odenta Kai",
+      "uses": 1
+    },
+    {
+      "item": "Hyperconductive Armageddon",
+      "uses": 1
+    },
+    {
+      "item": "Glade Tunic",
+      "uses": 1
+    },
+    {
+      "item": "Dwarven Mythril Choker",
+      "uses": 1
+    },
+    {
+      "item": "Republican Eques's Headgear",
+      "uses": 1
+    },
+    {
+      "item": "Halone's Mail of Maiming",
+      "uses": 1
+    },
+    {
+      "item": "Bonewicca Skinner's Gloves",
+      "uses": 1
+    },
+    {
+      "item": "Adamantite Sabatons of Maiming",
+      "uses": 1
+    },
+    {
+      "item": "Gordian Trident",
+      "uses": 1
+    },
+    {
+      "item": "Republican Medicus's Wrist Torque",
+      "uses": 1
+    },
+    {
+      "item": "Skallic Bottoms of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Empyrean Earring",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Crystarium Choker of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Scion Traveler's Gloves",
+      "uses": 1
+    },
+    {
+      "item": "Hellhound Sword Breakers",
+      "uses": 1
+    },
+    {
+      "item": "Replica Sky Pirate's Cap of Casting",
+      "uses": 1
+    },
+    {
+      "item": "New World Armlets",
+      "uses": 1
+    },
+    {
+      "item": "Ivalician Arithmetician's Shoes",
+      "uses": 1
+    },
+    {
+      "item": "Dark Divinity Auga",
+      "uses": 1
+    },
+    {
+      "item": "Skallic Jacket of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Elemental Gloves of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Alexandrian Boots of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Kupo Knit Cap",
+      "uses": 1
+    },
+    {
+      "item": "Woad Skydruid's Hood",
+      "uses": 1
+    },
+    {
+      "item": "Astral Silk Doublet of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Swansgrace Armguards",
+      "uses": 1
+    },
+    {
+      "item": "Direwolf Skirt of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Hraesvelgr Boots",
+      "uses": 1
+    },
+    {
+      "item": "Rose Couverte Replica",
+      "uses": 1
+    },
+    {
+      "item": "Housemaid's Apron Dress",
+      "uses": 1
+    },
+    {
+      "item": "Edengate Gauntlets of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Sophic Edge",
+      "uses": 1
+    },
+    {
+      "item": "Aka Oni Kote",
+      "uses": 1
+    },
+    {
+      "item": "Mikazuki Kai",
+      "uses": 1
+    },
+    {
+      "item": "Genta Earrings of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Dravanian Hairpin of Maiming",
+      "uses": 1
+    },
+    {
+      "item": "Omicron Gambison of Maiming",
+      "uses": 1
+    },
+    {
+      "item": "Wyvernskin Gloves of Maiming",
+      "uses": 1
+    },
+    {
+      "item": "Omicron Trousers of Maiming",
+      "uses": 1
+    },
+    {
+      "item": "Areadbhar Lux",
+      "uses": 1
+    },
+    {
+      "item": "Yellow Campanula Corsage",
+      "uses": 1
+    },
+    {
+      "item": "The Forgiven's Robe of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Edenchoir Boots of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Ghost Barque Earrings of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Edengrace Mail of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Diamond Gauntlets of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Scion Rogue's Gaskins",
+      "uses": 1
+    },
+    {
+      "item": "Ronkan Thighboots of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Rakshasa Earring of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Idealized Pteroslaver Gauntlets",
+      "uses": 1
+    },
+    {
+      "item": "Dreizack",
+      "uses": 1
+    },
+    {
+      "item": "Adept's Gown",
+      "uses": 1
+    },
+    {
+      "item": "Housemaid's Wristdresses",
+      "uses": 1
+    },
+    {
+      "item": "Adventuring Sweater",
+      "uses": 1
+    },
+    {
+      "item": "Cropped Summer Indigo Slops",
+      "uses": 1
+    },
+    {
+      "item": "Replica High Allagan Gauntlets of Maiming",
+      "uses": 1
+    },
+    {
+      "item": "Replica High Allagan Sabatons of Maiming",
+      "uses": 1
+    },
+    {
+      "item": "Neo-Ishgardian Trident",
+      "uses": 1
+    },
+    {
+      "item": "Diamond Circlet of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Edengrace Armlets of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Warg Tights of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Amaurotine Ring of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Replica High Allagan Coat of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Loyal Housemaid's Brim",
+      "uses": 1
+    },
+    {
+      "item": "Quaintrelle's Ruffled Dress",
+      "uses": 1
+    },
+    {
+      "item": "Idealized Estoqueur's Bottoms",
+      "uses": 1
+    },
+    {
+      "item": "Paramour's Earrings",
+      "uses": 1
+    },
+    {
+      "item": "Parasol",
+      "uses": 1
+    },
+    {
+      "item": "Ivalician Sky Pirate's Hat",
+      "uses": 1
+    },
+    {
+      "item": "Neo-Ishgardian Top of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Republican Sagittarius's Wrist Torque",
+      "uses": 1
+    },
+    {
+      "item": "Replica Dreadwyrm Tonban of Casting",
+      "uses": 1
+    },
+    {
+      "item": "True Griffin Sandals of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Skallic Ring of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Varsity Flat Cap",
+      "uses": 1
+    },
+    {
+      "item": "Butler's Jacket",
+      "uses": 1
+    },
+    {
+      "item": "Butler's Gloves",
+      "uses": 1
+    },
+    {
+      "item": "Butler's Slacks",
+      "uses": 1
+    },
+    {
+      "item": "Virtu Duelist's Thighboots",
+      "uses": 1
+    },
+    {
+      "item": "Weathered Arbatel Bottoms",
+      "uses": 1
+    },
+    {
+      "item": "Ronkan Shoes of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Replica of the Omnilex",
+      "uses": 1
+    },
+    {
+      "item": "Sharpened Rod of the Black Khan Replica",
+      "uses": 1
+    },
+    {
+      "item": "Omega Ring of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Oschon's Mail of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Fae Tathlums",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Neo-Ishgardian Top of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Black Summer Tanga",
+      "uses": 1
+    },
+    {
+      "item": "Republican Medicus's Caligae",
+      "uses": 1
+    },
+    {
+      "item": "Sharlayan Philosopher's Hat",
+      "uses": 1
+    },
+    {
+      "item": "Direwolf Robe of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Evoker's Ringbands",
+      "uses": 1
+    },
+    {
+      "item": "Acolyte's Skirt",
+      "uses": 1
+    },
+    {
+      "item": "Plague Bringer's Shoes",
+      "uses": 1
+    },
+    {
+      "item": "Martial Grimoire",
+      "uses": 1
+    },
+    {
+      "item": "Lucian Prince's Boots",
+      "uses": 1
+    },
+    {
+      "item": "Ekplexis",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Cryptlurker's Pistol",
+      "uses": 1
+    },
+    {
+      "item": "Idealized Soothsayer's Chiton",
+      "uses": 1
+    },
+    {
+      "item": "Edengrace Sandals of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Edengrace Planisphere",
+      "uses": 1
+    },
+    {
+      "item": "Anemos Duelist's Tabard",
+      "uses": 1
+    },
+    {
+      "item": "Far Eastern Socialite's Skirt",
+      "uses": 1
+    },
+    {
+      "item": "Edenmorn Rapier",
+      "uses": 1
+    },
+    {
+      "item": "Moonward Veil of Scouting",
+      "uses": 1
+    },
+    {
+      "item": "Edengrace Thighboots of Scouting",
+      "uses": 1
+    },
+    {
+      "item": "Matte Replica Majestic Manderville Knives",
+      "uses": 1
+    },
+    {
+      "item": "Classical Earrings of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Lunar Envoy's Necklace of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Lunar Envoy's Bracelets of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Rainbow Lily of the Valley Corsage",
+      "uses": 1
+    },
+    {
+      "item": "Endless Summer Top",
+      "uses": 1
+    },
+    {
+      "item": "Far Eastern Socialite's Boots",
+      "uses": 1
+    },
+    {
+      "item": "Princess's Peach Corsage",
+      "uses": 1
+    },
+    {
+      "item": "Aettir Lux",
+      "uses": 1
+    },
+    {
+      "item": "Priwen Lux Replica",
+      "uses": 1
+    },
+    {
+      "item": "Bard's Shirt",
+      "uses": 1
+    },
+    {
+      "item": "Spring Dress Shoes",
+      "uses": 1
+    },
+    {
+      "item": "Elfin Bow",
+      "uses": 1
+    },
+    {
+      "item": "Battleliege Bracelet of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Valentione Skirt",
+      "uses": 1
+    },
+    {
+      "item": "Hooded Fireglass Leather Vest",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Crystarium Gloves of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Griffin Leather Boots of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Lakeland Necklace of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Replica Allagan Visor of Striking",
+      "uses": 1
+    },
+    {
+      "item": "Ovim Wool Jacket of Scouting",
+      "uses": 1
+    },
+    {
+      "item": "Bloodhempen Armguards of Scouting",
+      "uses": 1
+    },
+    {
+      "item": "Neo-Ishgardian Sollerets of Scouting",
+      "uses": 1
+    },
+    {
+      "item": "Gordian Baselards",
+      "uses": 1
+    },
+    {
+      "item": "Immaculate Ring of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Bearsmaw Cuirass",
+      "uses": 1
+    },
+    {
+      "item": "Bearsmaw Gauntlets",
+      "uses": 1
+    },
+    {
+      "item": "Warg Greaves of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Byakko's Greataxe",
+      "uses": 1
+    },
+    {
+      "item": "Atrociraptorskin Cap of Gathering",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Tacklekeep's Vest",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Tacklekeep's Waders",
+      "uses": 1
+    },
+    {
+      "item": "Omega Gambison of Striking",
+      "uses": 1
+    },
+    {
+      "item": "Edengrace Blade",
+      "uses": 1
+    },
+    {
+      "item": "Primal Earrings of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Far Eastern Lord Errant's Hat",
+      "uses": 1
+    },
+    {
+      "item": "Southern Seas Shirt",
+      "uses": 1
+    },
+    {
+      "item": "Lucian Prince's Bottoms",
+      "uses": 1
+    },
+    {
+      "item": "Lord's Clogs",
+      "uses": 1
+    },
+    {
+      "item": "Warg Earring of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Master Rogue's Ring",
+      "uses": 1
+    },
+    {
+      "item": "Obsolete Android's Cloak of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Carborundum Earring of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Edengate Ring of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Panthean Circlet of Striking",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Lunar Envoy's Jacket of Striking",
+      "uses": 1
+    },
+    {
+      "item": "Shisui Kohakama of Striking",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Radiant's Sabatons of Striking",
+      "uses": 1
+    },
+    {
+      "item": "Gordian Katana",
+      "uses": 1
+    },
+    {
+      "item": "Omega-F Earrings",
+      "uses": 1
+    },
+    {
+      "item": "Virtu Caller's Horn",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Radiant's Mail of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Virtu Caller's Armlets",
+      "uses": 1
+    },
+    {
+      "item": "Prestige High Allagan Boots of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Ktiseos Index",
+      "uses": 1
+    },
+    {
+      "item": "Idealized Wicce Coat",
+      "uses": 1
+    },
+    {
+      "item": "True Linen Gloves of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Nightseeker",
+      "uses": 1
+    },
+    {
+      "item": "Ravel Keeper's Armlets of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Linen Trousers",
+      "uses": 1
+    },
+    {
+      "item": "Altered Goatskin Moccasins",
+      "uses": 1
+    },
+    {
+      "item": "Heavy Metal Longsword",
+      "uses": 1
+    },
+    {
+      "item": "Deepshadow Daggers",
+      "uses": 1
+    },
+    {
+      "item": "Vintage Chef's Apron",
+      "uses": 1
+    },
+    {
+      "item": "Honorbound Replica",
+      "uses": 1
+    },
+    {
+      "item": "Crystarium Halfmask of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Omicron Jacket of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Shire Rod",
+      "uses": 1
+    },
+    {
+      "item": "Maleficent Moggle Mogstaff",
+      "uses": 1
+    },
+    {
+      "item": "Halone's Helm of Fending",
+      "uses": 1
+    },
+    {
+      "item": "High Mythrite Cuirass of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Doman Iron Gauntlets of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Doman Iron Greaves of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Sharpened Axe of the Blood Emperor",
+      "uses": 1
+    },
+    {
+      "item": "Deepshadow Planisphere",
+      "uses": 1
+    },
+    {
+      "item": "Replica Manderville Earrings",
+      "uses": 1
+    },
+    {
+      "item": "Field Commander's Boots",
+      "uses": 1
+    },
+    {
+      "item": "High Steel Gunblade",
+      "uses": 1
+    },
+    {
+      "item": "Diabolic Halfgloves of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Black Pearl Earrings",
+      "uses": 1
+    },
+    {
+      "item": "Ivalician Mystic's Halfgloves",
+      "uses": 1
+    },
+    {
+      "item": "Edenmorn Cane",
+      "uses": 1
+    },
+    {
+      "item": "Voidmoon Mail of Maiming",
+      "uses": 1
+    },
+    {
+      "item": "Archfiend Gauntlets",
+      "uses": 1
+    },
+    {
+      "item": "Archfiend Sabatons",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Avatar's Scythe",
+      "uses": 1
+    },
+    {
+      "item": "Purgatory Earrings of Slaying",
+      "uses": 1
+    },
+    {
+      "item": "Weathered Gunslinger's Hat",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Cryptlurker's Vambraces of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Hose of Happiness",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Neo-Ishgardian Boots of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Edenchoir Arquebus",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Choral Chapeau",
+      "uses": 1
+    },
+    {
+      "item": "Edenchoir Gambison of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Crystarium Breeches of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Terpander Lux Replica",
+      "uses": 1
+    },
+    {
+      "item": "Scintillant Circlet of Scouting",
+      "uses": 1
+    },
+    {
+      "item": "Skallic Jacket of Scouting",
+      "uses": 1
+    },
+    {
+      "item": "Skallic Armguards of Scouting",
+      "uses": 1
+    },
+    {
+      "item": "Makai Earring of Slaying",
+      "uses": 1
+    },
+    {
+      "item": "Uwagi #55",
+      "uses": 1
+    },
+    {
+      "item": "Dark Divinity Hanzkar",
+      "uses": 1
+    },
+    {
+      "item": "Ruby Cotton Smalls",
+      "uses": 1
+    },
+    {
+      "item": "Sandteak Cane",
+      "uses": 1
+    },
+    {
+      "item": "Electrum Earrings",
+      "uses": 1
+    },
+    {
+      "item": "Tengu Togi",
+      "uses": 1
+    },
+    {
+      "item": "Panthean Gauntlets of Striking",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Lunar Envoy's Trousers of Striking",
+      "uses": 1
+    },
+    {
+      "item": "Gordian Sabatons of Striking",
+      "uses": 1
+    },
+    {
+      "item": "Moonward Bladed Tonfa",
+      "uses": 1
+    },
+    {
+      "item": "Carborundum Earring of Slaying",
+      "uses": 1
+    },
+    {
+      "item": "Edenmete Necklace of Slaying",
+      "uses": 1
+    },
+    {
+      "item": "Valentione Forget-me-not Ribboned Hat",
+      "uses": 1
+    },
+    {
+      "item": "Scholasticate Coat",
+      "uses": 1
+    },
+    {
+      "item": "Pagos Gloves",
+      "uses": 1
+    },
+    {
+      "item": "Edenmete Boots of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Soulscourge Replica",
+      "uses": 1
+    },
+    {
+      "item": "Skallic Necklace of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Uraeus Body Armor",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Shire Preceptor's Hose",
+      "uses": 1
+    },
+    {
+      "item": "Cryptlurker's Helm of Maiming",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Crystarium Gauntlets of Maiming",
+      "uses": 1
+    },
+    {
+      "item": "Deepshadow Lance",
+      "uses": 1
+    },
+    {
+      "item": "Lucian Prince's Jacket",
+      "uses": 1
+    },
+    {
+      "item": "Sharlayan Diadema",
+      "uses": 1
+    },
+    {
+      "item": "Anemos Seventh Hell Coat",
+      "uses": 1
+    },
+    {
+      "item": "Spaekona's Wrist Torques",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Cryptlurker's Chausses of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Oracle Leggings",
+      "uses": 1
+    },
+    {
+      "item": "Windswept Rod",
+      "uses": 1
+    },
+    {
+      "item": "Anemos Constellation Turban",
+      "uses": 1
+    },
+    {
+      "item": "Crystarium Choker of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Skallic Ring of Healing",
+      "uses": 1
+    },
+    {
+      "item": "New World Jacket",
+      "uses": 1
+    },
+    {
+      "item": "Leather Ringbands",
+      "uses": 1
+    },
+    {
+      "item": "Island Leaf Headdress",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Radiant's Scale Mail of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Lunar Envoy's Gloves of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Lunar Envoy's Trousers of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Blood Rapture",
+      "uses": 1
+    },
+    {
+      "item": "Valentione Forget-me-not Waistcoat",
+      "uses": 1
+    },
+    {
+      "item": "Boulevardier's Dress Shoes",
+      "uses": 1
+    },
+    {
+      "item": "Cauldronfiend's Spectacles",
+      "uses": 1
+    },
+    {
+      "item": "Cauldronfiend's Coat",
+      "uses": 1
+    },
+    {
+      "item": "Ala Mhigan Gloves of Crafting",
+      "uses": 1
+    },
+    {
+      "item": "Rabbit Head",
+      "uses": 1
+    },
+    {
+      "item": "Tailcoat of Eternal Devotion",
+      "uses": 1
+    },
+    {
+      "item": "Best Man's Slacks",
+      "uses": 1
+    },
+    {
+      "item": "Mog's Staff",
+      "uses": 1
+    },
+    {
+      "item": "Peach Blossom Choker",
+      "uses": 1
+    },
+    {
+      "item": "Enchufla Recollection",
+      "uses": 1
+    },
+    {
+      "item": "Durium Hairpin of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Orthodox Gauntlets of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Hyuran Skirt",
+      "uses": 1
+    },
+    {
+      "item": "Galatyn Anemos",
+      "uses": 1
+    },
+    {
+      "item": "Evalach Anemos",
+      "uses": 1
+    },
+    {
+      "item": "Elemental Helm of Maiming",
+      "uses": 1
+    },
+    {
+      "item": "Troian Lorica of Maiming",
+      "uses": 1
+    },
+    {
+      "item": "Ivalician Royal Knight's Trousers",
+      "uses": 1
+    },
+    {
+      "item": "Paglth'an Boots of Maiming",
+      "uses": 1
+    },
+    {
+      "item": "Monstrorum Fork",
+      "uses": 1
+    },
+    {
+      "item": "Asphodelos Chiton of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Asphodelos Skirt of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Arch Demon Horns",
+      "uses": 1
+    },
+    {
+      "item": "Light Steel Galerus",
+      "uses": 1
+    },
+    {
+      "item": "Wolfseye Thighboots",
+      "uses": 1
+    },
+    {
+      "item": "Sandteak Rod",
+      "uses": 1
+    },
+    {
+      "item": "Far Eastern Socialite's Hat",
+      "uses": 1
+    },
+    {
+      "item": "Survival Halfslops",
+      "uses": 1
+    },
+    {
+      "item": "Sailor Deck Shoes",
+      "uses": 1
+    },
+    {
+      "item": "Summer Indigo Shirt",
+      "uses": 1
+    },
+    {
+      "item": "Cotton Tights",
+      "uses": 1
+    },
+    {
+      "item": "Hatchling Earring",
+      "uses": 1
+    },
+    {
+      "item": "Skallic Necklace of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Torturer's Monocle",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Shire Philosopher's Coat",
+      "uses": 1
+    },
+    {
+      "item": "Dravanian Armguards of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Weathered Earrings",
+      "uses": 1
+    },
+    {
+      "item": "Crescent Moon Nightcap",
+      "uses": 1
+    },
+    {
+      "item": "Omega Gloves of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Darbar Bottoms of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Darbar Thighboots of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Rod of Divine Light",
+      "uses": 1
+    },
+    {
+      "item": "Fabled Earrings of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Pewter Choker of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Angelic Circlet",
+      "uses": 1
+    },
+    {
+      "item": "Swansgrace Coat",
+      "uses": 1
+    },
+    {
+      "item": "Southern Seas Tanga",
+      "uses": 1
+    },
+    {
+      "item": "Tremor Earrings of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Revolver",
+      "uses": 1
+    },
+    {
+      "item": "Blackbosom Dress",
+      "uses": 1
+    },
+    {
+      "item": "Amaurotine Earrings of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Flower Crown",
+      "uses": 1
+    },
+    {
+      "item": "Strife Gloves",
+      "uses": 1
+    },
+    {
+      "item": "Loyal Housemaid's Bloomers",
+      "uses": 1
+    },
+    {
+      "item": "Scintillant Circlet of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Ivalician Sky Pirate's Trousers",
+      "uses": 1
+    },
+    {
+      "item": "Brilliance",
+      "uses": 1
+    },
+    {
+      "item": "Trailblazer's Scarf",
+      "uses": 1
+    },
+    {
+      "item": "Anemos Pacifist's Vest",
+      "uses": 1
+    },
+    {
+      "item": "Exarchic Bottoms of Striking",
+      "uses": 1
+    },
+    {
+      "item": "Felt Dress Shoes",
+      "uses": 1
+    },
+    {
+      "item": "Sailor Shirt",
+      "uses": 1
+    },
+    {
+      "item": "Casual Halfslops",
+      "uses": 1
+    },
+    {
+      "item": "Mameshiba Earring",
+      "uses": 1
+    },
+    {
+      "item": "YoRHa Type-53 Headband of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Exarchic Coat of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Deepshadow Manatrigger",
+      "uses": 1
+    },
+    {
+      "item": "Virtu Creed Wings",
+      "uses": 1
+    },
+    {
+      "item": "Panthean Cuirass of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Panthean Gauntlets of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Diamond Greaves of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Midan Goggles of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Gordian Corselet of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Edengrace Tathlums",
+      "uses": 1
+    },
+    {
+      "item": "Chimerical Felt Breeches of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Ravel Keeper's Thighboots of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Tremor Guillotine",
+      "uses": 1
+    },
+    {
+      "item": "Neo-Ishgardian Choker of Fending",
+      "uses": 1
+    },
+    {
+      "item": "The Forgiven's Hat of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Weathered Wicce Coat",
+      "uses": 1
+    },
+    {
+      "item": "Weathered Wicce Wrist Torque",
+      "uses": 1
+    },
+    {
+      "item": "Rod of the Black Khan Replica",
+      "uses": 1
+    },
+    {
+      "item": "Ravel Keeper's Earring of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Star Spinel Ring of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Orthodox Ring of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Limbo Himation of Maiming",
+      "uses": 1
+    },
+    {
+      "item": "Muzhik Field Dressing",
+      "uses": 1
+    },
+    {
+      "item": "War Scythe of Divine Light",
+      "uses": 1
+    },
+    {
+      "item": "Blackbosom Hat",
+      "uses": 1
+    },
+    {
+      "item": "Rinascita Armguards of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Edenmete Chausses of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Rinascita Shoes of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Ktiseos Smallsword",
+      "uses": 1
+    },
+    {
+      "item": "Darbar Earrings of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Nomad's Coat of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Astral Silk Gloves of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Woad Skydruid's Boots",
+      "uses": 1
+    },
+    {
+      "item": "Maple Crook",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Temple Cyclas",
+      "uses": 1
+    },
+    {
+      "item": "Bunny Chief Loops",
+      "uses": 1
+    },
+    {
+      "item": "Bootlets of Eternal Innocence",
+      "uses": 1
+    },
+    {
+      "item": "Ivalician Archer's Jacket",
+      "uses": 1
+    },
+    {
+      "item": "Pteroskin Shoes",
+      "uses": 1
+    },
+    {
+      "item": "Genji Greatbow",
+      "uses": 1
+    },
+    {
+      "item": "Edengate Jacket of Scouting",
+      "uses": 1
+    },
+    {
+      "item": "Rakshasa Tekko of Scouting",
+      "uses": 1
+    },
+    {
+      "item": "Bonewicca Shadow's Sabatons",
+      "uses": 1
+    },
+    {
+      "item": "Deepgold Daggers",
+      "uses": 1
+    },
+    {
+      "item": "Edengate Earring of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Dried White Oldrose",
+      "uses": 1
+    },
+    {
+      "item": "Far Eastern Lady's Dress",
+      "uses": 1
+    },
+    {
+      "item": "Sharpened Cane of the White Tsar",
+      "uses": 1
+    },
+    {
+      "item": "Replica High Allagan Gauntlets of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Tsukuyomi's Longsword",
+      "uses": 1
+    },
+    {
+      "item": "Tsukuyomi's Shield",
+      "uses": 1
+    },
+    {
+      "item": "Dreadwyrm Earring of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Obsolete Android's Halfrobe of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Edenmorn Dress Sleeves of Casting",
+      "uses": 1
+    },
+    {
+      "item": "YoRHa Type-53 Thighboots of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Torrent Tabard of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Aoidos' Shoulder Gloves",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Choral Sandals",
+      "uses": 1
+    },
+    {
+      "item": "Asphodelos Halfgloves of Striking",
+      "uses": 1
+    },
+    {
+      "item": "Asphodelos Breeches of Striking",
+      "uses": 1
+    },
+    {
+      "item": "Street High-top Shoes",
+      "uses": 1
+    },
+    {
+      "item": "Heirloom Jacket of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Cryptlurker's Gauntlets of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Cryptlurker's Sollerets of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Crystarium Sword",
+      "uses": 1
+    },
+    {
+      "item": "Edengrace Mail of Maiming",
+      "uses": 1
+    },
+    {
+      "item": "Endless Summer Glasses",
+      "uses": 1
+    },
+    {
+      "item": "Aurum Smalls",
+      "uses": 1
+    },
+    {
+      "item": "Dai-ryumyaku Tsutsu-hakama of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Cryptlurker's Earring of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Gambler's Trenchcoat",
+      "uses": 1
+    },
+    {
+      "item": "Welkin Half Sleeves",
+      "uses": 1
+    },
+    {
+      "item": "Atlas",
+      "uses": 1
+    },
+    {
+      "item": "Makai Marksman's Eyepatch",
+      "uses": 1
+    },
+    {
+      "item": "Faerie Tale Prince's Slops",
+      "uses": 1
+    },
+    {
+      "item": "Faerie Tale Prince's Boots",
+      "uses": 1
+    },
+    {
+      "item": "Adamantite Revolver",
+      "uses": 1
+    },
+    {
+      "item": "Elegant Rimless Glasses",
+      "uses": 1
+    },
+    {
+      "item": "Swallowskin Coat",
+      "uses": 1
+    },
+    {
+      "item": "Edenchoir Helm of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Idealized Bale Cuirass",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Crystarium Trousers of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Edenchoir Sollerets of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Xiphias",
+      "uses": 1
+    },
+    {
+      "item": "Replica High Allagan Gloves of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Atrociraptorskin Necklace of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Welkin Robe",
+      "uses": 1
+    },
+    {
+      "item": "Elemental Gloves of Healing +2",
+      "uses": 1
+    },
+    {
+      "item": "Elemental Bottoms of Healing +2",
+      "uses": 1
+    },
+    {
+      "item": "Elemental Shoes of Healing +2",
+      "uses": 1
+    },
+    {
+      "item": "Albireo Eureka",
+      "uses": 1
+    },
+    {
+      "item": "Dreadwyrm Earring of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Augmented Hailstorm Gloves of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Solstice Recollection",
+      "uses": 1
+    },
+    {
+      "item": "Nabaath Earrings of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Paglth'an Chestpiece of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Bonewicca Tracker's Gauntlets",
+      "uses": 1
+    },
+    {
+      "item": "Viera Gaskins",
+      "uses": 1
+    },
+    {
+      "item": "Viera Sollerets",
+      "uses": 1
+    },
+    {
+      "item": "Gyosei Kai",
+      "uses": 1
+    },
+    {
+      "item": "Filibuster's Earring of Aiming",
+      "uses": 1
+    },
+    {
+      "item": "Raptorskin Shirt",
+      "uses": 1
+    },
+    {
+      "item": "YoRHa Type-55 Gloves of Maiming",
+      "uses": 1
+    },
+    {
+      "item": "YoRHa Type-53 Breeches of Maiming",
+      "uses": 1
+    },
+    {
+      "item": "Kinna Sickle",
+      "uses": 1
+    },
+    {
+      "item": "Platinum Paramour's Earrings",
+      "uses": 1
+    },
+    {
+      "item": "Anemos Orator's Coat",
+      "uses": 1
+    },
+    {
+      "item": "Antiquated Orator's Cuffs",
+      "uses": 1
+    },
+    {
+      "item": "Ktiseos Petasos of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Late Allagan Coat of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Edenmete Dress Sleeves of Casting",
+      "uses": 1
+    },
+    {
+      "item": "YoRHa Type-53 Bottoms of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Hellhound Staff",
+      "uses": 1
+    },
+    {
+      "item": "Asphodelos Ring of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Darbar Ring of Casting",
+      "uses": 1
+    },
+    {
+      "item": "Savant's Top Hat",
+      "uses": 1
+    },
+    {
+      "item": "Savant's Aethercell Gloves",
+      "uses": 1
+    },
+    {
+      "item": "Neo-Ishgardian Boots of Healing",
+      "uses": 1
+    },
+    {
+      "item": "Last Resort Zeta",
+      "uses": 1
+    },
+    {
+      "item": "Gordian Armet of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Chromite Armor of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Gordian Gauntlets of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Dark Divinity Brok",
+      "uses": 1
+    },
+    {
+      "item": "Replica Heavy Allagan Sollerets",
+      "uses": 1
+    },
+    {
+      "item": "Cronus",
+      "uses": 1
+    },
+    {
+      "item": "The Forgiven's Armor of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Edengrace Gauntlets of Fending",
+      "uses": 1
+    },
+    {
+      "item": "The Forgiven's Sabatons of Fending",
+      "uses": 1
+    },
+    {
+      "item": "Edengrace Greatsword",
+      "uses": 1
+    },
+    {
+      "item": "Virtu Caller's Himation",
+      "uses": 1
+    },
+    {
+      "item": "Gloves of the Black Griffin",
+      "uses": 1
+    },
+    {
+      "item": "Diabolos Wings",
+      "uses": 1
+    }
   ]
 }
