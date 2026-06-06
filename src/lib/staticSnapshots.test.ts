@@ -7,6 +7,7 @@ import {
   loadStaticGatheringCatalog,
   loadStaticLevesSnapshot,
   loadStaticWhatsNewSnapshot,
+  loadStaticGlamourRanking,
 } from './staticSnapshots';
 
 const origFetch = globalThis.fetch;
@@ -113,5 +114,34 @@ describe('loadStaticWhatsNewSnapshot', () => {
   it('returns null when the bundle is missing', async () => {
     mockFetch({});
     expect(await loadStaticWhatsNewSnapshot()).toBeNull();
+  });
+});
+
+describe('loadStaticGlamourRanking', () => {
+  it('returns generatedAt + ranking on 200', async () => {
+    mockFetch({
+      '/data/snapshots/glamours.json': {
+        status: 200,
+        body: { generated_at: '2026-06-01T00:00:00Z', ranking: [{ item: 'Dream Hat', uses: 87 }] },
+      },
+    });
+    const got = await loadStaticGlamourRanking();
+    expect(got).toEqual({
+      generatedAt: '2026-06-01T00:00:00Z',
+      ranking: [{ item: 'Dream Hat', uses: 87 }],
+    });
+  });
+
+  it('returns null when the bundle is missing', async () => {
+    mockFetch({});
+    expect(await loadStaticGlamourRanking()).toBeNull();
+  });
+
+  it('defaults a missing ranking to an empty array', async () => {
+    mockFetch({
+      '/data/snapshots/glamours.json': { status: 200, body: { generated_at: 'x' } },
+    });
+    const got = await loadStaticGlamourRanking();
+    expect(got).toEqual({ generatedAt: 'x', ranking: [] });
   });
 });

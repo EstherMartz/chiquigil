@@ -1,0 +1,15 @@
+{
+  "generated_at": "2026-06-01T00:00:00Z",
+  "pages_scraped": 10,
+  "glamours_checked": 360,
+  "unique_items": 6,
+  "ranking": [
+    { "item": "Dream Hat", "uses": 87 },
+    { "item": "Company Hat", "uses": 71 },
+    { "item": "Leather Calot", "uses": 54 },
+    { "item": "Usagi Kabuto", "uses": 33 },
+    { "item": "Hempen Coif", "uses": 21 },
+    { "item": "Dated Sheepskin Pot Helm", "uses": 12 },
+    { "item": "Totally Not A Real Item Name", "uses": 4 }
+  ]
+}

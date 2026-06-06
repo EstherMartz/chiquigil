@@ -83,3 +83,29 @@ export async function loadStaticWhatsNewSnapshot(): Promise<StaticBundle<WhatsNe
     ? { bakedAt: raw.bakedAt, data: { prevBakedAt: raw.prevBakedAt, newItems: raw.newItems, newRecipeItems: raw.newRecipeItems } }
     : null;
 }
+
+export interface RawGlamourEntry {
+  item: string;
+  uses: number;
+}
+
+export interface GlamourRankingData {
+  generatedAt: string | null;
+  ranking: RawGlamourEntry[];
+}
+
+/**
+ * Loads the Eorzea Collection glamour-item ranking produced by the standalone
+ * Python scraper (see docs/scraping-glamours.md). Plain fetch, null on failure —
+ * the page treats null as "no data yet" and shows an empty state.
+ */
+export async function loadStaticGlamourRanking(): Promise<GlamourRankingData | null> {
+  const raw = await load<{ generated_at?: string; ranking?: RawGlamourEntry[] }>(
+    `${BASE}/glamours.json`,
+  );
+  if (!raw) return null;
+  return {
+    generatedAt: typeof raw.generated_at === 'string' ? raw.generated_at : null,
+    ranking: Array.isArray(raw.ranking) ? raw.ranking : [],
+  };
+}
