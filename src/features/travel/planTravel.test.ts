@@ -100,4 +100,18 @@ describe('planTravel', () => {
     expect(roiPlan.rows).toHaveLength(1);
     expect(roiPlan.rows[0].id).toBe(2); // high-ROI item wins the limited budget
   });
+
+  it('spread metric orders by gross (pre-tax) spread, not net', () => {
+    // Item 1 gross spread 920 (2000−1080) but net spread 820 (1900−1080).
+    // Item 2 gross spread 900 (1000−100)  but net spread 850 (950−100).
+    // Gross ranks item 1 first; net would rank item 2 first. Tax is ON.
+    const home: MarketData = { 1: homeSell(2000, 5), 2: homeSell(1000, 5) };
+    const dest: MarketData = {
+      1: mkMarket({ worldListings: [listing(1080, 1)] }),
+      2: mkMarket({ worldListings: [listing(100, 1)] }),
+    };
+    const plan = planTravel(items, dest, home, { ...baseOpts, metric: 'spread', applyMarketTax: true });
+    expect(plan.rows).toHaveLength(2);
+    expect(plan.rows[0].id).toBe(1); // higher gross spread leads
+  });
 });

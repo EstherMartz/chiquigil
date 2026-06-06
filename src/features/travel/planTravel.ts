@@ -76,34 +76,40 @@ export function planTravel(
     agg.set(u.id, a);
   }
 
-  // 3. Aggregate into rows.
-  const rows: TravelRow[] = [];
+  // 3. Aggregate into rows. Carry grossSpread alongside each row so the display
+  //    sort for 'spread' uses the same gross (pre-tax) basis the allocation did.
+  const built: { row: TravelRow; grossSpread: number }[] = [];
   let totalCost = 0, totalProfit = 0, totalUnits = 0;
   for (const [id, a] of agg) {
     const it = byId.get(id)!;
     const home = homeMarket[id]!;
     const profit = a.netRevenue * a.units - a.cost;
-    rows.push({
-      id, name: it.name, sc: it.sc,
-      units: a.units,
-      avgBuyPrice: Math.round(a.cost / a.units),
-      homeSell: Math.round(a.netRevenue),
-      cost: Math.round(a.cost),
-      profit: Math.round(profit),
-      roi: a.cost > 0 ? profit / a.cost : 0,
-      velocity: home.velocity,
-      hq: a.isHq,
+    const avgBuyPrice = Math.round(a.cost / a.units);
+    built.push({
+      row: {
+        id, name: it.name, sc: it.sc,
+        units: a.units,
+        avgBuyPrice,
+        homeSell: Math.round(a.netRevenue),
+        cost: Math.round(a.cost),
+        profit: Math.round(profit),
+        roi: a.cost > 0 ? profit / a.cost : 0,
+        velocity: home.velocity,
+        hq: a.isHq,
+      },
+      grossSpread: a.grossRevenue - avgBuyPrice,
     });
     totalCost += a.cost;
     totalProfit += profit;
     totalUnits += a.units;
   }
 
-  rows.sort((a, b) => {
-    if (opts.metric === 'roi') return b.roi - a.roi;
-    if (opts.metric === 'spread') return (b.homeSell - b.avgBuyPrice) - (a.homeSell - a.avgBuyPrice);
-    return b.profit - a.profit;
+  built.sort((a, b) => {
+    if (opts.metric === 'roi') return b.row.roi - a.row.roi;
+    if (opts.metric === 'spread') return b.grossSpread - a.grossSpread;
+    return b.row.profit - a.row.profit;
   });
+  const rows = built.map((b) => b.row);
 
   return {
     rows,
