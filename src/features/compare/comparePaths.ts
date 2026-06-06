@@ -201,3 +201,84 @@ export function buildSummaryLine(cards: PathCard[], winnerId: string | null, qty
   }
   return line;
 }
+
+export interface ComparisonSource {
+  itemId: number;
+  itemName: string;
+  hq: boolean;
+  market: MarketItem | undefined;
+  history: HistoryEntry[];
+  priceLow: number;
+  recipe: Recipe | undefined;
+}
+
+export interface ComparisonOutput {
+  itemId: number;
+  itemName: string;
+  hq: boolean;
+  market: MarketItem | undefined;
+  history: HistoryEntry[];
+  recipe: Recipe;
+}
+
+export interface ComparisonInput {
+  source: ComparisonSource;
+  outputs: ComparisonOutput[];
+  /** Resolves material cost for a recipe under the selected material source. */
+  matCostOf: (recipe: Recipe) => number;
+  /** Home-world market keyed by string id — for craft-effort classification. */
+  homeMarket: Record<string, MarketItem | undefined>;
+  quantity: number;
+  now: number;
+}
+
+export interface Comparison {
+  cards: PathCard[];
+  winnerId: string | null;
+  summary: string;
+}
+
+const EMPTY_MARKET: MarketItem = {
+  minNQ: null, minHQ: null, avgNQ: null, avgHQ: null, medianNQ: null, medianHQ: null,
+  recentSalesNQ: 0, recentSalesHQ: 0, velocity: 0, lastUploadTime: 0, listingCount: 0,
+  worldListings: [], averagePriceNQ: null, averagePriceHQ: null, lastSaleMs: null,
+};
+
+export function buildComparison(input: ComparisonInput): Comparison {
+  const { source, outputs, matCostOf, homeMarket, quantity, now } = input;
+  const cards: PathCard[] = [];
+
+  // Sell raw — always.
+  cards.push(makeMarketCard({
+    id: 'sell-raw', kind: 'sell-raw', itemId: source.itemId, itemName: source.itemName,
+    market: source.market ?? EMPTY_MARKET, history: source.history, hq: source.hq,
+    matCost: 0, effort: 'none', now,
+  }));
+
+  // Vendor — only when an NPC buys it.
+  if (source.priceLow > 0) {
+    cards.push(makeVendorCard(source.itemId, source.itemName, source.priceLow));
+  }
+
+  // Craft intermediate — when the source itself is craftable.
+  if (source.recipe) {
+    cards.push(makeMarketCard({
+      id: 'craft-int', kind: 'craft-intermediate', itemId: source.itemId, itemName: source.itemName,
+      market: source.market ?? EMPTY_MARKET, history: source.history, hq: source.hq,
+      matCost: matCostOf(source.recipe), effort: craftEffort(source.recipe, homeMarket), now,
+    }));
+  }
+
+  // Craft → output for each provided output.
+  for (const o of outputs) {
+    cards.push(makeMarketCard({
+      id: `craft-${o.itemId}`, kind: 'craft-output', itemId: o.itemId, itemName: o.itemName,
+      market: o.market ?? EMPTY_MARKET, history: o.history, hq: o.hq,
+      matCost: matCostOf(o.recipe), effort: craftEffort(o.recipe, homeMarket), now,
+    }));
+  }
+
+  const winnerId = pickWinner(cards, quantity);
+  const summary = buildSummaryLine(cards, winnerId, quantity);
+  return { cards, winnerId, summary };
+}

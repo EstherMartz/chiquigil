@@ -164,3 +164,41 @@ describe('buildSummaryLine', () => {
     expect(line).toContain('Sell raw (MB)');
   });
 });
+
+import { buildComparison } from './comparePaths';
+import type { ComparisonInput } from './comparePaths';
+
+describe('buildComparison', () => {
+  it('always shows sell-raw, adds vendor when priceLow>0, and a craft-output card', () => {
+    const sourceMarket = mkMarket({ minNQ: 1000, avgNQ: 1000, recentSalesNQ: 5, velocity: 4, listingCount: 0 });
+    const outputMarket = mkMarket({ minNQ: 5000, avgNQ: 5000, recentSalesNQ: 3, velocity: 1, listingCount: 0 });
+    const outRecipe = recipe([{ itemId: 1, amount: 3 }]);
+    const input: ComparisonInput = {
+      source: { itemId: 1, itemName: 'Ore', hq: false, market: sourceMarket, history: [], priceLow: 8, recipe: undefined },
+      outputs: [{ itemId: 50, itemName: 'Ingot', hq: false, market: outputMarket, history: [], recipe: outRecipe }],
+      matCostOf: () => 600,
+      homeMarket: { '1': sourceMarket },
+      quantity: 1,
+      now: 1_000,
+    };
+    const result = buildComparison(input);
+    const ids = result.cards.map((c) => c.id).sort();
+    expect(ids).toEqual(['craft-50', 'sell-raw', 'vendor']);
+    expect(result.winnerId).toBeTruthy();
+    expect(result.summary).toContain('Best play');
+  });
+
+  it('omits vendor when priceLow is 0 and adds craft-intermediate when the source is craftable', () => {
+    const sourceMarket = mkMarket({ minNQ: 1000, avgNQ: 1000, recentSalesNQ: 5, velocity: 4 });
+    const input: ComparisonInput = {
+      source: { itemId: 1, itemName: 'Ingot', hq: false, market: sourceMarket, history: [], priceLow: 0, recipe: recipe([{ itemId: 2, amount: 2 }]) },
+      outputs: [],
+      matCostOf: () => 300,
+      homeMarket: { '2': mkMarket({ minNQ: 50 }) },
+      quantity: 1,
+      now: 1_000,
+    };
+    const ids = buildComparison(input).cards.map((c) => c.id).sort();
+    expect(ids).toEqual(['craft-int', 'sell-raw']);
+  });
+});
