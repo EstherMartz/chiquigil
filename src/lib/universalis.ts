@@ -205,7 +205,6 @@ export async function loadSharedMarketCache(homeWorld: string, dc: string, regio
     const [cold, hot] = await Promise.all([fetchCacheBlob(coldUrl), fetchCacheBlob(hotUrl)]);
     if (!cold && !hot) return;
 
-    let total = 0;
     // Apply cold first, then hot, so overlapping ids take the hot (fresher) row.
     for (const data of [cold, hot]) {
       if (!data) continue;
@@ -218,12 +217,13 @@ export async function loadSharedMarketCache(homeWorld: string, dc: string, regio
         const cache: ScopeCache = memCache.get(scope) ?? new Map();
         for (const [idStr, item] of Object.entries(marketData)) {
           cache.set(Number(idStr), { ts: data.ts, data: item });
-          total++;
         }
         memCache.set(scope, cache);
         hydrated.add(scope);
       }
     }
+    // Count final unique entries (hot overrides cold), not set operations.
+    const total = [homeWorld, dc, region].reduce((n, s) => n + (memCache.get(s)?.size ?? 0), 0);
     console.log(`[market] pre-seeded ${total} entries (cold=${!!cold} hot=${!!hot})`);
   } catch {
     // Blobs not available — normal before the cron has run.
