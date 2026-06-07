@@ -60,8 +60,29 @@ interface RawResponse {
 
 type SingleItemRawResponse = RawItem & { itemID: number };
 
+/**
+ * Field paths the parser actually reads — used as Universalis' `fields` whitelist to
+ * trim response payloads. The path form differs by request shape (verified live, and
+ * the WRONG form returns an empty response, so this matters): the single-item endpoint
+ * returns a flat object (bare paths like `listings.pricePerUnit`), while the multi-item
+ * endpoint nests every item under `items` (paths must be `items.`-prefixed). Pick by
+ * id count via `marketFields`.
+ */
+const MARKET_FIELD_PATHS = [
+  'itemID',
+  'listings.pricePerUnit', 'listings.hq', 'listings.worldName', 'listings.quantity', 'listings.retainerName',
+  'recentHistory.pricePerUnit', 'recentHistory.hq', 'recentHistory.timestamp',
+  'regularSaleVelocity', 'lastUploadTime', 'averagePriceNQ', 'averagePriceHQ', 'listingsCount',
+];
+
+/** Build the Universalis `fields` value for a request of `idCount` items. */
+export function marketFields(idCount: number): string {
+  const prefix = idCount > 1 ? 'items.' : '';
+  return MARKET_FIELD_PATHS.map((p) => prefix + p).join(',');
+}
+
 export function buildMarketUrl(scope: Scope, ids: number[]): string {
-  return `https://universalis.app/api/v2/${scope}/${ids.join(',')}?listings=10&entries=15`;
+  return `https://universalis.app/api/v2/${scope}/${ids.join(',')}?listings=10&entries=15&fields=${marketFields(ids.length)}`;
 }
 
 function minPrice(arr: RawListing[], hq: boolean): number | null {
