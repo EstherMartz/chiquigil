@@ -5,6 +5,8 @@ import {
   buildMarketUrl,
   parseMarketResponse,
   _resetMarketCacheForTests,
+  loadSharedMarketCache,
+  _resetSharedCacheForTests,
 } from './universalis';
 import { clearMarketCache } from './recipeCache';
 
@@ -266,5 +268,45 @@ describe('fetchMarketLive (per-item live pull)', () => {
     vi.stubGlobal('fetch', fetchSpy);
     expect(await fetchMarketLive('Phantom', [])).toEqual({});
     expect(fetchSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe('loadSharedMarketCache hot/cold merge', () => {
+  beforeEach(() => {
+    _resetMarketCacheForTests();
+    _resetSharedCacheForTests();
+    vi.unstubAllGlobals();
+  });
+
+  it('hot blob overrides cold for the same id', async () => {
+    function blob(ts: number, min: number) {
+      const item = {
+        minNQ: min,
+        minHQ: null,
+        avgNQ: null,
+        avgHQ: null,
+        medianNQ: null,
+        medianHQ: null,
+        recentSalesNQ: 0,
+        recentSalesHQ: 0,
+        velocity: 0,
+        lastUploadTime: 0,
+        listingCount: 0,
+        worldListings: [],
+        averagePriceNQ: null,
+        averagePriceHQ: null,
+        lastSaleMs: null,
+      };
+      return { phantom: { 100: item }, dc: {}, region: {}, ts };
+    }
+    vi.stubGlobal('fetch', vi.fn((url: string) =>
+      Promise.resolve({
+        ok: true,
+        json: async () => (url.includes('hot') ? blob(2000, 999) : blob(1000, 111)),
+      })
+    ));
+    await loadSharedMarketCache('Phantom', 'Chaos', 'Europe');
+    const got = await fetchMarketData('Phantom', [100]);
+    expect(got['100'].minNQ).toBe(999); // hot wins
   });
 });

@@ -152,40 +152,60 @@ interface SharedCache {
 
 let sharedCacheLoaded = false;
 
+/** Test helper: allow re-running loadSharedMarketCache. */
+export function _resetSharedCacheForTests(): void {
+  sharedCacheLoaded = false;
+}
+
+async function fetchCacheBlob(url: string): Promise<SharedCache | null> {
+  try {
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) return null;
+    return (await res.json()) as SharedCache;
+  } catch {
+    return null;
+  }
+}
+
 /**
- * Pre-seed the in-memory cache from the bot's hourly market-cache.json.
- * Call once at app startup. If the file is missing or stale (>90 min),
- * it's a no-op and the app falls through to live Universalis fetches.
+ * Pre-seed the in-memory cache from the bot's blobs. Loads the hourly COLD blob and
+ * the ~5-min HOT blob, applying cold first then hot so the fresher hot entries win.
+ * Falls back to the legacy single blob (VITE_CACHE_BLOB_URL) when cold is absent,
+ * so prod keeps working during rollout. Call once at startup.
  */
 export async function loadSharedMarketCache(homeWorld: string, dc: string, region: string): Promise<void> {
   if (sharedCacheLoaded) return;
   sharedCacheLoaded = true;
   try {
-    const cacheUrl = (import.meta as any).env?.VITE_CACHE_BLOB_URL || '/data/market-cache.json';
-    // no-store: always fetch the latest blob, never serve browser-cached stale version
-    const res = await fetch(cacheUrl, { cache: 'no-store' });
-    if (!res.ok) return;
-    const data = (await res.json()) as SharedCache;
-    const age = Date.now() - data.ts;
+    const env = (import.meta as any).env ?? {};
+    const coldUrl = env.VITE_CACHE_COLD_URL || env.VITE_CACHE_BLOB_URL || '/data/market-cache-cold.json';
+    const hotUrl = env.VITE_CACHE_HOT_URL || '/data/market-cache-hot.json';
 
-    const scopes: [string, MarketData][] = [
-      [homeWorld, data.phantom],
-      [dc, data.dc],
-      [region, data.region],
-    ];
+    const [cold, hot] = await Promise.all([fetchCacheBlob(coldUrl), fetchCacheBlob(hotUrl)]);
+    if (!cold && !hot) return;
+
     let total = 0;
-    for (const [scope, marketData] of scopes) {
-      const cache: ScopeCache = memCache.get(scope) ?? new Map();
-      for (const [idStr, item] of Object.entries(marketData)) {
-        cache.set(Number(idStr), { ts: data.ts, data: item });
-        total++;
+    // Apply cold first, then hot, so overlapping ids take the hot (fresher) row.
+    for (const data of [cold, hot]) {
+      if (!data) continue;
+      const scopes: [string, MarketData][] = [
+        [homeWorld, data.phantom],
+        [dc, data.dc],
+        [region, data.region],
+      ];
+      for (const [scope, marketData] of scopes) {
+        const cache: ScopeCache = memCache.get(scope) ?? new Map();
+        for (const [idStr, item] of Object.entries(marketData)) {
+          cache.set(Number(idStr), { ts: data.ts, data: item });
+          total++;
+        }
+        memCache.set(scope, cache);
+        hydrated.add(scope);
       }
-      memCache.set(scope, cache);
-      hydrated.add(scope);
     }
-    console.log(`[market] pre-seeded ${total} entries from bot cache (${Math.round(age / 60_000)}min old)`);
+    console.log(`[market] pre-seeded ${total} entries (cold=${!!cold} hot=${!!hot})`);
   } catch {
-    // File not available — normal when bot hasn't run yet
+    // Blobs not available — normal before the cron has run.
   }
 }
 
