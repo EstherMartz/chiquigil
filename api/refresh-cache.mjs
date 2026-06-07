@@ -171,12 +171,66 @@ function selectHotIds(bundle, velocityThreshold) {
   return [...hot].sort((a, b) => a - b);
 }
 
+// src/bot/marketDiff.ts
+var SPIKE_PCT = 20;
+var CRASH_PCT = -20;
+var EMPTY_MAX = 2;
+function diffMarket(prev, next, now) {
+  const out = [];
+  for (const [idStr, n] of Object.entries(next)) {
+    const p = prev[idStr];
+    if (!p) continue;
+    const itemId = Number(idStr);
+    if (p.listingCount > EMPTY_MAX && n.listingCount <= EMPTY_MAX) {
+      out.push({
+        itemId,
+        kind: "empty",
+        world: "",
+        oldValue: p.listingCount,
+        newValue: n.listingCount,
+        changePct: null,
+        velocity: n.velocity,
+        gilPerDay: 0,
+        detectedAt: now
+      });
+      continue;
+    }
+    if (p.minNQ != null && p.minNQ > 0 && n.minNQ != null) {
+      const changePct = (n.minNQ - p.minNQ) / p.minNQ * 100;
+      const kind = changePct <= CRASH_PCT ? "crash" : changePct >= SPIKE_PCT ? "spike" : null;
+      if (kind) {
+        out.push({
+          itemId,
+          kind,
+          world: n.worldListings[0]?.world ?? "",
+          oldValue: p.minNQ,
+          newValue: n.minNQ,
+          changePct: Math.round(changePct * 10) / 10,
+          velocity: n.velocity,
+          gilPerDay: Math.round(n.minNQ * n.velocity),
+          detectedAt: now
+        });
+      }
+    }
+  }
+  return out;
+}
+function mergeOpportunities(existing, fresh, ttlMs, now) {
+  const byKey = /* @__PURE__ */ new Map();
+  const keyOf = (o) => `${o.itemId}:${o.kind}`;
+  for (const o of existing) byKey.set(keyOf(o), o);
+  for (const o of fresh) byKey.set(keyOf(o), o);
+  const cutoff = now - ttlMs;
+  return [...byKey.values()].filter((o) => o.detectedAt >= cutoff).sort((a, b) => b.detectedAt - a.detectedAt);
+}
+
 // src/api/refresh-cache.ts
 var WORLD = process.env.HOME_WORLD ?? "Phantom";
 var DC = process.env.HOME_DC ?? "Chaos";
 var REGION = process.env.REGION ?? "Europe";
 var SECRET = process.env.REFRESH_SECRET ?? "";
 var VELOCITY_THRESHOLD = Number(process.env.HOT_VELOCITY_THRESHOLD ?? 10);
+var OPP_TTL_MS = 2 * 60 * 60 * 1e3;
 async function handler(req, res) {
   if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
   if (!SECRET || req.query.token !== SECRET) return res.status(401).json({ error: "Unauthorized" });
@@ -189,9 +243,18 @@ async function handler(req, res) {
     const ids = tier === "hot" ? await readBlobJson("hot-ids.json") ?? await loadItemIds(baseUrl) : await loadItemIds(baseUrl);
     console.log(`[refresh:${tier}] fetching ${ids.length} items across 3 scopes...`);
     const bundle = await fetchMarketForOutputs(ids, WORLD, DC, REGION);
-    const cache = { phantom: bundle.phantom, dc: bundle.dc, region: bundle.region, ts: Date.now() };
     const blobName = tier === "hot" ? "market-cache-hot.json" : "market-cache-cold.json";
+    const prev = await readBlobJson(blobName);
+    const cache = { phantom: bundle.phantom, dc: bundle.dc, region: bundle.region, ts: Date.now() };
     const blobUrl = await writeMarketCache(cache, blobName);
+    let oppCount;
+    if (prev) {
+      const fresh = diffMarket(prev.dc, cache.dc, cache.ts);
+      const existing = (await readBlobJson("opportunities.json"))?.opportunities ?? [];
+      const merged = mergeOpportunities(existing, fresh, OPP_TTL_MS, cache.ts);
+      await writeBlobJson("opportunities.json", { ts: cache.ts, opportunities: merged });
+      oppCount = merged.length;
+    }
     let hotCount;
     if (tier === "cold") {
       const hotIds = selectHotIds(bundle, VELOCITY_THRESHOLD);
@@ -200,7 +263,7 @@ async function handler(req, res) {
     }
     const elapsed = ((Date.now() - t0) / 1e3).toFixed(1);
     console.log(`[refresh:${tier}] done in ${elapsed}s, ${ids.length} items, blob: ${blobUrl}`);
-    return res.status(200).json({ ok: true, tier, items: ids.length, hotCount, elapsed: `${elapsed}s`, blobUrl });
+    return res.status(200).json({ ok: true, tier, items: ids.length, hotCount, oppCount, elapsed: `${elapsed}s`, blobUrl });
   } catch (e) {
     console.error(`[refresh:${tier}] error:`, e);
     return res.status(500).json({ error: e.message });
