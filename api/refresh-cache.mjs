@@ -231,17 +231,21 @@ var DC = process.env.HOME_DC ?? "Chaos";
 var REGION = process.env.REGION ?? "Europe";
 var SECRET = process.env.REFRESH_SECRET ?? "";
 var VELOCITY_THRESHOLD = Number(process.env.HOT_VELOCITY_THRESHOLD ?? 10);
+var TRADED_THRESHOLD = Number(process.env.TRADED_VELOCITY_THRESHOLD ?? 1);
 var OPP_TTL_MS = 2 * 60 * 60 * 1e3;
 async function handler(req, res) {
   if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
   if (!SECRET || req.query.token !== SECRET) return res.status(401).json({ error: "Unauthorized" });
-  const tier = req.query.tier === "hot" ? "hot" : "cold";
+  const tier = req.query.tier === "hot" ? "hot" : req.query.tier === "full" ? "full" : "cold";
   const t0 = Date.now();
   try {
     const proto = req.headers["x-forwarded-proto"] ?? "https";
     const host = req.headers["x-forwarded-host"] ?? req.headers.host ?? "localhost";
     const baseUrl = `${proto}://${host}`;
-    const ids = tier === "hot" ? await readBlobJson("hot-ids.json") ?? await loadItemIds(baseUrl) : await loadItemIds(baseUrl);
+    let ids;
+    if (tier === "hot") ids = await readBlobJson("hot-ids.json") ?? await loadItemIds(baseUrl);
+    else if (tier === "full") ids = await loadItemIds(baseUrl);
+    else ids = await readBlobJson("traded-ids.json") ?? await loadItemIds(baseUrl);
     console.log(`[refresh:${tier}] fetching ${ids.length} items across 3 scopes...`);
     const bundle = await fetchMarketForOutputs(ids, WORLD, DC, REGION);
     const blobName = tier === "hot" ? "market-cache-hot.json" : "market-cache-cold.json";
@@ -256,15 +260,21 @@ async function handler(req, res) {
       await writeBlobJson("opportunities.json", { ts: cache.ts, opportunities: merged });
       oppCount = merged.length;
     }
+    let tradedCount;
+    if (tier === "full") {
+      const tradedIds = selectHotIds(bundle, TRADED_THRESHOLD);
+      await writeBlobJson("traded-ids.json", tradedIds);
+      tradedCount = tradedIds.length;
+    }
     let hotCount;
-    if (tier === "cold") {
+    if (tier !== "hot") {
       const hotIds = selectHotIds(bundle, VELOCITY_THRESHOLD);
       await writeBlobJson("hot-ids.json", hotIds);
       hotCount = hotIds.length;
     }
     const elapsed = ((Date.now() - t0) / 1e3).toFixed(1);
     console.log(`[refresh:${tier}] done in ${elapsed}s, ${ids.length} items, blob: ${blobUrl}`);
-    return res.status(200).json({ ok: true, tier, items: ids.length, hotCount, oppCount, elapsed: `${elapsed}s`, blobUrl });
+    return res.status(200).json({ ok: true, tier, items: ids.length, tradedCount, hotCount, oppCount, elapsed: `${elapsed}s`, blobUrl });
   } catch (e) {
     console.error(`[refresh:${tier}] error:`, e);
     return res.status(500).json({ error: e.message });
