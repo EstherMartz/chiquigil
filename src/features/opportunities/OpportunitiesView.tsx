@@ -58,8 +58,9 @@ export function OpportunitiesView() {
       <div className="space-y-1">
         <h2 className="font-display text-2xl text-gold tracking-wide">Opportunities</h2>
         <p className="font-mono text-[11px] text-text-low max-w-prose">
-          What just changed across your data center since the last market refresh — fresh price crashes (buy),
-          spikes (sell), and shelves that just emptied (craft). Rolling 2-hour window.
+          What just changed across your data center since the last market refresh — items that just dropped
+          ≥15% below their recent average (buy), rose above it (sell), or whose shelves just emptied (craft).
+          Rolling 2-hour window.
         </p>
         {feed.data && feed.data.ts > 0 && (
           <div className="opacity-70 scale-90 origin-left"><FreshnessChip ts={feed.data.ts} now={now} /></div>
@@ -96,7 +97,7 @@ export function OpportunitiesView() {
                 <th className="px-3 py-2">Item</th>
                 <th className="px-3 py-2">Signal</th>
                 <th className="px-3 py-2">World</th>
-                <th className="px-3 py-2 text-right">Was → Now</th>
+                <th className="px-3 py-2 text-right">Avg → Now</th>
                 <th className="px-3 py-2 text-right">Move</th>
                 <th className="px-3 py-2 text-right">Gil/day</th>
                 <th className="px-3 py-2 text-right">Seen</th>

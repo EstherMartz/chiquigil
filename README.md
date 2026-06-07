@@ -48,10 +48,13 @@ multi-item requests, bare for single-item; the wrong form returns an empty respo
 ### Opportunity feed (Tier 3)
 
 Each refresh diffs the new DC prices against the previous blob and accumulates
-"what just changed" into a public `opportunities.json` (rolling 2-hour window):
+"what just changed" into a public `opportunities.json` (rolling 2-hour window).
+Price signals fire when the DC-cheapest **crosses** the item's recent average
+(`avgNQ`) this refresh — measured against the stable ~7-day average (not a
+since-last-blob delta, which was far too strict to ever fire):
 
-- **crash** — DC-cheapest dropped ≥20% (buy, on the tagged world)
-- **spike** — DC-cheapest rose ≥20% (sell)
+- **crash** — cheapest just dropped ≥15% **below** its recent average (buy, on the tagged world)
+- **spike** — cheapest just rose ≥15% **above** its recent average (sell)
 - **empty** — DC-wide listings dropped to ≤2 (craft)
 
 Surfaced at `/opportunities`. No new cron or lambda — it rides the existing hot/cold

@@ -12,52 +12,62 @@ function item(over: Partial<MarketItem>): MarketItem {
 const NOW = 1_000_000;
 
 describe('diffMarket', () => {
-  it('emits crash when DC min drops >= 20%', () => {
-    const prev: MarketData = { '5': item({ minNQ: 1000, listingCount: 10 }) };
-    const next: MarketData = { '5': item({ minNQ: 800, listingCount: 10, velocity: 3, worldListings: [{ world: 'Moogle', price: 800, hq: false }] }) };
+  it('emits crash when the DC-cheapest crosses >=15% below the recent average', () => {
+    // avg 1000 -> deal line 850; prev 900 (not yet a deal) -> next 800 (now a deal)
+    const prev: MarketData = { '5': item({ minNQ: 900, avgNQ: 1000, listingCount: 10 }) };
+    const next: MarketData = { '5': item({ minNQ: 800, avgNQ: 1000, listingCount: 10, velocity: 3, worldListings: [{ world: 'Moogle', price: 800, hq: false }] }) };
     const out = diffMarket(prev, next, NOW);
     expect(out).toHaveLength(1);
     expect(out[0]).toMatchObject({ itemId: 5, kind: 'crash', world: 'Moogle', oldValue: 1000, newValue: 800, changePct: -20, gilPerDay: 2400, detectedAt: NOW });
   });
 
-  it('does not emit for a -19% move', () => {
-    const prev: MarketData = { '5': item({ minNQ: 1000, listingCount: 10 }) };
-    const next: MarketData = { '5': item({ minNQ: 810, listingCount: 10 }) };
+  it('does not fire when the dip stays above the deal line', () => {
+    // avg 1000 -> deal line 850; next 900 is still above it
+    const prev: MarketData = { '5': item({ minNQ: 1000, avgNQ: 1000, listingCount: 10 }) };
+    const next: MarketData = { '5': item({ minNQ: 900, avgNQ: 1000, listingCount: 10 }) };
     expect(diffMarket(prev, next, NOW)).toEqual([]);
   });
 
-  it('emits spike when DC min rises >= 20%', () => {
-    const prev: MarketData = { '7': item({ minNQ: 1000, listingCount: 5 }) };
-    const next: MarketData = { '7': item({ minNQ: 1200, listingCount: 5 }) };
+  it('does not re-fire an item already below the deal line (no fresh crossing)', () => {
+    const prev: MarketData = { '5': item({ minNQ: 800, avgNQ: 1000, listingCount: 10 }) };
+    const next: MarketData = { '5': item({ minNQ: 820, avgNQ: 1000, listingCount: 10 }) };
+    expect(diffMarket(prev, next, NOW)).toEqual([]);
+  });
+
+  it('emits spike when the DC-cheapest crosses >=15% above the recent average', () => {
+    // avg 1000 -> spike line 1150; prev 1100 -> next 1200
+    const prev: MarketData = { '7': item({ minNQ: 1100, avgNQ: 1000, listingCount: 5 }) };
+    const next: MarketData = { '7': item({ minNQ: 1200, avgNQ: 1000, listingCount: 5 }) };
     expect(diffMarket(prev, next, NOW)[0]).toMatchObject({ kind: 'spike', oldValue: 1000, newValue: 1200, changePct: 20 });
   });
 
   it('emits empty when listingCount drops to <= 2 from above', () => {
-    const prev: MarketData = { '9': item({ minNQ: 100, listingCount: 5 }) };
-    const next: MarketData = { '9': item({ minNQ: 100, listingCount: 2, velocity: 4 }) };
+    const prev: MarketData = { '9': item({ minNQ: 100, avgNQ: 100, listingCount: 5 }) };
+    const next: MarketData = { '9': item({ minNQ: 100, avgNQ: 100, listingCount: 2, velocity: 4 }) };
     expect(diffMarket(prev, next, NOW)[0]).toMatchObject({ kind: 'empty', world: '', oldValue: 5, newValue: 2, changePct: null, gilPerDay: 0 });
   });
 
   it('does not emit empty for 5 -> 3', () => {
-    const prev: MarketData = { '9': item({ minNQ: 100, listingCount: 5 }) };
-    const next: MarketData = { '9': item({ minNQ: 100, listingCount: 3 }) };
+    const prev: MarketData = { '9': item({ minNQ: 100, avgNQ: 100, listingCount: 5 }) };
+    const next: MarketData = { '9': item({ minNQ: 100, avgNQ: 100, listingCount: 3 }) };
     expect(diffMarket(prev, next, NOW)).toEqual([]);
   });
 
-  it('empty wins when an item both crashes and empties', () => {
-    const prev: MarketData = { '9': item({ minNQ: 1000, listingCount: 5 }) };
-    const next: MarketData = { '9': item({ minNQ: 500, listingCount: 1 }) };
+  it('empty wins when an item both crosses price and empties', () => {
+    // would be a crash (avg 1000, 1100 -> 500 crosses 850) but the shelf also emptied
+    const prev: MarketData = { '9': item({ minNQ: 1100, avgNQ: 1000, listingCount: 5 }) };
+    const next: MarketData = { '9': item({ minNQ: 500, avgNQ: 1000, listingCount: 1 }) };
     expect(diffMarket(prev, next, NOW)[0].kind).toBe('empty');
   });
 
   it('skips items with no prev baseline', () => {
-    const next: MarketData = { '5': item({ minNQ: 800, listingCount: 10 }) };
+    const next: MarketData = { '5': item({ minNQ: 800, avgNQ: 1000, listingCount: 10 }) };
     expect(diffMarket({}, next, NOW)).toEqual([]);
   });
 
-  it('skips price kinds when prev minNQ is null but still allows empty', () => {
-    const prev: MarketData = { '5': item({ minNQ: null, listingCount: 5 }) };
-    const next: MarketData = { '5': item({ minNQ: 800, listingCount: 1 }) };
+  it('skips price kinds when the recent average is missing, but still allows empty', () => {
+    const prev: MarketData = { '5': item({ minNQ: 1100, avgNQ: null, listingCount: 5 }) };
+    const next: MarketData = { '5': item({ minNQ: 500, avgNQ: null, listingCount: 1 }) };
     expect(diffMarket(prev, next, NOW)[0].kind).toBe('empty');
   });
 });
