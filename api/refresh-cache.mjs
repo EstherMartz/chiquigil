@@ -172,8 +172,7 @@ function selectHotIds(bundle, velocityThreshold) {
 }
 
 // src/bot/marketDiff.ts
-var SPIKE_PCT = 20;
-var CRASH_PCT = -20;
+var DEAL_PCT = 15;
 var EMPTY_MAX = 2;
 function diffMarket(prev, next, now) {
   const out = [];
@@ -195,23 +194,25 @@ function diffMarket(prev, next, now) {
       });
       continue;
     }
-    if (p.minNQ != null && p.minNQ > 0 && n.minNQ != null) {
-      const changePct = (n.minNQ - p.minNQ) / p.minNQ * 100;
-      const kind = changePct <= CRASH_PCT ? "crash" : changePct >= SPIKE_PCT ? "spike" : null;
-      if (kind) {
-        out.push({
-          itemId,
-          kind,
-          world: n.worldListings[0]?.world ?? "",
-          oldValue: p.minNQ,
-          newValue: n.minNQ,
-          changePct: Math.round(changePct * 10) / 10,
-          velocity: n.velocity,
-          gilPerDay: Math.round(n.minNQ * n.velocity),
-          detectedAt: now
-        });
-      }
-    }
+    const avg = n.avgNQ;
+    if (avg == null || avg <= 0 || p.minNQ == null || n.minNQ == null) continue;
+    const dealLine = avg * (1 - DEAL_PCT / 100);
+    const spikeLine = avg * (1 + DEAL_PCT / 100);
+    let kind = null;
+    if (p.minNQ > dealLine && n.minNQ <= dealLine) kind = "crash";
+    else if (p.minNQ < spikeLine && n.minNQ >= spikeLine) kind = "spike";
+    if (!kind) continue;
+    out.push({
+      itemId,
+      kind,
+      world: n.worldListings[0]?.world ?? "",
+      oldValue: Math.round(avg),
+      newValue: n.minNQ,
+      changePct: Math.round((n.minNQ - avg) / avg * 100 * 10) / 10,
+      velocity: n.velocity,
+      gilPerDay: Math.round(n.minNQ * n.velocity),
+      detectedAt: now
+    });
   }
   return out;
 }

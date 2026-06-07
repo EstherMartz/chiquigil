@@ -37,20 +37,30 @@ the world holding it. Covers all DC servers (the cheapest can be on any of them)
 and a bigger build; noted as a future option.
 
 ### Kinds & thresholds
-Reuse the existing `src/features/watchlist/alerts.ts` thresholds for consistency
-(`SPIKE_PCT = 20`, `CRASH_PCT = -20`):
 
-| kind | condition (prev → next, `dc` scope) | meaning |
+> **REVISED 2026-06-07 after live testing.** The original "≥20% move since the previous
+> blob" baseline produced `oppCount: 0` across a full 50,360-item run — real price swings
+> happen gradually, so almost nothing jumps 20% inside one 5-min/1h interval. Price signals
+> now measure the DC-cheapest against the item's **recent average** (`avgNQ`, ~7-day) and
+> fire on a fresh **crossing** of a ±`DEAL_PCT` band. This catches "cheap vs its norm"
+> reliably while staying a delta (the crossing keeps it distinct from Movers' static ranking).
+
+`DEAL_PCT = 15`. Let `avg = next.avgNQ`, `dealLine = avg·0.85`, `spikeLine = avg·1.15`:
+
+| kind | condition (`dc` scope, prev `p` → next `n`) | meaning |
 | --- | --- | --- |
-| `crash` | `minNQ` dropped ≥ 20% | buy — cheapest now on world `W` |
-| `spike` | `minNQ` rose ≥ 20% | sell — DC floor firmed up |
+| `crash` | `p.minNQ > dealLine` and `n.minNQ ≤ dealLine` | buy — just dropped ≥15% below its average, cheapest on world `W` |
+| `spike` | `p.minNQ < spikeLine` and `n.minNQ ≥ spikeLine` | sell — just rose ≥15% above its average |
 | `empty` | `listingCount` was > 2, now ≤ 2 | craft — undersupplied DC-wide |
 
+`oldValue` = the recent average (the norm); `newValue` = current DC-cheapest;
+`changePct` = signed % of current vs average.
+
 Notes:
-- An item must have both a prev and next `minNQ` for `crash`/`spike`. New listings
-  appearing (prev had no price, now does) are **not** a crash (no baseline) — skip.
+- Price kinds need a prev counterpart, a positive `avgNQ`, and both `minNQ`s present;
+  otherwise skipped. Items steadily below the line (no fresh crossing) don't re-fire.
 - `empty` fires on the supply drop regardless of price.
-- One kind per item per refresh; if price moved AND shelf emptied, `empty` wins (it's
+- One kind per item per refresh; if price crossed AND shelf emptied, `empty` wins (it's
   the rarer, stronger signal). Keeps the feed one-row-per-item-per-refresh.
 
 ### Opportunity record
