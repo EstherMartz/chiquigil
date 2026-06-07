@@ -45,6 +45,19 @@ multi-item requests, bare for single-item; the wrong form returns an empty respo
 | `VITE_CACHE_COLD_URL` | Client URL for the cold blob (falls back to `VITE_CACHE_BLOB_URL`, then `/data/market-cache-cold.json`). |
 | `VITE_CACHE_HOT_URL` | Client URL for the hot blob (falls back to `/data/market-cache-hot.json`). |
 
+### Opportunity feed (Tier 3)
+
+Each refresh diffs the new DC prices against the previous blob and accumulates
+"what just changed" into a public `opportunities.json` (rolling 2-hour window):
+
+- **crash** — DC-cheapest dropped ≥20% (buy, on the tagged world)
+- **spike** — DC-cheapest rose ≥20% (sell)
+- **empty** — DC-wide listings dropped to ≤2 (craft)
+
+Surfaced at `/opportunities`. No new cron or lambda — it rides the existing hot/cold
+runs. Optional env `VITE_OPPORTUNITIES_URL` points the client at the blob (falls back to
+`/data/opportunities.json`).
+
 ## Auth (Discord login gate)
 
 The web app is gated behind Discord OAuth: only members of an allow-listed Discord
