@@ -172,20 +172,19 @@ function selectHotIds(bundle, velocityThreshold) {
 }
 
 // src/bot/marketDiff.ts
-var DEAL_PCT = 15;
 var EMPTY_MAX = 2;
-function diffMarket(prev, next, now) {
+var MIN_VELOCITY = 1;
+function scanDeals(data, now, dealPct = 25) {
   const out = [];
-  for (const [idStr, n] of Object.entries(next)) {
-    const p = prev[idStr];
-    if (!p) continue;
+  for (const [idStr, n] of Object.entries(data)) {
+    if (n.velocity < MIN_VELOCITY) continue;
     const itemId = Number(idStr);
-    if (p.listingCount > EMPTY_MAX && n.listingCount <= EMPTY_MAX) {
+    if (n.listingCount <= EMPTY_MAX) {
       out.push({
         itemId,
         kind: "empty",
         world: "",
-        oldValue: p.listingCount,
+        oldValue: null,
         newValue: n.listingCount,
         changePct: null,
         velocity: n.velocity,
@@ -195,12 +194,12 @@ function diffMarket(prev, next, now) {
       continue;
     }
     const avg = n.avgNQ;
-    if (avg == null || avg <= 0 || p.minNQ == null || n.minNQ == null) continue;
-    const dealLine = avg * (1 - DEAL_PCT / 100);
-    const spikeLine = avg * (1 + DEAL_PCT / 100);
+    if (avg == null || avg <= 0 || n.minNQ == null) continue;
+    const dealLine = avg * (1 - dealPct / 100);
+    const spikeLine = avg * (1 + dealPct / 100);
     let kind = null;
-    if (p.minNQ > dealLine && n.minNQ <= dealLine) kind = "crash";
-    else if (p.minNQ < spikeLine && n.minNQ >= spikeLine) kind = "spike";
+    if (n.minNQ <= dealLine) kind = "crash";
+    else if (n.minNQ >= spikeLine) kind = "spike";
     if (!kind) continue;
     out.push({
       itemId,
@@ -216,13 +215,14 @@ function diffMarket(prev, next, now) {
   }
   return out;
 }
-function mergeOpportunities(existing, fresh, ttlMs, now) {
-  const byKey = /* @__PURE__ */ new Map();
+function mergeDeals(existing, current) {
+  const seenAt = /* @__PURE__ */ new Map();
   const keyOf = (o) => `${o.itemId}:${o.kind}`;
-  for (const o of existing) byKey.set(keyOf(o), o);
-  for (const o of fresh) byKey.set(keyOf(o), o);
-  const cutoff = now - ttlMs;
-  return [...byKey.values()].filter((o) => o.detectedAt >= cutoff).sort((a, b) => b.detectedAt - a.detectedAt);
+  for (const o of existing) seenAt.set(keyOf(o), o.detectedAt);
+  return current.map((o) => {
+    const first = seenAt.get(keyOf(o));
+    return first != null && first < o.detectedAt ? { ...o, detectedAt: first } : o;
+  }).sort((a, b) => b.detectedAt - a.detectedAt);
 }
 
 // src/api/refresh-cache.ts
@@ -232,7 +232,7 @@ var REGION = process.env.REGION ?? "Europe";
 var SECRET = process.env.REFRESH_SECRET ?? "";
 var VELOCITY_THRESHOLD = Number(process.env.HOT_VELOCITY_THRESHOLD ?? 10);
 var TRADED_THRESHOLD = Number(process.env.TRADED_VELOCITY_THRESHOLD ?? 1);
-var OPP_TTL_MS = 2 * 60 * 60 * 1e3;
+var OPP_DEAL_PCT = Number(process.env.OPP_DEAL_PCT ?? 25);
 async function handler(req, res) {
   if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
   if (!SECRET || req.query.token !== SECRET) return res.status(401).json({ error: "Unauthorized" });
@@ -249,14 +249,13 @@ async function handler(req, res) {
     console.log(`[refresh:${tier}] fetching ${ids.length} items across 3 scopes...`);
     const bundle = await fetchMarketForOutputs(ids, WORLD, DC, REGION);
     const blobName = tier === "hot" ? "market-cache-hot.json" : "market-cache-cold.json";
-    const prev = await readBlobJson(blobName);
     const cache = { phantom: bundle.phantom, dc: bundle.dc, region: bundle.region, ts: Date.now() };
     const blobUrl = await writeMarketCache(cache, blobName);
     let oppCount;
-    if (prev) {
-      const fresh = diffMarket(prev.dc, cache.dc, cache.ts);
+    if (tier !== "hot") {
+      const current = scanDeals(cache.dc, cache.ts, OPP_DEAL_PCT);
       const existing = (await readBlobJson("opportunities.json"))?.opportunities ?? [];
-      const merged = mergeOpportunities(existing, fresh, OPP_TTL_MS, cache.ts);
+      const merged = mergeDeals(existing, current);
       await writeBlobJson("opportunities.json", { ts: cache.ts, opportunities: merged });
       oppCount = merged.length;
     }

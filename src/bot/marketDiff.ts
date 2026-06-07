@@ -7,15 +7,16 @@ export interface Opportunity {
   kind: OpportunityKind;
   /** World holding the DC-cheapest listing (crash/spike); '' for empty (DC-wide). */
   world: string;
-  /** recent average price (crash/spike) or prev listingCount (empty). */
+  /** recent average price (crash/spike); null for empty. */
   oldValue: number | null;
   /** current DC-cheapest price (crash/spike) or current listingCount (empty). */
   newValue: number | null;
   /** signed % of the current price vs the recent average (crash/spike); null for empty. */
   changePct: number | null;
   velocity: number;
-  /** next minNQ × velocity (rough liquidity weight); 0 for empty. */
+  /** current price × velocity (rough liquidity weight); 0 for empty. */
   gilPerDay: number;
+  /** when this deal was first seen in the feed (preserved by mergeDeals). */
   detectedAt: number;
 }
 
@@ -24,48 +25,43 @@ export interface OpportunitiesFile {
   opportunities: Opportunity[];
 }
 
-// How far the DC-cheapest must sit from the item's own recent average (avgNQ) to count
-// as a deal / overprice. A 20%-since-last-blob delta was far too strict (≈0 hits across
-// 50k items) because real swings happen gradually; measuring against the stable ~7-day
-// average instead catches "cheap vs its norm" reliably.
-const DEAL_PCT = 15;
 const EMPTY_MAX = 2; // shelf counts as "empty" at or below this many DC-wide listings
+// Ignore illiquid items — a price that's "cheap vs its average" on something nobody buys
+// isn't a real opportunity. Matches the traded-set floor so full and cold scans agree.
+const MIN_VELOCITY = 1;
 
 /**
- * Diff two DC-scope market snapshots, emitting one opportunity per item that crossed a
- * threshold THIS refresh. `prev`/`next` are the `dc` MarketData (cheapest aggregated
- * across all DC worlds). Price signals fire when the DC-cheapest crosses ±DEAL_PCT of
- * the item's recent average (avgNQ) this refresh — measured against the stable average,
- * but requiring a fresh crossing so the feed stays a delta, not a static ranking. Items
- * with no prev counterpart are skipped. `empty` wins when an item both crosses price AND
- * empties (the rarer, stronger signal).
+ * Scan a DC-scope snapshot for the deals that exist **right now** — items whose
+ * DC-cheapest currently sits a real margin (`dealPct`, default 25%) below/above the
+ * item's own recent average (`avgNQ`, ~7-day), or that are down to their last couple of
+ * DC-wide listings. This is a snapshot of the current state (no diff against a previous
+ * blob), so the feed reliably has content. Only liquid items (velocity ≥ MIN_VELOCITY)
+ * are considered. `empty` wins when an item is both a price deal and nearly sold out.
  */
-export function diffMarket(prev: MarketData, next: MarketData, now: number): Opportunity[] {
+export function scanDeals(data: MarketData, now: number, dealPct = 25): Opportunity[] {
   const out: Opportunity[] = [];
-  for (const [idStr, n] of Object.entries(next)) {
-    const p = prev[idStr];
-    if (!p) continue; // no baseline
+  for (const [idStr, n] of Object.entries(data)) {
+    if (n.velocity < MIN_VELOCITY) continue; // liquid items only
     const itemId = Number(idStr);
 
-    // empty: DC-wide supply dropped to <= EMPTY_MAX from above it
-    if (p.listingCount > EMPTY_MAX && n.listingCount <= EMPTY_MAX) {
+    // empty: a selling item down to <= EMPTY_MAX listings DC-wide (craft/sell into the gap)
+    if (n.listingCount <= EMPTY_MAX) {
       out.push({
         itemId, kind: 'empty', world: '',
-        oldValue: p.listingCount, newValue: n.listingCount,
+        oldValue: null, newValue: n.listingCount,
         changePct: null, velocity: n.velocity, gilPerDay: 0, detectedAt: now,
       });
-      continue; // empty wins over a price move
+      continue; // empty wins over a price deal
     }
 
-    // crash/spike: the DC-cheapest crossing its recent-average band this refresh.
     const avg = n.avgNQ;
-    if (avg == null || avg <= 0 || p.minNQ == null || n.minNQ == null) continue;
-    const dealLine = avg * (1 - DEAL_PCT / 100);  // newly cheap when min drops to/below this
-    const spikeLine = avg * (1 + DEAL_PCT / 100); // newly pricey when min rises to/above this
+    if (avg == null || avg <= 0 || n.minNQ == null) continue;
+    const dealLine = avg * (1 - dealPct / 100);  // buy when the cheapest is at/below this
+    const spikeLine = avg * (1 + dealPct / 100); // sell when the cheapest is at/above this
 
     let kind: OpportunityKind | null = null;
-    if (p.minNQ > dealLine && n.minNQ <= dealLine) kind = 'crash';
-    else if (p.minNQ < spikeLine && n.minNQ >= spikeLine) kind = 'spike';
+    if (n.minNQ <= dealLine) kind = 'crash';
+    else if (n.minNQ >= spikeLine) kind = 'spike';
     if (!kind) continue;
 
     out.push({
@@ -82,19 +78,20 @@ export function diffMarket(prev: MarketData, next: MarketData, now: number): Opp
 }
 
 /**
- * Merge freshly-detected opportunities into the rolling feed: union keyed by
- * item+kind (fresh wins, since fresh.detectedAt >= existing), drop entries older than
- * `ttlMs`, return freshest-first.
+ * Reconcile the freshly-scanned current deals with the previous feed: the result IS the
+ * current set (deals that no longer hold simply drop off), but an item still present keeps
+ * its **first-seen** `detectedAt` so the "Seen" column reads how long it's been a deal.
+ * New deals keep the `detectedAt` that `scanDeals` already stamped on them. Sorted
+ * freshest-first.
  */
-export function mergeOpportunities(
-  existing: Opportunity[], fresh: Opportunity[], ttlMs: number, now: number,
-): Opportunity[] {
-  const byKey = new Map<string, Opportunity>();
+export function mergeDeals(existing: Opportunity[], current: Opportunity[]): Opportunity[] {
+  const seenAt = new Map<string, number>();
   const keyOf = (o: Opportunity) => `${o.itemId}:${o.kind}`;
-  for (const o of existing) byKey.set(keyOf(o), o);
-  for (const o of fresh) byKey.set(keyOf(o), o);
-  const cutoff = now - ttlMs;
-  return [...byKey.values()]
-    .filter((o) => o.detectedAt >= cutoff)
+  for (const o of existing) seenAt.set(keyOf(o), o.detectedAt);
+  return current
+    .map((o) => {
+      const first = seenAt.get(keyOf(o));
+      return first != null && first < o.detectedAt ? { ...o, detectedAt: first } : o;
+    })
     .sort((a, b) => b.detectedAt - a.detectedAt);
 }

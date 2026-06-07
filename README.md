@@ -56,21 +56,24 @@ multi-item requests, bare for single-item; the wrong form returns an empty respo
 | `TRADED_VELOCITY_THRESHOLD` | Min `regularSaleVelocity` for an item to be in the hourly "traded" cold set (default `1`). Lower → broader scan coverage but slower cold runs. |
 | `VITE_CACHE_COLD_URL` | Client URL for the cold blob (falls back to `VITE_CACHE_BLOB_URL`, then `/data/market-cache-cold.json`). |
 | `VITE_CACHE_HOT_URL` | Client URL for the hot blob (falls back to `/data/market-cache-hot.json`). |
+| `OPP_DEAL_PCT` | How far the DC-cheapest must sit from an item's recent average to be a deal (default `25`). Lower → more (noisier) deals. |
 
 ### Opportunity feed (Tier 3)
 
-Each refresh diffs the new DC prices against the previous blob and accumulates
-"what just changed" into a public `opportunities.json` (rolling 2-hour window).
-Price signals fire when the DC-cheapest **crosses** the item's recent average
-(`avgNQ`) this refresh — measured against the stable ~7-day average (not a
-since-last-blob delta, which was far too strict to ever fire):
+Each **cold/full** run scans the current DC prices and writes the deals that exist
+**right now** into a public `opportunities.json` (a "delta vs the previous blob" model
+was tried first but fired for ~0 items — real swings are gradual). Price signals fire
+when the DC-cheapest sits a real margin (`OPP_DEAL_PCT`, default 25%) from the item's
+recent average (`avgNQ`, ~7-day); only liquid items (velocity ≥ 1) count:
 
-- **crash** — cheapest just dropped ≥15% **below** its recent average (buy, on the tagged world)
-- **spike** — cheapest just rose ≥15% **above** its recent average (sell)
-- **empty** — DC-wide listings dropped to ≤2 (craft)
+- **crash** — cheapest is ≥25% **below** its recent average (buy, on the tagged world)
+- **spike** — cheapest is ≥25% **above** its recent average (sell)
+- **empty** — a selling item is down to ≤2 DC-wide listings (craft)
 
-Surfaced at `/opportunities`. No new cron or lambda — it rides the existing hot/cold
-runs. Optional env `VITE_OPPORTUNITIES_URL` points the client at the blob (falls back to
+Still-present deals keep their first-seen time (the "Seen" column); deals that no longer
+hold drop off. Computed on the cold (hourly) and full runs — not hot, which sees too few
+items to reconcile against. Surfaced at `/opportunities`; optional env
+`VITE_OPPORTUNITIES_URL` points the client at the blob (falls back to
 `/data/opportunities.json`).
 
 ## Auth (Discord login gate)
