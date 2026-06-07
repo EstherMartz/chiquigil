@@ -17,6 +17,26 @@ function trimmedMedian(prices) {
 // src/lib/universalis.ts
 var LISTINGS_CAP = 50;
 var LISTINGS_KEPT = LISTINGS_CAP;
+var MARKET_FIELD_PATHS = [
+  "itemID",
+  "listings.pricePerUnit",
+  "listings.hq",
+  "listings.worldName",
+  "listings.quantity",
+  "listings.retainerName",
+  "recentHistory.pricePerUnit",
+  "recentHistory.hq",
+  "recentHistory.timestamp",
+  "regularSaleVelocity",
+  "lastUploadTime",
+  "averagePriceNQ",
+  "averagePriceHQ",
+  "listingsCount"
+];
+function marketFields(idCount) {
+  const prefix = idCount > 1 ? "items." : "";
+  return MARKET_FIELD_PATHS.map((p) => prefix + p).join(",");
+}
 function minPrice(arr, hq) {
   const v = arr.filter((l) => l.hq === hq).map((l) => l.pricePerUnit);
   return v.length ? Math.min(...v) : null;
@@ -71,7 +91,7 @@ function parseMarketResponse(raw) {
 var BATCH_SIZE = 100;
 var MAX_CONCURRENT = 8;
 async function fetchBatch(scope, ids) {
-  const url = `https://universalis.app/api/v2/${scope}/${ids.join(",")}?listings=${LISTINGS_CAP}&entries=15`;
+  const url = `https://universalis.app/api/v2/${scope}/${ids.join(",")}?listings=${LISTINGS_CAP}&entries=15&fields=${marketFields(ids.length)}`;
   let res = await fetch(url);
   if (!res.ok) {
     await new Promise((r) => setTimeout(r, 400));

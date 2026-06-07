@@ -18,6 +18,33 @@ npm run dev
 3. Vercel auto-detects Vite, no config needed beyond `vercel.json` already in repo.
 4. Optional env var: `VITE_XIVAPI_BASE` if you want to override the default `https://v2.xivapi.com`.
 
+## Market cache refresh (hot/cold tiers)
+
+Bulk scans read pre-fetched blobs instead of hitting Universalis per page load. Two
+external cron jobs (e.g. cron-job.org) hit the **same** `/api/refresh-cache` lambda
+with different `tier` params:
+
+- **Cold (full):** `GET /api/refresh-cache?token=$REFRESH_SECRET` — run **hourly**.
+  Fetches every tracked item, writes `market-cache-cold.json`, and re-derives the hot
+  set (`hot-ids.json`) from `regularSaleVelocity`.
+- **Hot (active items):** `GET /api/refresh-cache?token=$REFRESH_SECRET&tier=hot` — run
+  every **~5 min**. Fetches only the `hot-ids.json` items and writes
+  `market-cache-hot.json`.
+
+The client loads both blobs at startup and merges them with **hot overriding cold**
+(fresher wins), falling back to the legacy single blob during rollout. Universalis
+payloads are trimmed via a `fields=` whitelist (`marketFields` — `items.`-prefixed for
+multi-item requests, bare for single-item; the wrong form returns an empty response).
+
+### Env vars
+
+| Var | Purpose |
+| --- | --- |
+| `REFRESH_SECRET` | Shared secret protecting the refresh endpoint (`?token=`). |
+| `HOT_VELOCITY_THRESHOLD` | Min `regularSaleVelocity` for an item to be "hot" (default `10`). |
+| `VITE_CACHE_COLD_URL` | Client URL for the cold blob (falls back to `VITE_CACHE_BLOB_URL`, then `/data/market-cache-cold.json`). |
+| `VITE_CACHE_HOT_URL` | Client URL for the hot blob (falls back to `/data/market-cache-hot.json`). |
+
 ## Auth (Discord login gate)
 
 The web app is gated behind Discord OAuth: only members of an allow-listed Discord
