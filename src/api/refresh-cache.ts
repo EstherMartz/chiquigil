@@ -1,36 +1,51 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { fetchMarketForOutputs } from '../bot/marketFetch';
-import { writeMarketCache } from '../bot/marketCache';
+import { writeMarketCache, writeBlobJson, readBlobJson } from '../bot/marketCache';
 import { loadItemIds } from '../bot/loadSnapshots';
+import { selectHotIds } from '../bot/hotSet';
 
 const WORLD = process.env.HOME_WORLD ?? 'Phantom';
 const DC = process.env.HOME_DC ?? 'Chaos';
 const REGION = process.env.REGION ?? 'Europe';
 const SECRET = process.env.REFRESH_SECRET ?? '';
+const VELOCITY_THRESHOLD = Number(process.env.HOT_VELOCITY_THRESHOLD ?? 10);
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
   if (!SECRET || req.query.token !== SECRET) return res.status(401).json({ error: 'Unauthorized' });
 
+  const tier = req.query.tier === 'hot' ? 'hot' : 'cold';
   const t0 = Date.now();
   try {
     const proto = req.headers['x-forwarded-proto'] ?? 'https';
     const host = req.headers['x-forwarded-host'] ?? req.headers.host ?? 'localhost';
     const baseUrl = `${proto}://${host}`;
 
-    const ids = await loadItemIds(baseUrl);
+    // Hot tier fetches only the previously-derived hot set; cold fetches everything.
+    const ids = tier === 'hot'
+      ? (await readBlobJson<number[]>('hot-ids.json')) ?? (await loadItemIds(baseUrl))
+      : await loadItemIds(baseUrl);
 
-    console.log(`[refresh] fetching ${ids.length} items across 3 scopes...`);
+    console.log(`[refresh:${tier}] fetching ${ids.length} items across 3 scopes...`);
     const bundle = await fetchMarketForOutputs(ids, WORLD, DC, REGION);
 
     const cache = { phantom: bundle.phantom, dc: bundle.dc, region: bundle.region, ts: Date.now() };
-    const blobUrl = await writeMarketCache(cache);
+    const blobName = tier === 'hot' ? 'market-cache-hot.json' : 'market-cache-cold.json';
+    const blobUrl = await writeMarketCache(cache, blobName);
+
+    // The cold (full) run re-derives the hot ID set for the next hot run.
+    let hotCount: number | undefined;
+    if (tier === 'cold') {
+      const hotIds = selectHotIds(bundle, VELOCITY_THRESHOLD);
+      await writeBlobJson('hot-ids.json', hotIds);
+      hotCount = hotIds.length;
+    }
 
     const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
-    console.log(`[refresh] done in ${elapsed}s, ${ids.length} items, blob: ${blobUrl}`);
-    return res.status(200).json({ ok: true, items: ids.length, elapsed: `${elapsed}s`, blobUrl });
+    console.log(`[refresh:${tier}] done in ${elapsed}s, ${ids.length} items, blob: ${blobUrl}`);
+    return res.status(200).json({ ok: true, tier, items: ids.length, hotCount, elapsed: `${elapsed}s`, blobUrl });
   } catch (e) {
-    console.error('[refresh] error:', e);
+    console.error(`[refresh:${tier}] error:`, e);
     return res.status(500).json({ error: (e as Error).message });
   }
 }
