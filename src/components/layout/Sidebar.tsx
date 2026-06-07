@@ -29,6 +29,7 @@ const NAV_GROUPS: NavGroup[] = [
       { label: 'Gathering', path: '/gathering' },
       { label: 'Vendor Flip', path: '/vendor-flip' },
       { label: 'Empty Shelf', path: '/empty-shelf' },
+      { label: 'Opportunities', path: '/opportunities' },
       { label: "What's New", path: '/whats-new' },
       { label: 'Currencies', path: '/currency-flip' },
       { label: 'Housing', path: '/housing' },
