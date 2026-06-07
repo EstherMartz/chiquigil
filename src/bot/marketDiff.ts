@@ -72,3 +72,21 @@ export function diffMarket(prev: MarketData, next: MarketData, now: number): Opp
   }
   return out;
 }
+
+/**
+ * Merge freshly-detected opportunities into the rolling feed: union keyed by
+ * item+kind (fresh wins, since fresh.detectedAt >= existing), drop entries older than
+ * `ttlMs`, return freshest-first.
+ */
+export function mergeOpportunities(
+  existing: Opportunity[], fresh: Opportunity[], ttlMs: number, now: number,
+): Opportunity[] {
+  const byKey = new Map<string, Opportunity>();
+  const keyOf = (o: Opportunity) => `${o.itemId}:${o.kind}`;
+  for (const o of existing) byKey.set(keyOf(o), o);
+  for (const o of fresh) byKey.set(keyOf(o), o);
+  const cutoff = now - ttlMs;
+  return [...byKey.values()]
+    .filter((o) => o.detectedAt >= cutoff)
+    .sort((a, b) => b.detectedAt - a.detectedAt);
+}

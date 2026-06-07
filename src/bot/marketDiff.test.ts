@@ -61,3 +61,41 @@ describe('diffMarket', () => {
     expect(diffMarket(prev, next, NOW)[0].kind).toBe('empty');
   });
 });
+
+import { mergeOpportunities } from './marketDiff';
+import type { Opportunity } from './marketDiff';
+
+function opp(over: Partial<Opportunity>): Opportunity {
+  return { itemId: 1, kind: 'crash', world: 'Moogle', oldValue: 1000, newValue: 800,
+    changePct: -20, velocity: 1, gilPerDay: 800, detectedAt: 0, ...over };
+}
+const TTL = 2 * 60 * 60 * 1000; // 2h
+
+describe('mergeOpportunities', () => {
+  it('fresh overrides existing for the same item+kind', () => {
+    const existing = [opp({ itemId: 1, kind: 'crash', newValue: 900, detectedAt: 100 })];
+    const fresh = [opp({ itemId: 1, kind: 'crash', newValue: 700, detectedAt: 200 })];
+    const out = mergeOpportunities(existing, fresh, TTL, 200);
+    expect(out).toHaveLength(1);
+    expect(out[0].newValue).toBe(700);
+  });
+
+  it('keeps different kinds for the same item separately', () => {
+    const existing = [opp({ itemId: 1, kind: 'crash', detectedAt: 100 })];
+    const fresh = [opp({ itemId: 1, kind: 'empty', detectedAt: 200 })];
+    expect(mergeOpportunities(existing, fresh, TTL, 200)).toHaveLength(2);
+  });
+
+  it('drops entries older than the TTL', () => {
+    const now = 10 * 60 * 60 * 1000; // 10h
+    const existing = [opp({ itemId: 1, detectedAt: now - TTL - 1 })]; // stale
+    const fresh = [opp({ itemId: 2, detectedAt: now })];
+    const out = mergeOpportunities(existing, fresh, TTL, now);
+    expect(out.map((o) => o.itemId)).toEqual([2]);
+  });
+
+  it('sorts freshest first', () => {
+    const fresh = [opp({ itemId: 1, detectedAt: 100 }), opp({ itemId: 2, detectedAt: 300 }), opp({ itemId: 3, detectedAt: 200 })];
+    expect(mergeOpportunities([], fresh, TTL, 300).map((o) => o.itemId)).toEqual([2, 3, 1]);
+  });
+});
