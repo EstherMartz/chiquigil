@@ -3,22 +3,42 @@ import {
   fetchMarketData,
   fetchMarketLive,
   buildMarketUrl,
+  marketFields,
   parseMarketResponse,
   _resetMarketCacheForTests,
+  loadSharedMarketCache,
+  _resetSharedCacheForTests,
 } from './universalis';
 import { clearMarketCache } from './recipeCache';
 
 describe('buildMarketUrl', () => {
   it('builds a Phantom URL with all item ids comma-separated', () => {
     expect(buildMarketUrl('Phantom', [1, 2, 3])).toBe(
-      'https://universalis.app/api/v2/Phantom/1,2,3?listings=10&entries=15'
+      `https://universalis.app/api/v2/Phantom/1,2,3?listings=10&entries=15&fields=${marketFields(3)}`
     );
   });
 
   it('builds a Chaos DC URL', () => {
     expect(buildMarketUrl('Chaos', [42])).toBe(
-      'https://universalis.app/api/v2/Chaos/42?listings=10&entries=15'
+      `https://universalis.app/api/v2/Chaos/42?listings=10&entries=15&fields=${marketFields(1)}`
     );
+  });
+});
+
+describe('marketFields', () => {
+  it('uses bare paths for a single-item request (flat response shape)', () => {
+    const f = marketFields(1);
+    expect(f).toContain('listings.pricePerUnit');
+    expect(f).toContain('lastUploadTime');
+    expect(f).not.toContain('items.');
+  });
+
+  it('uses items.-prefixed paths for a multi-item request (nested shape)', () => {
+    const f = marketFields(5);
+    expect(f).toContain('items.listings.pricePerUnit');
+    expect(f).toContain('items.lastUploadTime');
+    // every path is prefixed — no bare path leaks through
+    expect(f).not.toMatch(/(^|,)listings\.pricePerUnit/);
   });
 });
 
@@ -266,5 +286,45 @@ describe('fetchMarketLive (per-item live pull)', () => {
     vi.stubGlobal('fetch', fetchSpy);
     expect(await fetchMarketLive('Phantom', [])).toEqual({});
     expect(fetchSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe('loadSharedMarketCache hot/cold merge', () => {
+  beforeEach(() => {
+    _resetMarketCacheForTests();
+    _resetSharedCacheForTests();
+    vi.unstubAllGlobals();
+  });
+
+  it('hot blob overrides cold for the same id', async () => {
+    function blob(ts: number, min: number) {
+      const item = {
+        minNQ: min,
+        minHQ: null,
+        avgNQ: null,
+        avgHQ: null,
+        medianNQ: null,
+        medianHQ: null,
+        recentSalesNQ: 0,
+        recentSalesHQ: 0,
+        velocity: 0,
+        lastUploadTime: 0,
+        listingCount: 0,
+        worldListings: [],
+        averagePriceNQ: null,
+        averagePriceHQ: null,
+        lastSaleMs: null,
+      };
+      return { phantom: { 100: item }, dc: {}, region: {}, ts };
+    }
+    vi.stubGlobal('fetch', vi.fn((url: string) =>
+      Promise.resolve({
+        ok: true,
+        json: async () => (url.includes('hot') ? blob(2000, 999) : blob(1000, 111)),
+      })
+    ));
+    await loadSharedMarketCache('Phantom', 'Chaos', 'Europe');
+    const got = await fetchMarketData('Phantom', [100]);
+    expect(got['100'].minNQ).toBe(999); // hot wins
   });
 });

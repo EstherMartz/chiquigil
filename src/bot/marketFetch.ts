@@ -1,4 +1,4 @@
-import { parseMarketResponse, LISTINGS_CAP, type MarketData } from '../lib/universalis';
+import { parseMarketResponse, LISTINGS_CAP, marketFields, type MarketData } from '../lib/universalis';
 
 const BATCH_SIZE = 100;
 const MAX_CONCURRENT = 8;
@@ -6,7 +6,7 @@ const MAX_CONCURRENT = 8;
 async function fetchBatch(scope: string, ids: number[]): Promise<MarketData> {
   // Fetch up to LISTINGS_CAP listings so Universalis' listingsCount is the true
   // total (it only counts returned rows); the parser keeps just the cheapest few.
-  const url = `https://universalis.app/api/v2/${scope}/${ids.join(',')}?listings=${LISTINGS_CAP}&entries=15`;
+  const url = `https://universalis.app/api/v2/${scope}/${ids.join(',')}?listings=${LISTINGS_CAP}&entries=15&fields=${marketFields(ids.length)}`;
   let res = await fetch(url);
   if (!res.ok) {
     await new Promise(r => setTimeout(r, 400));
