@@ -101,29 +101,28 @@ movers from the diff) and persist it as `hot-ids.json` (a plain number array blo
 The hot run reads `hot-ids.json`; if absent, it falls back to a static seed
 (e.g. top-N by a bundled velocity heuristic or simply the full set on first run).
 
-## Tier 3 — Server-side opportunity detection + Discord push
+## Tier 3 — Server-side opportunity detection (app + plugin surfaces)
 
 Detection currently happens client-side, only on page load. Move it next to the
-data so opportunities are *pushed* the instant they appear.
+data so the work is done once per refresh and consumed everywhere.
 
 In the refresh handler, after fetching and **before** overwriting the blob:
 
 1. Read the previous same-tier blob.
 2. **Diff** old vs new per item using pure functions (see seams): new significantly-
    cheaper listings, large min-price moves, freshly-empty shelves.
-3. Write a compact `opportunities.json` (top movers / new deals) the scan pages can
-   paint instantly.
-4. If any opportunity crosses an alert threshold, **POST a Discord webhook**
-   (`DISCORD_ALERT_WEBHOOK` env var — a plain `fetch` POST, no library; the Vercel
-   `api/discord` is interactions-only and can't push).
+3. Write a compact `opportunities.json` (top movers / new deals).
 
-This closes the loop from "I happened to open Movers" to "I got pinged at :05."
+**Surfaces (decided 2026-06-07 — NO Discord/proactive push for now):**
+- **Web app** — the scan pages / a "fresh opportunities" panel read `opportunities.json`
+  and paint it instantly (a small artifact, no per-page recompute).
+- **Dalamud plugin** — a `/api/plugin/*` endpoint serves the same `opportunities.json`
+  so opportunities surface in-game.
 
-### Alert hygiene
-
-- Dedupe: don't re-alert the same item within a cooldown window (track last-alerted
-  in `opportunities.json`).
-- Cap: at most N alerts per run to avoid spam on a volatile patch day.
+No Discord webhook, no `DISCORD_ALERT_WEBHOOK`, no alert-threshold/dedupe/cooldown
+machinery — those only matter for push. This also avoids the "Vercel `api/discord` is
+interactions-only and can't push" problem entirely. (A Discord push could be added
+later as an optional consumer of the same `opportunities.json`; out of scope now.)
 
 ## #4 seam notes (future real-time WebSocket worker)
 
@@ -168,8 +167,9 @@ reused.
 **Tier 3 (second plan — separate subsystem):**
 - **Create** `src/bot/marketDiff.ts` — `Opportunity` type, `diffMarket`,
   `applyListingUpdate`, `applySaleUpdate` (pure, tested).
-- **Create** `src/bot/discordAlert.ts` — `postAlert(webhookUrl, opportunities)`.
-- **Modify** `src/api/refresh-cache.ts` — wire diff + opportunities.json + alert.
+- **Modify** `src/api/refresh-cache.ts` — wire diff + write `opportunities.json`.
+- **Add** a web surface (scan-page panel reading `opportunities.json`) + a
+  `/api/plugin/*` endpoint serving it to the plugin. (No Discord alert module.)
 
 ## Respecting Universalis limits
 
