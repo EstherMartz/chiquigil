@@ -9,6 +9,13 @@ import { writeMarketCache, writeBlobJson, readBlobJson } from './marketCache';
 beforeEach(() => { put.mockReset(); head.mockReset(); vi.unstubAllGlobals(); });
 
 describe('blob helpers', () => {
+  it('writeBlobJson writes a named public blob and returns the url', async () => {
+    put.mockResolvedValue({ url: 'https://blob/hot-ids.json' });
+    const url = await writeBlobJson('hot-ids.json', [1, 2, 3]);
+    expect(put).toHaveBeenCalledWith('hot-ids.json', JSON.stringify([1, 2, 3]), expect.objectContaining({ access: 'public' }));
+    expect(url).toBe('https://blob/hot-ids.json');
+  });
+
   it('writeMarketCache defaults to market-cache.json and returns the url', async () => {
     put.mockResolvedValue({ url: 'https://blob/market-cache.json' });
     const url = await writeMarketCache({ phantom: {}, dc: {}, region: {}, ts: 1 });
