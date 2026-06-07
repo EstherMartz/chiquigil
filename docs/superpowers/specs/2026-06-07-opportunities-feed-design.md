@@ -38,30 +38,35 @@ and a bigger build; noted as a future option.
 
 ### Kinds & thresholds
 
-> **REVISED 2026-06-07 after live testing.** The original "≥20% move since the previous
-> blob" baseline produced `oppCount: 0` across a full 50,360-item run — real price swings
-> happen gradually, so almost nothing jumps 20% inside one 5-min/1h interval. Price signals
-> now measure the DC-cheapest against the item's **recent average** (`avgNQ`, ~7-day) and
-> fire on a fresh **crossing** of a ±`DEAL_PCT` band. This catches "cheap vs its norm"
-> reliably while staying a delta (the crossing keeps it distinct from Movers' static ranking).
+> **REVISED TWICE on 2026-06-07 after live testing.** (1) The original "≥20% move since
+> the previous blob" delta gave `oppCount: 0` across a full 50,360-item run — swings are
+> gradual. (2) A "fresh crossing of a ±15% average band" delta was still far too sparse
+> (1 hit on a full run; cold runs found 0 and overwrote the feed). **Final model: a current
+> snapshot, not a delta** — `scanDeals` reports the deals that exist *right now*, so the
+> feed reliably has content. Trade-off accepted: the page is "best deals across the DC
+> right now" (some overlap with Movers/Best Deals) rather than "what just changed", but
+> it's consolidated buy/sell/craft with the act-on world and is always populated.
 
-`DEAL_PCT = 15`. Let `avg = next.avgNQ`, `dealLine = avg·0.85`, `spikeLine = avg·1.15`:
+`OPP_DEAL_PCT = 25` (env-tunable). Let `avg = n.avgNQ`, `dealLine = avg·0.75`,
+`spikeLine = avg·1.25`. Only liquid items (`velocity ≥ 1`) are considered:
 
-| kind | condition (`dc` scope, prev `p` → next `n`) | meaning |
+| kind | condition (`dc` scope, current item `n`) | meaning |
 | --- | --- | --- |
-| `crash` | `p.minNQ > dealLine` and `n.minNQ ≤ dealLine` | buy — just dropped ≥15% below its average, cheapest on world `W` |
-| `spike` | `p.minNQ < spikeLine` and `n.minNQ ≥ spikeLine` | sell — just rose ≥15% above its average |
-| `empty` | `listingCount` was > 2, now ≤ 2 | craft — undersupplied DC-wide |
+| `crash` | `n.minNQ ≤ dealLine` | buy — cheapest is ≥25% below its average, on world `W` |
+| `spike` | `n.minNQ ≥ spikeLine` | sell — cheapest is ≥25% above its average |
+| `empty` | `n.listingCount ≤ 2` | craft — a selling item down to its last couple of listings |
 
-`oldValue` = the recent average (the norm); `newValue` = current DC-cheapest;
-`changePct` = signed % of current vs average.
+`oldValue` = recent average (null for empty); `newValue` = current DC-cheapest (or current
+listingCount for empty); `changePct` = signed % of current vs average.
 
 Notes:
-- Price kinds need a prev counterpart, a positive `avgNQ`, and both `minNQ`s present;
-  otherwise skipped. Items steadily below the line (no fresh crossing) don't re-fire.
-- `empty` fires on the supply drop regardless of price.
-- One kind per item per refresh; if price crossed AND shelf emptied, `empty` wins (it's
-  the rarer, stronger signal). Keeps the feed one-row-per-item-per-refresh.
+- No previous blob is read for detection — it's a snapshot. Price kinds need a positive
+  `avgNQ` and a `minNQ`; illiquid items (`velocity < 1`) are skipped entirely.
+- `empty` wins when an item is both a price deal and nearly sold out.
+- Computed on the **cold** and **full** runs only (same liquid universe). The **hot** run
+  sees ~163 items, so reconciling it would wipe the feed — it's skipped there.
+- `mergeDeals` keeps each still-present deal's first-seen `detectedAt` (for the "Seen"
+  column) and drops deals that no longer hold; no rolling TTL.
 
 ### Opportunity record
 ```ts

@@ -3,7 +3,7 @@ import { fetchMarketForOutputs } from '../bot/marketFetch';
 import { writeMarketCache, writeBlobJson, readBlobJson } from '../bot/marketCache';
 import { loadItemIds } from '../bot/loadSnapshots';
 import { selectHotIds } from '../bot/hotSet';
-import { diffMarket, mergeOpportunities, type Opportunity, type OpportunitiesFile } from '../bot/marketDiff';
+import { scanDeals, mergeDeals, type Opportunity, type OpportunitiesFile } from '../bot/marketDiff';
 
 const WORLD = process.env.HOME_WORLD ?? 'Phantom';
 const DC = process.env.HOME_DC ?? 'Chaos';
@@ -14,7 +14,8 @@ const VELOCITY_THRESHOLD = Number(process.env.HOT_VELOCITY_THRESHOLD ?? 10);
 // the hourly cold run fetches — a few thousand, vs all ~50k marketable items. Untraded
 // items have no average/velocity so they never surface in a scan or the feed anyway.
 const TRADED_THRESHOLD = Number(process.env.TRADED_VELOCITY_THRESHOLD ?? 1);
-const OPP_TTL_MS = 2 * 60 * 60 * 1000; // 2h rolling window for the opportunity feed
+// How far the DC-cheapest must sit from an item's recent average to be a deal in the feed.
+const OPP_DEAL_PCT = Number(process.env.OPP_DEAL_PCT ?? 25);
 
 type Tier = 'hot' | 'cold' | 'full';
 
@@ -44,18 +45,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // `full` and `cold` share the cold blob; `hot` has its own.
     const blobName = tier === 'hot' ? 'market-cache-hot.json' : 'market-cache-cold.json';
-    // Read the previous same-tier blob BEFORE overwriting it, to diff against.
-    const prev = await readBlobJson<{ dc: typeof bundle.dc }>(blobName);
 
     const cache = { phantom: bundle.phantom, dc: bundle.dc, region: bundle.region, ts: Date.now() };
     const blobUrl = await writeMarketCache(cache, blobName);
 
-    // Detect "what just changed" on the DC scope and merge into the rolling feed.
+    // Scan the current DC deals (cold + full only — both cover the same liquid universe;
+    // the hot run sees just ~163 items, so letting it reconcile would wipe the feed every
+    // 5 min). Still-present deals keep their first-seen time; stale ones drop off.
     let oppCount: number | undefined;
-    if (prev) {
-      const fresh: Opportunity[] = diffMarket(prev.dc, cache.dc, cache.ts);
+    if (tier !== 'hot') {
+      const current: Opportunity[] = scanDeals(cache.dc, cache.ts, OPP_DEAL_PCT);
       const existing = (await readBlobJson<OpportunitiesFile>('opportunities.json'))?.opportunities ?? [];
-      const merged = mergeOpportunities(existing, fresh, OPP_TTL_MS, cache.ts);
+      const merged = mergeDeals(existing, current);
       await writeBlobJson('opportunities.json', { ts: cache.ts, opportunities: merged } satisfies OpportunitiesFile);
       oppCount = merged.length;
     }

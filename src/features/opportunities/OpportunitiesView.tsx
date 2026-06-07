@@ -58,9 +58,9 @@ export function OpportunitiesView() {
       <div className="space-y-1">
         <h2 className="font-display text-2xl text-gold tracking-wide">Opportunities</h2>
         <p className="font-mono text-[11px] text-text-low max-w-prose">
-          What just changed across your data center since the last market refresh — items that just dropped
-          ≥15% below their recent average (buy), rose above it (sell), or whose shelves just emptied (craft).
-          Rolling 2-hour window.
+          The best deals across your data center right now — items whose cheapest listing sits ≥25% below
+          their recent average (buy), ≥25% above it (sell), or that are down to their last couple of
+          listings (craft). “Seen” shows how long each deal has held.
         </p>
         {feed.data && feed.data.ts > 0 && (
           <div className="opacity-70 scale-90 origin-left"><FreshnessChip ts={feed.data.ts} now={now} /></div>
@@ -112,7 +112,7 @@ export function OpportunitiesView() {
                   </td>
                   <td className="px-3 py-2 font-mono text-[11px] text-text-cream">{r.world || '—'}</td>
                   <td className="px-3 py-2 text-right font-mono tabular-nums text-[11px]">
-                    {r.kind === 'empty' ? `${r.oldValue} → ${r.newValue} listings` : `${r.oldValue?.toLocaleString()} → ${r.newValue?.toLocaleString()}`}
+                    {r.kind === 'empty' ? `${r.newValue} listing${r.newValue === 1 ? '' : 's'} left` : `${r.oldValue?.toLocaleString()} → ${r.newValue?.toLocaleString()}`}
                   </td>
                   <td className="px-3 py-2 text-right font-mono tabular-nums text-[11px]">{r.changePct != null ? `${r.changePct > 0 ? '+' : ''}${r.changePct}%` : '—'}</td>
                   <td className="px-3 py-2 text-right font-mono tabular-nums text-[11px]">{r.gilPerDay ? r.gilPerDay.toLocaleString() : '—'}</td>
