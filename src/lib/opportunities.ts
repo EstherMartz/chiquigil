@@ -13,8 +13,10 @@ export async function loadOpportunities(): Promise<OpportunitiesFile> {
     const url = (import.meta as any).env?.VITE_OPPORTUNITIES_URL || '/data/opportunities.json';
     const res = await fetch(url, { cache: 'no-store' });
     if (!res.ok) return EMPTY;
-    const data = (await res.json()) as OpportunitiesFile;
-    return { ts: data.ts ?? 0, opportunities: data.opportunities ?? [] };
+    const data = (await res.json()) as Partial<OpportunitiesFile>;
+    // Guard against a malformed / partially-written blob (writes aren't atomic).
+    if (!Array.isArray(data?.opportunities)) return EMPTY;
+    return { ts: typeof data.ts === 'number' ? data.ts : 0, opportunities: data.opportunities };
   } catch {
     return EMPTY;
   }

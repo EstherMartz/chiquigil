@@ -39,8 +39,16 @@ export function OpportunitiesView() {
     const opps = feed.data?.opportunities ?? [];
     const named = opps.map((o) => ({ ...o, id: o.itemId, name: byId.get(o.itemId)?.name ?? `#${o.itemId}` }));
     const filtered = kind === 'all' ? named : named.filter((o) => o.kind === kind);
-    const dir = sortKey === 'changePct' ? 1 : -1;
-    return [...filtered].sort((a, b) => (((a[sortKey] ?? 0) as number) - ((b[sortKey] ?? 0) as number)) * dir);
+    const dir = sortKey === 'changePct' ? 1 : -1; // changePct asc (biggest crash first); others desc
+    return [...filtered].sort((a, b) => {
+      // empty rows have changePct === null — keep them last rather than treating null as 0.
+      const av = a[sortKey] as number | null;
+      const bv = b[sortKey] as number | null;
+      if (av == null && bv == null) return 0;
+      if (av == null) return 1;
+      if (bv == null) return -1;
+      return (av - bv) * dir;
+    });
   }, [feed.data, byId, kind, sortKey]);
 
   if (feed.isLoading) return <Spinner label="Loading opportunities…" />;

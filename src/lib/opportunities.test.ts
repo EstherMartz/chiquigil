@@ -21,4 +21,9 @@ describe('loadOpportunities', () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
     expect(await loadOpportunities()).toEqual({ ts: 0, opportunities: [] });
   });
+
+  it('returns an empty feed when the blob is malformed (no opportunities array)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ ts: 5 }) }));
+    expect(await loadOpportunities()).toEqual({ ts: 0, opportunities: [] });
+  });
 });
