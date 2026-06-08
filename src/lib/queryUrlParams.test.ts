@@ -213,6 +213,15 @@ describe('queryUrlParams', () => {
       expect(p.get('s')).toBe('risk');
       expect(paramsToFilter(p, baseFilter).sort).toBe('risk');
     });
+    it('round-trips maxRisk + risk sort alongside other non-default fields', () => {
+      const original: QueryFilter = {
+        searchCategories: [56, 67], hq: 'hq', minDealPct: 20, minVelocity: 5,
+        minPrice: 1000, maxPrice: 50000, sort: 'risk', limit: 50, scope: 'dc',
+        maxListings: 20, mode: 'craft', minGap: 5000, trainedEye: false, maxRisk: 'healthy',
+      };
+      const decoded = paramsToFilter(filterToParams(original), baseFilter);
+      expect(decoded).toEqual(original);
+    });
   });
 
   describe('round-trip', () => {
