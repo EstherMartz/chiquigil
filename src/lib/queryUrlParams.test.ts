@@ -190,6 +190,31 @@ describe('queryUrlParams', () => {
     });
   });
 
+  describe('queryUrlParams — maxRisk', () => {
+    it('omits mr when maxRisk is absent or "any"', () => {
+      expect(filterToParams({ ...baseFilter }).has('mr')).toBe(false);
+      expect(filterToParams({ ...baseFilter, maxRisk: 'any' }).has('mr')).toBe(false);
+    });
+    it('round-trips maxRisk=healthy', () => {
+      const p = filterToParams({ ...baseFilter, maxRisk: 'healthy' });
+      expect(p.get('mr')).toBe('healthy');
+      expect(paramsToFilter(p, baseFilter).maxRisk).toBe('healthy');
+    });
+    it('round-trips maxRisk=open', () => {
+      const p = filterToParams({ ...baseFilter, maxRisk: 'open' });
+      expect(paramsToFilter(p, baseFilter).maxRisk).toBe('open');
+    });
+    it('ignores an invalid mr value', () => {
+      const p = new URLSearchParams('mr=bogus');
+      expect(paramsToFilter(p, baseFilter).maxRisk).toBeUndefined();
+    });
+    it('round-trips sort=risk', () => {
+      const p = filterToParams({ ...baseFilter, sort: 'risk' });
+      expect(p.get('s')).toBe('risk');
+      expect(paramsToFilter(p, baseFilter).sort).toBe('risk');
+    });
+  });
+
   describe('round-trip', () => {
     it('encodes and decodes a filter with many non-defaults', () => {
       const original: QueryFilter = {
