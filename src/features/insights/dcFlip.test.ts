@@ -123,4 +123,17 @@ describe('runDcFlip', () => {
     expect(rows[0].buyWorld).toBe('Louisoix');
     expect(rows[0].dcPrice).toBe(800);
   });
+
+  it('computes netSpread = applyTax(home) - dcPrice', () => {
+    const items = [mkItem(1, 'Iron Ore')];
+    const dc = mkDcMarket(1, [
+      { world: 'Moogle', price: 800, hq: false },
+      { world: 'Phantom', price: 2400, hq: false },
+    ]);
+    const home = mkHomeMarket(1, 45);
+    const rows = runDcFlip(items, dc, home, { homeWorld: 'Phantom', minSpread: 100, minVelocity: 0 });
+    // applyTax(2400) = 2280; net = 2280 - 800 = 1480
+    expect(rows[0].netSpread).toBe(1480);
+    expect(rows[0].spread).toBe(1600); // gross unchanged
+  });
 });
