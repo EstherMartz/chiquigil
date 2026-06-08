@@ -417,7 +417,7 @@ export function DcFlipView() {
                   <td className={`px-3 ${rowY} text-aether`}>{r.buyWorld}</td>
                   <td className={`px-3 ${rowY} text-right font-mono`}>{fmtGil(r.dcPrice)}</td>
                   <td className={`px-3 ${rowY} text-right font-mono`}>{fmtGil(r.phantomPrice)}</td>
-                  <td className={`px-3 ${rowY} text-right font-mono text-jade`}>+{fmtGil(r.spread)}</td>
+                  <td className={`px-3 ${rowY} text-right font-mono text-jade`}>+{fmtGil(r.netSpread)}</td>
                   <td className={`px-3 ${rowY} text-right font-mono hidden md:table-cell`}>{r.velocity.toFixed(1)}/day</td>
                 </tr>
               ))}
