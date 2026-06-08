@@ -114,7 +114,8 @@ export default function Item() {
     return [...new Set<number>([itemId, ...ingredientIds, ...usedInIds, ...craftTreeIds])];
   }, [itemId, ingredientIds, usedInIds, craftTreeIds, valid]);
 
-  const market = useMarketData(priceIds, world, dc, 'Europe');
+  // Live: a single tracked/viewed item may sell too slowly to be in the cron's bulk blob.
+  const market = useMarketData(priceIds, world, dc, 'Europe', { live: true });
 
   const NINETY_DAYS_SEC = 90 * 24 * 60 * 60;
   const historyQ = useQuery({

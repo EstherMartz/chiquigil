@@ -28,7 +28,9 @@ export default function Watchlist() {
   const items = useSelectedItems();
 
   const ids = useMemo(() => items.map((i) => i.id), [items]);
-  const market = useMarketData(ids, world, dc);
+  // Live: watchlist items may sell too slowly to be in the cron's "traded" bulk blob,
+  // so fetch their prices straight from Universalis (small, user-specific set).
+  const market = useMarketData(ids, world, dc, undefined, { live: true });
   const history = useWatchlistHistory(ids, dc);
   const sparklineHistory = useSparklineHistory(ids, world, showSparklines);
   const recipes = useRecipes(ids);
