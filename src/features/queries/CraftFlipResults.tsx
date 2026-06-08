@@ -9,6 +9,8 @@ import { colorFromPoints } from '../../features/sparklines/sparklineColor';
 import { formatSparklineTooltip } from '../../features/sparklines/sparklineTooltip';
 import { ResultTableScaffold, EmptyResults } from './ResultTableScaffold';
 import { useUiStore, rowPadClass } from '../ui/uiStore';
+import { GatherableTag } from './GatherableTag';
+import { MaterialSourcingPopover } from './MaterialSourcingPopover';
 import type { CraftFlipRow } from './types';
 import type { CsvColumn } from '../../lib/csv';
 
@@ -29,12 +31,16 @@ const CSV_COLUMNS: CsvColumn<CraftFlipRow>[] = [
   { key: 'profit', label: 'Profit' },
   { key: 'velocity', label: 'Velocity (sales/day)' },
   { key: 'gilPerDay', label: 'Gil/day' },
+  { key: 'sourcing', label: 'Gatherable Cost', value: (r) => r.sourcing?.gatherableCost ?? '' },
+  { key: 'sourcing', label: 'Gatherable %', value: (r) => r.sourcing ? Math.round(r.sourcing.gatherablePct) : '' },
+  { key: 'sourcing', label: 'Self-source Profit', value: (r) => r.sourcing?.selfSourceProfit ?? '' },
   { key: 'hq', label: 'HQ' },
 ];
 
 export function CraftFlipResults({ rows, totalCandidates, skippedChunks, sparklineMap, sparklineLoading }: Props) {
   const density = useUiStore((s) => s.density);
   const rowY = rowPadClass(density);
+  const comfy = density === 'comfortable';
   const showSparkline = sparklineMap != null;
   return (
     <ResultTableScaffold
@@ -62,6 +68,7 @@ export function CraftFlipResults({ rows, totalCandidates, skippedChunks, sparkli
                     sub={categoryLabel(r.sc)}
                   />
                 </div>
+                {r.sourcing && r.sourcing.gatherablePct >= 80 && <GatherableTag />}
               </div>
               <div className="grid grid-cols-3 gap-2 mt-2 pl-8 font-mono text-[12px]">
                 <MobileMetric label="Sale">{fmtGil(r.unitPrice)}</MobileMetric>
@@ -111,12 +118,17 @@ export function CraftFlipResults({ rows, totalCandidates, skippedChunks, sparkli
               <tr key={r.id} className="border-t border-border-base hover:bg-bg-card-hi active:bg-bg-card-hi transition-colors">
                 <td className={`px-3 ${rowY} font-mono text-text-low`}>{i + 1}</td>
                 <td className={`px-3 ${rowY}`}>
-                  <ItemNameLinks
-                    id={r.id}
-                    name={r.name}
-                    suffix={r.hq && <HqStar leading />}
-                    sub={categoryLabel(r.sc)}
-                  />
+                  <div className="flex items-start gap-2">
+                    <div className="min-w-0">
+                      <ItemNameLinks
+                        id={r.id}
+                        name={r.name}
+                        suffix={r.hq && <HqStar leading />}
+                        sub={categoryLabel(r.sc)}
+                      />
+                    </div>
+                    {r.sourcing && r.sourcing.gatherablePct >= 80 && <GatherableTag />}
+                  </div>
                 </td>
                 <td className={`px-3 ${rowY} text-right font-mono`}>{fmtGil(r.unitPrice)}</td>
                 {showSparkline && (
@@ -132,8 +144,28 @@ export function CraftFlipResults({ rows, totalCandidates, skippedChunks, sparkli
                     })()}
                   </td>
                 )}
-                <td className={`px-3 ${rowY} text-right font-mono text-text-low hidden md:table-cell`}>{fmtGil(r.materialCost)}</td>
-                <td className={`px-3 ${rowY} text-right font-mono text-jade`}>+{fmtGil(r.profit)}</td>
+                <td className={`px-3 ${rowY} text-right font-mono text-text-low hidden md:table-cell`}>
+                  {r.sourcing && r.materialCost > 0 ? (
+                    <MaterialSourcingPopover sourcing={r.sourcing}>
+                      <span className="inline-flex flex-col items-end cursor-help">
+                        <span>{fmtGil(r.materialCost)}</span>
+                        {comfy && r.sourcing.gatherableCost > 0 && (
+                          <span className="text-[10px] text-jade/70">↓ {fmtGil(r.sourcing.gatherableCost)} self</span>
+                        )}
+                      </span>
+                    </MaterialSourcingPopover>
+                  ) : (
+                    fmtGil(r.materialCost)
+                  )}
+                </td>
+                <td className={`px-3 ${rowY} text-right font-mono text-jade`}>
+                  <span className="inline-flex flex-col items-end">
+                    <span>+{fmtGil(r.profit)}</span>
+                    {comfy && r.sourcing && r.sourcing.selfSourceProfit > r.profit && (
+                      <span className="text-[10px] text-jade font-semibold">↑ +{fmtGil(r.sourcing.selfSourceProfit)} self</span>
+                    )}
+                  </span>
+                </td>
                 <td className={`px-3 ${rowY} text-right font-mono hidden md:table-cell`}>{r.velocity.toFixed(1)}</td>
                 <td className={`px-3 ${rowY} text-right font-mono text-gold-hi`}>{fmtGil(Math.round(r.gilPerDay))}</td>
               </tr>
