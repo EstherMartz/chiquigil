@@ -1,10 +1,11 @@
 import type { CurrencyId } from '../../lib/currencies';
 
 export type HqMode = 'hq' | 'nq' | 'either';
-export type QuerySort = 'discount' | 'gilFlow' | 'velocity' | 'unitPrice';
+export type QuerySort = 'discount' | 'gilFlow' | 'velocity' | 'unitPrice' | 'risk';
 export type QueryScope = 'home' | 'dc';
 export type QueryMode = 'standard' | 'craft' | 'repost';
 export type PresetCategory = 'craft' | 'trading' | 'gathering';
+export type { MaxRisk } from './craftListingAnalysis';
 
 export interface QueryFilter {
   searchCategories: number[];
@@ -20,6 +21,8 @@ export interface QueryFilter {
   mode: QueryMode;
   minGap: number | null;
   trainedEye: boolean;
+  /** Post-scan competitor-risk ceiling. Optional; absent ⇒ 'any'. Not part of filterHash (display-only re-filter). */
+  maxRisk?: import('./craftListingAnalysis').MaxRisk;
 }
 
 export interface QueryPreset {
@@ -52,6 +55,21 @@ export interface CraftFlipRow {
   velocity: number;
   gilPerDay: number;
   hq: boolean;
+
+  // Competitor listing analysis (see craftListingAnalysis.ts)
+  risk: import('./craftListingAnalysis').CraftRisk;
+  gap: number;            // gil to next distinct price tier (0 when tied/only listing)
+  gapPct: number;         // gap / unitPrice; Infinity when only listing
+  hasSecondTier: boolean;
+  onlyListing: boolean;
+  sellerCount: number;
+  topSellerShare: number; // 0..1
+  concentrationRisk: import('./craftListingAnalysis').RiskLevel;
+  clearDays: number | null;
+  clearNote: string;
+  captureRate: number;    // 0..1
+  totalUnits: number;
+  depth: import('./craftListingAnalysis').DepthBucket[];
 }
 
 export interface RepostRow {
