@@ -45,8 +45,11 @@ export function AddToWatchlistButton({ itemId, itemName, ilvl, recipe, sc }: Pro
   if (enabledPack) {
     return (
       <InfoTooltip label={`Included via the "${enabledPack.label}" pack — disable in Settings to remove`}>
+        {/* Native title too: a disabled button can swallow the JS hover, so the
+            explanation would otherwise never appear and it reads as a dead chip. */}
         <button
           disabled
+          title={`Already tracked via the "${enabledPack.label}" starter pack — disable that pack in Settings to remove it.`}
           className="font-mono text-[10px] tracking-widest uppercase border border-border-base text-text-low px-3 py-2 opacity-60 cursor-not-allowed"
         >
           In starter pack

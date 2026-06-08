@@ -43,6 +43,7 @@ export function GlamourDemandView() {
   const itemSnap = useItemSnapshot();
   const glamour = useGlamourSnapshot(period);
   const [selectedCats, setSelectedCats] = useState<number[]>([]);
+  const [hideNoData, setHideNoData] = useState(false);
   const [sort, setSort] = useState<SortState>({ key: 'uses', dir: 'desc' });
 
   const resolution = useMemo(() => {
@@ -93,6 +94,9 @@ export function GlamourDemandView() {
       return { ...r, price: m ? salePrice(m) : null, velocity: m ? m.velocity : null };
     });
     if (selectedCats.length > 0) list = list.filter((r) => selectedCats.includes(r.sc));
+    // Most glamour items are untradeable/dead on this server (0 price, 0 vel) and
+    // bury the actionable subset. Optional toggle drops them once prices are in.
+    if (hideNoData) list = list.filter((r) => (r.velocity ?? 0) > 0 || (r.price ?? 0) > 0);
     const dir = sort.dir === 'asc' ? 1 : -1;
     list.sort((a, b) => {
       let cmp: number;
@@ -103,7 +107,7 @@ export function GlamourDemandView() {
       return cmp * dir || a.name.localeCompare(b.name);
     });
     return list;
-  }, [resolution.rows, scan.data, selectedCats, sort]);
+  }, [resolution.rows, scan.data, selectedCats, hideNoData, sort]);
 
   const toggleSort = (key: SortKey) =>
     setSort((s) => (s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'desc' }));
@@ -129,16 +133,25 @@ export function GlamourDemandView() {
       <Header age={age} resolution={resolution} period={period} />
       <PeriodToggle period={period} onChange={setPeriod} />
 
-      {categories.length > 0 && (
-        <div className="max-w-md">
-          <CategorySelect
-            categories={categories}
-            selected={selectedCats}
-            onChange={setSelectedCats}
-            placeholder="Filter by category…"
-          />
-        </div>
-      )}
+      <div className="flex flex-wrap items-center gap-4">
+        {categories.length > 0 && (
+          <div className="max-w-md flex-1 min-w-[16rem]">
+            <CategorySelect
+              categories={categories}
+              selected={selectedCats}
+              onChange={setSelectedCats}
+              placeholder="Filter by category…"
+            />
+          </div>
+        )}
+        <label
+          className="flex items-center gap-1.5 cursor-pointer select-none font-mono text-[10px] tracking-widest uppercase text-text-low hover:text-text-cream transition-colors"
+          title="Hide items with no recent sales and no listed price on this server."
+        >
+          <input type="checkbox" checked={hideNoData} onChange={(e) => setHideNoData(e.target.checked)} className="accent-gold" />
+          Hide no-data items
+        </label>
+      </div>
 
       {scan.isPending && <Spinner label={`Fetching ${world} prices for ${resolvedIds.length} items…`} />}
       {scan.data && scan.data.skipped > 0 && (

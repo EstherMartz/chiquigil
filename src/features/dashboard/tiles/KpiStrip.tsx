@@ -125,8 +125,8 @@ function TopPickBanner({ picks }: { picks: TopPick[] }) {
       <button
         type="button"
         onClick={() => { dismissPick(pick.row.id); setIdx(0); }}
-        title="Got it — stop suggesting this pick"
-        className="font-mono text-[9px] tracking-widest uppercase text-text-low hover:text-crimson border border-border-base hover:border-crimson/40 rounded-sm px-1.5 py-0.5 transition-colors"
+        title="Got it — stop suggesting this pick (Enter or Space when focused)"
+        className="font-mono text-[9px] tracking-widest uppercase text-text-low hover:text-crimson border border-border-base hover:border-crimson/40 rounded-sm px-1.5 py-0.5 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-gold"
       >
         got it ✕
       </button>
