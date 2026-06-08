@@ -286,4 +286,47 @@ describe('runCraftFlip', () => {
       { ...baseFilter, minVelocity: 1, trainedEye: true });
     expect(out).toEqual([]);
   });
+
+  it('populates competitor-listing fields on the row', () => {
+    const priceMap: MarketData = {
+      1: mkPrice({
+        minHQ: 1000, medianHQ: 1200, recentSalesHQ: 8, velocity: 4, listingCount: 3,
+        worldListings: [
+          { world: 'Phantom', price: 1000, hq: true, quantity: 2, seller: 'A' },
+          { world: 'Phantom', price: 1300, hq: true, quantity: 1, seller: 'B' },
+          { world: 'Phantom', price: 1400, hq: true, quantity: 1, seller: 'C' },
+        ],
+      }),
+      99: mkPrice({ minNQ: 50, medianNQ: 60, recentSalesNQ: 8, listingCount: 1 }),
+    };
+    const out = runCraftFlip(snapshot, priceMap, recipeMap, { ...baseFilter, minVelocity: 1 });
+    expect(out).toHaveLength(1);
+    const r = out[0];
+    expect(r.gap).toBe(300);                 // 1300 - 1000
+    expect(r.gapPct).toBeCloseTo(0.3, 5);
+    expect(r.hasSecondTier).toBe(true);
+    expect(r.sellerCount).toBe(3);
+    expect(r.clearDays).toBeCloseTo(3 / 4, 5); // listingCount/velocity
+    expect(['OPEN', 'HEALTHY', 'CROWDED', 'DOMINATED', 'EMPTY']).toContain(r.risk);
+  });
+
+  it("sort 'risk' orders worst-first (DOMINATED before OPEN)", () => {
+    const recipe2: Recipe = { itemResultId: 2, classJob: 'WVR', recipeLevel: 50, ingredients: [{ itemId: 99, amount: 1 }] };
+    const rm = new Map<number, Recipe | null>([[1, recipe1], [2, recipe2]]);
+    const priceMap: MarketData = {
+      // item 1: dominated (one seller >60%)
+      1: mkPrice({ minHQ: 1000, medianHQ: 1200, recentSalesHQ: 8, velocity: 4, listingCount: 4,
+        worldListings: [
+          { world: 'Phantom', price: 1000, hq: true, quantity: 9, seller: 'A' },
+          { world: 'Phantom', price: 1001, hq: true, quantity: 1, seller: 'B' },
+          { world: 'Phantom', price: 1002, hq: true, quantity: 1, seller: 'C' },
+        ] }),
+      // item 2: open (single listing/seller)
+      2: mkPrice({ minNQ: 5000, medianNQ: 6000, recentSalesNQ: 8, velocity: 1, listingCount: 1,
+        worldListings: [{ world: 'Phantom', price: 5000, hq: false, quantity: 1, seller: 'Z' }] }),
+      99: mkPrice({ minNQ: 50, medianNQ: 60, recentSalesNQ: 8, listingCount: 1 }),
+    };
+    const out = runCraftFlip(snapshot, priceMap, rm, { ...baseFilter, minVelocity: 1, sort: 'risk' });
+    expect(out.map((r) => r.risk)).toEqual(['DOMINATED', 'OPEN']);
+  });
 });
