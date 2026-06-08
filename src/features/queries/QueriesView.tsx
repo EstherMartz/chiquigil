@@ -23,6 +23,8 @@ import { ProgressBar } from '../../components/ProgressBar';
 import { StatusBanner } from '../../components/StatusBanner';
 import { InfoTooltip } from '../../components/InfoTooltip';
 import { filterToParams, paramsToFilter } from '../../lib/queryUrlParams';
+import { filterHash } from './types';
+import { passesMaxRisk } from './craftListingAnalysis';
 import { CRYSTALS_SEARCH_CATEGORY } from './commonFilters';
 
 interface PriceFetchResult {
@@ -110,8 +112,10 @@ export function QueriesView({ category, heading, onRowsChange, initialPresetId }
 
   const ready = snapshot.data != null && catalogReady;
 
-  // Results are stale when the live filter no longer matches the last run.
-  const stale = run.data != null && run.data.filterAtRun !== filter;
+  // Stale only when a *scan-affecting* input changed. maxRisk is a display-only
+  // post-scan filter and is intentionally excluded from filterHash, so changing
+  // it never marks results stale.
+  const stale = run.data != null && filterHash(run.data.filterAtRun) !== filterHash(filter);
 
   useInitialScan(ready, () => run.mutate(undefined));
 
@@ -138,6 +142,13 @@ export function QueriesView({ category, heading, onRowsChange, initialPresetId }
       }
     }
   }, [run.data, recipes.data, snapshot.data]);
+
+  const visibleCraftRows = useMemo(() => {
+    if (derived?.kind !== 'craft') return [];
+    const max = filter.maxRisk ?? 'any';
+    if (max === 'any') return derived.rows;
+    return derived.rows.filter((r) => passesMaxRisk(r.risk, max));
+  }, [derived, filter.maxRisk]);
 
   const sparklineIds = useMemo(() => {
     if (!run.data) return [];
@@ -248,9 +259,10 @@ export function QueriesView({ category, heading, onRowsChange, initialPresetId }
           )}
           {derived?.kind === 'craft' && (
             <CraftFlipResults
-              rows={derived.rows}
+              rows={visibleCraftRows}
               totalCandidates={run.data?.narrowedIds.length ?? 0}
               skippedChunks={run.data?.skipped ?? 0}
+              scope={run.data?.filterAtRun.scope ?? 'home'}
               sparklineMap={showSparklines ? sparklineHistory.data : undefined}
               sparklineLoading={sparklineHistory.isLoading}
             />
