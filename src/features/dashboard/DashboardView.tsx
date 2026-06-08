@@ -19,6 +19,7 @@ import {
 } from './aggregate';
 import type { HistorySummary } from '../fairvalue/fairValue';
 import { KpiStrip } from './tiles/KpiStrip';
+import { ConcentrationBanner } from './tiles/ConcentrationBanner';
 import { MarginHistogram } from './tiles/MarginHistogram';
 import { GilLeaderboard } from './tiles/GilLeaderboard';
 import { ChangedDigest } from './tiles/ChangedDigest';
@@ -146,6 +147,7 @@ export function DashboardView() {
       {!loading && items.length > 0 && (
         <>
           <KpiStrip totals={agg.totals} applyMarketTax={applyMarketTax} picks={agg.picks} conc3={agg.conc3} topCat={agg.topCat} />
+          <ConcentrationBanner rows={rowsWithDelta} />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <MarginHistogram buckets={agg.buckets} />
             <GilLeaderboard rows={rowsWithDelta} />
