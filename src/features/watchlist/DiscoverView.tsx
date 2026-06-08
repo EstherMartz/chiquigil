@@ -43,6 +43,10 @@ export function DiscoverView({ category, focus }: { category?: string | null; fo
         countPerCategory.set(item.cat, (countPerCategory.get(item.cat) ?? 0) + 1);
       }
     }
+    // <3 is intentional and matches the concentration banner's CTA (PRD FR-1.2:
+    // "categories the user has fewer than 3 items tracked in"). The concentration
+    // widget's own diversification list uses a stricter <2 (FR-1.3) — the two
+    // thresholds serve different entry points by design; do not "reconcile" them.
     for (const cat of supported) {
       if ((countPerCategory.get(cat) ?? 0) < 3) {
         autoOpen.add(cat);
