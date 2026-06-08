@@ -27,6 +27,7 @@ function compare(a: QueryResultRow, b: QueryResultRow, sort: QuerySort): number 
     case 'gilFlow':   return b.gilFlow - a.gilFlow;
     case 'velocity':  return b.velocity - a.velocity;
     case 'unitPrice': return b.unitPrice - a.unitPrice;
+    case 'risk':      return 0; // risk sort is craft-flip only; no-op here
   }
 }
 
