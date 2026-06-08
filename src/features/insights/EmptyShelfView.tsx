@@ -11,6 +11,7 @@ import { CRYSTALS_SEARCH_CATEGORY } from '../queries/commonFilters';
 import { Spinner, SpinGlyph } from '../../components/Spinner';
 import { StatusBanner } from '../../components/StatusBanner';
 import { EmptyState } from '../../components/EmptyState';
+import { DecimalInput } from '../../components/DecimalInput';
 import { useInitialScan } from '../queries/useInitialScan';
 
 interface RunResult { saleMap: MarketData; skipped: number; filterAtRun: EmptyShelfFilter; }
@@ -88,8 +89,8 @@ function FilterBar({ value, onChange, onRun, busy, notReady, stale }: {
     <div className="flex flex-wrap items-end gap-3 p-3 border border-border-base bg-bg-card justify-between">
       <label className="block">
         <span className="font-mono text-[13px] tracking-widest text-text-low uppercase">Min sales/day</span>
-        <input type="number" inputMode="decimal" min={0} step={0.1} value={value.minVelocity}
-          onChange={(e) => onChange({ ...value, minVelocity: Math.max(0, Number(e.target.value) || 0) })}
+        <DecimalInput min={0} value={value.minVelocity}
+          onChange={(minVelocity) => onChange({ ...value, minVelocity })}
           className="mt-1 block w-28 bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors" />
       </label>
       <label className="block">

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { fmtGil } from '../../../lib/format';
+import { Skeleton } from '../../../components/Skeleton';
 import type { WatchlistRow } from '../../watchlist/buildRows';
 import type { MoversDigest } from '../aggregate';
 import type { Valuation } from '../../fairvalue/fairValue';
@@ -67,8 +68,25 @@ function Column({ title, accent, rows, kind, empty, valuationById }: {
   );
 }
 
-/** What moved on your watchlist this week (live market deltas, not your sales). */
-export function ChangedDigest({ digest, valuationById }: { digest: MoversDigest; valuationById?: Map<number, Valuation> }) {
+function ColumnSkeleton({ title, accent }: { title: string; accent: string }) {
+  return (
+    <div>
+      <div className={`font-mono text-[9px] tracking-widest uppercase mb-1.5 ${accent}`}>{title}</div>
+      <div className="space-y-1.5 py-1">
+        {[0, 1, 2].map((i) => <Skeleton key={i} height={14} className="w-full" />)}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * What moved on your watchlist this week (live market deltas, not your sales).
+ * `loading` = the 7-day history fetch is still in flight; show shimmer columns
+ * rather than "Nothing spiking." which would read as a settled (wrong) answer.
+ */
+export function ChangedDigest({ digest, valuationById, loading = false }: {
+  digest: MoversDigest; valuationById?: Map<number, Valuation>; loading?: boolean;
+}) {
   return (
     <div className="border border-border-base bg-bg-card p-4">
       <div className="flex items-center justify-between mb-3">
@@ -76,9 +94,19 @@ export function ChangedDigest({ digest, valuationById }: { digest: MoversDigest;
         <div className="font-mono text-[9px] tracking-widest uppercase text-text-low">7-day market move</div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-3">
-        <Column title="▲ Spiking" accent="text-jade" rows={digest.gainers} kind="up" empty="Nothing spiking." valuationById={valuationById} />
-        <Column title="▼ Crashing" accent="text-crimson" rows={digest.losers} kind="down" empty="Nothing crashing." valuationById={valuationById} />
-        <Column title="◇ Going stale" accent="text-gold" rows={digest.stale} kind="stale" empty="All fresh." valuationById={valuationById} />
+        {loading ? (
+          <>
+            <ColumnSkeleton title="▲ Spiking" accent="text-jade" />
+            <ColumnSkeleton title="▼ Crashing" accent="text-crimson" />
+            <ColumnSkeleton title="◇ Going stale" accent="text-gold" />
+          </>
+        ) : (
+          <>
+            <Column title="▲ Spiking" accent="text-jade" rows={digest.gainers} kind="up" empty="Nothing spiking." valuationById={valuationById} />
+            <Column title="▼ Crashing" accent="text-crimson" rows={digest.losers} kind="down" empty="Nothing crashing." valuationById={valuationById} />
+            <Column title="◇ Going stale" accent="text-gold" rows={digest.stale} kind="stale" empty="All fresh." valuationById={valuationById} />
+          </>
+        )}
       </div>
     </div>
   );

@@ -7,6 +7,7 @@ import { PluginPanel } from '../features/plugin/PluginPanel';
 import { useSettingsStore } from '../features/settings/store';
 import { useUiStore, type Density } from '../features/ui/uiStore';
 import { btnPrimaryLarge, btnDanger } from '../components/buttonStyles';
+import { fmtDateTime } from '../lib/format';
 import {
   clearRecipeCache,
   clearRecipeSnapshot,
@@ -36,8 +37,10 @@ interface CacheStatus {
 }
 
 function fmtDate(ts: number | null | undefined): string {
+  // Unambiguous YYYY-MM-DD HH:MM — `toLocaleString()` rendered an ambiguous
+  // `2/6/2026` that clashed with the ISO dates shown elsewhere (e.g. What's New).
   if (!ts) return 'never';
-  return new Date(ts).toLocaleString();
+  return fmtDateTime(ts);
 }
 
 function isStale(ts: number | null | undefined): boolean {

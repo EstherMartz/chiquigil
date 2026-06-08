@@ -57,26 +57,34 @@ export function VendorRefreshControl({ onRefresh, busy, notReady, lastRefreshTs 
 
   const disabled = busy || onCooldown || notReady;
   const label = onCooldown ? `Wait ${Math.ceil(cooldownLeft / 1000)}s` : '↻ Refresh prices';
+  const buttonTitle = notReady
+    ? 'Loading vendor catalog…'
+    : onCooldown
+      ? `Prices were just refreshed — re-fetch unlocks in ${Math.ceil(cooldownLeft / 1000)}s (throttle, not auto-run)`
+      : 'Re-fetch live market prices from Universalis';
 
   return (
     <div className="flex items-center justify-end gap-3 flex-wrap font-mono text-[10px] tracking-widest uppercase text-text-low">
       {lastRefreshTs != null && <FreshnessChip ts={lastRefreshTs} now={now} />}
 
-      <label className="flex items-center gap-1.5 cursor-pointer select-none hover:text-text-cream transition-colors">
+      <label
+        title="Auto-refresh: re-fetch prices every 5 minutes while this page is open"
+        className="flex items-center gap-1.5 cursor-pointer select-none hover:text-text-cream transition-colors"
+      >
         <input
           type="checkbox"
           checked={auto}
           onChange={(e) => setAuto(e.target.checked)}
           className="accent-gold"
         />
-        Auto
+        Auto <span className="text-text-low/70 normal-case tracking-normal">· every 5m</span>
       </label>
 
       <button
         type="button"
         onClick={onRefresh}
         disabled={disabled}
-        title={notReady ? 'Loading vendor catalog…' : 'Re-fetch live market prices from Universalis'}
+        title={buttonTitle}
         className="inline-flex items-center gap-1 font-mono text-[10px] tracking-widest uppercase bg-gold text-bg-deep px-4 py-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
       >
         {busy ? <>Refreshing…<SpinGlyph /></> : label}
