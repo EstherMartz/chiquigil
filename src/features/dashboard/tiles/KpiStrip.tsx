@@ -71,7 +71,7 @@ export function KpiStrip({ totals, applyMarketTax, picks, conc3, topCat }: {
           type="button"
           onClick={() => document.getElementById('concentration-widget')?.scrollIntoView({ behavior: 'smooth' })}
           title="Jump to concentration breakdown"
-          className="p-3 bg-bg-card hover:bg-bg-card/80 transition-colors cursor-pointer"
+          className="p-3 text-left bg-bg-card hover:bg-bg-card/80 transition-colors cursor-pointer"
         >
           <div className="font-mono text-[9px] tracking-widest uppercase text-text-low">Concentration</div>
           <div className="font-mono text-sm tabular-nums leading-tight mt-1.5 space-y-1">
