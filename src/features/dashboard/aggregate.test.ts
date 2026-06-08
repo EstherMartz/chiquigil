@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   portfolioTotals, marginBuckets, gilPerDayLeaders, concentration,
   moversDigest, spreadByWorld, rowMargin, valuePlays, topPick, topPicks, valuationMap,
+  groupSpreadsByWorld, type WorldSpread,
 } from './aggregate';
 import type { WatchlistRow } from '../watchlist/buildRows';
 import type { WorldListing } from '../../lib/universalis';
@@ -262,5 +263,25 @@ describe('spreadByWorld', () => {
     ]);
     const out = spreadByWorld(rows, listings, 'Home', 5);
     expect(out.map((s) => s.id)).toEqual([2, 1]); // BigPct first, Noise excluded
+  });
+});
+
+function sp(p: Partial<WorldSpread> & { id: number; bestWorld: string; spread: number; bestPrice: number }): WorldSpread {
+  return { name: `i${p.id}`, homeFloor: p.bestPrice + p.spread, spreadPct: 0.1, velocity: 1, ...p };
+}
+
+describe('groupSpreadsByWorld', () => {
+  it('groups by bestWorld with totals + gil/M, sorted by gil/M desc', () => {
+    const rows = [
+      sp({ id: 1, bestWorld: 'Omega', spread: 200_000, bestPrice: 500_000 }),
+      sp({ id: 2, bestWorld: 'Omega', spread: 78_000, bestPrice: 137_000 }),
+      sp({ id: 3, bestWorld: 'Louisoix', spread: 85_000, bestPrice: 200_000 }),
+    ];
+    const groups = groupSpreadsByWorld(rows);
+    const omega = groups.find((g) => g.world === 'Omega')!;
+    expect(omega.itemCount).toBe(2);
+    expect(omega.totalSpread).toBe(278_000);
+    expect(omega.totalCapital).toBe(637_000);
+    expect(Math.round(omega.gilPerMillion)).toBe(436421);
   });
 });
