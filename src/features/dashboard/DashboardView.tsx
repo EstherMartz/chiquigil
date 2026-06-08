@@ -22,6 +22,7 @@ import { KpiStrip } from './tiles/KpiStrip';
 import { MarginHistogram } from './tiles/MarginHistogram';
 import { GilLeaderboard } from './tiles/GilLeaderboard';
 import { ChangedDigest } from './tiles/ChangedDigest';
+import { ConcentrationWidget } from './tiles/ConcentrationWidget';
 import { SpreadBars } from './tiles/SpreadBars';
 import { ValuePlays } from './tiles/ValuePlays';
 import { WatchlistHeatmapTile } from './tiles/WatchlistHeatmapTile';
@@ -149,6 +150,7 @@ export function DashboardView() {
             <MarginHistogram buckets={agg.buckets} />
             <GilLeaderboard rows={rowsWithDelta} />
             <ChangedDigest digest={agg.movers} valuationById={agg.valuation} />
+            <ConcentrationWidget rows={rowsWithDelta} />
             <SpreadBars spreads={agg.spreads} homeWorld={world} />
             <ValuePlays plays={agg.valuePlays} />
           </div>
