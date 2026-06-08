@@ -6,6 +6,7 @@ import { pickFirstTrustedTier } from '../../lib/priceTrust';
 import { computeMaterialCost } from '../profit/computeProfit';
 import { passesMarketGate } from './commonFilters';
 import type { CraftFlipRow, QueryFilter, QuerySort } from './types';
+import { analyzeCraftListings, RISK_ORDER } from './craftListingAnalysis';
 
 export function narrowForCraftFlip(
   snapshot: SnapshotItem[],
@@ -31,6 +32,7 @@ function compare(a: CraftFlipRow, b: CraftFlipRow, sort: QuerySort): number {
     case 'gilFlow':   return b.gilPerDay - a.gilPerDay;
     case 'velocity':  return b.velocity - a.velocity;
     case 'unitPrice': return b.unitPrice - a.unitPrice;
+    case 'risk':      return RISK_ORDER.indexOf(a.risk) - RISK_ORDER.indexOf(b.risk); // worst (DOMINATED) first
     case 'discount':
       return (b.profit / Math.max(1, b.unitPrice)) - (a.profit / Math.max(1, a.unitPrice));
   }
@@ -69,6 +71,7 @@ export function runCraftFlip(
     if (filter.minPrice != null && tier.unit < filter.minPrice) continue;
     if (filter.maxPrice != null && tier.unit > filter.maxPrice) continue;
 
+    const analysis = analyzeCraftListings(m, tier.isHq);
     out.push({
       id: item.id, name: item.name, sc: item.sc,
       unitPrice: tier.unit,
@@ -77,6 +80,19 @@ export function runCraftFlip(
       velocity: m.velocity,
       gilPerDay: profit * m.velocity,
       hq: tier.isHq,
+      risk: analysis.risk,
+      gap: analysis.gap.gap,
+      gapPct: analysis.gap.gapPct,
+      hasSecondTier: analysis.gap.hasSecondTier,
+      onlyListing: analysis.gap.onlyListing,
+      sellerCount: analysis.sellerCount,
+      topSellerShare: analysis.topSellerShare,
+      concentrationRisk: analysis.concentrationRisk,
+      clearDays: analysis.clearDays,
+      clearNote: analysis.clearNote,
+      captureRate: analysis.captureRate,
+      totalUnits: analysis.totalUnits,
+      depth: analysis.depth,
     });
   }
 
