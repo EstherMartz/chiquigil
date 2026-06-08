@@ -31,7 +31,7 @@ export function ConcentrationWidget({ rows }: { rows: WatchlistRow[] }) {
   const withGil = useMemo(() => shares.filter((s) => s.gilPerDay > 0), [shares]);
 
   // Long tail collapse: render top ~5 individually, bucket the rest as "other"
-  const { segments, restCount } = useMemo(() => {
+  const { segments } = useMemo(() => {
     const top = withGil.slice(0, 5);
     const rest = withGil.slice(5);
 
@@ -121,7 +121,7 @@ export function ConcentrationWidget({ rows }: { rows: WatchlistRow[] }) {
               const isOther = seg.cat === 'Other';
               const color = isOther ? OTHER_COLOR : CAT_COLOR[seg.cat];
               const pct = (seg.share * 100).toFixed(0);
-              const label = isOther ? `other ${restCount}` : seg.cat;
+              const label = isOther ? 'other' : seg.cat;
 
               return (
                 <div key={isOther ? 'other' : seg.cat} className="flex items-center gap-1.5">
