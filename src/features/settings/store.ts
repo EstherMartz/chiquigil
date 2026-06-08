@@ -20,6 +20,7 @@ export interface SettingsState {
   concentrationBannerLastDismissed: string | null;
   concentrationBannerSuppressed: boolean;
   lastSeenPatchDate: string | null;
+  patchBannerDismissedDate: string | null;
   setWorld: (w: string) => void;
   setDc: (d: string) => void;
   setRetainerLevel: (c: keyof CrafterLevels, lvl: number) => void;
@@ -34,9 +35,10 @@ export interface SettingsState {
   setConcentrationBannerLastDismissed: (iso: string | null) => void;
   setConcentrationBannerSuppressed: (v: boolean) => void;
   setLastSeenPatchDate: (iso: string | null) => void;
+  setPatchBannerDismissedDate: (iso: string | null) => void;
 }
 
-export function defaultSettings(): Pick<SettingsState, '_v' | 'world' | 'dc' | 'retainerLevels' | 'overheadMinutes' | 'batchCapDays' | 'defaultCraftTimeSeconds' | 'hideCrystals' | 'showSparklines' | 'applyMarketTax' | 'submarineRank' | 'submarineSlots' | 'concentrationBannerLastDismissed' | 'concentrationBannerSuppressed' | 'lastSeenPatchDate'> {
+export function defaultSettings(): Pick<SettingsState, '_v' | 'world' | 'dc' | 'retainerLevels' | 'overheadMinutes' | 'batchCapDays' | 'defaultCraftTimeSeconds' | 'hideCrystals' | 'showSparklines' | 'applyMarketTax' | 'submarineRank' | 'submarineSlots' | 'concentrationBannerLastDismissed' | 'concentrationBannerSuppressed' | 'lastSeenPatchDate' | 'patchBannerDismissedDate'> {
   return {
     _v: 1,
     world: 'Phantom',
@@ -55,6 +57,7 @@ export function defaultSettings(): Pick<SettingsState, '_v' | 'world' | 'dc' | '
     concentrationBannerLastDismissed: null,
     concentrationBannerSuppressed: false,
     lastSeenPatchDate: null,
+    patchBannerDismissedDate: null,
   };
 }
 
@@ -76,6 +79,7 @@ export const useSettingsStore = create<SettingsState>()(
       setConcentrationBannerLastDismissed: (concentrationBannerLastDismissed) => set({ concentrationBannerLastDismissed }),
       setConcentrationBannerSuppressed: (concentrationBannerSuppressed) => set({ concentrationBannerSuppressed }),
       setLastSeenPatchDate: (lastSeenPatchDate) => set({ lastSeenPatchDate }),
+      setPatchBannerDismissedDate: (patchBannerDismissedDate) => set({ patchBannerDismissedDate }),
     }),
     { name: 'ffxiv-helper:settings' },
   ),

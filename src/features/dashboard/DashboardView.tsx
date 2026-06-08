@@ -19,6 +19,7 @@ import {
 } from './aggregate';
 import type { HistorySummary } from '../fairvalue/fairValue';
 import { KpiStrip } from './tiles/KpiStrip';
+import { PatchBanner } from './tiles/PatchBanner';
 import { ConcentrationBanner } from './tiles/ConcentrationBanner';
 import { MarginHistogram } from './tiles/MarginHistogram';
 import { GilLeaderboard } from './tiles/GilLeaderboard';
@@ -121,6 +122,8 @@ export function DashboardView() {
           </div>
         )}
       </div>
+
+      <PatchBanner />
 
       {market.isError && (
         <StatusBanner kind="error">Market fetch failed: {(market.error as Error).message}</StatusBanner>

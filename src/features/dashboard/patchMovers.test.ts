@@ -205,7 +205,7 @@ describe('selectPatchMovers', () => {
   it('includes PatchMover fields correctly', () => {
     const ids = [900];
     const items = new Map<number, SnapshotItem>([
-      [900, { id: 900, name: 'Test Item', sc: 1, ui: 0, ilvl: 1, canHq: false }],
+      [900, { id: 900, name: 'Test Item', sc: 1, ui: 0, ilvl: 42, canHq: false }],
     ]);
     const recipes = new Map<number, Recipe>([
       [900, { itemResultId: 900, classJob: 'ARM', recipeLevel: 77, ingredients: [] }],
@@ -223,6 +223,8 @@ describe('selectPatchMovers', () => {
     expect(mover.price).toBe(2500);
     expect(mover.crafter).toBe('ARM');
     expect(mover.recipeLevel).toBe(77);
+    expect(mover.sc).toBe(1);
+    expect(mover.ilvl).toBe(42);
   });
 
   it('handles empty inputs gracefully', () => {

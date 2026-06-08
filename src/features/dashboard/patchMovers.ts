@@ -11,6 +11,8 @@ export interface PatchMover {
   price: number | null; // a representative sale price for display
   crafter: CrafterCode;
   recipeLevel: number;
+  sc: number;
+  ilvl: number;
 }
 
 /** Minimum sales/day for a new item to count as a "mover" (proven demand). */
@@ -64,6 +66,8 @@ export function selectPatchMovers(
       price,
       crafter: recipe.classJob,
       recipeLevel: recipe.recipeLevel,
+      sc: it.sc,
+      ilvl: it.ilvl,
     });
   }
 
