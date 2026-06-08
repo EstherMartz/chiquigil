@@ -86,6 +86,12 @@ export interface RepostRow {
   hq: boolean;
 }
 
+/**
+ * Identity of the *scan-affecting* inputs — used to detect when results are stale.
+ * Every field that changes what a scan fetches/returns MUST be listed here.
+ * `maxRisk` is intentionally EXCLUDED: it's a post-scan display re-filter, so
+ * changing it should not mark results stale or prompt a re-scan.
+ */
 export function filterHash(f: QueryFilter): string {
   return JSON.stringify({
     sc: [...f.searchCategories].sort((a, b) => a - b),
