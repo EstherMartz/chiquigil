@@ -14,10 +14,12 @@ export interface UseMarketDataOpts {
   /** Fires as cache lookups complete. Kept for API compatibility. */
   onProgress?: (completed: number, total: number) => void;
   /**
-   * Fetch live from Universalis (batched 100/req) instead of reading the shared bulk-cache
-   * blob. Use for small, user-specific id sets (watchlist, dashboard, a single item): the
-   * cron's blob only carries the "traded" set (items that actually sell), so a slowly-traded
-   * tracked item has no cached price — live keeps those views complete and fresh.
+   * Cache-first, then live-fill the gaps. Reads the shared bulk-cache blob (instant), then
+   * fetches ONLY the requested ids it's missing straight from Universalis, in small batches.
+   * Use for small, user-specific id sets (watchlist, dashboard, a single item): the cron's
+   * blob only carries the "traded" set, so a slowly-traded tracked item has no cached price —
+   * this tops up just those without re-fetching the whole set (a large DC-scope live request
+   * 504s on Universalis, which surfaces in the browser as a CORS error).
    */
   live?: boolean;
 }
@@ -41,19 +43,35 @@ export function useMarketData(
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       if (live) {
-        // Live, batched (100/req, concurrency 4). fetchMarketLive also merges each row
-        // back into the in-memory cache, so later cache-only reads benefit too.
-        const liveScope = async (scope: string): Promise<MarketData> =>
-          (await fetchInBatches<MarketData[string]>(
-            sortedIds,
-            (chunk) => fetchMarketLive(scope, chunk),
-            { chunkSize: 100, concurrency: 4 },
-          )).data;
+        // Cache-first: read whatever the cron blob already has (instant, every id present as a
+        // real or empty placeholder), then live-fill ONLY the items it's missing. Small batches
+        // because a DC-scope query aggregates every world — a large live request (a whole
+        // watchlist on the DC) exceeds Universalis' ~10s gateway and 504s (browser sees CORS).
+        // fetchMarketLive also warms the in-memory cache for next time.
         const [phantom, dcRes, regionRes] = await Promise.all([
-          liveScope(world),
-          liveScope(dc),
-          region ? liveScope(region) : Promise.resolve({} as MarketData),
+          fetchMarketData(world, sortedIds),
+          fetchMarketData(dc, sortedIds),
+          region ? fetchMarketData(region, sortedIds) : Promise.resolve({} as MarketData),
         ]);
+        const isMiss = (m: MarketData[string] | undefined) =>
+          !m || (m.lastUploadTime === 0 && m.worldListings.length === 0 && m.minNQ == null);
+        const missing = sortedIds.filter((id) => {
+          const k = String(id);
+          return isMiss(dcRes[k]) || isMiss(phantom[k]) || (region ? isMiss(regionRes[k]) : false);
+        });
+        if (missing.length) {
+          const fill = async (scope: string, into: MarketData) => {
+            const res = await fetchInBatches<MarketData[string]>(
+              missing, (chunk) => fetchMarketLive(scope, chunk), { chunkSize: 8, concurrency: 3 },
+            );
+            Object.assign(into, res.data);
+          };
+          await Promise.all([
+            fill(world, phantom),
+            fill(dc, dcRes),
+            region ? fill(region, regionRes) : Promise.resolve(),
+          ]);
+        }
         return { phantom, dc: dcRes, region: regionRes };
       }
 
