@@ -28,12 +28,17 @@ import { ConcentrationWidget } from './tiles/ConcentrationWidget';
 import { SpreadBars } from './tiles/SpreadBars';
 import { ValuePlays } from './tiles/ValuePlays';
 import { WatchlistHeatmapTile } from './tiles/WatchlistHeatmapTile';
+import { usePatchStatus } from './usePatchStatus';
+import { usePatchMovers } from './usePatchMovers';
 
 export function DashboardView() {
   const { world, dc, retainerLevels, applyMarketTax } = useSettingsStore();
   const items = useSelectedItems();
 
   const ids = useMemo(() => items.map((i) => i.id), [items]);
+  const trackedIds = useMemo(() => new Set(ids), [ids]);
+  const patchStatus = usePatchStatus();
+  const patchMovers = usePatchMovers();
   const market = useMarketData(ids, world, dc);
   const history = useWatchlistHistory(ids, dc);
   const recipes = useRecipes(ids);
@@ -154,7 +159,7 @@ export function DashboardView() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <MarginHistogram buckets={agg.buckets} />
             <GilLeaderboard rows={rowsWithDelta} />
-            <ChangedDigest digest={agg.movers} valuationById={agg.valuation} />
+            <ChangedDigest digest={agg.movers} valuationById={agg.valuation} newPatchItems={patchMovers.movers} showNewPatch={patchStatus.withinWindow(14)} trackedIds={trackedIds} />
             <ConcentrationWidget rows={rowsWithDelta} />
             <SpreadBars spreads={agg.spreads} homeWorld={world} />
             <ValuePlays plays={agg.valuePlays} />
