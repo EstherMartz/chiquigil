@@ -355,7 +355,16 @@ export function DcFlipView() {
       )}
 
       {run.data && sortedRows.length === 0 && (
-        <EmptyState icon="⇄" message={`No items found with a spread above ${fmtGil(minSpread)}. Try lowering the threshold or running again after the market updates.`} />
+        <EmptyState
+          icon="⇄"
+          message={`No items found with a spread above ${fmtGil(minSpread)}. Lower the threshold (re-filters the items already scanned) or re-run after the market updates.`}
+          action={minSpread > 1000
+            ? {
+                label: `Try ${fmtGil(Math.max(1000, Math.round(minSpread / 2)))} spread`,
+                onClick: () => setMinSpread(Math.max(1000, Math.round(minSpread / 2))),
+              }
+            : undefined}
+        />
       )}
 
       {run.data && groups.length > 0 && !isFlat && (

@@ -46,7 +46,8 @@ export default function ShoppingList() {
     return [...ids];
   }, [itemIds, plan]);
 
-  const market = useMarketData(priceIds, world, dc, 'Europe');
+  // Live: shopping-list items/materials may sell too slowly to be in the cron's bulk blob.
+  const market = useMarketData(priceIds, world, dc, 'Europe', { live: true });
 
   const [planRequested, setPlanRequested] = useState(false);
   // Re-arm when the list changes — user must click Plan again.

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useBatchTrackerStore } from './batchTrackerStore';
 import { BatchDetail } from './BatchDetail';
-import { fmtGil } from '../../lib/format';
+import { fmtGil, fmtDate } from '../../lib/format';
 import { EmptyState } from '../../components/EmptyState';
 
 export function BatchHistoryView() {
@@ -33,7 +33,7 @@ export function BatchHistoryView() {
               className="w-full text-left px-4 py-3 bg-bg-card hover:bg-bg-card-hi active:bg-bg-card-hi transition-colors flex items-center gap-4 flex-wrap"
             >
               <span className="font-mono text-[11px] text-text-low">
-                {new Date(batch.createdAt).toLocaleDateString()}
+                {fmtDate(batch.createdAt)}
               </span>
               <span className={`font-mono text-[10px] tracking-widest uppercase px-2 py-0.5 rounded ${
                 batch.status === 'active'

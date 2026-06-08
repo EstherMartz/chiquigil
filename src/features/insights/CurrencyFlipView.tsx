@@ -164,6 +164,9 @@ function TopStrip({ currencyId, onChangeCurrency, onRun, onRefreshCatalog, busy,
   notReady: boolean;
   stale: boolean;
 }) {
+  // Catalog re-fetch gives no result rows, so without an explicit state the
+  // click looks inert. Track busy/done to show a spinner then a brief ✓.
+  const [catState, setCatState] = useState<'idle' | 'busy' | 'done'>('idle');
   return (
     <div className="flex flex-wrap items-end gap-3 p-3 border border-border-base bg-bg-card justify-between">
       <label className="block">
@@ -188,11 +191,21 @@ function TopStrip({ currencyId, onChangeCurrency, onRun, onRefreshCatalog, busy,
       <div className="flex gap-2 w-full sm:w-auto sm:ml-auto order-last">
         <button
           type="button"
-          onClick={() => { void onRefreshCatalog(); }}
-          className="font-mono text-[10px] tracking-widest uppercase border border-border-base text-text-dim px-3 py-2 hover:text-aether"
+          disabled={catState === 'busy'}
+          onClick={async () => {
+            setCatState('busy');
+            try {
+              await onRefreshCatalog();
+              setCatState('done');
+              setTimeout(() => setCatState('idle'), 2000);
+            } catch {
+              setCatState('idle');
+            }
+          }}
+          className="font-mono text-[10px] tracking-widest uppercase border border-border-base text-text-dim px-3 py-2 hover:text-aether disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           title="Re-fetch the SpecialShop catalog"
         >
-          ⟳ Catalog
+          {catState === 'busy' ? <>Updating…<SpinGlyph /></> : catState === 'done' ? '✓ Updated' : '⟳ Catalog'}
         </button>
         <div className="flex flex-col items-stretch gap-1 flex-1 sm:flex-initial">
           {stale && !busy && (

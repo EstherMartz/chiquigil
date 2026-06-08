@@ -3,6 +3,7 @@ import {
   fetchMarketData,
   fetchMarketLive,
   buildMarketUrl,
+  marketFields,
   parseMarketResponse,
   _resetMarketCacheForTests,
   loadSharedMarketCache,
@@ -13,14 +14,31 @@ import { clearMarketCache } from './recipeCache';
 describe('buildMarketUrl', () => {
   it('builds a Phantom URL with all item ids comma-separated', () => {
     expect(buildMarketUrl('Phantom', [1, 2, 3])).toBe(
-      'https://universalis.app/api/v2/Phantom/1,2,3?listings=10&entries=15'
+      `https://universalis.app/api/v2/Phantom/1,2,3?listings=10&entries=15&fields=${marketFields(3)}`
     );
   });
 
   it('builds a Chaos DC URL', () => {
     expect(buildMarketUrl('Chaos', [42])).toBe(
-      'https://universalis.app/api/v2/Chaos/42?listings=10&entries=15'
+      `https://universalis.app/api/v2/Chaos/42?listings=10&entries=15&fields=${marketFields(1)}`
     );
+  });
+});
+
+describe('marketFields', () => {
+  it('uses bare paths for a single-item request (flat response shape)', () => {
+    const f = marketFields(1);
+    expect(f).toContain('listings.pricePerUnit');
+    expect(f).toContain('lastUploadTime');
+    expect(f).not.toContain('items.');
+  });
+
+  it('uses items.-prefixed paths for a multi-item request (nested shape)', () => {
+    const f = marketFields(5);
+    expect(f).toContain('items.listings.pricePerUnit');
+    expect(f).toContain('items.lastUploadTime');
+    // every path is prefixed — no bare path leaks through
+    expect(f).not.toMatch(/(^|,)listings\.pricePerUnit/);
   });
 });
 

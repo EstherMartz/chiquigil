@@ -18,6 +18,64 @@ npm run dev
 3. Vercel auto-detects Vite, no config needed beyond `vercel.json` already in repo.
 4. Optional env var: `VITE_XIVAPI_BASE` if you want to override the default `https://v2.xivapi.com`.
 
+## Market cache refresh (full / cold / hot tiers)
+
+Bulk scans read pre-fetched blobs instead of hitting Universalis per page load.
+External cron jobs (e.g. cron-job.org) hit the **same** `/api/refresh-cache` lambda
+with different `tier` params. Fetching all ~50k marketable items every hour flirts with
+the function timeout, so the regular runs use a smaller **traded set** and a heavy full
+sweep runs only occasionally:
+
+- **Full (whole catalog):** `GET /api/refresh-cache?token=$REFRESH_SECRET&tier=full` —
+  run **daily** (and once right after deploy to seed the set). Fetches every marketable
+  item, writes `market-cache-cold.json`, and derives both `traded-ids.json`
+  (`regularSaleVelocity ≥ TRADED_VELOCITY_THRESHOLD`) and `hot-ids.json` (`≥ HOT_VELOCITY_THRESHOLD`).
+- **Cold (traded set):** `GET /api/refresh-cache?token=$REFRESH_SECRET` — run **hourly**.
+  Fetches only `traded-ids.json` (a few thousand, well under the timeout; falls back to
+  the full catalog until `full` has seeded it), writes `market-cache-cold.json`, refreshes
+  `hot-ids.json`. Untraded items have no average/velocity, so they never appear in a scan
+  or the feed regardless.
+- **Hot (active items):** `GET /api/refresh-cache?token=$REFRESH_SECRET&tier=hot` — run
+  every **~5 min**. Fetches only the `hot-ids.json` items and writes `market-cache-hot.json`.
+
+> **After deploy:** run the **full** sweep once (`&tier=full`) to create `traded-ids.json`,
+> otherwise the first cold runs fall back to the full catalog and may time out. Each tier's
+> response reports `tradedCount` / `hotCount` / `oppCount` so you can size the sets.
+
+The client loads both blobs at startup and merges them with **hot overriding cold**
+(fresher wins), falling back to the legacy single blob during rollout. Universalis
+payloads are trimmed via a `fields=` whitelist (`marketFields` — `items.`-prefixed for
+multi-item requests, bare for single-item; the wrong form returns an empty response).
+
+### Env vars
+
+| Var | Purpose |
+| --- | --- |
+| `REFRESH_SECRET` | Shared secret protecting the refresh endpoint (`?token=`). |
+| `HOT_VELOCITY_THRESHOLD` | Min `regularSaleVelocity` for an item to be "hot" (default `10`). |
+| `TRADED_VELOCITY_THRESHOLD` | Min `regularSaleVelocity` for an item to be in the hourly "traded" cold set (default `1`). Lower → broader scan coverage but slower cold runs. |
+| `VITE_CACHE_COLD_URL` | Client URL for the cold blob (falls back to `VITE_CACHE_BLOB_URL`, then `/data/market-cache-cold.json`). |
+| `VITE_CACHE_HOT_URL` | Client URL for the hot blob (falls back to `/data/market-cache-hot.json`). |
+| `OPP_DEAL_PCT` | How far the DC-cheapest must sit from an item's recent average to be a deal (default `25`). Lower → more (noisier) deals. |
+
+### Opportunity feed (Tier 3)
+
+Each **cold/full** run scans the current DC prices and writes the deals that exist
+**right now** into a public `opportunities.json` (a "delta vs the previous blob" model
+was tried first but fired for ~0 items — real swings are gradual). Price signals fire
+when the DC-cheapest sits a real margin (`OPP_DEAL_PCT`, default 25%) from the item's
+recent average (`avgNQ`, ~7-day); only liquid items (velocity ≥ 1) count:
+
+- **crash** — cheapest is ≥25% **below** its recent average (buy, on the tagged world)
+- **spike** — cheapest is ≥25% **above** its recent average (sell)
+- **empty** — a selling item is down to ≤2 DC-wide listings (craft)
+
+Still-present deals keep their first-seen time (the "Seen" column); deals that no longer
+hold drop off. Computed on the cold (hourly) and full runs — not hot, which sees too few
+items to reconcile against. Surfaced at `/opportunities`; optional env
+`VITE_OPPORTUNITIES_URL` points the client at the blob (falls back to
+`/data/opportunities.json`).
+
 ## Auth (Discord login gate)
 
 The web app is gated behind Discord OAuth: only members of an allow-listed Discord

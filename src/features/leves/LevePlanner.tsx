@@ -115,7 +115,7 @@ export function LevePlanner({ rows }: Props) {
           </tbody>
         </table>
       ) : (
-        <EmptyState icon="◆" message="Click Run scan to populate this plan." />
+        <EmptyState icon="◆" message="No leves match these filters — try a different job or a higher level cap." />
       )}
     </section>
   );

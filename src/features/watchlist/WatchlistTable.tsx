@@ -77,7 +77,7 @@ export function WatchlistTable({ rows, onSelect, sparklineMap, sparklineLoading,
   applyMarketTax?: boolean;
   valuationById?: Map<number, Valuation>;
 }) {
-  const { catFilter, sortKey, sortDir, setSort, density } = useUiStore();
+  const { catFilter, sortKey, sortDir, setSort, setCat, density } = useUiStore();
   const lm = useLoadMore(rows, 25);
   const rowY = rowPadClass(density);
   const showSparkline = sparklineMap != null;
@@ -104,15 +104,30 @@ export function WatchlistTable({ rows, onSelect, sparklineMap, sparklineLoading,
     return (
       <div className="border border-border-base bg-bg-card p-12 text-center text-text-low italic">
         <div className="text-aether/70 mb-1 text-[18px]" aria-hidden>❖</div>
-        <div>The page is blank for this filter.</div>
-        {presetId && (
-          <Link
-            to={`/trading?preset=${presetId}`}
-            className="not-italic mt-3 inline-block font-mono text-[11px] tracking-widest uppercase text-aether hover:text-gold transition-colors"
-          >
-            Scry the market for top {catFilter.toLowerCase()} →
-          </Link>
-        )}
+        <div>
+          {catFilter === 'All'
+            ? 'The page is blank for this filter.'
+            : `No tracked items in ${catFilter}.`}
+        </div>
+        <div className="not-italic mt-3 flex items-center justify-center gap-4 flex-wrap">
+          {catFilter !== 'All' && (
+            <button
+              type="button"
+              onClick={() => setCat('All')}
+              className="font-mono text-[11px] tracking-widest uppercase text-aether hover:text-gold transition-colors"
+            >
+              ← Show all tracked items
+            </button>
+          )}
+          {presetId && (
+            <Link
+              to={`/trading?preset=${presetId}`}
+              className="font-mono text-[11px] tracking-widest uppercase text-aether hover:text-gold transition-colors"
+            >
+              Scry the market for top {catFilter.toLowerCase()} →
+            </Link>
+          )}
+        </div>
       </div>
     );
   }

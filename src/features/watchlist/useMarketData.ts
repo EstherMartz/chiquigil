@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { fetchMarketData, type MarketData } from '../../lib/universalis';
+import { fetchMarketData, fetchMarketLive, type MarketData } from '../../lib/universalis';
+import { fetchInBatches } from '../../lib/universalisBulk';
 
 export interface MarketBundle {
   phantom: MarketData;
@@ -12,6 +13,13 @@ export interface UseMarketDataOpts {
   enabled?: boolean;
   /** Fires as cache lookups complete. Kept for API compatibility. */
   onProgress?: (completed: number, total: number) => void;
+  /**
+   * Fetch live from Universalis (batched 100/req) instead of reading the shared bulk-cache
+   * blob. Use for small, user-specific id sets (watchlist, dashboard, a single item): the
+   * cron's blob only carries the "traded" set (items that actually sell), so a slowly-traded
+   * tracked item has no cached price — live keeps those views complete and fresh.
+   */
+  live?: boolean;
 }
 
 export function useMarketData(
@@ -25,13 +33,31 @@ export function useMarketData(
   // Keep the callback in a ref so its identity doesn't churn the query key.
   const onProgressRef = useRef(opts.onProgress);
   onProgressRef.current = opts.onProgress;
+  const live = opts.live ?? false;
 
   return useQuery<MarketBundle>({
-    queryKey: ['market', world, dc, region ?? null, sortedIds],
+    queryKey: ['market', world, dc, region ?? null, live, sortedIds],
     enabled: (opts.enabled ?? true) && ids.length > 0,
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
-      // Aggregate progress across the 3 scope fetches.
+      if (live) {
+        // Live, batched (100/req, concurrency 4). fetchMarketLive also merges each row
+        // back into the in-memory cache, so later cache-only reads benefit too.
+        const liveScope = async (scope: string): Promise<MarketData> =>
+          (await fetchInBatches<MarketData[string]>(
+            sortedIds,
+            (chunk) => fetchMarketLive(scope, chunk),
+            { chunkSize: 100, concurrency: 4 },
+          )).data;
+        const [phantom, dcRes, regionRes] = await Promise.all([
+          liveScope(world),
+          liveScope(dc),
+          region ? liveScope(region) : Promise.resolve({} as MarketData),
+        ]);
+        return { phantom, dc: dcRes, region: regionRes };
+      }
+
+      // Cache-only (default). Aggregate progress across the 3 scope fetches.
       const counts = [
         { done: 0, total: 0 },
         { done: 0, total: 0 },

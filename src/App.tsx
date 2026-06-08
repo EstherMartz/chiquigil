@@ -46,6 +46,7 @@ import Project from './routes/Project';
 import CraftLists from './routes/CraftLists';
 import YourLists from './routes/YourLists';
 import ListDetail from './routes/ListDetail';
+import Opportunities from './routes/Opportunities';
 import Admin from './routes/Admin';
 
 const PAGE_TITLES: Record<string, string> = {
@@ -61,6 +62,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/shopping-list': 'Craft Helper',
   '/vendor-flip': 'Vendor Flip',
   '/empty-shelf': 'Empty Shelf',
+  '/opportunities': 'Opportunities',
   '/whats-new': "What's New",
   '/travel': 'Travel Planner',
   '/housing': 'Housing',
@@ -140,6 +142,7 @@ export default function App() {
                         <Route path="/craft-helper" element={<Navigate to="/shopping-list" replace />} />
                         <Route path="/vendor-flip" element={<VendorFlip />} />
                         <Route path="/empty-shelf" element={<EmptyShelf />} />
+                        <Route path="/opportunities" element={<Opportunities />} />
                         <Route path="/whats-new" element={<WhatsNew />} />
                         <Route path="/travel" element={<Travel />} />
                         <Route path="/housing" element={<Housing />} />

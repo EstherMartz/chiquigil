@@ -1,16 +1,26 @@
 import { Link } from 'react-router-dom';
 import { fmtGil } from '../../../lib/format';
+import { Skeleton } from '../../../components/Skeleton';
 import type { ValuePlay } from '../aggregate';
 
-/** Watched items trading below fair value — a mean-reversion "buy low" list. */
-export function ValuePlays({ plays }: { plays: ValuePlay[] }) {
+/**
+ * Watched items trading below fair value — a mean-reversion "buy low" list.
+ * `loading` = the fair-value basis (30-day history) is still fetching; shimmer
+ * instead of the "nothing under fair value" empty state, which would otherwise
+ * read as a settled answer before the data is in.
+ */
+export function ValuePlays({ plays, loading = false }: { plays: ValuePlay[]; loading?: boolean }) {
   return (
     <div className="border border-border-base bg-bg-card p-4">
       <div className="flex items-center justify-between mb-2">
         <div className="font-mono text-[10px] tracking-widest uppercase text-jade">↓ Value plays</div>
         <div className="font-mono text-[9px] tracking-widest uppercase text-text-low">under fair value</div>
       </div>
-      {plays.length === 0 ? (
+      {loading ? (
+        <div className="space-y-1.5 py-2">
+          {[0, 1, 2, 3].map((i) => <Skeleton key={i} height={16} className="w-full" />)}
+        </div>
+      ) : plays.length === 0 ? (
         <div className="text-text-low text-sm italic py-6 text-center">
           Nothing trading clearly under fair value (with enough sales to be sure).
         </div>

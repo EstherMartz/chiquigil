@@ -1,14 +1,21 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fmtGil } from '../../../lib/format';
+import { Skeleton } from '../../../components/Skeleton';
 import { useDashboardStore } from '../dashboardStore';
 import type { PortfolioTotals, TopPick } from '../aggregate';
 
-/** Top-of-dashboard KPI strip — the "is my watchlist worth my time?" answer. */
-export function KpiStrip({ totals, applyMarketTax, picks }: {
+/**
+ * Top-of-dashboard KPI strip — the "is my watchlist worth my time?" answer.
+ * `alertsReady` gates the "Alerts firing" cell: that count depends on the
+ * 7-day deltas (history fetch), so until those land it shows a shimmer instead
+ * of an incomplete count that would silently jump when history arrives.
+ */
+export function KpiStrip({ totals, applyMarketTax, picks, alertsReady = true }: {
   totals: PortfolioTotals;
   applyMarketTax: boolean;
   picks: TopPick[];
+  alertsReady?: boolean;
 }) {
   const cells = [
     {
@@ -37,9 +44,9 @@ export function KpiStrip({ totals, applyMarketTax, picks }: {
     },
     {
       k: 'Alerts firing',
-      v: `${totals.alertCount}`,
+      v: alertsReady ? `${totals.alertCount}` : <Skeleton height={20} width={32} className="mt-1.5" />,
       sub: 'spike · crash · stale',
-      tone: totals.alertCount > 0 ? 'text-crimson' : 'text-text-low',
+      tone: alertsReady && totals.alertCount > 0 ? 'text-crimson' : 'text-text-low',
     },
   ];
   return (
@@ -118,8 +125,8 @@ function TopPickBanner({ picks }: { picks: TopPick[] }) {
       <button
         type="button"
         onClick={() => { dismissPick(pick.row.id); setIdx(0); }}
-        title="Got it — stop suggesting this pick"
-        className="font-mono text-[9px] tracking-widest uppercase text-text-low hover:text-crimson border border-border-base hover:border-crimson/40 rounded-sm px-1.5 py-0.5 transition-colors"
+        title="Got it — stop suggesting this pick (Enter or Space when focused)"
+        className="font-mono text-[9px] tracking-widest uppercase text-text-low hover:text-crimson border border-border-base hover:border-crimson/40 rounded-sm px-1.5 py-0.5 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-gold"
       >
         got it ✕
       </button>

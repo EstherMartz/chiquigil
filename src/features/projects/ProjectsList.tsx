@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Spinner } from '../../components/Spinner';
 import { SectionHeader } from '../../components/SectionHeader';
 import { StatusBanner } from '../../components/StatusBanner';
@@ -37,6 +37,7 @@ function ProjectProgress({ s }: { s: ProjectSummary }) {
 
 export function ProjectsList() {
   const q = useProjects();
+  const navigate = useNavigate();
   const projects = q.data?.projects;
   const userNames = q.data?.userNames ?? {};
 
@@ -69,15 +70,21 @@ export function ProjectsList() {
             </thead>
             <tbody>
               {projects.map((p) => (
-                <tr key={p.id} className="border-b border-border-base/30 last:border-0 hover:bg-bg-elev">
+                <tr
+                  key={p.id}
+                  onClick={() => navigate(`/projects/${p.id}`)}
+                  className="border-b border-border-base/30 last:border-0 hover:bg-bg-elev cursor-pointer"
+                >
                   <td className="p-2 font-mono text-text-low">#{p.id}</td>
                   <td className="p-2">
+                    {/* Visible, keyboard-focusable affordance; the whole row also navigates. */}
                     <Link to={`/projects/${p.id}`} className="text-accent hover:underline">
                       {p.name}
                     </Link>
                   </td>
                   <td className="p-2">
-                    <Link to={`/item/${p.targetItemId}`} className="hover:underline">
+                    {/* Different destination — stop the click from bubbling to the row nav. */}
+                    <Link to={`/item/${p.targetItemId}`} onClick={(e) => e.stopPropagation()} className="hover:underline">
                       Item #{p.targetItemId}
                     </Link>{' '}× {p.targetQty}
                   </td>

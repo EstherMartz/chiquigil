@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { buildHeatmapCells } from '../../heatmap/buildHeatmapData';
 import { HeatmapChart } from '../../heatmap/HeatmapChart';
+import { Skeleton } from '../../../components/Skeleton';
 import type { SnapshotItem } from '../../../lib/itemSnapshot';
 import type { MarketData } from '../../../lib/universalis';
 import type { Recipe } from '../../../lib/recipes';
@@ -15,10 +16,13 @@ type SizeMode = 'velocity' | 'opportunity';
  * Velocity (raw sales/day) or Best ratio (gil/day money-flow = sale × margin ×
  * velocity), so the best plays rise visually instead of just the busiest ones.
  */
-export function WatchlistHeatmapTile({ items, market, recipes }: {
+export function WatchlistHeatmapTile({ items, market, recipes, loading = false }: {
   items: SnapshotItem[];
   market: MarketData;
   recipes: Map<number, Recipe>;
+  /** Inputs still resolving (snapshot/market). Show a shimmer instead of the
+   * "no activity" empty state so an unloaded heatmap never reads as empty. */
+  loading?: boolean;
 }) {
   const [scope, setScope] = useState<Scope>('all');
   const [sizeMode, setSizeMode] = useState<SizeMode>('velocity');
@@ -77,7 +81,9 @@ export function WatchlistHeatmapTile({ items, market, recipes }: {
           </div>
         </div>
       </div>
-      {cells.length === 0 ? (
+      {loading ? (
+        <Skeleton height={120} className="w-full" />
+      ) : cells.length === 0 ? (
         <div className="flex items-center justify-center text-text-low text-sm italic" style={{ height: 120 }}>
           {scope === 'craft' ? 'No craftable items moving yet.' : 'No tracked items with market activity yet.'}
         </div>

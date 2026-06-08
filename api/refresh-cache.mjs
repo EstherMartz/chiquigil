@@ -17,6 +17,26 @@ function trimmedMedian(prices) {
 // src/lib/universalis.ts
 var LISTINGS_CAP = 50;
 var LISTINGS_KEPT = LISTINGS_CAP;
+var MARKET_FIELD_PATHS = [
+  "itemID",
+  "listings.pricePerUnit",
+  "listings.hq",
+  "listings.worldName",
+  "listings.quantity",
+  "listings.retainerName",
+  "recentHistory.pricePerUnit",
+  "recentHistory.hq",
+  "recentHistory.timestamp",
+  "regularSaleVelocity",
+  "lastUploadTime",
+  "averagePriceNQ",
+  "averagePriceHQ",
+  "listingsCount"
+];
+function marketFields(idCount) {
+  const prefix = idCount > 1 ? "items." : "";
+  return MARKET_FIELD_PATHS.map((p) => prefix + p).join(",");
+}
 function minPrice(arr, hq) {
   const v = arr.filter((l) => l.hq === hq).map((l) => l.pricePerUnit);
   return v.length ? Math.min(...v) : null;
@@ -71,7 +91,7 @@ function parseMarketResponse(raw) {
 var BATCH_SIZE = 100;
 var MAX_CONCURRENT = 8;
 async function fetchBatch(scope, ids) {
-  const url = `https://universalis.app/api/v2/${scope}/${ids.join(",")}?listings=${LISTINGS_CAP}&entries=15`;
+  const url = `https://universalis.app/api/v2/${scope}/${ids.join(",")}?listings=${LISTINGS_CAP}&entries=15&fields=${marketFields(ids.length)}`;
   let res = await fetch(url);
   if (!res.ok) {
     await new Promise((r) => setTimeout(r, 400));
@@ -111,14 +131,27 @@ async function fetchMarketForOutputs(ids, world, dc, region) {
 }
 
 // src/bot/marketCache.ts
-import { put } from "@vercel/blob";
-async function writeMarketCache(cache) {
-  const blob = await put("market-cache.json", JSON.stringify(cache), {
+import { put, head } from "@vercel/blob";
+async function writeBlobJson(name, data) {
+  const blob = await put(name, JSON.stringify(data), {
     access: "public",
     addRandomSuffix: false,
     allowOverwrite: true
   });
   return blob.url;
+}
+async function readBlobJson(name) {
+  try {
+    const meta = await head(name);
+    const res = await fetch(meta.url, { cache: "no-store" });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+async function writeMarketCache(cache, name = "market-cache.json") {
+  return writeBlobJson(name, cache);
 }
 
 // src/bot/loadSnapshots.ts
@@ -127,29 +160,122 @@ async function loadItemIds(baseUrl) {
   return raw.items.map((i) => i.id);
 }
 
+// src/bot/hotSet.ts
+function selectHotIds(bundle, velocityThreshold) {
+  const hot = /* @__PURE__ */ new Set();
+  for (const scope of [bundle.phantom, bundle.dc, bundle.region]) {
+    for (const [id, item] of Object.entries(scope)) {
+      if (item.velocity >= velocityThreshold) hot.add(Number(id));
+    }
+  }
+  return [...hot].sort((a, b) => a - b);
+}
+
+// src/bot/marketDiff.ts
+var EMPTY_MAX = 2;
+var MIN_VELOCITY = 1;
+function scanDeals(data, now, dealPct = 25) {
+  const out = [];
+  for (const [idStr, n] of Object.entries(data)) {
+    if (n.velocity < MIN_VELOCITY) continue;
+    const itemId = Number(idStr);
+    if (n.listingCount <= EMPTY_MAX) {
+      out.push({
+        itemId,
+        kind: "empty",
+        world: "",
+        oldValue: null,
+        newValue: n.listingCount,
+        changePct: null,
+        velocity: n.velocity,
+        gilPerDay: 0,
+        detectedAt: now
+      });
+      continue;
+    }
+    const avg = n.avgNQ;
+    if (avg == null || avg <= 0 || n.minNQ == null) continue;
+    const dealLine = avg * (1 - dealPct / 100);
+    const spikeLine = avg * (1 + dealPct / 100);
+    let kind = null;
+    if (n.minNQ <= dealLine) kind = "crash";
+    else if (n.minNQ >= spikeLine) kind = "spike";
+    if (!kind) continue;
+    out.push({
+      itemId,
+      kind,
+      world: n.worldListings[0]?.world ?? "",
+      oldValue: Math.round(avg),
+      newValue: n.minNQ,
+      changePct: Math.round((n.minNQ - avg) / avg * 100 * 10) / 10,
+      velocity: n.velocity,
+      gilPerDay: Math.round(n.minNQ * n.velocity),
+      detectedAt: now
+    });
+  }
+  return out;
+}
+function mergeDeals(existing, current) {
+  const seenAt = /* @__PURE__ */ new Map();
+  const keyOf = (o) => `${o.itemId}:${o.kind}`;
+  for (const o of existing) seenAt.set(keyOf(o), o.detectedAt);
+  return current.map((o) => {
+    const first = seenAt.get(keyOf(o));
+    return first != null && first < o.detectedAt ? { ...o, detectedAt: first } : o;
+  }).sort((a, b) => b.detectedAt - a.detectedAt);
+}
+
 // src/api/refresh-cache.ts
 var WORLD = process.env.HOME_WORLD ?? "Phantom";
 var DC = process.env.HOME_DC ?? "Chaos";
 var REGION = process.env.REGION ?? "Europe";
 var SECRET = process.env.REFRESH_SECRET ?? "";
+var VELOCITY_THRESHOLD = Number(process.env.HOT_VELOCITY_THRESHOLD ?? 10);
+var TRADED_THRESHOLD = Number(process.env.TRADED_VELOCITY_THRESHOLD ?? 1);
+var OPP_DEAL_PCT = Number(process.env.OPP_DEAL_PCT ?? 25);
 async function handler(req, res) {
   if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
   if (!SECRET || req.query.token !== SECRET) return res.status(401).json({ error: "Unauthorized" });
+  const tier = req.query.tier === "hot" ? "hot" : req.query.tier === "full" ? "full" : "cold";
   const t0 = Date.now();
   try {
     const proto = req.headers["x-forwarded-proto"] ?? "https";
     const host = req.headers["x-forwarded-host"] ?? req.headers.host ?? "localhost";
     const baseUrl = `${proto}://${host}`;
-    const ids = await loadItemIds(baseUrl);
-    console.log(`[refresh] fetching ${ids.length} items across 3 scopes...`);
+    let ids;
+    if (tier === "hot") ids = await readBlobJson("hot-ids.json") ?? await loadItemIds(baseUrl);
+    else if (tier === "full") ids = await loadItemIds(baseUrl);
+    else ids = await readBlobJson("traded-ids.json") ?? await loadItemIds(baseUrl);
+    console.log(`[refresh:${tier}] fetching ${ids.length} items across 3 scopes...`);
     const bundle = await fetchMarketForOutputs(ids, WORLD, DC, REGION);
+    const blobName = tier === "hot" ? "market-cache-hot.json" : "market-cache-cold.json";
     const cache = { phantom: bundle.phantom, dc: bundle.dc, region: bundle.region, ts: Date.now() };
-    const blobUrl = await writeMarketCache(cache);
+    const blobUrl = await writeMarketCache(cache, blobName);
+    let oppCount;
+    if (tier !== "hot") {
+      const current = scanDeals(cache.dc, cache.ts, OPP_DEAL_PCT);
+      const existing = (await readBlobJson("opportunities.json"))?.opportunities ?? [];
+      const merged = mergeDeals(existing, current);
+      await writeBlobJson("opportunities.json", { ts: cache.ts, opportunities: merged });
+      oppCount = merged.length;
+    }
+    let tradedCount;
+    if (tier === "full") {
+      const tradedIds = selectHotIds(bundle, TRADED_THRESHOLD);
+      await writeBlobJson("traded-ids.json", tradedIds);
+      tradedCount = tradedIds.length;
+    }
+    let hotCount;
+    if (tier !== "hot") {
+      const hotIds = selectHotIds(bundle, VELOCITY_THRESHOLD);
+      await writeBlobJson("hot-ids.json", hotIds);
+      hotCount = hotIds.length;
+    }
     const elapsed = ((Date.now() - t0) / 1e3).toFixed(1);
-    console.log(`[refresh] done in ${elapsed}s, ${ids.length} items, blob: ${blobUrl}`);
-    return res.status(200).json({ ok: true, items: ids.length, elapsed: `${elapsed}s`, blobUrl });
+    console.log(`[refresh:${tier}] done in ${elapsed}s, ${ids.length} items, blob: ${blobUrl}`);
+    return res.status(200).json({ ok: true, tier, items: ids.length, tradedCount, hotCount, oppCount, elapsed: `${elapsed}s`, blobUrl });
   } catch (e) {
-    console.error("[refresh] error:", e);
+    console.error(`[refresh:${tier}] error:`, e);
     return res.status(500).json({ error: e.message });
   }
 }

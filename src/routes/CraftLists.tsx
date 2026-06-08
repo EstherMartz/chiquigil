@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useItemSnapshot } from '../features/queries/useItemSnapshot';
 import { useRecipeSnapshot } from '../features/queries/useRecipeSnapshot';
-import { useCreateList } from '../features/craftLists/useCraftLists';
+import { useCreateList, useCraftLists } from '../features/craftLists/useCraftLists';
 import { SectionHeader } from '../components/SectionHeader';
 import { HqStar } from '../components/HqStar';
 import { crafterBeadClass } from '../features/items/crafterColors';
@@ -18,9 +18,19 @@ export default function CraftLists() {
   const snapshot = useItemSnapshot();
   const recipes = useRecipeSnapshot(true);
   const createList = useCreateList();
+  const savedLists = useCraftLists();
 
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState<Map<number, Selected>>(new Map());
+
+  // Show saved lists on the builder page when the user isn't mid-search or
+  // mid-selection (mirrors Projects) — so landing here surfaces existing work
+  // rather than a lone search box. Most-recent first, capped to a preview.
+  const idle = query.trim().length < 2 && selected.size === 0;
+  const recentLists = useMemo(
+    () => [...(savedLists.data ?? [])].sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 6),
+    [savedLists.data],
+  );
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -90,6 +100,47 @@ export default function CraftLists() {
         placeholder="Search items…"
         className="w-full bg-bg-card border border-border-base text-text-cream font-mono text-sm px-3 py-2.5 focus:outline-none focus:border-aether"
       />
+
+      {/* Saved lists — shown on landing so existing work is one click away. */}
+      {idle && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="font-mono text-[10px] tracking-widest uppercase text-text-low">Your lists</span>
+            {(savedLists.data?.length ?? 0) > recentLists.length && (
+              <Link to="/craft-lists/saved" className="font-mono text-[10px] text-aether hover:underline">
+                View all {savedLists.data!.length} →
+              </Link>
+            )}
+          </div>
+          {savedLists.isLoading && (
+            <div className="p-6 text-center text-text-low font-mono text-xs">Loading lists…</div>
+          )}
+          {savedLists.isError && (
+            <div className="border border-border-base bg-bg-card p-6 text-center text-crimson font-mono text-xs">
+              Couldn't load saved lists — the Discord bot may be down.
+            </div>
+          )}
+          {!savedLists.isLoading && !savedLists.isError && recentLists.length === 0 && (
+            <div className="border border-border-base bg-bg-card p-8 text-center text-text-low font-mono text-xs italic">
+              No saved lists yet — search for items above and build your first one.
+            </div>
+          )}
+          {recentLists.length > 0 && (
+            <ul className="space-y-2">
+              {recentLists.map((l) => (
+                <li key={l.id} className="border border-border-base bg-bg-card hover:bg-bg-card-hi">
+                  <Link to={`/craft-lists/${l.id}`} className="flex items-center justify-between px-3 py-2.5">
+                    <span className="text-text-cream font-display italic">{l.name}</span>
+                    <span className="font-mono text-[10px] text-text-low">
+                      {l.itemCount} recipe{l.itemCount === 1 ? '' : 's'}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       {/* Selected tray */}
       {selected.size > 0 && (

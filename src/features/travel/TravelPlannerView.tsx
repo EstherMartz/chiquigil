@@ -244,7 +244,12 @@ function FilterBar(props: {
           className="mt-1 block w-28 bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors" />
       </label>
       <label className="block">
-        <span className="font-mono text-[13px] tracking-widest text-text-low uppercase">Sell horizon (days)</span>
+        <span
+          className="font-mono text-[13px] tracking-widest text-text-low uppercase cursor-help"
+          title="How many days you'll take to sell. Caps the units each flip assumes you can offload to what the home market absorbs in that window (home sales/day × horizon), so profit isn't based on dumping unlimited stock at once."
+        >
+          Sell horizon (days) ⓘ
+        </span>
         <input type="number" inputMode="decimal" min={1} step={1} value={props.horizonDays}
           onChange={(e) => props.onHorizon(Math.max(1, Math.trunc(Number(e.target.value) || 1)))}
           className="mt-1 block w-28 bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors" />

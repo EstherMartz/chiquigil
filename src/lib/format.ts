@@ -53,3 +53,26 @@ export function fmtRelative(ms: number): string {
   if (days < 7) return `${days}d ago`;
   return `${weeks}w ago`;
 }
+
+const pad2 = (n: number) => String(n).padStart(2, '0');
+
+/**
+ * Unambiguous local date `YYYY-MM-DD` — avoids `toLocaleDateString()`, whose
+ * `2/6/2026` is read as Feb-6 or Jun-2 depending on locale. Matches the ISO
+ * dates the rest of the app shows (e.g. the What's New patch date). Accepts an
+ * epoch-ms number or any `Date`-parseable string.
+ */
+export function fmtDate(ts: number | string | null | undefined): string {
+  if (!ts) return '—';
+  const d = new Date(ts);
+  if (Number.isNaN(d.getTime())) return '—';
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+}
+
+/** Unambiguous local date-time `YYYY-MM-DD HH:MM` (see {@link fmtDate}). */
+export function fmtDateTime(ts: number | string | null | undefined): string {
+  if (!ts) return '—';
+  const d = new Date(ts);
+  if (Number.isNaN(d.getTime())) return '—';
+  return `${fmtDate(ts)} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+}
