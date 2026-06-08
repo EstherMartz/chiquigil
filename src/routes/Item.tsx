@@ -127,6 +127,12 @@ export default function Item() {
   const dcIds = useMemo(() => (worldsQ.data ? dcWorldIds(dc, worldsQ.data) : []), [worldsQ.data, dc]);
   const baseDcItem = market.data?.dc[itemId];
   const live = useItemSocket(itemId, dcIds, baseDcItem, worldsQ.data);
+  // DC map with the live overlay folded in for this item, so blocks that price the item
+  // from the whole-DC map (e.g. CraftTreeBlock's make-vs-buy) also reflect live prices.
+  const dcMap = useMemo(
+    () => (live.liveItem ? { ...(market.data?.dc ?? {}), [itemId]: live.liveItem } : market.data?.dc),
+    [market.data?.dc, live.liveItem, itemId],
+  );
 
   const NINETY_DAYS_SEC = 90 * 24 * 60 * 60;
   const historyQ = useQuery({
@@ -380,7 +386,7 @@ export default function Item() {
         <CraftTreeBlock
           itemId={itemId}
           recipeMap={recipes.data}
-          dc={market.data?.dc}
+          dc={dcMap}
           phantom={market.data?.phantom}
           nameOf={nameOf}
         />
