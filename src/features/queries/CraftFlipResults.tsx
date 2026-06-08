@@ -9,13 +9,17 @@ import { colorFromPoints } from '../../features/sparklines/sparklineColor';
 import { formatSparklineTooltip } from '../../features/sparklines/sparklineTooltip';
 import { ResultTableScaffold, EmptyResults } from './ResultTableScaffold';
 import { useUiStore, rowPadClass } from '../ui/uiStore';
-import type { CraftFlipRow } from './types';
+import { RiskBadge, SellersBadge, riskExplanation } from './craftRiskBadges';
+import { CompetitorPopover } from './CompetitorPopover';
+import { GAP_GREEN, GAP_AMBER } from './craftListingAnalysis';
+import type { CraftFlipRow, QueryScope } from './types';
 import type { CsvColumn } from '../../lib/csv';
 
 interface Props {
   rows: CraftFlipRow[];
   totalCandidates: number;
   skippedChunks: number;
+  scope: QueryScope;
   sparklineMap?: Map<number, (number | null)[]>;
   sparklineLoading?: boolean;
 }
@@ -29,12 +33,19 @@ const CSV_COLUMNS: CsvColumn<CraftFlipRow>[] = [
   { key: 'profit', label: 'Profit' },
   { key: 'velocity', label: 'Velocity (sales/day)' },
   { key: 'gilPerDay', label: 'Gil/day' },
+  { key: 'risk', label: 'Risk' },
+  { key: 'gap', label: 'Gap to next tier' },
+  { key: 'sellerCount', label: 'Sellers' },
+  { key: 'topSellerShare', label: 'Top seller share' },
+  { key: 'clearDays', label: 'Days to clear' },
   { key: 'hq', label: 'HQ' },
 ];
 
-export function CraftFlipResults({ rows, totalCandidates, skippedChunks, sparklineMap, sparklineLoading }: Props) {
+export function CraftFlipResults({ rows, totalCandidates, skippedChunks, scope, sparklineMap, sparklineLoading }: Props) {
   const density = useUiStore((s) => s.density);
   const rowY = rowPadClass(density);
+  const compact = density === 'compact';
+  const homeScope = scope === 'home';
   const showSparkline = sparklineMap != null;
   return (
     <ResultTableScaffold
@@ -61,12 +72,22 @@ export function CraftFlipResults({ rows, totalCandidates, skippedChunks, sparkli
                     suffix={r.hq && <HqStar leading />}
                     sub={categoryLabel(r.sc)}
                   />
+                  <div className="mt-0.5">
+                    <SellersBadge
+                      sellerCount={r.sellerCount}
+                      topSellerShare={r.topSellerShare}
+                      concentrationRisk={r.concentrationRisk}
+                    />
+                  </div>
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-2 mt-2 pl-8 font-mono text-[12px]">
                 <MobileMetric label="Sale">{fmtGil(r.unitPrice)}</MobileMetric>
                 <MobileMetric label="Profit"><span className="text-jade">+{fmtGil(r.profit)}</span></MobileMetric>
                 <MobileMetric label="Gil/day"><span className="text-gold-hi">{fmtGil(Math.round(r.gilPerDay))}</span></MobileMetric>
+                <MobileMetric label="Gap"><GapLine row={r} /></MobileMetric>
+                <MobileMetric label="Risk"><RiskBadge risk={r.risk} compact /></MobileMetric>
+                <MobileMetric label="Clears"><ClearsLine row={r} homeScope={homeScope} /></MobileMetric>
               </div>
             </div>
           ))}
@@ -99,6 +120,11 @@ export function CraftFlipResults({ rows, totalCandidates, skippedChunks, sparkli
                   Velocity
                 </InfoTooltip>
               </th>
+              <th className="text-left px-3 py-2">
+                <InfoTooltip label="Competitive safety of entering this market: gap to the next listing, seller concentration, and how fast stock clears.">
+                  Risk
+                </InfoTooltip>
+              </th>
               <th className="text-right px-3 py-2 whitespace-nowrap">
                 <InfoTooltip label="Profit × velocity. Expected daily gil from crafting this item at current prices.">
                   Gil/day
@@ -117,8 +143,26 @@ export function CraftFlipResults({ rows, totalCandidates, skippedChunks, sparkli
                     suffix={r.hq && <HqStar leading />}
                     sub={categoryLabel(r.sc)}
                   />
+                  <div className="mt-0.5">
+                    <SellersBadge
+                      sellerCount={r.sellerCount}
+                      topSellerShare={r.topSellerShare}
+                      concentrationRisk={r.concentrationRisk}
+                      dotOnly={compact}
+                    />
+                  </div>
                 </td>
-                <td className={`px-3 ${rowY} text-right font-mono`}>{fmtGil(r.unitPrice)}</td>
+                <td className={`px-3 ${rowY} text-right font-mono align-top`}>
+                  <InfoTooltip label={<CompetitorPopover row={r} homeScope={homeScope} />}>
+                    <span className="cursor-help">{fmtGil(r.unitPrice)}</span>
+                  </InfoTooltip>
+                  {!compact && (
+                    <div className="mt-0.5 flex flex-col items-end">
+                      <GapLine row={r} />
+                      <ClearsLine row={r} homeScope={homeScope} />
+                    </div>
+                  )}
+                </td>
                 {showSparkline && (
                   <td className={`px-3 ${rowY} hidden md:table-cell`}>
                     {(() => {
@@ -135,6 +179,16 @@ export function CraftFlipResults({ rows, totalCandidates, skippedChunks, sparkli
                 <td className={`px-3 ${rowY} text-right font-mono text-text-low hidden md:table-cell`}>{fmtGil(r.materialCost)}</td>
                 <td className={`px-3 ${rowY} text-right font-mono text-jade`}>+{fmtGil(r.profit)}</td>
                 <td className={`px-3 ${rowY} text-right font-mono hidden md:table-cell`}>{r.velocity.toFixed(1)}</td>
+                <td className={`px-3 ${rowY} align-top`}>
+                  <InfoTooltip label={<CompetitorPopover row={r} homeScope={homeScope} />}>
+                    <span className="cursor-help"><RiskBadge risk={r.risk} compact={compact} /></span>
+                  </InfoTooltip>
+                  {!compact && (
+                    <div className="mt-0.5 font-mono text-[10px] text-text-low max-w-[14rem]">
+                      {riskExplanation(r)}
+                    </div>
+                  )}
+                </td>
                 <td className={`px-3 ${rowY} text-right font-mono text-gold-hi`}>{fmtGil(Math.round(r.gilPerDay))}</td>
               </tr>
             ))}
@@ -142,6 +196,41 @@ export function CraftFlipResults({ rows, totalCandidates, skippedChunks, sparkli
         </table>
       )}
     />
+  );
+}
+
+function gapColor(gapPct: number): string {
+  if (gapPct >= GAP_GREEN) return 'text-[#a0e080]';
+  if (gapPct >= GAP_AMBER) return 'text-[#c0a030]';
+  return 'text-[#c04040]';
+}
+
+/** "+Xk gap" / "+0 gap" / "only listing" line under the sale price. */
+function GapLine({ row }: { row: CraftFlipRow }) {
+  if (row.onlyListing) {
+    return <span className="font-mono text-[10px] text-[#60c060]">only listing</span>;
+  }
+  if (!row.hasSecondTier) {
+    return <span className="font-mono text-[10px] text-[#c04040]">+0 gap</span>;
+  }
+  return <span className={`font-mono text-[10px] ${gapColor(row.gapPct)}`}>+{fmtGil(row.gap)} gap</span>;
+}
+
+/** "~2d to clear · 9% capture" line (home scope only). */
+function ClearsLine({ row, homeScope }: { row: CraftFlipRow; homeScope: boolean }) {
+  if (!homeScope) {
+    return (
+      <span className="font-mono text-[10px] text-text-low" title="Capture rate only available for home world scope.">
+        clear/capture: home only
+      </span>
+    );
+  }
+  if (row.clearDays == null) return null;
+  const color = row.clearDays < 1 ? 'text-[#a0e080]' : row.clearDays <= 5 ? 'text-[#c0a030]' : 'text-[#c04040]';
+  return (
+    <span className={`font-mono text-[10px] ${color}`}>
+      {row.clearNote} · {Math.round(row.captureRate * 100)}% cap
+    </span>
   );
 }
 

@@ -1,7 +1,7 @@
 import type { ChangeEvent } from 'react';
 import { useState } from 'react';
 import { ITEM_SEARCH_CATEGORIES, categoryLabel, CATEGORY_GROUPS } from '../../lib/itemSearchCategories';
-import type { HqMode, QueryFilter, QueryMode, QueryScope, QuerySort } from './types';
+import type { HqMode, MaxRisk, QueryFilter, QueryMode, QueryScope, QuerySort } from './types';
 import { btnPrimary } from '../../components/buttonStyles';
 import { CategorySelect } from '../../components/CategorySelect';
 
@@ -19,6 +19,7 @@ const SORTS: { id: QuerySort; label: string }[] = [
   { id: 'gilFlow',   label: 'Gil/day' },
   { id: 'velocity',  label: 'Velocity' },
   { id: 'unitPrice', label: 'Unit price' },
+  { id: 'risk',      label: 'Risk (worst first)' },
 ];
 
 export function QueryBuilder({ value, onChange, onRun, busy, stale }: Props) {
@@ -126,6 +127,22 @@ export function QueryBuilder({ value, onChange, onRun, busy, stale }: Props) {
             className="mt-1 block w-full bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
           />
         </label>
+
+        {value.mode === 'craft' && (
+          <label className="block">
+            <span className="font-mono text-[13px] tracking-widest text-text-low">Max risk</span>
+            <select
+              value={value.maxRisk ?? 'any'}
+              onChange={(e) => patch({ maxRisk: e.target.value as MaxRisk })}
+              className="mt-1 block w-full bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
+              title="Hide markets that are crowded or dominated. Re-filters instantly without re-scanning."
+            >
+              <option value="any">Any</option>
+              <option value="healthy">Healthy or better</option>
+              <option value="open">Open only</option>
+            </select>
+          </label>
+        )}
 
         <div className="flex items-end gap-2">
           <div className="flex-1 flex flex-col gap-1">
