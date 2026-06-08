@@ -207,7 +207,7 @@ function gapColor(gapPct: number): string {
 
 /** "+Xk gap" / "+0 gap" / "only listing" line under the sale price. */
 function GapLine({ row }: { row: CraftFlipRow }) {
-  if (row.onlyListing || !row.hasSecondTier && row.gap === 0 && row.gapPct === Infinity) {
+  if (row.onlyListing) {
     return <span className="font-mono text-[10px] text-[#60c060]">only listing</span>;
   }
   if (!row.hasSecondTier) {

@@ -22,10 +22,10 @@ export function CompetitorPopover({ row, homeScope }: Props) {
       <div className="tracking-widest uppercase text-text-low mb-1">Listing depth</div>
       <div className="border-t border-border-base pt-1">
         {row.depth.length === 0 && <div className="text-text-low italic">no listings</div>}
-        {row.depth.map((b, i) => {
+        {row.depth.map((b) => {
           const filled = Math.max(1, Math.round((b.units / maxUnits) * BAR_WIDTH));
           return (
-            <div key={i} className="flex items-center gap-2 whitespace-pre">
+            <div key={`${b.priceLow}-${b.priceHigh}`} className="flex items-center gap-2 whitespace-pre">
               <span className="text-text-dim w-24">{fmtGil(b.priceLow)}–{fmtGil(b.priceHigh)}</span>
               <span className="text-aether">{'█'.repeat(filled)}{' '.repeat(BAR_WIDTH - filled)}</span>
               <span className="text-text-low">{b.units}u · {b.sellers} seller{b.sellers === 1 ? '' : 's'}</span>
