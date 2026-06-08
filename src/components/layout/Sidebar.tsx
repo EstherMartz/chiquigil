@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { usePluginBridge } from '../../features/plugin/usePluginBridge';
+import { usePatchStatus } from '../../features/dashboard/usePatchStatus';
 
 const navItemClass = ({ isActive }: { isActive: boolean }) =>
   `block px-4 py-3 md:py-1.5 font-mono text-[13px] tracking-widest transition-colors border-l-[3px] ${
@@ -73,6 +74,8 @@ const NAV_GROUPS: NavGroup[] = [
 export function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { connected } = usePluginBridge();
+  const patch = usePatchStatus();
+  const showPatchCue = patch.isNewPatch && patch.withinWindow(14);
   const navGroups = NAV_GROUPS.map((group) =>
     group.label === 'Planning' && connected
       ? { ...group, items: [{ label: 'Plan', path: '/planner' }, ...group.items] }
@@ -80,6 +83,20 @@ export function Sidebar() {
   );
 
   const closeMobileMenu = () => setMobileOpen(false);
+
+  const renderLabel = (item: { label: string; path: string }) => (
+    <>
+      {item.label}
+      {item.path === '/whats-new' && showPatchCue && (
+        <span
+          title="New patch — see What's New"
+          className="ml-2 align-middle font-mono text-[8px] tracking-widest uppercase text-gold border border-gold/40 rounded-sm px-1 py-px"
+        >
+          New
+        </span>
+      )}
+    </>
+  );
 
   // Desktop sidebar
   const desktopContent = (
@@ -114,7 +131,7 @@ export function Sidebar() {
                   to={item.path}
                   className={navItemClass}
                 >
-                  {item.label}
+                  {renderLabel(item)}
                 </NavLink>
               ))}
             </div>
@@ -185,7 +202,7 @@ export function Sidebar() {
                     className={navItemClass}
                     onClick={closeMobileMenu}
                   >
-                    {item.label}
+                    {renderLabel(item)}
                   </NavLink>
                 ))}
               </div>

@@ -3,7 +3,15 @@ import { Link } from 'react-router-dom';
 import { fmtGil } from '../../../lib/format';
 import { Skeleton } from '../../../components/Skeleton';
 import { useDashboardStore } from '../dashboardStore';
-import type { PortfolioTotals, TopPick } from '../aggregate';
+import type { PortfolioTotals, TopPick, Concentration, TopCategory } from '../aggregate';
+
+/** Traffic-light color coding for concentration risk: green (low) → amber (med) → red (high). */
+function concentrationTone(top3: number, cat: number): string {
+  // Evaluate red first (highest risk), then green (lowest risk), else amber.
+  if (top3 > 50 || cat > 60) return 'text-crimson';
+  if (top3 < 30 && cat < 40) return 'text-jade';
+  return 'text-gold';
+}
 
 /**
  * Top-of-dashboard KPI strip — the "is my watchlist worth my time?" answer.
@@ -11,12 +19,18 @@ import type { PortfolioTotals, TopPick } from '../aggregate';
  * 7-day deltas (history fetch), so until those land it shows a shimmer instead
  * of an incomplete count that would silently jump when history arrives.
  */
-export function KpiStrip({ totals, applyMarketTax, picks, alertsReady = true }: {
+export function KpiStrip({ totals, applyMarketTax, picks, conc3, topCat, alertsReady = true }: {
   totals: PortfolioTotals;
   applyMarketTax: boolean;
   picks: TopPick[];
+  conc3: Concentration;
+  topCat: TopCategory | null;
   alertsReady?: boolean;
 }) {
+  const top3Pct = Math.round(conc3.topShare * 100);
+  const catPct = topCat?.pct ?? 0;
+  const tone = concentrationTone(top3Pct, catPct);
+
   const cells = [
     {
       k: 'Daily gil potential',
@@ -52,14 +66,26 @@ export function KpiStrip({ totals, applyMarketTax, picks, alertsReady = true }: 
   return (
     <div className="border border-border-base">
       <TopPickBanner picks={picks} />
-      <div className="grid grid-cols-2 md:grid-cols-5">
-        {cells.map((s, i) => (
-          <div key={s.k} className={`p-3 ${i < cells.length - 1 ? 'border-r border-border-base' : ''} bg-bg-card`}>
+      <div className="grid grid-cols-2 md:grid-cols-6">
+        {cells.map((s) => (
+          <div key={s.k} className={`p-3 border-r border-border-base bg-bg-card`}>
             <div className="font-mono text-[9px] tracking-widest uppercase text-text-low">{s.k}</div>
             <div className={`font-mono text-xl tabular-nums leading-none mt-1.5 ${s.tone}`}>{s.v}</div>
             <div className="font-mono text-[9px] text-text-low mt-1.5">{s.sub}</div>
           </div>
         ))}
+        <button
+          type="button"
+          onClick={() => document.getElementById('concentration-widget')?.scrollIntoView({ behavior: 'smooth' })}
+          title="Jump to concentration breakdown"
+          className="p-3 text-left bg-bg-card hover:bg-bg-card/80 transition-colors cursor-pointer"
+        >
+          <div className="font-mono text-[9px] tracking-widest uppercase text-text-low">Concentration</div>
+          <div className="font-mono text-sm tabular-nums leading-tight mt-1.5 space-y-1">
+            <div className={`${tone}`}>Top 3: {top3Pct}%</div>
+            <div className={`${tone}`}>Top cat: {topCat ? `${Math.round(topCat.pct)}% ${topCat.cat.toUpperCase()}` : '—'}</div>
+          </div>
+        </button>
       </div>
     </div>
   );

@@ -275,7 +275,7 @@ export function defaultEmptyShelfFilter(): EmptyShelfFilter {
 }
 
 export type WhatsNewTab = 'items' | 'recipes';
-export type WhatsNewSort = 'velocity' | 'price' | 'freshness' | 'name';
+export type WhatsNewSort = 'velocity' | 'price' | 'freshness' | 'name' | 'spike';
 
 export interface WhatsNewFilter {
   tab: WhatsNewTab;
@@ -284,6 +284,7 @@ export interface WhatsNewFilter {
   categories: number[];
   sort: WhatsNewSort;
   limit: number;
+  myJobsOnly: boolean;
 }
 
 export interface WhatsNewRow {
@@ -297,10 +298,11 @@ export interface WhatsNewRow {
   recentSales: number;
   lastSaleMs: number | null;
   daysSinceLastSale: number | null;
+  spike: number | null;
 }
 
 export function defaultWhatsNewFilter(): WhatsNewFilter {
   // Default to ≥0.1 sales/day so the first load surfaces new items that
   // actually move, not the long tail of brand-new items with zero sales.
-  return { tab: 'items', tradeableOnly: true, minVelocity: 0.1, categories: [], sort: 'velocity', limit: 200 };
+  return { tab: 'items', tradeableOnly: true, minVelocity: 0.1, categories: [], sort: 'velocity', limit: 200, myJobsOnly: false };
 }

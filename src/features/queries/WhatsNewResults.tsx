@@ -13,6 +13,7 @@ interface Props {
   tab: WhatsNewTab;
   sort: WhatsNewSort;
   onSortChange: (next: WhatsNewSort) => void;
+  myJobsOnly: boolean;
 }
 
 const CSV_COLUMNS: CsvColumn<WhatsNewRow>[] = [
@@ -20,6 +21,7 @@ const CSV_COLUMNS: CsvColumn<WhatsNewRow>[] = [
   { key: 'name', label: 'Item' },
   { key: 'craftable', label: 'Craftable', value: (r) => (r.craftable ? 'yes' : '') },
   { key: 'price', label: 'Price', value: (r) => r.price ?? '' },
+  { key: 'spike', label: 'Spike (×cat avg)', value: (r) => (r.spike == null ? '' : r.spike.toFixed(2)) },
   { key: 'velocity', label: 'Velocity (sales/day)' },
   { key: 'recentSales', label: 'Recent sales' },
   { key: 'lastSaleMs', label: 'Days since last sale', value: (r) => (r.daysSinceLastSale == null ? '' : Math.round(r.daysSinceLastSale)) },
@@ -45,7 +47,7 @@ function SortableHeader({ active, onClick, children, hideOnMobile = false }: {
   );
 }
 
-export function WhatsNewResults({ rows, totalCandidates, skippedChunks, tab, sort, onSortChange }: Props) {
+export function WhatsNewResults({ rows, totalCandidates, skippedChunks, tab, sort, onSortChange, myJobsOnly }: Props) {
   const density = useUiStore((s) => s.density);
   const rowY = rowPadClass(density);
   const showCraftable = tab === 'items';
@@ -54,7 +56,7 @@ export function WhatsNewResults({ rows, totalCandidates, skippedChunks, tab, sor
       rows={rows}
       totalCandidates={totalCandidates}
       skippedChunks={skippedChunks}
-      emptyState={<EmptyResults>No new {tab === 'items' ? 'items' : 'recipes'} are selling yet. Turn off "Tradeable only" to see every new entry, or lower Min sales/day.</EmptyResults>}
+      emptyState={<EmptyResults>{myJobsOnly ? 'No new craftable items for your jobs yet — try lowering Min sales/day.' : `No new ${tab === 'items' ? 'items' : 'recipes'} are selling yet. Turn off "Tradeable only" to see every new entry, or lower Min sales/day.`}</EmptyResults>}
       csvColumns={CSV_COLUMNS}
       csvFilename={`whats-new-${tab}-${new Date().toISOString().slice(0, 10)}.csv`}
       renderTable={(visible) => (
@@ -64,6 +66,7 @@ export function WhatsNewResults({ rows, totalCandidates, skippedChunks, tab, sor
               <th className="text-left px-3 py-2 text-text-dim">#</th>
               <th className="text-left px-3 py-2 text-text-dim">Item</th>
               <SortableHeader active={sort === 'price'} onClick={() => onSortChange('price')}>Price</SortableHeader>
+              <SortableHeader active={sort === 'spike'} onClick={() => onSortChange('spike')}>Spike</SortableHeader>
               <SortableHeader active={sort === 'velocity'} onClick={() => onSortChange('velocity')}>Sales/day</SortableHeader>
               <SortableHeader active={false} onClick={() => onSortChange('velocity')} hideOnMobile>Recent</SortableHeader>
               <SortableHeader active={sort === 'freshness'} onClick={() => onSortChange('freshness')}>Last sold</SortableHeader>
@@ -82,6 +85,11 @@ export function WhatsNewResults({ rows, totalCandidates, skippedChunks, tab, sor
                 <td className={`px-3 ${rowY} font-mono text-right`}>
                   {r.price == null ? <span className="text-text-low">—</span> : fmtGil(r.price)}
                   {r.hq && <span className="text-gold ml-1 inline-flex items-baseline"><HqStar /></span>}
+                </td>
+                <td className={`px-3 ${rowY} font-mono text-right`}>
+                  {r.spike == null ? <span className="text-text-low">—</span>
+                    : r.spike >= 3 ? <span className="text-gold tracking-widest text-[10px] uppercase">★ Hot</span>
+                    : <span className={r.spike >= 1 ? 'text-text-cream' : 'text-text-low'}>{r.spike.toFixed(1)}×</span>}
                 </td>
                 <td className={`px-3 ${rowY} font-mono text-right`}>{r.velocity.toFixed(1)}</td>
                 <td className={`px-3 ${rowY} font-mono text-right text-text-low hidden md:table-cell`}>{r.recentSales}</td>

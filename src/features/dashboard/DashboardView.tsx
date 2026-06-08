@@ -15,15 +15,21 @@ import { StatusBanner } from '../../components/StatusBanner';
 import { FreshnessChip } from '../../components/FreshnessChip';
 import {
   portfolioTotals, marginBuckets, moversDigest, spreadByWorld, valuePlays, topPicks, valuationMap,
+  concentration, topCategory,
 } from './aggregate';
 import type { HistorySummary } from '../fairvalue/fairValue';
 import { KpiStrip } from './tiles/KpiStrip';
+import { PatchBanner } from './tiles/PatchBanner';
+import { ConcentrationBanner } from './tiles/ConcentrationBanner';
 import { MarginHistogram } from './tiles/MarginHistogram';
 import { GilLeaderboard } from './tiles/GilLeaderboard';
 import { ChangedDigest } from './tiles/ChangedDigest';
+import { ConcentrationWidget } from './tiles/ConcentrationWidget';
 import { SpreadBars } from './tiles/SpreadBars';
 import { ValuePlays } from './tiles/ValuePlays';
 import { WatchlistHeatmapTile } from './tiles/WatchlistHeatmapTile';
+import { usePatchStatus } from './usePatchStatus';
+import { usePatchMovers } from './usePatchMovers';
 
 export function DashboardView() {
   const { world, dc, retainerLevels, applyMarketTax } = useSettingsStore();
@@ -33,6 +39,9 @@ export function DashboardView() {
   // Live: the watchlist may track slow-selling items that aren't in the cron's "traded"
   // bulk blob, so price them straight from Universalis (a small, user-specific set).
   const market = useMarketData(ids, world, dc, undefined, { live: true });
+  const trackedIds = useMemo(() => new Set(ids), [ids]);
+  const patchStatus = usePatchStatus();
+  const patchMovers = usePatchMovers();
   const history = useWatchlistHistory(ids, dc);
   const recipes = useRecipes(ids);
   const snapshot = useItemSnapshot();
@@ -93,6 +102,8 @@ export function DashboardView() {
     spreads: spreadByWorld(rowsWithDelta, listingsById, world, 6),
     valuePlays: valuePlays(rowsWithDelta, summaryById, 8),
     valuation: valuationMap(rowsWithDelta, summaryById),
+    conc3: concentration(rowsWithDelta, 3),
+    topCat: topCategory(rowsWithDelta),
   }), [rowsWithDelta, listingsById, world, summaryById]);
 
   // Live "now" tick so the freshness stamp updates without a refetch.
@@ -127,6 +138,8 @@ export function DashboardView() {
         )}
       </div>
 
+      <PatchBanner />
+
       {market.isError && (
         <StatusBanner kind="error">Market fetch failed: {(market.error as Error).message}</StatusBanner>
       )}
@@ -151,11 +164,13 @@ export function DashboardView() {
 
       {!loading && items.length > 0 && (
         <>
-          <KpiStrip totals={agg.totals} applyMarketTax={applyMarketTax} picks={agg.picks} alertsReady={historyReady} />
+          <KpiStrip totals={agg.totals} applyMarketTax={applyMarketTax} picks={agg.picks} conc3={agg.conc3} topCat={agg.topCat} alertsReady={historyReady} />
+          <ConcentrationBanner rows={rowsWithDelta} />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <MarginHistogram buckets={agg.buckets} />
             <GilLeaderboard rows={rowsWithDelta} />
-            <ChangedDigest digest={agg.movers} valuationById={agg.valuation} loading={!historyReady} />
+            <ChangedDigest digest={agg.movers} valuationById={agg.valuation} loading={!historyReady} newPatchItems={patchMovers.movers} showNewPatch={patchStatus.withinWindow(14)} trackedIds={trackedIds} />
+            <ConcentrationWidget rows={rowsWithDelta} />
             <SpreadBars spreads={agg.spreads} homeWorld={world} />
             <ValuePlays plays={agg.valuePlays} loading={!historyReady} />
           </div>

@@ -4,6 +4,7 @@ import { Skeleton } from '../../../components/Skeleton';
 import type { WatchlistRow } from '../../watchlist/buildRows';
 import type { MoversDigest } from '../aggregate';
 import type { Valuation } from '../../fairvalue/fairValue';
+import type { PatchMover } from '../patchMovers';
 
 // "So what" tag bridging a price move to action. cheap/rich come from the
 // fair-value signal; profitable is a craftable now turning a positive margin.
@@ -79,21 +80,75 @@ function ColumnSkeleton({ title, accent }: { title: string; accent: string }) {
   );
 }
 
+function NewPatchColumn({ items, trackedIds }: { items: PatchMover[]; trackedIds?: Set<number> }) {
+  const capped = items.slice(0, 6);
+  return (
+    <div>
+      <div className="font-mono text-[9px] tracking-widest uppercase mb-1.5 text-aether">★ New this patch</div>
+      {capped.length === 0 ? (
+        <div className="text-text-low text-[11px] italic py-2">No new items selling yet — check back soon.</div>
+      ) : (
+        <ul>
+          {capped.map((m) => (
+            <li key={m.id} className="flex items-center justify-between gap-2 py-1 border-b border-border-base/40 last:border-b-0">
+              <span className="flex items-start gap-1.5 min-w-0 flex-1">
+                <Link
+                  to={`/item/${m.id}`}
+                  title={m.name}
+                  className="font-display text-[12px] text-text-cream hover:text-aether hover:underline decoration-1 underline-offset-4 leading-tight line-clamp-2 break-words min-w-0"
+                >
+                  {m.name}
+                </Link>
+              </span>
+              <span className="flex items-center gap-2 shrink-0">
+                <span className="font-mono text-[10px] text-text-low tabular-nums">{m.velocity.toFixed(1)}/d</span>
+                {trackedIds?.has(m.id) ? (
+                  <span className="font-mono text-[9px] tracking-widest uppercase text-text-low">[tracked]</span>
+                ) : (
+                  <Link
+                    to={`/item/${m.id}`}
+                    className="font-mono text-[9px] tracking-widest uppercase border border-aether/40 text-aether px-1 py-px rounded-sm hover:bg-aether hover:text-bg-deep transition-colors"
+                  >
+                    [craft?]
+                  </Link>
+                )}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 /**
  * What moved on your watchlist this week (live market deltas, not your sales).
  * `loading` = the 7-day history fetch is still in flight; show shimmer columns
  * rather than "Nothing spiking." which would read as a settled (wrong) answer.
  */
-export function ChangedDigest({ digest, valuationById, loading = false }: {
-  digest: MoversDigest; valuationById?: Map<number, Valuation>; loading?: boolean;
+export function ChangedDigest({
+  digest,
+  valuationById,
+  loading = false,
+  newPatchItems,
+  showNewPatch,
+  trackedIds,
+}: {
+  digest: MoversDigest;
+  valuationById?: Map<number, Valuation>;
+  loading?: boolean;
+  newPatchItems?: PatchMover[];
+  showNewPatch?: boolean;
+  trackedIds?: Set<number>;
 }) {
+  const gridCols = showNewPatch ? 'sm:grid-cols-4' : 'sm:grid-cols-3';
   return (
     <div className="border border-border-base bg-bg-card p-4">
       <div className="flex items-center justify-between mb-3">
         <div className="font-mono text-[10px] tracking-widest uppercase text-text-low">What changed</div>
         <div className="font-mono text-[9px] tracking-widest uppercase text-text-low">7-day market move</div>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-3">
+      <div className={`grid grid-cols-1 ${gridCols} gap-x-6 gap-y-3`}>
         {loading ? (
           <>
             <ColumnSkeleton title="▲ Spiking" accent="text-jade" />
@@ -105,6 +160,7 @@ export function ChangedDigest({ digest, valuationById, loading = false }: {
             <Column title="▲ Spiking" accent="text-jade" rows={digest.gainers} kind="up" empty="Nothing spiking." valuationById={valuationById} />
             <Column title="▼ Crashing" accent="text-crimson" rows={digest.losers} kind="down" empty="Nothing crashing." valuationById={valuationById} />
             <Column title="◇ Going stale" accent="text-gold" rows={digest.stale} kind="stale" empty="All fresh." valuationById={valuationById} />
+            {showNewPatch && <NewPatchColumn items={newPatchItems ?? []} trackedIds={trackedIds} />}
           </>
         )}
       </div>

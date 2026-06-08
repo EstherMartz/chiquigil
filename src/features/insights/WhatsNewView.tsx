@@ -21,7 +21,7 @@ import { categoryLabel } from '../../lib/itemSearchCategories';
 interface RunResult { saleMap: MarketData; skipped: number; tabAtRun: WhatsNewTab; }
 
 export function WhatsNewView() {
-  const { world } = useSettingsStore();
+  const { world, retainerLevels } = useSettingsStore();
   const itemSnap = useItemSnapshot();
   const recipeSnap = useRecipeSnapshot();
   const whatsNew = useWhatsNewSnapshot();
@@ -68,8 +68,11 @@ export function WhatsNewView() {
 
   const rows = useMemo(() => {
     if (!run.data) return [];
-    return runWhatsNew(activeIds, itemsById, run.data.saleMap, recipeKeys, { ...filter, sort }, Date.now());
-  }, [run.data, activeIds, itemsById, recipeKeys, filter, sort]);
+    return runWhatsNew(activeIds, itemsById, run.data.saleMap, recipeKeys, { ...filter, sort }, Date.now(), {
+      recipes: recipeSnap.data,
+      levels: retainerLevels,
+    });
+  }, [run.data, activeIds, itemsById, recipeKeys, filter, sort, recipeSnap.data, retainerLevels]);
 
   const ready = itemSnap.data != null && whatsNew.data != null;
   const tabStale = run.data != null && run.data.tabAtRun !== filter.tab;
@@ -113,6 +116,7 @@ export function WhatsNewView() {
           tab={filter.tab}
           sort={sort}
           onSortChange={setSort}
+          myJobsOnly={filter.myJobsOnly}
         />
       )}
     </div>
@@ -159,6 +163,11 @@ function TabBar({ tab, onTab, filter, onChange, categories, onRun, busy, notRead
         <input type="checkbox" checked={filter.tradeableOnly}
           onChange={(e) => onChange({ ...filter, tradeableOnly: e.target.checked })} />
         <span className="font-mono text-[13px] tracking-widest text-text-low uppercase">Tradeable only</span>
+      </label>
+      <label className="flex items-center gap-2 pb-2">
+        <input type="checkbox" checked={filter.myJobsOnly}
+          onChange={(e) => onChange({ ...filter, myJobsOnly: e.target.checked })} />
+        <span className="font-mono text-[13px] tracking-widest text-text-low uppercase">My jobs only</span>
       </label>
       <div className="flex flex-col items-stretch gap-1 w-full sm:w-auto sm:ml-auto order-last">
         {stale && !busy && (
