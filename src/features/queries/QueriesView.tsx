@@ -124,7 +124,10 @@ export function QueriesView({ category, heading, onRowsChange, initialPresetId }
           return { kind: 'craft' as const, rows: [] as CraftFlipRow[] };
         }
         if (!recipes.data) return null;
-        const rows = runCraftFlip(snapshot.data.items, run.data.priceMap, recipes.data, f, retainerLevels);
+        const rows = runCraftFlip(
+          snapshot.data.items, run.data.priceMap, recipes.data, f, retainerLevels,
+          gatheringCatalog.data ?? undefined,
+        );
         return { kind: 'craft' as const, rows };
       }
       case 'repost': {
@@ -137,7 +140,7 @@ export function QueriesView({ category, heading, onRowsChange, initialPresetId }
         return { kind: 'query' as const, rows };
       }
     }
-  }, [run.data, recipes.data, snapshot.data]);
+  }, [run.data, recipes.data, snapshot.data, gatheringCatalog.data, retainerLevels]);
 
   const sparklineIds = useMemo(() => {
     if (!run.data) return [];
