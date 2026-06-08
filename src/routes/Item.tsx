@@ -44,6 +44,9 @@ import { HqStar } from '../components/HqStar';
 import { ItemNameLinks } from '../components/ItemNameLinks';
 import { CopyButton } from '../components/CopyButton';
 import { dcOf } from '../lib/europeWorlds';
+import { useWorldsMap, dcWorldIds } from '../lib/worldsMap';
+import { useItemSocket } from '../features/items/useItemSocket';
+import { LiveStreamChip } from '../features/items/LiveStreamChip';
 import type { SnapshotItem } from '../lib/itemSnapshot';
 import type { MarketItem } from '../lib/universalis';
 import type { IngredientSource } from '../lib/garlandData';
@@ -117,6 +120,20 @@ export default function Item() {
   // Live: a single tracked/viewed item may sell too slowly to be in the cron's bulk blob.
   const market = useMarketData(priceIds, world, dc, 'Europe', { live: true });
 
+  // Real-time DC stream for this item: subscribe to the home DC's worlds over the Universalis
+  // WebSocket and patch the DC-scope price as listings/sales arrive. `baseDcItem` is a stable
+  // react-query reference (re-seeds the overlay only when REST data refreshes).
+  const worldsQ = useWorldsMap();
+  const dcIds = useMemo(() => (worldsQ.data ? dcWorldIds(dc, worldsQ.data) : []), [worldsQ.data, dc]);
+  const baseDcItem = market.data?.dc[itemId];
+  const live = useItemSocket(itemId, dcIds, baseDcItem, worldsQ.data);
+  // DC map with the live overlay folded in for this item, so blocks that price the item
+  // from the whole-DC map (e.g. CraftTreeBlock's make-vs-buy) also reflect live prices.
+  const dcMap = useMemo(
+    () => (live.liveItem ? { ...(market.data?.dc ?? {}), [itemId]: live.liveItem } : market.data?.dc),
+    [market.data?.dc, live.liveItem, itemId],
+  );
+
   const NINETY_DAYS_SEC = 90 * 24 * 60 * 60;
   const historyQ = useQuery({
     queryKey: ['item-history', world, itemId, 90],
@@ -180,7 +197,8 @@ export default function Item() {
 
   const gather = gathering.data?.get(itemId);
   const phantomMarket = market.data?.phantom[itemId];
-  const dcMarket = market.data?.dc[itemId];
+  // Prefer the live overlay (patched from the WebSocket) over the cached DC item.
+  const dcMarket = live.liveItem ?? market.data?.dc[itemId];
   const regionMarket = market.data?.region[itemId];
 
   // NOTE: the `if (!valid) return` guard above makes the hooks below
@@ -266,13 +284,16 @@ export default function Item() {
       )}
 
       {!market.isLoading && (
-        <LiveRefreshBar
-          itemId={itemId}
-          homeWorld={world}
-          dc={dc}
-          region="Europe"
-          onRefreshed={() => market.refetch()}
-        />
+        <div className="flex items-center justify-end gap-3 flex-wrap">
+          <LiveStreamChip status={live.status} liveAt={live.liveAt} />
+          <LiveRefreshBar
+            itemId={itemId}
+            homeWorld={world}
+            dc={dc}
+            region="Europe"
+            onRefreshed={() => market.refetch()}
+          />
+        </div>
       )}
 
       <MarketSnapshotRow
@@ -365,7 +386,7 @@ export default function Item() {
         <CraftTreeBlock
           itemId={itemId}
           recipeMap={recipes.data}
-          dc={market.data?.dc}
+          dc={dcMap}
           phantom={market.data?.phantom}
           nameOf={nameOf}
         />
