@@ -1,5 +1,6 @@
 import type { MarketData } from '../../lib/universalis';
 import type { SnapshotItem } from '../../lib/itemSnapshot';
+import { applyTax } from '../items/verdict/pricing';
 
 export interface DcFlipRow {
   id: number;
@@ -8,6 +9,7 @@ export interface DcFlipRow {
   dcPrice: number;
   phantomPrice: number;
   spread: number;
+  netSpread: number; // after 5% MB tax on the home sale
   velocity: number;
 }
 
@@ -51,6 +53,7 @@ export function runDcFlip(
       dcPrice: cheapest.price,
       phantomPrice: phantomMin,
       spread,
+      netSpread: Math.round(applyTax(phantomMin) - cheapest.price),
       velocity,
     });
   }
