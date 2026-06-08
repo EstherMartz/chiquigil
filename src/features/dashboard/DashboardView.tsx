@@ -104,6 +104,14 @@ export function DashboardView() {
 
   const loading = market.isLoading || recipes.isLoading;
 
+  // History (7/30-day deltas) and the item snapshot resolve AFTER first paint
+  // and feed the alert count, movers, value plays, and heatmap. Until each
+  // settles (success OR error — never block forever), the dependent tiles show
+  // a skeleton instead of a confident-but-incomplete answer that would silently
+  // change when the data lands.
+  const historyReady = history.isSuccess || history.isError;
+  const snapshotReady = snapshot.isSuccess || snapshot.isError;
+
   return (
     <div className="space-y-4">
       <div className="space-y-1">
@@ -143,15 +151,15 @@ export function DashboardView() {
 
       {!loading && items.length > 0 && (
         <>
-          <KpiStrip totals={agg.totals} applyMarketTax={applyMarketTax} picks={agg.picks} />
+          <KpiStrip totals={agg.totals} applyMarketTax={applyMarketTax} picks={agg.picks} alertsReady={historyReady} />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <MarginHistogram buckets={agg.buckets} />
             <GilLeaderboard rows={rowsWithDelta} />
-            <ChangedDigest digest={agg.movers} valuationById={agg.valuation} />
+            <ChangedDigest digest={agg.movers} valuationById={agg.valuation} loading={!historyReady} />
             <SpreadBars spreads={agg.spreads} homeWorld={world} />
-            <ValuePlays plays={agg.valuePlays} />
+            <ValuePlays plays={agg.valuePlays} loading={!historyReady} />
           </div>
-          <WatchlistHeatmapTile items={heatmapItems} market={market.data?.dc ?? {}} recipes={heatmapRecipes} />
+          <WatchlistHeatmapTile items={heatmapItems} market={market.data?.dc ?? {}} recipes={heatmapRecipes} loading={!snapshotReady} />
         </>
       )}
     </div>

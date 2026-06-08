@@ -132,7 +132,7 @@ export default function GcSeals() {
         <EmptyState
           icon="❖"
           message="Find equippable gear to buy cheaply and trade in for Grand Company seals."
-          action={ready ? { label: 'Run scan', onClick: () => mutation.mutate() } : undefined}
+          action={ready ? { label: 'Run your first scan →', onClick: () => mutation.mutate() } : undefined}
         />
       )}
 

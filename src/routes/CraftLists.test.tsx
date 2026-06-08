@@ -24,6 +24,7 @@ vi.mock('../features/queries/useRecipeSnapshot', () => ({
 const createMut = vi.fn();
 vi.mock('../features/craftLists/useCraftLists', () => ({
   useCreateList: () => ({ mutateAsync: createMut, isPending: false }),
+  useCraftLists: () => ({ data: [], isLoading: false, isError: false }),
 }));
 
 function renderPage() {

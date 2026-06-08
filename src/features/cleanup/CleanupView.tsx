@@ -172,6 +172,8 @@ export function CleanupView() {
     <div className="max-w-[100rem] mx-auto px-4 space-y-8 pt-4">
       <PluginInventoryButton namesById={namesById} onLoaded={(r) => { setParseError(null); setParsed(r); }} />
       <AllaganPasteBox
+        title="Cleanup · sell-list analyzer"
+        blurb="Paste your inventory CSV to find clutter worth selling on the market board."
         onParse={handleParse}
         onClear={handleClear}
         parseError={parseError}

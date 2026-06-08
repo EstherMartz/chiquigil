@@ -6,9 +6,17 @@ interface AllaganPasteBoxProps {
   onClear: () => void;
   parseError: string | null;
   parsedSummary: string | null;
+  /** Per-page heading + blurb so the two pages that reuse this box (Cleanup vs
+   * Craft from Inventory) don't read as the same tool. */
+  title?: string;
+  blurb?: string;
 }
 
-export function AllaganPasteBox({ onParse, onClear, parseError, parsedSummary }: AllaganPasteBoxProps) {
+export function AllaganPasteBox({
+  onParse, onClear, parseError, parsedSummary,
+  title = 'Inventory Analyzer',
+  blurb = 'Paste your inventory CSV to find items worth selling.',
+}: AllaganPasteBoxProps) {
   const [text, setText] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -26,10 +34,10 @@ export function AllaganPasteBox({ onParse, onClear, parseError, parsedSummary }:
     <div className="space-y-3">
       <div>
         <p className="font-mono text-[10px] text-text-low tracking-widest uppercase">
-          Inventory Analyzer
+          {title}
         </p>
         <p className="font-mono text-[10px] text-text-low mt-1">
-          Paste your inventory CSV to find items worth selling.{' '}
+          {blurb}{' '}
           <span className="text-aether cursor-help" title="Export your inventory from the Allagan Tools or Inventory Tools FFXIV plugin (Inventory → Export as CSV), then paste the contents here or use Upload CSV.">
             How to export ⓘ
           </span>

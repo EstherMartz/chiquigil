@@ -32,7 +32,7 @@ import { findBestSingleStopFor } from '../features/items/materialCost';
 import { AddToWatchlistButton } from '../features/items/AddToWatchlistButton';
 import { AddToShoppingListButton } from '../features/shoppingList/AddToShoppingListButton';
 import { PluginItemActions } from '../features/plugin/PluginItemActions';
-import { fmtGil, fmtRelative, garlandItemUrl, gamerEscapeItemUrl, universalisItemUrl } from '../lib/format';
+import { fmtGil, fmtRelative, fmtDateTime, garlandItemUrl, gamerEscapeItemUrl, universalisItemUrl } from '../lib/format';
 import { fetchHistoryWithin } from '../lib/universalisHistory';
 import { Gil } from '../components/Gil';
 import { rarityBorderLeftClass, rarityLabel, rarityTextClass } from '../features/items/rarity';
@@ -432,7 +432,7 @@ function HeaderBlock({ name, ilvl, sc, canHq, rarity, itemId, recipe, world, dc,
           <span>•</span>
           <span>{dc}</span>
           <span>•</span>
-          <span>Updated {relativeTime}</span>
+          <span title={updatedMs ? `Last upload: ${fmtDateTime(updatedMs)}` : undefined}>Updated {relativeTime}</span>
         </div>
       </div>
       <div className="flex flex-col sm:flex-row sm:items-end gap-3 self-start sm:self-end">

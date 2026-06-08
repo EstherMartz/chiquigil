@@ -12,6 +12,7 @@ import { defaultWhatsNewFilter, type WhatsNewFilter, type WhatsNewSort, type Wha
 import { Spinner, SpinGlyph } from '../../components/Spinner';
 import { StatusBanner } from '../../components/StatusBanner';
 import { EmptyState } from '../../components/EmptyState';
+import { DecimalInput } from '../../components/DecimalInput';
 import { useInitialScan } from '../queries/useInitialScan';
 import type { SnapshotItem } from '../../lib/itemSnapshot';
 import { CategorySelect } from '../../components/CategorySelect';
@@ -139,8 +140,8 @@ function TabBar({ tab, onTab, filter, onChange, categories, onRun, busy, notRead
       </div>
       <label className="block">
         <span className="font-mono text-[13px] tracking-widest text-text-low uppercase">Min sales/day</span>
-        <input type="number" inputMode="decimal" min={0} step={0.1} value={filter.minVelocity}
-          onChange={(e) => onChange({ ...filter, minVelocity: Math.max(0, Number(e.target.value) || 0) })}
+        <DecimalInput min={0} value={filter.minVelocity}
+          onChange={(minVelocity) => onChange({ ...filter, minVelocity })}
           className="mt-1 block w-28 bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors" />
       </label>
       {categories.length > 0 && (

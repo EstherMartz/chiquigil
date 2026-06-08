@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
@@ -28,6 +28,8 @@ function withProviders(node: ReactNode) {
 }
 
 describe('LevePlan route', () => {
+  beforeEach(() => runMock.mockClear());
+
   it('renders a heading and a Run button', () => {
     render(withProviders(<LevePlan />));
     const h2 = screen.getByRole('heading', { level: 2 });
@@ -35,8 +37,14 @@ describe('LevePlan route', () => {
     expect(screen.getByRole('button', { name: /run scan/i })).toBeInTheDocument();
   });
 
-  it('fires the Run mutation on click', () => {
+  it('auto-runs the scan once on mount when ready', () => {
     render(withProviders(<LevePlan />));
+    expect(runMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('fires the Run mutation again on click', () => {
+    render(withProviders(<LevePlan />));
+    runMock.mockClear(); // drop the auto-run so we isolate the click
     fireEvent.click(screen.getByRole('button', { name: /run scan/i }));
     expect(runMock).toHaveBeenCalledTimes(1);
   });

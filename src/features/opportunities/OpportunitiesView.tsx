@@ -35,6 +35,15 @@ export function OpportunitiesView() {
   const [sortKey, setSortKey] = useState<SortKey>('detectedAt');
   const now = Date.now();
 
+  // Per-kind tab counts (whole feed, ignoring the active filter) so each tab
+  // shows how many deals it holds before it's clicked.
+  const kindCounts = useMemo(() => {
+    const opps = feed.data?.opportunities ?? [];
+    const c: Record<string, number> = { all: opps.length, crash: 0, spike: 0, empty: 0 };
+    for (const o of opps) c[o.kind] = (c[o.kind] ?? 0) + 1;
+    return c;
+  }, [feed.data]);
+
   const rows = useMemo<Row[]>(() => {
     const opps = feed.data?.opportunities ?? [];
     const named = opps.map((o) => ({ ...o, id: o.itemId, name: byId.get(o.itemId)?.name ?? `#${o.itemId}` }));
@@ -68,12 +77,16 @@ export function OpportunitiesView() {
       </div>
 
       <div className="flex flex-wrap items-center gap-2 p-3 border border-border-base bg-bg-card">
-        {KIND_FILTERS.map((k) => (
-          <button key={k.id} type="button" onClick={() => setKind(k.id)}
-            className={`font-mono text-[10px] tracking-widest uppercase px-3 py-2 border ${kind === k.id ? 'border-gold text-gold' : 'border-border-base text-text-dim hover:text-aether'}`}>
-            {k.label}
-          </button>
-        ))}
+        {KIND_FILTERS.map((k) => {
+          const n = kindCounts[k.id];
+          return (
+            <button key={k.id} type="button" onClick={() => setKind(k.id)}
+              className={`font-mono text-[10px] tracking-widest uppercase px-3 py-2 border ${kind === k.id ? 'border-gold text-gold' : 'border-border-base text-text-dim hover:text-aether'}`}>
+              {k.label}
+              {n != null && <span className={`ml-1.5 tabular-nums ${n === 0 ? 'opacity-40' : 'opacity-60'}`}>{n}</span>}
+            </button>
+          );
+        })}
         <div className="ml-auto flex items-center gap-2">
           <span className="font-mono text-[10px] tracking-widest uppercase text-text-low">Sort</span>
           {(['detectedAt', 'gilPerDay', 'changePct'] as SortKey[]).map((s) => (

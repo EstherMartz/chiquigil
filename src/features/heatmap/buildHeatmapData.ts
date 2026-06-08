@@ -173,6 +173,14 @@ export const CURATED_VIEWS: CuratedView[] = [
     apply: (cells) => cells.filter((c) => c.kind === 'craft' && (c.margin ?? 0) >= 0.2 && c.velocity >= 1),
   },
   {
+    // A middle tier: "Hot" is often only a handful on a quieter DC, and
+    // "Everything" is hundreds — this fills the gap with still-worthwhile crafts.
+    id: 'warm-crafts',
+    label: 'Warm crafts',
+    sub: 'margin ≥ 10%, vel ≥ 0.5/day',
+    apply: (cells) => cells.filter((c) => c.kind === 'craft' && (c.margin ?? 0) >= 0.1 && c.velocity >= 0.5),
+  },
+  {
     id: 'vendor-flips',
     label: 'Vendor flips',
     sub: 'NPC-sourced items moving on MB',
