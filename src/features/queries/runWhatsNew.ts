@@ -1,6 +1,9 @@
 import type { SnapshotItem } from '../../lib/itemSnapshot';
 import type { MarketData, MarketItem } from '../../lib/universalis';
 import type { WhatsNewFilter, WhatsNewRow, WhatsNewSort } from './types';
+import type { Recipe } from '../../lib/recipes';
+import type { CrafterLevels } from '../items/craftStatus';
+import { craftStatus } from '../items/craftStatus';
 
 const DAY_MS = 86_400_000;
 
@@ -19,6 +22,7 @@ function compare(a: WhatsNewRow, b: WhatsNewRow, sort: WhatsNewSort): number {
     case 'velocity': return b.velocity - a.velocity;
     case 'price':    return (b.price ?? -1) - (a.price ?? -1);
     case 'name':     return a.name.localeCompare(b.name);
+    case 'spike':    return (b.spike ?? -1) - (a.spike ?? -1);
     case 'freshness': {
       const ad = a.daysSinceLastSale, bd = b.daysSinceLastSale;
       if (ad == null && bd == null) return 0;
@@ -36,7 +40,30 @@ export function runWhatsNew(
   recipeKeys: Set<number>,
   filter: WhatsNewFilter,
   nowMs: number,
+  opts?: { recipes?: Map<number, Recipe>; levels?: CrafterLevels },
 ): WhatsNewRow[] {
+  // Pre-pass: compute category-average velocity for spike calculation
+  const avgBySc = new Map<number, number>();
+  {
+    const sumBySc = new Map<number, number>();
+    const countBySc = new Map<number, number>();
+    for (const id of ids) {
+      const it = items.get(id);
+      if (!it) continue;
+      const m = market[id];
+      if (m && m.velocity > 0) {
+        const sum = sumBySc.get(it.sc) ?? 0;
+        const count = countBySc.get(it.sc) ?? 0;
+        sumBySc.set(it.sc, sum + m.velocity);
+        countBySc.set(it.sc, count + 1);
+      }
+    }
+    for (const [sc, sum] of sumBySc) {
+      const count = countBySc.get(sc) ?? 0;
+      if (count > 0) avgBySc.set(sc, sum / count);
+    }
+  }
+
   const out: WhatsNewRow[] = [];
   for (const id of ids) {
     const it = items.get(id);
@@ -46,8 +73,20 @@ export function runWhatsNew(
     if (filter.tradeableOnly && !m) continue;
     if (m && m.velocity < filter.minVelocity) continue;
 
+    // MY JOBS ONLY filter
+    if (filter.myJobsOnly && opts?.recipes && opts?.levels) {
+      const recipe = opts.recipes.get(it.id);
+      if (!recipe || craftStatus({ crafter: recipe.classJob, lvl: recipe.recipeLevel }, opts.levels) !== 'ok') {
+        continue;
+      }
+    }
+
     const tier = m ? pickPrice(m) : null;
     const lastSaleMs = m?.lastSaleMs ?? null;
+    const velocity = m?.velocity ?? 0;
+    const avg = avgBySc.get(it.sc);
+    const spike = (avg != null && avg > 0) ? velocity / avg : null;
+
     out.push({
       id: it.id,
       name: it.name,
@@ -55,10 +94,11 @@ export function runWhatsNew(
       craftable: recipeKeys.has(it.id),
       hq: tier?.isHq ?? false,
       price: tier ? Math.round(tier.price) : null,
-      velocity: m?.velocity ?? 0,
+      velocity,
       recentSales: m ? m.recentSalesNQ + m.recentSalesHQ : 0,
       lastSaleMs,
       daysSinceLastSale: lastSaleMs != null ? (nowMs - lastSaleMs) / DAY_MS : null,
+      spike,
     });
   }
   out.sort((a, b) => compare(a, b, filter.sort));
