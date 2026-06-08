@@ -27,6 +27,10 @@ export function QueryBuilder({ value, onChange, onRun, busy, stale }: Props) {
 
   function patch(p: Partial<QueryFilter>) { onChange({ ...value, ...p }); }
 
+  const sorts = value.mode === 'craft'
+    ? [...SORTS, { id: 'selfSourceGilFlow' as const, label: 'Self-source Gil/day' }]
+    : SORTS;
+
   async function handleCopyLink() {
     await navigator.clipboard.writeText(window.location.href);
     setCopied(true);
@@ -95,7 +99,7 @@ export function QueryBuilder({ value, onChange, onRun, busy, stale }: Props) {
             onChange={(e) => patch({ sort: e.target.value as QuerySort })}
             className="mt-1 block w-full bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
           >
-            {SORTS.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+            {sorts.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
           </select>
         </label>
 
@@ -199,6 +203,20 @@ export function QueryBuilder({ value, onChange, onRun, busy, stale }: Props) {
             placeholder="e.g. 1000 (repost mode)"
             className="mt-1 block w-full bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
             title="Repost mode only: ignore reposts whose price gap to the next listing is below this many gil."
+          />
+        </label>
+
+        <label className="block">
+          <span className="font-mono text-[13px] tracking-widest text-text-low">Min gatherable %</span>
+          <input
+            type="number" inputMode="decimal" min={0} max={100} step={5}
+            value={value.minGatherablePct ?? ''}
+            onChange={(e) => {
+              const v = e.target.value.trim();
+              patch({ minGatherablePct: v === '' ? null : Math.max(0, Math.min(100, Number(v) || 0)) });
+            }}
+            className="mt-1 block w-full bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
+            title="Only show crafts where at least this % of material cost can be self-gathered."
           />
         </label>
 

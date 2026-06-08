@@ -10,6 +10,7 @@ const DEFAULTS = {
   maxListings: null as number | null,
   minGap: null as number | null,
   mode: 'standard' as const,
+  minGatherablePct: null as number | null,
 };
 
 /**
@@ -78,6 +79,11 @@ export function filterToParams(f: QueryFilter): URLSearchParams {
   // maxRisk: only add when set to a non-default value
   if (f.maxRisk && f.maxRisk !== 'any') {
     params.set('mr', f.maxRisk);
+  }
+
+  // minGatherablePct: only add if set (treat undefined as null)
+  if ((f.minGatherablePct ?? null) !== DEFAULTS.minGatherablePct) {
+    params.set('mg', String(f.minGatherablePct));
   }
 
   return params;
@@ -149,7 +155,8 @@ export function paramsToFilter(params: URLSearchParams, base: QueryFilter): Quer
 
   // sort
   const sStr = params.get('s');
-  if (sStr === 'discount' || sStr === 'gilFlow' || sStr === 'velocity' || sStr === 'unitPrice' || sStr === 'risk') {
+  if (sStr === 'discount' || sStr === 'gilFlow' || sStr === 'velocity'
+      || sStr === 'unitPrice' || sStr === 'risk' || sStr === 'selfSourceGilFlow') {
     result.sort = sStr as QuerySort;
   }
 
@@ -196,6 +203,15 @@ export function paramsToFilter(params: URLSearchParams, base: QueryFilter): Quer
   const mrStr = params.get('mr');
   if (mrStr === 'healthy' || mrStr === 'open' || mrStr === 'any') {
     result.maxRisk = mrStr;
+  }
+
+  // minGatherablePct (clamp 0..100)
+  const mgStr = params.get('mg');
+  if (mgStr) {
+    const num = Number(mgStr);
+    if (!Number.isNaN(num)) {
+      result.minGatherablePct = Math.max(0, Math.min(100, num));
+    }
   }
 
   return result;

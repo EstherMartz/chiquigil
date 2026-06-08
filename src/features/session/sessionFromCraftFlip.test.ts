@@ -11,6 +11,7 @@ function row(over: Partial<CraftFlipRow> = {}): CraftFlipRow {
     risk: 'OPEN', gap: 0, gapPct: 0, hasSecondTier: false, onlyListing: false,
     sellerCount: 0, topSellerShare: 0, concentrationRisk: 'deep',
     clearDays: null, clearNote: '', captureRate: 1, totalUnits: 0, depth: [],
+    sourcing: null, selfSourceGilPerDay: 1200,
     ...over,
   };
 }

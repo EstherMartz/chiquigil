@@ -28,6 +28,7 @@ function compare(a: QueryResultRow, b: QueryResultRow, sort: QuerySort): number 
     case 'velocity':  return b.velocity - a.velocity;
     case 'unitPrice': return b.unitPrice - a.unitPrice;
     case 'risk':      return 0; // risk sort is craft-flip only; no-op here
+    default:          return 0; // selfSourceGilFlow is craft-mode only
   }
 }
 

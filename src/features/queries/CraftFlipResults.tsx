@@ -12,6 +12,8 @@ import { useUiStore, rowPadClass } from '../ui/uiStore';
 import { RiskBadge, SellersBadge, riskExplanation } from './craftRiskBadges';
 import { CompetitorPopover } from './CompetitorPopover';
 import { GAP_GREEN, GAP_AMBER } from './craftListingAnalysis';
+import { GatherableTag } from './GatherableTag';
+import { MaterialSourcingPopover } from './MaterialSourcingPopover';
 import type { CraftFlipRow, QueryScope } from './types';
 import type { CsvColumn } from '../../lib/csv';
 
@@ -38,6 +40,9 @@ const CSV_COLUMNS: CsvColumn<CraftFlipRow>[] = [
   { key: 'sellerCount', label: 'Sellers' },
   { key: 'topSellerShare', label: 'Top seller share' },
   { key: 'clearDays', label: 'Days to clear' },
+  { key: 'sourcing', label: 'Gatherable Cost', value: (r) => r.sourcing?.gatherableCost ?? '' },
+  { key: 'sourcing', label: 'Gatherable %', value: (r) => r.sourcing ? Math.round(r.sourcing.gatherablePct) : '' },
+  { key: 'sourcing', label: 'Self-source Profit', value: (r) => r.sourcing?.selfSourceProfit ?? '' },
   { key: 'hq', label: 'HQ' },
 ];
 
@@ -45,6 +50,7 @@ export function CraftFlipResults({ rows, totalCandidates, skippedChunks, scope, 
   const density = useUiStore((s) => s.density);
   const rowY = rowPadClass(density);
   const compact = density === 'compact';
+  const comfy = density === 'comfortable';
   const homeScope = scope === 'home';
   const showSparkline = sparklineMap != null;
   return (
@@ -80,6 +86,7 @@ export function CraftFlipResults({ rows, totalCandidates, skippedChunks, scope, 
                     />
                   </div>
                 </div>
+                {r.sourcing && r.sourcing.gatherablePct >= 80 && <GatherableTag />}
               </div>
               <div className="grid grid-cols-3 gap-2 mt-2 pl-8 font-mono text-[12px]">
                 <MobileMetric label="Sale">{fmtGil(r.unitPrice)}</MobileMetric>
@@ -137,19 +144,24 @@ export function CraftFlipResults({ rows, totalCandidates, skippedChunks, scope, 
               <tr key={r.id} className="border-t border-border-base hover:bg-bg-card-hi active:bg-bg-card-hi transition-colors">
                 <td className={`px-3 ${rowY} font-mono text-text-low`}>{i + 1}</td>
                 <td className={`px-3 ${rowY}`}>
-                  <ItemNameLinks
-                    id={r.id}
-                    name={r.name}
-                    suffix={r.hq && <HqStar leading />}
-                    sub={categoryLabel(r.sc)}
-                  />
-                  <div className="mt-0.5">
-                    <SellersBadge
-                      sellerCount={r.sellerCount}
-                      topSellerShare={r.topSellerShare}
-                      concentrationRisk={r.concentrationRisk}
-                      dotOnly={compact}
-                    />
+                  <div className="flex items-start gap-2">
+                    <div className="min-w-0">
+                      <ItemNameLinks
+                        id={r.id}
+                        name={r.name}
+                        suffix={r.hq && <HqStar leading />}
+                        sub={categoryLabel(r.sc)}
+                      />
+                      <div className="mt-0.5">
+                        <SellersBadge
+                          sellerCount={r.sellerCount}
+                          topSellerShare={r.topSellerShare}
+                          concentrationRisk={r.concentrationRisk}
+                          dotOnly={compact}
+                        />
+                      </div>
+                    </div>
+                    {r.sourcing && r.sourcing.gatherablePct >= 80 && <GatherableTag />}
                   </div>
                 </td>
                 <td className={`px-3 ${rowY} text-right font-mono align-top`}>
@@ -176,8 +188,28 @@ export function CraftFlipResults({ rows, totalCandidates, skippedChunks, scope, 
                     })()}
                   </td>
                 )}
-                <td className={`px-3 ${rowY} text-right font-mono text-text-low hidden md:table-cell`}>{fmtGil(r.materialCost)}</td>
-                <td className={`px-3 ${rowY} text-right font-mono text-jade`}>+{fmtGil(r.profit)}</td>
+                <td className={`px-3 ${rowY} text-right font-mono text-text-low hidden md:table-cell`}>
+                  {r.sourcing && r.materialCost > 0 ? (
+                    <MaterialSourcingPopover sourcing={r.sourcing}>
+                      <span className="inline-flex flex-col items-end cursor-help">
+                        <span>{fmtGil(r.materialCost)}</span>
+                        {comfy && r.sourcing.gatherableCost > 0 && (
+                          <span className="text-[10px] text-jade/70">↓ {fmtGil(r.sourcing.gatherableCost)} self</span>
+                        )}
+                      </span>
+                    </MaterialSourcingPopover>
+                  ) : (
+                    fmtGil(r.materialCost)
+                  )}
+                </td>
+                <td className={`px-3 ${rowY} text-right font-mono text-jade`}>
+                  <span className="inline-flex flex-col items-end">
+                    <span>+{fmtGil(r.profit)}</span>
+                    {comfy && r.sourcing && r.sourcing.selfSourceProfit > r.profit && (
+                      <span className="text-[10px] text-jade font-semibold">↑ +{fmtGil(r.sourcing.selfSourceProfit)} self</span>
+                    )}
+                  </span>
+                </td>
                 <td className={`px-3 ${rowY} text-right font-mono hidden md:table-cell`}>{r.velocity.toFixed(1)}</td>
                 <td className={`px-3 ${rowY} align-top`}>
                   <InfoTooltip label={<CompetitorPopover row={r} homeScope={homeScope} />}>

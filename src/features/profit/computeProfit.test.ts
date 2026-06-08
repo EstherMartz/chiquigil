@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeMaterialCost, computeProfit } from './computeProfit';
+import { computeMaterialCost, computeMaterialLeaves, computeProfit } from './computeProfit';
 import type { Recipe } from '../../lib/recipes';
 import type { MarketData } from '../../lib/universalis';
 
@@ -83,6 +83,47 @@ describe('computeMaterialCost', () => {
     const flags = { 1: { craftIntermediates: true }, 10: { craftIntermediates: true } };
     // recipe A: 2 × (4 × market(10) = 4×5 = 20) + 3 × 30 = 40 + 90 = 130
     expect(computeMaterialCost(recipeA, recipeMap, market, flags)).toBe(130);
+  });
+});
+
+describe('computeMaterialLeaves', () => {
+  it('returns one leaf per direct ingredient and sums to computeMaterialCost', () => {
+    const recipe: Recipe = {
+      itemResultId: 1, classJob: 'LTW', recipeLevel: 90,
+      ingredients: [{ itemId: 99, amount: 2 }, { itemId: 88, amount: 3 }],
+    };
+    const market = mkMarket({ 99: { dcMin: 50 }, 88: { dcMin: 10 } });
+    const recipeMap = new Map<number, Recipe | null>([[1, recipe]]);
+
+    const leaves = computeMaterialLeaves(recipe, recipeMap, market, {});
+    expect(leaves).toEqual([
+      { itemId: 99, qty: 2, unitPrice: 50 },
+      { itemId: 88, qty: 3, unitPrice: 10 },
+    ]);
+    const sum = leaves.reduce((s, l) => s + l.qty * l.unitPrice, 0);
+    expect(sum).toBe(computeMaterialCost(recipe, recipeMap, market, {}));
+    expect(sum).toBe(130); // 2*50 + 3*10
+  });
+
+  it('decomposes a crafted intermediate when craftIntermediates flag is set, multiplying qty through', () => {
+    const parent: Recipe = {
+      itemResultId: 1, classJob: 'WVR', recipeLevel: 90,
+      ingredients: [{ itemId: 5, amount: 2 }], // 2× intermediate
+    };
+    const intermediate: Recipe = {
+      itemResultId: 5, classJob: 'WVR', recipeLevel: 50,
+      ingredients: [{ itemId: 99, amount: 3 }], // each needs 3× raw
+    };
+    const market = mkMarket({ 5: { dcMin: 1000 }, 99: { dcMin: 10 } });
+    const recipeMap = new Map<number, Recipe | null>([[1, parent], [5, intermediate]]);
+
+    expect(computeMaterialLeaves(parent, recipeMap, market, {})).toEqual([
+      { itemId: 5, qty: 2, unitPrice: 1000 },
+    ]);
+
+    const leaves = computeMaterialLeaves(parent, recipeMap, market, { 5: { craftIntermediates: true } });
+    expect(leaves).toEqual([{ itemId: 99, qty: 6, unitPrice: 10 }]);
+    expect(leaves.reduce((s, l) => s + l.qty * l.unitPrice, 0)).toBe(60);
   });
 });
 

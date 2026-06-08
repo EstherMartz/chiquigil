@@ -31,6 +31,7 @@ function compare(a: RepostRow, b: RepostRow, sort: QuerySort): number {
     case 'unitPrice': return b.cheapest - a.cheapest;
     case 'velocity':  return b.velocity - a.velocity;
     case 'risk':      return 0; // risk sort is craft-flip only; no-op here
+    default:          return 0; // selfSourceGilFlow is craft-mode only
   }
 }
 

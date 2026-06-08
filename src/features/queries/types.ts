@@ -1,7 +1,8 @@
 import type { CurrencyId } from '../../lib/currencies';
+import type { MaterialSourcing } from '../profit/materialSourcing';
 
 export type HqMode = 'hq' | 'nq' | 'either';
-export type QuerySort = 'discount' | 'gilFlow' | 'velocity' | 'unitPrice' | 'risk';
+export type QuerySort = 'discount' | 'gilFlow' | 'velocity' | 'unitPrice' | 'risk' | 'selfSourceGilFlow';
 export type QueryScope = 'home' | 'dc';
 export type QueryMode = 'standard' | 'craft' | 'repost';
 export type PresetCategory = 'craft' | 'trading' | 'gathering';
@@ -23,6 +24,8 @@ export interface QueryFilter {
   trainedEye: boolean;
   /** Post-scan competitor-risk ceiling. Optional; absent ⇒ 'any'. Not part of filterHash (display-only re-filter). */
   maxRisk?: import('./craftListingAnalysis').MaxRisk;
+  /** Crafts mode only: keep rows whose gatherable material cost is at least this % of total. null = off. */
+  minGatherablePct?: number | null;
 }
 
 export interface QueryPreset {
@@ -70,6 +73,10 @@ export interface CraftFlipRow {
   captureRate: number;    // 0..1
   totalUnits: number;
   depth: import('./craftListingAnalysis').DepthBucket[];
+
+  // Material sourcing (gather/buy split)
+  sourcing: MaterialSourcing | null;
+  selfSourceGilPerDay: number;     // selfSourceProfit * velocity (=== gilPerDay when no gatherable mats)
 }
 
 export interface RepostRow {
@@ -106,6 +113,7 @@ export function filterHash(f: QueryFilter): string {
     m: f.mode,
     g: f.minGap,
     te: f.trainedEye,
+    mgp: f.minGatherablePct ?? null,
   });
 }
 
