@@ -5,6 +5,7 @@ import type { MarketData } from '../../lib/universalis';
 import type { Recipe } from '../../lib/recipes';
 import type { QueryFilter } from './types';
 import type { CrafterLevels } from '../../features/items/craftStatus';
+import type { GatheringCatalog } from '../../lib/gatheringCatalog';
 
 const snapshot: SnapshotItem[] = [
   { id: 1, name: 'Glamour Top', sc: 56, ui: 65, ilvl: 90, canHq: true },
@@ -285,5 +286,58 @@ describe('runCraftFlip', () => {
     const out = runCraftFlip(snapshot, priceMap, recipeMap,
       { ...baseFilter, minVelocity: 1, trainedEye: true });
     expect(out).toEqual([]);
+  });
+});
+
+describe('runCraftFlip — material sourcing', () => {
+  const gathering: GatheringCatalog = new Map([[99, { level: 50, timed: false, hidden: false }]]);
+
+  const priceMap: MarketData = {
+    1:  mkPrice({ minHQ: 1000, medianHQ: 1200, recentSalesHQ: 8, velocity: 2, listingCount: 1 }),
+    99: mkPrice({ minNQ: 50, medianNQ: 60, recentSalesNQ: 8, listingCount: 1 }),
+  };
+
+  it('attaches sourcing and selfSourceGilPerDay when a catalog is provided', () => {
+    const out = runCraftFlip(snapshot, priceMap, recipeMap, { ...baseFilter, minVelocity: 1 }, undefined, gathering);
+    expect(out).toHaveLength(1);
+    const r = out[0];
+    expect(r.materialCost).toBe(100);
+    expect(r.sourcing).not.toBeNull();
+    expect(r.sourcing!.gatherableCost).toBe(100);
+    expect(r.sourcing!.gatherablePct).toBe(100);
+    expect(r.sourcing!.selfSourceProfit).toBe(r.profit + 100);
+    expect(r.selfSourceGilPerDay).toBe((r.profit + 100) * 2);
+  });
+
+  it('leaves sourcing null and selfSourceGilPerDay === gilPerDay when no catalog', () => {
+    const out = runCraftFlip(snapshot, priceMap, recipeMap, { ...baseFilter, minVelocity: 1 });
+    expect(out[0].sourcing).toBeNull();
+    expect(out[0].selfSourceGilPerDay).toBe(out[0].gilPerDay);
+  });
+
+  it('minGatherablePct drops rows below the threshold (and 0-cost rows)', () => {
+    const none: GatheringCatalog = new Map();
+    const out = runCraftFlip(snapshot, priceMap, recipeMap,
+      { ...baseFilter, minVelocity: 1, minGatherablePct: 50 }, undefined, none);
+    expect(out).toEqual([]);
+    const kept = runCraftFlip(snapshot, priceMap, recipeMap,
+      { ...baseFilter, minVelocity: 1, minGatherablePct: 50 }, undefined, gathering);
+    expect(kept.map((r) => r.id)).toEqual([1]);
+  });
+
+  it('sorts by selfSourceGilFlow desc', () => {
+    const recipe2: Recipe = {
+      itemResultId: 2, classJob: 'WVR', recipeLevel: 50,
+      ingredients: [{ itemId: 99, amount: 1 }],
+    };
+    const rm = new Map<number, Recipe | null>([[1, recipe1], [2, recipe2]]);
+    const pm: MarketData = {
+      1: mkPrice({ minHQ: 1000, medianHQ: 1200, recentSalesHQ: 8, velocity: 2, listingCount: 1 }),
+      2: mkPrice({ minNQ: 5000, medianNQ: 6000, recentSalesNQ: 8, velocity: 1, listingCount: 1 }),
+      99: mkPrice({ minNQ: 50, medianNQ: 60, recentSalesNQ: 8, listingCount: 1 }),
+    };
+    const out = runCraftFlip(snapshot, pm, rm,
+      { ...baseFilter, minVelocity: 1, sort: 'selfSourceGilFlow', limit: 2 }, undefined, gathering);
+    expect(out.map((r) => r.id)).toEqual([2, 1]);
   });
 });
