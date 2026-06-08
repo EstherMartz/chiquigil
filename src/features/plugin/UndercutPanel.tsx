@@ -41,7 +41,7 @@ function UndercutPanelInner() {
     () => (listings ? [...new Set(listings.listings.map((l) => l.itemId))] : []),
     [listings],
   );
-  const market = useMarketData(ids, world, dc, undefined, { enabled: ids.length > 0 });
+  const market = useMarketData(ids, world, dc, undefined, { enabled: ids.length > 0, live: true });
 
   const rows = useMemo(() => {
     if (!listings) return [];

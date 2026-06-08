@@ -30,7 +30,9 @@ export function DashboardView() {
   const items = useSelectedItems();
 
   const ids = useMemo(() => items.map((i) => i.id), [items]);
-  const market = useMarketData(ids, world, dc);
+  // Live: the watchlist may track slow-selling items that aren't in the cron's "traded"
+  // bulk blob, so price them straight from Universalis (a small, user-specific set).
+  const market = useMarketData(ids, world, dc, undefined, { live: true });
   const history = useWatchlistHistory(ids, dc);
   const recipes = useRecipes(ids);
   const snapshot = useItemSnapshot();
