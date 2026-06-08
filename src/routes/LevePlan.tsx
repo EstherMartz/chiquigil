@@ -1,10 +1,14 @@
 import { LevePlanner } from '../features/leves/LevePlanner';
 import { useLevePlanQuery } from '../features/leves/useLevePlanQuery';
+import { useInitialScan } from '../features/queries/useInitialScan';
 import { Spinner } from '../components/Spinner';
 import { StatusBanner } from '../components/StatusBanner';
 
 export default function LevePlan() {
   const q = useLevePlanQuery();
+  // Auto-run the default scan once the catalogs load, so results appear on
+  // arrival like the other scan views — no manual "Run scan" needed first.
+  useInitialScan(q.ready, q.run);
   return (
     <div className="max-w-[100rem] mx-auto px-4 space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">

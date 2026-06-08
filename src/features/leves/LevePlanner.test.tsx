@@ -61,7 +61,7 @@ describe('LevePlanner', () => {
 
   it('shows an empty-state message when rows is empty', () => {
     render(withProviders(<LevePlanner rows={[]} />));
-    expect(screen.getByText(/run scan/i)).toBeInTheDocument();
+    expect(screen.getByText(/no leves match these filters/i)).toBeInTheDocument();
   });
 
   it('renders the DoH target item name as an ItemNameLinks link', () => {

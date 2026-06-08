@@ -172,7 +172,13 @@ export function RouteValuator() {
         <StatusBanner kind="error">{scan.data.skipped} batch(es) skipped (Universalis error)</StatusBanner>
       )}
 
-      {/* Sector grid */}
+      {/* Sector grid — make the rank gating explicit so the (often short) default
+          list doesn't read as placeholder data. */}
+      <p className="font-mono text-[10px] text-text-low">
+        Showing the {sectors.filter((s) => s.rankReq <= submarineRank && (!zone || s.zone === zone)).length} sector(s)
+        reachable at <span className="text-aether">Rank {submarineRank}</span>{zone ? ` in ${zone}` : ''}. Set your
+        submarine's Rank and Slots (top-right) to match your fleet — higher ranks unlock deeper, higher-value sectors.
+      </p>
       <SectorGrid
         sectors={sectors}
         rank={submarineRank}

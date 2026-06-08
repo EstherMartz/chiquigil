@@ -149,6 +149,8 @@ export function CraftFromInventoryView() {
         <>
           <PluginInventoryButton namesById={namesById} onLoaded={(r) => { setParseError(null); setParsed(r); }} />
           <AllaganPasteBox
+            title="Craft from Inventory · recipe matcher"
+            blurb="Paste your inventory CSV to see what you can craft right now from what you already hold."
             onParse={handleParse}
             onClear={handleClear}
             parseError={parseError}

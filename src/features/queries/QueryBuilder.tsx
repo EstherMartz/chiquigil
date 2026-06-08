@@ -179,8 +179,9 @@ export function QueryBuilder({ value, onChange, onRun, busy, stale }: Props) {
             type="number" inputMode="decimal" min={0} step={1000}
             value={value.minGap ?? ''}
             onChange={(e) => patch({ minGap: nullableIntInput(e) })}
+            placeholder="e.g. 1000 (repost mode)"
             className="mt-1 block w-full bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
-            title="Absolute gil floor for repost gap"
+            title="Repost mode only: ignore reposts whose price gap to the next listing is below this many gil."
           />
         </label>
 

@@ -34,7 +34,7 @@ export const PRESETS: QueryPreset[] = [
   },
   {
     id: 'undersupply', label: 'Undersupply (craft + list)', category: 'craft',
-    desc: 'Items selling ≥1/day on your home world with ≤2 home-world listings. Craft and list to fill the gap.',
+    desc: 'Craftable items selling ≥1/day on your home world with ≤2 listings up. Uses Craft-flip mode (results are craftables); craft them and list for sale to fill the supply gap.',
     filter: { searchCategories: [], hq: 'either', minDealPct: 0, minVelocity: 1,
               minPrice: null, maxPrice: null, sort: 'gilFlow', limit: 100,
               scope: 'home', maxListings: 2, mode: 'craft', minGap: null, trainedEye: false },

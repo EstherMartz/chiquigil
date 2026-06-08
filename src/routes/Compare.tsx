@@ -38,8 +38,8 @@ export default function Compare() {
           type="search"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search items…"
-          aria-label="Search items to compare"
+          placeholder="Look up an item to compare…"
+          aria-label="Look up an item to compare"
           className="w-full bg-bg-card border border-border-base text-text-cream font-mono text-sm px-3 py-2 focus:outline-none focus:border-aether"
         />
         {results.length > 0 && q.trim().length >= MIN_QUERY_LEN && (

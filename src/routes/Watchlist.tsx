@@ -66,6 +66,14 @@ export default function Watchlist() {
 
   const filtered = useMemo(() => filterAndSort(rowsWithDelta, ui), [rowsWithDelta, ui]);
 
+  // Per-category tab counts (all tracked rows, ignoring the active filter/search)
+  // so each tab advertises how many items it holds — see FilterBar.
+  const catCounts = useMemo(() => {
+    const m: Record<string, number> = { All: rowsWithDelta.length };
+    for (const r of rowsWithDelta) m[r.cat] = (m[r.cat] ?? 0) + 1;
+    return m;
+  }, [rowsWithDelta]);
+
   // Fair-value chip per row: cheap/rich (confident only), from the same history
   // fetch used for the trend delta. Shared with the dashboard so they agree.
   const summaryById = useMemo(() => {
@@ -81,7 +89,7 @@ export default function Watchlist() {
   return (
     <div>
       <div className="flex flex-wrap items-center gap-2 mb-3">
-        <FilterBar />
+        <FilterBar counts={catCounts} />
         <button
           onClick={() => { market.refetch(); recipes.refetch(); }}
           disabled={market.isFetching || recipes.isFetching}
