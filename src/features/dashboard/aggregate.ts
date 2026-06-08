@@ -1,4 +1,5 @@
 import type { WatchlistRow } from '../watchlist/buildRows';
+import type { ItemCategory } from '../items/types';
 import type { WorldListing } from '../../lib/universalis';
 import { detectAlert } from '../watchlist/alerts';
 import { classifyValue, type FairValueSignal, type HistorySummary } from '../fairvalue/fairValue';
@@ -182,6 +183,71 @@ export function concentration(rows: WatchlistRow[], n: number): Concentration {
   const total = rows.reduce((sum, r) => sum + (r.gilPerDay ?? 0), 0);
   const topSum = leaders.reduce((sum, r) => sum + (r.gilPerDay ?? 0), 0);
   return { topN: leaders.length, topShare: total > 0 ? topSum / total : 0, total, leaders };
+}
+
+export interface CategoryShare {
+  cat: ItemCategory;
+  gilPerDay: number;
+  /** Fraction (0–1) of total portfolio gil/day this category represents. */
+  share: number;
+  itemCount: number;
+}
+
+/**
+ * Per-category breakdown of watchlist gil/day, sorted by share descending.
+ * Weighted by each item's gil/day — NOT by item count. Categories with zero
+ * gil/day are still included (share 0) as long as they have items, so the
+ * breakdown reflects what's tracked. Rows are grouped by their stored `cat`.
+ */
+export function categoryShares(rows: WatchlistRow[]): CategoryShare[] {
+  // Group by category and accumulate gil/day and item count
+  const byCategory = new Map<ItemCategory, { gilPerDay: number; itemCount: number }>();
+
+  for (const r of rows) {
+    const existing = byCategory.get(r.cat) ?? { gilPerDay: 0, itemCount: 0 };
+    existing.gilPerDay += r.gilPerDay ?? 0;
+    existing.itemCount += 1;
+    byCategory.set(r.cat, existing);
+  }
+
+  // Compute total for share calculation
+  const totalGilPerDay = Array.from(byCategory.values()).reduce((sum, v) => sum + v.gilPerDay, 0);
+
+  // Convert to sorted array
+  const shares: CategoryShare[] = Array.from(byCategory.entries()).map(([cat, { gilPerDay, itemCount }]) => ({
+    cat,
+    gilPerDay,
+    share: totalGilPerDay > 0 ? gilPerDay / totalGilPerDay : 0,
+    itemCount,
+  }));
+
+  // Sort by share descending, tiebreak by gilPerDay descending, then cat ascending
+  shares.sort((a, b) => {
+    const shareDiff = b.share - a.share;
+    if (shareDiff !== 0) return shareDiff;
+    const gilDiff = b.gilPerDay - a.gilPerDay;
+    if (gilDiff !== 0) return gilDiff;
+    return a.cat.localeCompare(b.cat);
+  });
+
+  return shares;
+}
+
+export interface TopCategory {
+  cat: ItemCategory;
+  /** Percentage (0–100) of total gil/day. */
+  pct: number;
+  itemCount: number;
+}
+
+/** The single largest category by gil/day share, or null when no gil/day at all. */
+export function topCategory(rows: WatchlistRow[]): TopCategory | null {
+  const shares = categoryShares(rows);
+  if (shares.length === 0) return null;
+  const top = shares[0];
+  // Return null only if total gil/day is 0 (which means all shares are 0)
+  if (top.share === 0) return null;
+  return { cat: top.cat, pct: top.share * 100, itemCount: top.itemCount };
 }
 
 // ── "What changed" digest ────────────────────────────────────────────────

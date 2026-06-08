@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   portfolioTotals, marginBuckets, gilPerDayLeaders, concentration,
   moversDigest, spreadByWorld, rowMargin, valuePlays, topPick, topPicks, valuationMap,
+  categoryShares, topCategory,
 } from './aggregate';
 import type { WatchlistRow } from '../watchlist/buildRows';
 import type { WorldListing } from '../../lib/universalis';
@@ -262,5 +263,126 @@ describe('spreadByWorld', () => {
     ]);
     const out = spreadByWorld(rows, listings, 'Home', 5);
     expect(out.map((s) => s.id)).toEqual([2, 1]); // BigPct first, Noise excluded
+  });
+});
+
+describe('categoryShares', () => {
+  it('groups by category and weights by gil/day, not item count', () => {
+    // Critical AC: Raid category has FEW high-gil items, Food has MANY low-gil items.
+    // Raid should win because it dominates by gil/day, not by count.
+    const rows = [
+      // Raid: 1 item × 3000/day = 3000 total
+      mkRow({ id: 1, cat: 'Raid', gilPerDay: 3000 }),
+      // Food: 5 items × 100/day = 500 total
+      mkRow({ id: 2, cat: 'Food', gilPerDay: 100 }),
+      mkRow({ id: 3, cat: 'Food', gilPerDay: 100 }),
+      mkRow({ id: 4, cat: 'Food', gilPerDay: 100 }),
+      mkRow({ id: 5, cat: 'Food', gilPerDay: 100 }),
+      mkRow({ id: 6, cat: 'Food', gilPerDay: 100 }),
+    ];
+    const shares = categoryShares(rows);
+    expect(shares).toHaveLength(2);
+    // Raid should be first: 3000 / 3500 ≈ 0.857
+    expect(shares[0].cat).toBe('Raid');
+    expect(shares[0].share).toBeCloseTo(3000 / 3500, 5);
+    expect(shares[0].itemCount).toBe(1);
+    // Food second: 500 / 3500 ≈ 0.143
+    expect(shares[1].cat).toBe('Food');
+    expect(shares[1].share).toBeCloseTo(500 / 3500, 5);
+    expect(shares[1].itemCount).toBe(5);
+  });
+
+  it('returns shares in descending order, with deterministic tie-breaking', () => {
+    const rows = [
+      mkRow({ id: 1, cat: 'Materia', gilPerDay: 1000 }),
+      mkRow({ id: 2, cat: 'Dye', gilPerDay: 2000 }),
+      mkRow({ id: 3, cat: 'Housing', gilPerDay: 1000 }), // same gil/day as Materia
+    ];
+    const shares = categoryShares(rows);
+    expect(shares.map((s) => s.cat)).toEqual(['Dye', 'Housing', 'Materia']); // Dye > Housing > Materia (alphabetical tiebreak)
+  });
+
+  it('handles categories with null gilPerDay (treated as 0)', () => {
+    const rows = [
+      mkRow({ id: 1, cat: 'Raid', gilPerDay: 1000 }),
+      mkRow({ id: 2, cat: 'Minion', gilPerDay: null }),
+      mkRow({ id: 3, cat: 'Minion', gilPerDay: null }),
+    ];
+    const shares = categoryShares(rows);
+    expect(shares).toHaveLength(2);
+    expect(shares[0].cat).toBe('Raid');
+    expect(shares[0].share).toBeCloseTo(1, 5);
+    expect(shares[1].cat).toBe('Minion');
+    expect(shares[1].share).toBeCloseTo(0, 5);
+    expect(shares[1].itemCount).toBe(2);
+  });
+
+  it('returns empty array when no rows', () => {
+    expect(categoryShares([])).toEqual([]);
+  });
+
+  it('sums gil/day across all rows in each category', () => {
+    const rows = [
+      mkRow({ id: 1, cat: 'Food', gilPerDay: 100 }),
+      mkRow({ id: 2, cat: 'Food', gilPerDay: 200 }),
+      mkRow({ id: 3, cat: 'Food', gilPerDay: 300 }),
+    ];
+    const shares = categoryShares(rows);
+    expect(shares).toHaveLength(1);
+    expect(shares[0].gilPerDay).toBe(600);
+    expect(shares[0].itemCount).toBe(3);
+  });
+});
+
+describe('topCategory', () => {
+  it('returns the top category by gil/day share as a percentage', () => {
+    const rows = [
+      mkRow({ id: 1, cat: 'Raid', gilPerDay: 3000 }),
+      mkRow({ id: 2, cat: 'Food', gilPerDay: 500 }),
+    ];
+    const top = topCategory(rows);
+    expect(top).not.toBeNull();
+    expect(top!.cat).toBe('Raid');
+    expect(top!.pct).toBeCloseTo((3000 / 3500) * 100, 5);
+    expect(top!.itemCount).toBe(1);
+  });
+
+  it('weights by gil/day, not item count, even when category has many items', () => {
+    const rows = [
+      mkRow({ id: 1, cat: 'Raid', gilPerDay: 3000 }),
+      mkRow({ id: 2, cat: 'Food', gilPerDay: 100 }),
+      mkRow({ id: 3, cat: 'Food', gilPerDay: 100 }),
+      mkRow({ id: 4, cat: 'Food', gilPerDay: 100 }),
+      mkRow({ id: 5, cat: 'Food', gilPerDay: 100 }),
+      mkRow({ id: 6, cat: 'Food', gilPerDay: 100 }),
+    ];
+    const top = topCategory(rows);
+    expect(top).not.toBeNull();
+    expect(top!.cat).toBe('Raid'); // despite Food having 5 items
+    expect(top!.pct).toBeCloseTo((3000 / 3500) * 100, 5);
+  });
+
+  it('returns null when total gil/day is 0', () => {
+    const rows = [
+      mkRow({ id: 1, cat: 'Raid', gilPerDay: null }),
+      mkRow({ id: 2, cat: 'Food', gilPerDay: 0 }),
+    ];
+    expect(topCategory(rows)).toBeNull();
+  });
+
+  it('returns null when no rows', () => {
+    expect(topCategory([])).toBeNull();
+  });
+
+  it('returns the single category when only one has gil/day', () => {
+    const rows = [
+      mkRow({ id: 1, cat: 'Raid', gilPerDay: 1000 }),
+      mkRow({ id: 2, cat: 'Food', gilPerDay: null }),
+      mkRow({ id: 3, cat: 'Minion', gilPerDay: 0 }),
+    ];
+    const top = topCategory(rows);
+    expect(top).not.toBeNull();
+    expect(top!.cat).toBe('Raid');
+    expect(top!.pct).toBeCloseTo(100, 5);
   });
 });
