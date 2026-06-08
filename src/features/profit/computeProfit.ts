@@ -1,4 +1,4 @@
-import type { Recipe, Ingredient } from '../../lib/recipes';
+import type { Recipe } from '../../lib/recipes';
 import type { MarketData } from '../../lib/universalis';
 import { applyTax } from '../items/verdict/pricing';
 
@@ -16,6 +16,41 @@ function unitCost(itemId: number, dc: MarketData, phantom: MarketData): number {
   return 0;
 }
 
+export interface MaterialLeaf {
+  itemId: number;
+  qty: number;
+  unitPrice: number;
+}
+
+/**
+ * Flatten a recipe into the exact set of costed leaves computeMaterialCost prices.
+ * With empty flags every direct ingredient is one leaf; when
+ * flags[id].craftIntermediates is set (depth 0 only) the sub-recipe is recursed
+ * and the leaf quantities are multiplied through. `mult` carries the accumulated
+ * parent quantity into the recursion.
+ */
+export function computeMaterialLeaves(
+  recipe: Recipe,
+  recipeMap: Map<number, Recipe | null>,
+  marketDc: MarketData,
+  flags: FlagMap,
+  phantom: MarketData = {},
+  depth = 0,
+  mult = 1,
+): MaterialLeaf[] {
+  const out: MaterialLeaf[] = [];
+  for (const ing of recipe.ingredients) {
+    const subRecipe = recipeMap.get(ing.itemId);
+    const wantsCraft = flags[ing.itemId]?.craftIntermediates;
+    if (wantsCraft && subRecipe && depth === 0) {
+      out.push(...computeMaterialLeaves(subRecipe, recipeMap, marketDc, flags, phantom, depth + 1, mult * ing.amount));
+    } else {
+      out.push({ itemId: ing.itemId, qty: ing.amount * mult, unitPrice: unitCost(ing.itemId, marketDc, phantom) });
+    }
+  }
+  return out;
+}
+
 export function computeMaterialCost(
   recipe: Recipe,
   recipeMap: Map<number, Recipe | null>,
@@ -24,27 +59,8 @@ export function computeMaterialCost(
   phantom: MarketData = {},
   depth = 0,
 ): number {
-  let total = 0;
-  for (const ing of recipe.ingredients) {
-    total += ingredientCost(ing, recipeMap, marketDc, flags, phantom, depth);
-  }
-  return total;
-}
-
-function ingredientCost(
-  ing: Ingredient,
-  recipeMap: Map<number, Recipe | null>,
-  dc: MarketData,
-  flags: FlagMap,
-  phantom: MarketData,
-  depth: number,
-): number {
-  const subRecipe = recipeMap.get(ing.itemId);
-  const wantsCraft = flags[ing.itemId]?.craftIntermediates;
-  if (wantsCraft && subRecipe && depth === 0) {
-    return computeMaterialCost(subRecipe, recipeMap, dc, flags, phantom, depth + 1) * ing.amount;
-  }
-  return unitCost(ing.itemId, dc, phantom) * ing.amount;
+  return computeMaterialLeaves(recipe, recipeMap, marketDc, flags, phantom, depth)
+    .reduce((sum, l) => sum + l.qty * l.unitPrice, 0);
 }
 
 export interface ProfitResult {
