@@ -1,7 +1,8 @@
 import type { CurrencyId } from '../../lib/currencies';
+import type { MaterialSourcing } from '../profit/materialSourcing';
 
 export type HqMode = 'hq' | 'nq' | 'either';
-export type QuerySort = 'discount' | 'gilFlow' | 'velocity' | 'unitPrice';
+export type QuerySort = 'discount' | 'gilFlow' | 'velocity' | 'unitPrice' | 'selfSourceGilFlow';
 export type QueryScope = 'home' | 'dc';
 export type QueryMode = 'standard' | 'craft' | 'repost';
 export type PresetCategory = 'craft' | 'trading' | 'gathering';
@@ -20,6 +21,8 @@ export interface QueryFilter {
   mode: QueryMode;
   minGap: number | null;
   trainedEye: boolean;
+  /** Crafts mode only: keep rows whose gatherable material cost is at least this % of total. null = off. */
+  minGatherablePct?: number | null;
 }
 
 export interface QueryPreset {
@@ -52,6 +55,8 @@ export interface CraftFlipRow {
   velocity: number;
   gilPerDay: number;
   hq: boolean;
+  sourcing: MaterialSourcing | null;
+  selfSourceGilPerDay: number;     // selfSourceProfit * velocity (=== gilPerDay when no gatherable mats)
 }
 
 export interface RepostRow {
@@ -82,6 +87,7 @@ export function filterHash(f: QueryFilter): string {
     m: f.mode,
     g: f.minGap,
     te: f.trainedEye,
+    mgp: f.minGatherablePct ?? null,
   });
 }
 

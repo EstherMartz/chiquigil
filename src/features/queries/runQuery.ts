@@ -27,6 +27,7 @@ function compare(a: QueryResultRow, b: QueryResultRow, sort: QuerySort): number 
     case 'gilFlow':   return b.gilFlow - a.gilFlow;
     case 'velocity':  return b.velocity - a.velocity;
     case 'unitPrice': return b.unitPrice - a.unitPrice;
+    default:          return 0; // selfSourceGilFlow is craft-mode only
   }
 }
 

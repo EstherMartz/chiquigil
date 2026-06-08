@@ -8,6 +8,7 @@ function row(over: Partial<CraftFlipRow> = {}): CraftFlipRow {
     id: 1, name: 'Sample', sc: 4,
     unitPrice: 1000, materialCost: 400, profit: 600,
     velocity: 2, gilPerDay: 1200, hq: false,
+    sourcing: null, selfSourceGilPerDay: 1200,
     ...over,
   };
 }
