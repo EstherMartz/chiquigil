@@ -278,6 +278,36 @@ export function valuePlays(
   return out.sort((a, b) => opportunity(b) - opportunity(a)).slice(0, n);
 }
 
+export interface WorldSpreadGroup {
+  world: string;
+  items: WorldSpread[];
+  itemCount: number;
+  totalSpread: number;   // sum of per-item spread
+  totalCapital: number;  // sum of bestPrice
+  gilPerMillion: number;
+}
+
+/**
+ * Group dashboard cross-world spreads by destination world for the trip-summary
+ * widget. Sorted by gil/M invested desc, tie-break total spread desc.
+ */
+export function groupSpreadsByWorld(rows: WorldSpread[]): WorldSpreadGroup[] {
+  const byWorld = new Map<string, WorldSpread[]>();
+  for (const r of rows) {
+    const list = byWorld.get(r.bestWorld) ?? [];
+    list.push(r);
+    byWorld.set(r.bestWorld, list);
+  }
+  const groups: WorldSpreadGroup[] = [];
+  for (const [world, items] of byWorld) {
+    const totalSpread = items.reduce((s, r) => s + r.spread, 0);
+    const totalCapital = items.reduce((s, r) => s + r.bestPrice, 0);
+    const gilPerMillion = totalCapital > 0 ? totalSpread / (totalCapital / 1_000_000) : 0;
+    groups.push({ world, items, itemCount: items.length, totalSpread, totalCapital, gilPerMillion });
+  }
+  return groups.sort((a, b) => b.gilPerMillion - a.gilPerMillion || b.totalSpread - a.totalSpread);
+}
+
 function cheapestByWorld(listings: WorldListing[]): Map<string, number> {
   const m = new Map<string, number>();
   for (const l of listings) {

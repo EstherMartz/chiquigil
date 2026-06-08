@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import { useSettingsStore } from '../settings/store';
 import { useItemSnapshot } from '../queries/useItemSnapshot';
 import { useSelectedItems } from '../items/useSelectedItems';
 import { fetchInBatches } from '../../lib/universalisBulk';
 import { fetchMarketData, type MarketData } from '../../lib/universalis';
 import { runDcFlip } from './dcFlip';
+import { groupByWorld } from './dcFlipGroups';
 import { fmtGil } from '../../lib/format';
 import { ItemNameLinks } from '../../components/ItemNameLinks';
 import { CopyButton } from '../../components/CopyButton';
@@ -17,17 +19,71 @@ import { StatusBanner } from '../../components/StatusBanner';
 import { EmptyState } from '../../components/EmptyState';
 import { useUiStore, rowPadClass } from '../ui/uiStore';
 import { useInitialScan } from '../queries/useInitialScan';
+import { useSpreadHistory } from '../queries/useSpreadHistory';
+import { deriveWindow, spreadKey, type WindowTone } from '../../lib/spreadHistory';
 
 type SortKey = 'name' | 'buyWorld' | 'dcPrice' | 'phantomPrice' | 'spread' | 'velocity';
 type SortDir = 'asc' | 'desc';
 
 const MAX_CANDIDATES = 500;
 
+const TONE_TEXT: Record<WindowTone, string> = {
+  green: 'text-jade',
+  amber: 'text-gold',
+  grey: 'text-text-low',
+};
+const TONE_DOT: Record<WindowTone, string> = {
+  green: 'bg-jade',
+  amber: 'bg-gold',
+  grey: 'bg-text-low',
+};
+
+function WorldGroupCard({
+  group, collapsed, onToggle, children,
+}: {
+  group: import('./dcFlipGroups').DcFlipGroup;
+  collapsed: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  const overBudget = group.fitCount < group.itemCount;
+  return (
+    <div className="border border-border-base bg-bg-card">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left hover:bg-bg-card-hi transition-colors"
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <span aria-hidden className="text-text-dim">{collapsed ? '▸' : '▾'}</span>
+          <span className="font-display text-[15px] text-text-cream uppercase tracking-wide truncate">{group.world}</span>
+          <span className="font-mono text-[10px] tracking-widest uppercase text-text-low shrink-0">
+            {group.itemCount} item{group.itemCount === 1 ? '' : 's'}
+          </span>
+        </div>
+        <div className="font-mono text-[11px] text-text-low tabular-nums shrink-0 hidden sm:block">
+          Capital <span className="text-text-cream">{fmtGil(group.totalCapital)}</span>
+          {' · '}Spread <span className="text-jade">+{fmtGil(group.totalNetSpread)}</span>
+          {' · '}<span className="text-aether">{Math.round(group.gilPerMillion)}</span> gil/M
+        </div>
+      </button>
+      {overBudget && !collapsed && (
+        <div className="px-4 py-1.5 border-t border-border-base font-mono text-[10px] tracking-widest uppercase text-gold/80">
+          {group.fitCount} of {group.itemCount} items fit your budget — showing top {group.fitCount} by spread
+        </div>
+      )}
+      {!collapsed && (
+        <div className="border-t border-border-base overflow-x-auto">{children}</div>
+      )}
+    </div>
+  );
+}
+
 interface RunResult {
   dcMarket: MarketData;
   homeMarket: MarketData;
   skipped: number;
-  ranWith: { minSpread: number; minVelocity: number };
+  ranWith: { minSpread: number; minVelocity: number; maxCapital: number };
 }
 
 export function DcFlipView() {
@@ -37,8 +93,19 @@ export function DcFlipView() {
   const density = useUiStore((s) => s.density);
   const rowY = rowPadClass(density);
 
-  const [minSpread, setMinSpread] = useState(10_000);
-  const [minVelocity, setMinVelocity] = useState(1);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const numParam = (key: string, dflt: number) => {
+    const v = Number(searchParams.get(key));
+    return Number.isFinite(v) && v > 0 ? v : dflt;
+  };
+  const worldFilter = searchParams.get('world'); // destination deep-link from dashboard
+
+  const [minSpread, setMinSpread] = useState(() => numParam('minSpread', 10_000));
+  const [minVelocity, setMinVelocity] = useState(() => numParam('minVelocity', 1));
+  const [maxCapital, setMaxCapital] = useState(() => {
+    const v = Number(searchParams.get('maxCapital'));
+    return Number.isFinite(v) && v > 0 ? v : 0; // 0 = no cap
+  });
   const [sortKey, setSortKey] = useState<SortKey>('spread');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
@@ -87,7 +154,7 @@ export function DcFlipView() {
         dcMarket: dcResult.data,
         homeMarket: homeResult.data,
         skipped: dcResult.errors.length + homeResult.errors.length,
-        ranWith: { minSpread, minVelocity },
+        ranWith: { minSpread, minVelocity, maxCapital },
       };
     },
   });
@@ -111,7 +178,34 @@ export function DcFlipView() {
     });
   }, [rows, sortKey, sortDir]);
 
-  const lm = useLoadMore(sortedRows, 25);
+  const groups = useMemo(() => {
+    const base = worldFilter ? sortedRows.filter((r) => r.buyWorld === worldFilter) : sortedRows;
+    return groupByWorld(base, { maxCapital });
+  }, [sortedRows, worldFilter, maxCapital]);
+
+  // Flat fallback ONLY when exactly one world AND that world has exactly one item.
+  const isFlat = groups.length === 1 && groups[0].itemCount === 1;
+
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  function toggleGroup(world: string) {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(world)) next.delete(world);
+      else next.add(world);
+      return next;
+    });
+  }
+  const allCollapsed = groups.length > 0 && groups.every((g) => collapsed.has(g.world));
+  function toggleAll() {
+    setCollapsed(allCollapsed ? new Set() : new Set(groups.map((g) => g.world)));
+  }
+
+  // For flat fallback only: paginate the single group's rows
+  const flatRows = isFlat && groups.length > 0 ? groups[0].rows : [];
+  const lm = useLoadMore(flatRows, 25);
+
+  const spreadHistory = useSpreadHistory();
+  const nowMs = run.data ? Date.now() : 0; // stamped per scan render
 
   function toggleSort(key: SortKey) {
     if (sortKey === key) {
@@ -126,8 +220,65 @@ export function DcFlipView() {
 
   useInitialScan(!notReady, () => { run.reset(); run.mutate(); });
 
+  function renderGroupTable(group: import('./dcFlipGroups').DcFlipGroup): React.ReactNode {
+    const histMap = spreadHistory.data ?? {};
+    return (
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="font-mono text-[10px] tracking-widest uppercase text-text-dim">
+            <th className="px-3 py-2 text-right w-8">#</th>
+            <th className="px-3 py-2 text-left">Item</th>
+            <th className="px-3 py-2 text-left">Buy on</th>
+            <th className="px-3 py-2 text-right">DC</th>
+            <th className="px-3 py-2 text-right">{world}</th>
+            <th className="px-3 py-2 text-right">Spread</th>
+            <th className="px-3 py-2 text-right hidden md:table-cell">Vel</th>
+            <th className="px-3 py-2 text-left">Window</th>
+          </tr>
+        </thead>
+        <tbody>
+          {group.rows.map((r, i) => {
+            const w = deriveWindow(histMap[spreadKey(r.id, r.buyWorld)], nowMs);
+            const dim = r.withinBudget ? '' : 'opacity-40';
+            return (
+              <tr key={r.id} className={`border-t border-border-base hover:bg-bg-card-hi transition-colors ${dim}`}>
+                <td className={`px-3 ${rowY} text-right font-mono text-text-low`}>{i + 1}</td>
+                <td className={`px-3 ${rowY}`}>
+                  <div className="flex items-center gap-2">
+                    <ItemNameLinks id={r.id} name={r.name} />
+                    <CopyButton text={r.name} />
+                  </div>
+                </td>
+                <td className={`px-3 ${rowY} text-aether`}>{r.buyWorld}</td>
+                <td className={`px-3 ${rowY} text-right font-mono`}>{fmtGil(r.dcPrice)}</td>
+                <td className={`px-3 ${rowY} text-right font-mono`}>{fmtGil(r.phantomPrice)}</td>
+                <td className={`px-3 ${rowY} text-right font-mono text-jade`}>+{fmtGil(r.netSpread)}</td>
+                <td className={`px-3 ${rowY} text-right font-mono hidden md:table-cell`}>{r.velocity.toFixed(1)}/d</td>
+                <td className={`px-3 ${rowY}`} title={w.tooltip}>
+                  {density === 'compact' ? (
+                    <span className={`inline-block w-1.5 h-1.5 rounded-full ${TONE_DOT[w.tone]}`} aria-label={w.tooltip} />
+                  ) : (
+                    <span className={`font-mono text-[11px] ${TONE_TEXT[w.tone]}`}>{w.ageText.replace(' ago', '')} · {w.label}</span>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    );
+  }
+
   const stale = run.data != null &&
-    (run.data.ranWith.minSpread !== minSpread || run.data.ranWith.minVelocity !== minVelocity);
+    (run.data.ranWith.minSpread !== minSpread || run.data.ranWith.minVelocity !== minVelocity || run.data.ranWith.maxCapital !== maxCapital);
+
+  function syncParam(key: string, value: number) {
+    setSearchParams((p) => {
+      if (value > 0) p.set(key, String(value));
+      else p.delete(key);
+      return p;
+    }, { replace: true });
+  }
 
   return (
     <div className="space-y-4">
@@ -138,7 +289,7 @@ export function DcFlipView() {
             <input
               type="number" inputMode="decimal" min={0} step={1000}
               value={minSpread}
-              onChange={(e) => setMinSpread(Math.max(0, Number(e.target.value) || 0))}
+              onChange={(e) => { const v = Math.max(0, Number(e.target.value) || 0); setMinSpread(v); syncParam('minSpread', v); }}
               className="mt-1 block w-32 bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
             />
           </label>
@@ -147,7 +298,17 @@ export function DcFlipView() {
             <input
               type="number" inputMode="decimal" min={0} step={0.5}
               value={minVelocity}
-              onChange={(e) => setMinVelocity(Math.max(0, Number(e.target.value) || 0))}
+              onChange={(e) => { const v = Math.max(0, Number(e.target.value) || 0); setMinVelocity(v); syncParam('minVelocity', v); }}
+              className="mt-1 block w-32 bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
+            />
+          </label>
+          <label className="block">
+            <span className="font-mono text-[13px] tracking-widest text-text-low">Max trip capital (gil)</span>
+            <input
+              type="number" inputMode="decimal" min={0} step={10000}
+              value={maxCapital || ''}
+              placeholder="no cap"
+              onChange={(e) => { const v = Math.max(0, Number(e.target.value) || 0); setMaxCapital(v); syncParam('maxCapital', v); }}
               className="mt-1 block w-32 bg-bg-deep border border-border-hi focus:border-aether focus:outline-none px-3 py-2 font-mono text-sm transition-colors"
             />
           </label>
@@ -197,7 +358,23 @@ export function DcFlipView() {
         <EmptyState icon="⇄" message={`No items found with a spread above ${fmtGil(minSpread)}. Try lowering the threshold or running again after the market updates.`} />
       )}
 
-      {run.data && sortedRows.length > 0 && (
+      {run.data && groups.length > 0 && !isFlat && (
+        <div className="flex items-center justify-between">
+          <span className="font-mono text-[10px] tracking-widest uppercase text-text-low">
+            {groups.length} destination world{groups.length === 1 ? '' : 's'}
+            {worldFilter ? ` · filtered to ${worldFilter}` : ''}
+          </span>
+          <button
+            type="button"
+            onClick={toggleAll}
+            className="font-mono text-[10px] tracking-widest uppercase text-text-dim hover:text-aether transition-colors"
+          >
+            {allCollapsed ? 'Expand all' : 'Collapse all'}
+          </button>
+        </div>
+      )}
+
+      {run.data && groups.length > 0 && isFlat && (
         <div className="border border-border-base bg-bg-card overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -240,7 +417,7 @@ export function DcFlipView() {
                   <td className={`px-3 ${rowY} text-aether`}>{r.buyWorld}</td>
                   <td className={`px-3 ${rowY} text-right font-mono`}>{fmtGil(r.dcPrice)}</td>
                   <td className={`px-3 ${rowY} text-right font-mono`}>{fmtGil(r.phantomPrice)}</td>
-                  <td className={`px-3 ${rowY} text-right font-mono text-jade`}>+{fmtGil(r.spread)}</td>
+                  <td className={`px-3 ${rowY} text-right font-mono text-jade`}>+{fmtGil(r.netSpread)}</td>
                   <td className={`px-3 ${rowY} text-right font-mono hidden md:table-cell`}>{r.velocity.toFixed(1)}/day</td>
                 </tr>
               ))}
@@ -253,6 +430,27 @@ export function DcFlipView() {
             onLoadMore={lm.loadMore}
           />
         </div>
+      )}
+
+      {run.data && groups.length > 0 && !isFlat && (
+        <div className="space-y-3">
+          {groups.map((g) => (
+            <WorldGroupCard
+              key={g.world}
+              group={g}
+              collapsed={collapsed.has(g.world)}
+              onToggle={() => toggleGroup(g.world)}
+            >
+              {renderGroupTable(g)}
+            </WorldGroupCard>
+          ))}
+        </div>
+      )}
+
+      {run.data && groups.length > 0 && (
+        <p className="font-mono text-[10px] text-text-low">
+          Prices refresh every ~5 minutes. Verify listings on the destination MB before buying.
+        </p>
       )}
     </div>
   );
