@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useCategorySuggestions } from './useCategorySuggestions';
 import { categorySupportsSuggestions } from './categorySearchCats';
 import { SuggestionRow } from './SuggestionRow';
 import { ModeToggle } from './ModeToggle';
 import { Spinner } from '../../components/Spinner';
+import { useSelectedItems } from '../items/useSelectedItems';
 import type { ItemCategory } from '../items/types';
 import type { SuggestionMode } from './suggestions';
 
@@ -13,11 +14,56 @@ const CATEGORIES: ItemCategory[] = ['Tincture', 'Food', 'Dye', 'Glamour', 'Housi
  * Discover panel — the best untracked items to add, by category. Each section
  * runs the on-demand scan only when expanded, so opening Discover isn't a giant
  * fetch. One-click + track / dismiss per row, same as the watchlist strip.
+ *
+ * Supports URL deep-linking:
+ * - ?category=CategoryName — auto-opens the given category (case-insensitive) and scrolls it into view
+ * - ?focus=gaps — auto-opens categories with < 3 tracked items
  */
-export function DiscoverView() {
+export function DiscoverView({ category, focus }: { category?: string | null; focus?: string | null }) {
   const supported = CATEGORIES.filter(categorySupportsSuggestions);
+  const selectedItems = useSelectedItems();
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Compute which categories should auto-open
+  const autoOpen = new Set<ItemCategory>();
+  if (category) {
+    const normalized = category.toLowerCase();
+    const match = supported.find((cat) => cat.toLowerCase() === normalized);
+    if (match) {
+      autoOpen.add(match);
+    }
+  }
+  if (focus === 'gaps') {
+    const countPerCategory = new Map<ItemCategory, number>();
+    for (const cat of supported) {
+      countPerCategory.set(cat, 0);
+    }
+    for (const item of selectedItems) {
+      if (supported.includes(item.cat)) {
+        countPerCategory.set(item.cat, (countPerCategory.get(item.cat) ?? 0) + 1);
+      }
+    }
+    for (const cat of supported) {
+      if ((countPerCategory.get(cat) ?? 0) < 3) {
+        autoOpen.add(cat);
+      }
+    }
+  }
+
+  // Scroll to the target category if it was specified and matched
+  useEffect(() => {
+    if (category && containerRef.current) {
+      const normalized = category.toLowerCase();
+      const match = supported.find((cat) => cat.toLowerCase() === normalized);
+      if (match) {
+        const el = containerRef.current.querySelector(`#discover-${match}`);
+        el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  }, [category, supported]);
+
   return (
-    <div className="space-y-4">
+    <div ref={containerRef} className="space-y-4">
       <div className="space-y-1">
         <h2 className="font-display text-2xl text-gold tracking-wide">Discover</h2>
         <p className="font-mono text-[11px] text-text-low max-w-prose">
@@ -25,13 +71,15 @@ export function DiscoverView() {
           Expand a category to scan it.
         </p>
       </div>
-      {supported.map((cat) => <DiscoverSection key={cat} category={cat} />)}
+      {supported.map((cat) => (
+        <DiscoverSection key={cat} category={cat} autoOpen={autoOpen.has(cat)} />
+      ))}
     </div>
   );
 }
 
-function DiscoverSection({ category }: { category: ItemCategory }) {
-  const [open, setOpen] = useState(false);
+function DiscoverSection({ category, autoOpen }: { category: ItemCategory; autoOpen?: boolean }) {
+  const [open, setOpen] = useState(autoOpen ?? false);
   const [mode, setMode] = useState<SuggestionMode>('craft');
   const { run, notReady } = useCategorySuggestions();
 
@@ -47,7 +95,7 @@ function DiscoverSection({ category }: { category: ItemCategory }) {
   }
 
   return (
-    <div className="border border-border-base bg-bg-card">
+    <div id={`discover-${category}`} className="border border-border-base bg-bg-card">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
