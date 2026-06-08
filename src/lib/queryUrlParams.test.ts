@@ -16,6 +16,7 @@ const baseFilter: QueryFilter = {
   mode: 'standard',
   minGap: null,
   trainedEye: false,
+  minGatherablePct: null,
 };
 
 describe('queryUrlParams', () => {
@@ -206,6 +207,7 @@ describe('queryUrlParams', () => {
         mode: 'craft',
         minGap: 5000,
         trainedEye: false,
+        minGatherablePct: null,
       };
       const params = filterToParams(original);
       const decoded = paramsToFilter(params, baseFilter);
@@ -227,6 +229,7 @@ describe('queryUrlParams', () => {
         mode: 'repost',
         minGap: 1000,
         trainedEye: false,
+        minGatherablePct: null,
       };
       const override: QueryFilter = {
         ...customBase,
@@ -237,6 +240,24 @@ describe('queryUrlParams', () => {
       const params = filterToParams(override);
       const decoded = paramsToFilter(params, customBase);
       expect(decoded).toEqual(override);
+    });
+  });
+
+  describe('minGatherablePct url param', () => {
+    it('omits mg when unset (null/undefined)', () => {
+      expect(filterToParams({ ...baseFilter, minGatherablePct: null }).has('mg')).toBe(false);
+      expect(filterToParams(baseFilter).has('mg')).toBe(false);
+    });
+
+    it('round-trips a set value via mg', () => {
+      const params = filterToParams({ ...baseFilter, minGatherablePct: 50 });
+      expect(params.get('mg')).toBe('50');
+      expect(paramsToFilter(params, baseFilter).minGatherablePct).toBe(50);
+    });
+
+    it('decodes selfSourceGilFlow sort', () => {
+      const params = new URLSearchParams('s=selfSourceGilFlow');
+      expect(paramsToFilter(params, baseFilter).sort).toBe('selfSourceGilFlow');
     });
   });
 });

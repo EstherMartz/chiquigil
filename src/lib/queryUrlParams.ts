@@ -10,6 +10,7 @@ const DEFAULTS = {
   maxListings: null as number | null,
   minGap: null as number | null,
   mode: 'standard' as const,
+  minGatherablePct: null as number | null,
 };
 
 /**
@@ -73,6 +74,11 @@ export function filterToParams(f: QueryFilter): URLSearchParams {
   // minGap: only add if not null
   if (f.minGap !== DEFAULTS.minGap) {
     params.set('g', String(f.minGap));
+  }
+
+  // minGatherablePct: only add if set (treat undefined as null)
+  if ((f.minGatherablePct ?? null) !== DEFAULTS.minGatherablePct) {
+    params.set('mg', String(f.minGatherablePct));
   }
 
   return params;
@@ -144,7 +150,8 @@ export function paramsToFilter(params: URLSearchParams, base: QueryFilter): Quer
 
   // sort
   const sStr = params.get('s');
-  if (sStr === 'discount' || sStr === 'gilFlow' || sStr === 'velocity' || sStr === 'unitPrice') {
+  if (sStr === 'discount' || sStr === 'gilFlow' || sStr === 'velocity'
+      || sStr === 'unitPrice' || sStr === 'selfSourceGilFlow') {
     result.sort = sStr as QuerySort;
   }
 
@@ -184,6 +191,15 @@ export function paramsToFilter(params: URLSearchParams, base: QueryFilter): Quer
     const num = Number(gStr);
     if (!Number.isNaN(num)) {
       result.minGap = num;
+    }
+  }
+
+  // minGatherablePct (clamp 0..100)
+  const mgStr = params.get('mg');
+  if (mgStr) {
+    const num = Number(mgStr);
+    if (!Number.isNaN(num)) {
+      result.minGatherablePct = Math.max(0, Math.min(100, num));
     }
   }
 
