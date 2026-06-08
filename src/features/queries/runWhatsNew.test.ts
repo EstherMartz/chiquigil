@@ -126,7 +126,7 @@ describe('runWhatsNew — spike & myJobsOnly', () => {
       const data: MarketData = {
         1: market({ velocity: 0 }), // zero velocity, still no average
       };
-      const filter = { ...defaultWhatsNewFilter(), tradeableOnly: false };
+      const filter = { ...defaultWhatsNewFilter(), tradeableOnly: false, minVelocity: 0 };
       const rows = runWhatsNew([1, 2], items, data, new Set(), filter, NOW);
       expect(rows).toHaveLength(2);
 

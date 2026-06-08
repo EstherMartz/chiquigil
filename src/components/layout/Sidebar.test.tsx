@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Sidebar } from './Sidebar';
 import { usePluginStore } from '../../features/plugin/pluginStore';
 
@@ -9,7 +10,14 @@ beforeEach(() => {
 });
 
 function ui() {
-  return <MemoryRouter><Sidebar /></MemoryRouter>;
+  // Sidebar reads the What's New snapshot (via usePatchStatus) for the "New patch"
+  // cue, so it needs a QueryClient in the tree.
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return (
+    <QueryClientProvider client={qc}>
+      <MemoryRouter><Sidebar /></MemoryRouter>
+    </QueryClientProvider>
+  );
 }
 
 describe('Sidebar Plan gating', () => {
