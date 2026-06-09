@@ -4,6 +4,7 @@ import { useRecipeSnapshot } from '../queries/useRecipeSnapshot';
 import { useVendorShopSnapshot } from '../queries/useVendorShopSnapshot';
 import { useGatheringCatalog } from '../queries/useGatheringCatalog';
 import { useSettingsStore } from '../settings/store';
+import { useIgnoredItemSet } from '../settings/useIgnoredItems';
 import { useUserStore } from '../user/userStore';
 import { CRYSTALS_SEARCH_CATEGORY } from '../queries/commonFilters';
 import { AllaganPasteBox } from '../cleanup/AllaganPasteBox';
@@ -23,6 +24,8 @@ export function CraftFromInventoryView() {
   const vendors = useVendorShopSnapshot();
   const gathering = useGatheringCatalog();
   const hideCrystals = useSettingsStore((s) => s.hideCrystals);
+  const hideIgnored = useSettingsStore((s) => s.hideIgnored);
+  const ignored = useIgnoredItemSet();
   const world = useUserStore((s) => s.world);
   const dc = useUserStore((s) => s.dc);
 
@@ -71,7 +74,7 @@ export function CraftFromInventoryView() {
       ? new Set(snapshot.data.items.filter((i) => i.sc === CRYSTALS_SEARCH_CATEGORY).map((i) => i.id))
       : undefined;
 
-    return findCraftableFromInventory(inventory, recipes.data, namesById, {
+    const found = findCraftableFromInventory(inventory, recipes.data, namesById, {
       maxMissing,
       marketableOnly,
       velocityMap,
@@ -79,7 +82,8 @@ export function CraftFromInventoryView() {
       gatheringSet,
       excludeIngredientIds,
     });
-  }, [inventory, recipes.data, namesById, maxMissing, marketableOnly, vendors.data, gathering.data, hideCrystals, snapshot.data]);
+    return hideIgnored ? found.filter((r) => !ignored.has(r.recipeItemId)) : found;
+  }, [inventory, recipes.data, namesById, maxMissing, marketableOnly, vendors.data, gathering.data, hideCrystals, hideIgnored, ignored, snapshot.data]);
 
   const marketIds = useMemo(() => {
     const ids = new Set<number>();
