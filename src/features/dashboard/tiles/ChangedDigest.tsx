@@ -30,25 +30,25 @@ function MoverRow({ row, kind, valuation }: { row: WatchlistRow; kind: 'up' | 'd
   const rightColor = kind === 'up' ? 'text-jade' : kind === 'down' ? 'text-crimson' : 'text-gold';
   const tag = moverTag(row, valuation);
   return (
-    <li className="flex items-center justify-between gap-2 py-1 border-b border-border-base/40 last:border-b-0">
-      <span className="flex items-start gap-1.5 min-w-0 flex-1">
-        <Link
-          to={`/item/${row.id}`}
-          title={row.name}
-          className="font-display text-[12px] text-text-cream hover:text-aether hover:underline decoration-1 underline-offset-4 leading-tight line-clamp-3 sm:line-clamp-none break-words min-w-0"
-        >
-          {row.name}
-        </Link>
+    <li className="flex flex-col gap-0.5 py-1 border-b border-border-base/40 last:border-b-0">
+      <Link
+        to={`/item/${row.id}`}
+        title={row.name}
+        className="font-display text-[12px] text-text-cream hover:text-aether hover:underline decoration-1 underline-offset-4 leading-tight line-clamp-2 break-words"
+      >
+        {row.name}
+      </Link>
+      <div className="flex items-center gap-2">
         {tag && (
           <span className={`shrink-0 border ${tag.cls} px-1 py-px leading-none text-[8px] tracking-widest uppercase rounded-sm`}>
             {tag.label}
           </span>
         )}
-      </span>
-      <span className="flex items-center gap-2 shrink-0">
-        {price != null && <span className="font-mono text-[10px] text-text-low tabular-nums">{fmtGil(price)}</span>}
-        <span className={`font-mono text-[11px] tabular-nums ${rightColor}`}>{right}</span>
-      </span>
+        <span className="flex items-center gap-2 ml-auto shrink-0">
+          {price != null && <span className="font-mono text-[10px] text-text-low tabular-nums">{fmtGil(price)}</span>}
+          <span className={`font-mono text-[11px] tabular-nums ${rightColor}`}>{right}</span>
+        </span>
+      </div>
     </li>
   );
 }
@@ -90,29 +90,29 @@ function NewPatchColumn({ items, trackedIds }: { items: PatchMover[]; trackedIds
       ) : (
         <ul>
           {capped.map((m) => (
-            <li key={m.id} className="flex items-center justify-between gap-2 py-1 border-b border-border-base/40 last:border-b-0">
-              <span className="flex items-start gap-1.5 min-w-0 flex-1">
-                <Link
-                  to={`/item/${m.id}`}
-                  title={m.name}
-                  className="font-display text-[12px] text-text-cream hover:text-aether hover:underline decoration-1 underline-offset-4 leading-tight line-clamp-2 break-words min-w-0"
-                >
-                  {m.name}
-                </Link>
-              </span>
-              <span className="flex items-center gap-2 shrink-0">
+            <li key={m.id} className="flex flex-col gap-0.5 py-1 border-b border-border-base/40 last:border-b-0">
+              <Link
+                to={`/item/${m.id}`}
+                title={m.name}
+                className="font-display text-[12px] text-text-cream hover:text-aether hover:underline decoration-1 underline-offset-4 leading-tight line-clamp-2 break-words"
+              >
+                {m.name}
+              </Link>
+              <div className="flex items-center gap-2">
                 <span className="font-mono text-[10px] text-text-low tabular-nums">{m.velocity.toFixed(1)}/d</span>
-                {trackedIds?.has(m.id) ? (
-                  <span className="font-mono text-[9px] tracking-widest uppercase text-text-low">[tracked]</span>
-                ) : (
-                  <Link
-                    to={`/item/${m.id}`}
-                    className="font-mono text-[9px] tracking-widest uppercase border border-aether/40 text-aether px-1 py-px rounded-sm hover:bg-aether hover:text-bg-deep transition-colors"
-                  >
-                    [craft?]
-                  </Link>
-                )}
-              </span>
+                <span className="ml-auto shrink-0">
+                  {trackedIds?.has(m.id) ? (
+                    <span className="font-mono text-[9px] tracking-widest uppercase text-text-low">[tracked]</span>
+                  ) : (
+                    <Link
+                      to={`/item/${m.id}`}
+                      className="font-mono text-[9px] tracking-widest uppercase border border-aether/40 text-aether px-1 py-px rounded-sm hover:bg-aether hover:text-bg-deep transition-colors"
+                    >
+                      [craft?]
+                    </Link>
+                  )}
+                </span>
+              </div>
             </li>
           ))}
         </ul>
