@@ -1,4 +1,4 @@
-import { getCachedMarketScope } from './recipeCache';
+import { getCachedMarketScope, putCachedMarketScope, type MarketScopeBlob } from './recipeCache';
 import { trimmedMedian } from './priceTrust';
 
 export type Scope = string; // world or DC name, e.g. 'Phantom' | 'Chaos'
@@ -162,6 +162,47 @@ async function ensureHydrated(scope: string): Promise<void> {
   }
 }
 
+// ---------- Durable persistence (mirror memCache → IDB) ----------
+// The in-memory cache is seeded from the bot's network blob each load, but
+// live-filled rows (fetchMarketLive, for items the cron blob doesn't carry)
+// would otherwise be lost on reload. Mirror each touched scope back to IDB so
+// those rows survive — and so getMarketCacheLastFetchedAt() reports real
+// freshness. Writes are debounced + coalesced (one put per scope) and run off
+// the user path; failures are swallowed (in-memory stays authoritative).
+const dirtyScopes = new Set<string>();
+let persistTimer: ReturnType<typeof setTimeout> | null = null;
+const PERSIST_DEBOUNCE_MS = 1500;
+
+function schedulePersist(scope: string): void {
+  dirtyScopes.add(scope);
+  if (persistTimer) return;
+  persistTimer = setTimeout(() => { void flushPersist(); }, PERSIST_DEBOUNCE_MS);
+}
+
+async function flushPersist(): Promise<void> {
+  persistTimer = null;
+  const scopes = [...dirtyScopes];
+  dirtyScopes.clear();
+  for (const scope of scopes) {
+    const cache = memCache.get(scope);
+    if (!cache) continue;
+    try {
+      const blob = [...cache.entries()] as MarketScopeBlob<MarketItem>;
+      await putCachedMarketScope(scope, blob);
+    } catch {
+      // IDB unavailable — keep operating in-memory only.
+    }
+  }
+}
+
+// ---------- Startup seed gate ----------
+// loadSharedMarketCache runs in the background (non-blocking first paint). Market
+// reads await this so they read a populated cache instead of triggering a
+// thundering live-fill on a cold cache. Resolves (never rejects) once seeding
+// settles — or immediately when no seed is in flight (tests, post-seed).
+let seedPromise: Promise<void> | null = null;
+function awaitSeed(): Promise<void> { return seedPromise ?? Promise.resolve(); }
+
 // ---------- Bot shared cache pre-seeding ----------
 
 interface SharedCache {
@@ -176,6 +217,7 @@ let sharedCacheLoaded = false;
 /** Test helper: allow re-running loadSharedMarketCache. */
 export function _resetSharedCacheForTests(): void {
   sharedCacheLoaded = false;
+  seedPromise = null;
 }
 
 async function fetchCacheBlob(url: string): Promise<SharedCache | null> {
@@ -189,45 +231,62 @@ async function fetchCacheBlob(url: string): Promise<SharedCache | null> {
 }
 
 /**
- * Pre-seed the in-memory cache from the bot's blobs. Loads the hourly COLD blob and
- * the ~5-min HOT blob, applying cold first then hot so the fresher hot entries win.
- * Falls back to the legacy single blob (VITE_CACHE_BLOB_URL) when cold is absent,
- * so prod keeps working during rollout. Call once at startup.
+ * Pre-seed the in-memory cache. First hydrates each scope from IDB (so live-filled
+ * rows persisted in a prior session survive the reload), then overlays the bot's
+ * hourly COLD blob and ~5-min HOT blob. Entries merge by timestamp — a blob row
+ * only replaces what's cached when it's at least as fresh — so fresher persisted
+ * live prices are kept while the blob refreshes stale rows. Falls back to the
+ * legacy single blob (VITE_CACHE_BLOB_URL) when cold is absent. Runs in the
+ * background (does not block first paint); market reads await it via awaitSeed().
  */
-export async function loadSharedMarketCache(homeWorld: string, dc: string, region: string): Promise<void> {
-  if (sharedCacheLoaded) return;
+export function loadSharedMarketCache(homeWorld: string, dc: string, region: string): Promise<void> {
+  if (sharedCacheLoaded) return awaitSeed();
   sharedCacheLoaded = true;
-  try {
-    const env = (import.meta as any).env ?? {};
-    const coldUrl = env.VITE_CACHE_COLD_URL || env.VITE_CACHE_BLOB_URL || '/data/market-cache-cold.json';
-    const hotUrl = env.VITE_CACHE_HOT_URL || '/data/market-cache-hot.json';
+  seedPromise = (async () => {
+    try {
+      // Persisted (incl. live-filled) rows first; the network blob is overlaid on top.
+      await Promise.all([homeWorld, dc, region].map((s) => ensureHydrated(s)));
 
-    const [cold, hot] = await Promise.all([fetchCacheBlob(coldUrl), fetchCacheBlob(hotUrl)]);
-    if (!cold && !hot) return;
+      const env = (import.meta as any).env ?? {};
+      const coldUrl = env.VITE_CACHE_COLD_URL || env.VITE_CACHE_BLOB_URL || '/data/market-cache-cold.json';
+      const hotUrl = env.VITE_CACHE_HOT_URL || '/data/market-cache-hot.json';
 
-    // Apply cold first, then hot, so overlapping ids take the hot (fresher) row.
-    for (const data of [cold, hot]) {
-      if (!data) continue;
-      const scopes: [string, MarketData][] = [
-        [homeWorld, data.phantom],
-        [dc, data.dc],
-        [region, data.region],
-      ];
-      for (const [scope, marketData] of scopes) {
-        const cache: ScopeCache = memCache.get(scope) ?? new Map();
-        for (const [idStr, item] of Object.entries(marketData)) {
-          cache.set(Number(idStr), { ts: data.ts, data: item });
+      const [cold, hot] = await Promise.all([fetchCacheBlob(coldUrl), fetchCacheBlob(hotUrl)]);
+      if (cold || hot) {
+        // Apply cold first, then hot, so overlapping ids take the hot (fresher) row.
+        for (const data of [cold, hot]) {
+          if (!data) continue;
+          const scopes: [string, MarketData][] = [
+            [homeWorld, data.phantom],
+            [dc, data.dc],
+            [region, data.region],
+          ];
+          for (const [scope, marketData] of scopes) {
+            const cache: ScopeCache = memCache.get(scope) ?? new Map();
+            for (const [idStr, item] of Object.entries(marketData)) {
+              const id = Number(idStr);
+              const existing = cache.get(id);
+              // Keep the fresher row: only overlay when the blob is at least as new
+              // as what we hold (protects just-fetched live prices from a stale blob).
+              if (!existing || data.ts >= existing.ts) cache.set(id, { ts: data.ts, data: item });
+            }
+            memCache.set(scope, cache);
+            hydrated.add(scope);
+          }
         }
-        memCache.set(scope, cache);
-        hydrated.add(scope);
+        // Count final unique entries (hot overrides cold), not set operations.
+        const total = [homeWorld, dc, region].reduce((n, s) => n + (memCache.get(s)?.size ?? 0), 0);
+        console.log(`[market] pre-seeded ${total} entries (cold=${!!cold} hot=${!!hot})`);
       }
+
+      // Mirror the merged result back to IDB so it survives the next reload and
+      // Settings can report freshness.
+      for (const s of [homeWorld, dc, region]) schedulePersist(s);
+    } catch {
+      // Blobs not available — normal before the cron has run.
     }
-    // Count final unique entries (hot overrides cold), not set operations.
-    const total = [homeWorld, dc, region].reduce((n, s) => n + (memCache.get(s)?.size ?? 0), 0);
-    console.log(`[market] pre-seeded ${total} entries (cold=${!!cold} hot=${!!hot})`);
-  } catch {
-    // Blobs not available — normal before the cron has run.
-  }
+  })();
+  return seedPromise;
 }
 
 export interface FetchMarketOpts {
@@ -258,6 +317,8 @@ export async function fetchMarketLive(scope: Scope, ids: number[]): Promise<Mark
   }
   memCache.set(scope, cache);
   hydrated.add(scope);
+  // Persist so these live-only rows survive a reload (the cron blob won't carry them).
+  schedulePersist(scope);
   return parsed;
 }
 
@@ -268,6 +329,7 @@ export async function fetchMarketLive(scope: Scope, ids: number[]): Promise<Mark
  */
 export async function fetchMarketData(scope: Scope, ids: number[], opts: FetchMarketOpts = {}): Promise<MarketData> {
   if (ids.length === 0) return {};
+  await awaitSeed();
   await ensureHydrated(scope);
   const cache = memCache.get(scope) ?? new Map();
   memCache.set(scope, cache);
@@ -298,4 +360,6 @@ function emptyMarketItem(): MarketItem {
 export function _resetMarketCacheForTests(): void {
   memCache.clear();
   hydrated.clear();
+  dirtyScopes.clear();
+  if (persistTimer) { clearTimeout(persistTimer); persistTimer = null; }
 }
