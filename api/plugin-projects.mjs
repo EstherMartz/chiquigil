@@ -1,5 +1,9 @@
 // src/bot/craftStore.ts
 import { createClient } from "@libsql/client";
+import { randomUUID } from "node:crypto";
+function genListId() {
+  return randomUUID().replace(/-/g, "").slice(0, 12);
+}
 async function openCraftStore(url, authToken) {
   const isLocal = url === ":memory:" || url.startsWith("file:");
   const client = createClient({
@@ -71,6 +75,24 @@ async function openCraftStore(url, authToken) {
       access      TEXT NOT NULL DEFAULT 'default',
       first_seen  INTEGER NOT NULL,
       last_seen   INTEGER NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS lists (
+      id          TEXT PRIMARY KEY,
+      owner_id    TEXT NOT NULL,
+      name        TEXT NOT NULL,
+      created_at  INTEGER NOT NULL,
+      updated_at  INTEGER NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS list_items (
+      id        INTEGER PRIMARY KEY AUTOINCREMENT,
+      list_id   TEXT NOT NULL REFERENCES lists(id) ON DELETE CASCADE,
+      item_id   INTEGER NOT NULL,
+      item_name TEXT NOT NULL,
+      qty       INTEGER NOT NULL,
+      is_hq     INTEGER NOT NULL DEFAULT 0,
+      position  INTEGER NOT NULL DEFAULT 0
     );
   `;
   const statements = SCHEMA.split(";").map((s) => s.trim()).filter((s) => s.length > 0);
@@ -419,6 +441,103 @@ async function openCraftStore(url, authToken) {
         sql: "UPDATE app_users SET access = ? WHERE discord_id = ?",
         args: [access, discordId]
       });
+    },
+    async createList(ownerId, name, items) {
+      const id = genListId();
+      const now = Date.now();
+      const statements2 = [
+        {
+          sql: "INSERT INTO lists (id, owner_id, name, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
+          args: [id, ownerId, name, now, now]
+        },
+        ...items.map((it, i) => ({
+          sql: "INSERT INTO list_items (list_id, item_id, item_name, qty, is_hq, position) VALUES (?, ?, ?, ?, ?, ?)",
+          args: [id, it.itemId, it.itemName, it.qty, it.isHq ? 1 : 0, i]
+        }))
+      ];
+      await client.batch(statements2, "write");
+      return id;
+    },
+    async getList(id) {
+      const head = await client.execute({ sql: "SELECT * FROM lists WHERE id = ?", args: [id] });
+      const row = head.rows[0];
+      if (!row) return null;
+      const itemRows = await client.execute({
+        sql: "SELECT * FROM list_items WHERE list_id = ? ORDER BY position ASC",
+        args: [id]
+      });
+      return {
+        id: String(row.id),
+        ownerId: String(row.owner_id),
+        name: String(row.name),
+        createdAt: Number(row.created_at),
+        updatedAt: Number(row.updated_at),
+        items: itemRows.rows.map((r) => ({
+          id: Number(r.id),
+          itemId: Number(r.item_id),
+          itemName: String(r.item_name),
+          qty: Number(r.qty),
+          isHq: Number(r.is_hq) === 1,
+          position: Number(r.position)
+        }))
+      };
+    },
+    async listListsForOwner(ownerId) {
+      const result = await client.execute({
+        sql: `
+          SELECT l.id, l.name, l.created_at, l.updated_at,
+                 (SELECT COUNT(*) FROM list_items WHERE list_id = l.id) AS item_count
+          FROM lists l
+          WHERE l.owner_id = ?
+          ORDER BY l.updated_at DESC
+        `,
+        args: [ownerId]
+      });
+      return result.rows.map((r) => ({
+        id: String(r.id),
+        name: String(r.name),
+        itemCount: Number(r.item_count),
+        createdAt: Number(r.created_at),
+        updatedAt: Number(r.updated_at)
+      }));
+    },
+    async updateListMeta(id, ownerId, name) {
+      const now = Date.now();
+      const result = await client.execute({
+        sql: "UPDATE lists SET name = ?, updated_at = ? WHERE id = ? AND owner_id = ?",
+        args: [name, now, id, ownerId]
+      });
+      return result.rowsAffected > 0;
+    },
+    async replaceListItems(id, ownerId, items) {
+      const owned = await client.execute({
+        sql: "SELECT id FROM lists WHERE id = ? AND owner_id = ?",
+        args: [id, ownerId]
+      });
+      if (owned.rows.length === 0) return false;
+      const now = Date.now();
+      const statements2 = [
+        { sql: "DELETE FROM list_items WHERE list_id = ?", args: [id] },
+        ...items.map((it, i) => ({
+          sql: "INSERT INTO list_items (list_id, item_id, item_name, qty, is_hq, position) VALUES (?, ?, ?, ?, ?, ?)",
+          args: [id, it.itemId, it.itemName, it.qty, it.isHq ? 1 : 0, i]
+        })),
+        { sql: "UPDATE lists SET updated_at = ? WHERE id = ?", args: [now, id] }
+      ];
+      await client.batch(statements2, "write");
+      return true;
+    },
+    async deleteList(id, ownerId) {
+      const owned = await client.execute({
+        sql: "SELECT id FROM lists WHERE id = ? AND owner_id = ?",
+        args: [id, ownerId]
+      });
+      if (owned.rows.length === 0) return false;
+      await client.batch([
+        { sql: "DELETE FROM list_items WHERE list_id = ?", args: [id] },
+        { sql: "DELETE FROM lists WHERE id = ?", args: [id] }
+      ], "write");
+      return true;
     },
     async close() {
       await client.close();

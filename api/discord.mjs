@@ -12,12 +12,18 @@ var __export = (target, all) => {
 var commonFilters_exports = {};
 __export(commonFilters_exports, {
   CRYSTALS_SEARCH_CATEGORY: () => CRYSTALS_SEARCH_CATEGORY,
+  isItemHidden: () => isItemHidden,
   passesMarketGate: () => passesMarketGate
 });
 function passesMarketGate(market, gate) {
   if (market.velocity < gate.minVelocity) return false;
   if (gate.maxListings != null && market.listingCount > gate.maxListings) return false;
   return true;
+}
+function isItemHidden(item, o) {
+  if (o.hideCrystals && item.sc === CRYSTALS_SEARCH_CATEGORY) return true;
+  if (o.hideIgnored && o.ignored.has(item.id)) return true;
+  return false;
 }
 var CRYSTALS_SEARCH_CATEGORY;
 var init_commonFilters = __esm({
@@ -393,8 +399,28 @@ function pickFirstTrustedTier(m, hq, canHq) {
 // src/lib/universalis.ts
 var LISTINGS_CAP = 50;
 var LISTINGS_KEPT = LISTINGS_CAP;
+var MARKET_FIELD_PATHS = [
+  "itemID",
+  "listings.pricePerUnit",
+  "listings.hq",
+  "listings.worldName",
+  "listings.quantity",
+  "listings.retainerName",
+  "recentHistory.pricePerUnit",
+  "recentHistory.hq",
+  "recentHistory.timestamp",
+  "regularSaleVelocity",
+  "lastUploadTime",
+  "averagePriceNQ",
+  "averagePriceHQ",
+  "listingsCount"
+];
+function marketFields(idCount) {
+  const prefix = idCount > 1 ? "items." : "";
+  return MARKET_FIELD_PATHS.map((p) => prefix + p).join(",");
+}
 function buildMarketUrl(scope, ids) {
-  return `https://universalis.app/api/v2/${scope}/${ids.join(",")}?listings=10&entries=15`;
+  return `https://universalis.app/api/v2/${scope}/${ids.join(",")}?listings=10&entries=15&fields=${marketFields(ids.length)}`;
 }
 function minPrice(arr, hq) {
   const v = arr.filter((l) => l.hq === hq).map((l) => l.pricePerUnit);
@@ -446,6 +472,12 @@ function parseMarketResponse(raw) {
   return out;
 }
 
+// src/features/items/verdict/pricing.ts
+function captureShare(listingCount) {
+  const n = listingCount > 0 ? listingCount : 0;
+  return 1 / (1 + n);
+}
+
 // src/features/profit/computeProfit.ts
 function unitCost(itemId, dc, phantom) {
   const d = dc[itemId];
@@ -454,24 +486,218 @@ function unitCost(itemId, dc, phantom) {
   if (p?.avgNQ != null) return p.avgNQ;
   return 0;
 }
-function computeMaterialCost(recipe, recipeMap, marketDc, flags, phantom = {}, depth = 0) {
-  let total = 0;
+function computeMaterialLeaves(recipe, recipeMap, marketDc, flags, phantom = {}, depth = 0, mult = 1) {
+  const out = [];
   for (const ing of recipe.ingredients) {
-    total += ingredientCost(ing, recipeMap, marketDc, flags, phantom, depth);
+    const subRecipe = recipeMap.get(ing.itemId);
+    const wantsCraft = flags[ing.itemId]?.craftIntermediates;
+    if (wantsCraft && subRecipe && depth === 0) {
+      out.push(...computeMaterialLeaves(subRecipe, recipeMap, marketDc, flags, phantom, depth + 1, mult * ing.amount));
+    } else {
+      out.push({ itemId: ing.itemId, qty: ing.amount * mult, unitPrice: unitCost(ing.itemId, marketDc, phantom) });
+    }
   }
-  return total;
+  return out;
 }
-function ingredientCost(ing, recipeMap, dc, flags, phantom, depth) {
-  const subRecipe = recipeMap.get(ing.itemId);
-  const wantsCraft = flags[ing.itemId]?.craftIntermediates;
-  if (wantsCraft && subRecipe && depth === 0) {
-    return computeMaterialCost(subRecipe, recipeMap, dc, flags, phantom, depth + 1) * ing.amount;
+
+// src/features/profit/materialSourcing.ts
+init_commonFilters();
+function classifySource(itemId, sc, catalog) {
+  if (sc === CRYSTALS_SEARCH_CATEGORY) return "crystal";
+  const g = catalog.get(itemId);
+  if (g) return g.timed ? "gather-timed" : "gather-standard";
+  return "buy";
+}
+function deriveSourcing(leaves, scById, catalog, profit) {
+  const byId = /* @__PURE__ */ new Map();
+  let total = 0;
+  for (const leaf of leaves) {
+    const subtotal = leaf.qty * leaf.unitPrice;
+    total += subtotal;
+    const existing = byId.get(leaf.itemId);
+    if (existing) {
+      existing.qty += leaf.qty;
+      existing.subtotal += subtotal;
+    } else {
+      const source = classifySource(leaf.itemId, scById.get(leaf.itemId), catalog);
+      byId.set(leaf.itemId, {
+        itemId: leaf.itemId,
+        qty: leaf.qty,
+        unitPrice: leaf.unitPrice,
+        subtotal,
+        source,
+        gatherable: source !== "buy"
+      });
+    }
   }
-  return unitCost(ing.itemId, dc, phantom) * ing.amount;
+  if (total === 0) return null;
+  let gatherableCost = 0;
+  for (const ing of byId.values()) if (ing.gatherable) gatherableCost += ing.subtotal;
+  const buyOnlyCost = total - gatherableCost;
+  const ingredients = [...byId.values()].sort((a, b) => {
+    if (a.gatherable !== b.gatherable) return a.gatherable ? 1 : -1;
+    return b.subtotal - a.subtotal;
+  });
+  return {
+    ingredients,
+    totalMaterialCost: total,
+    gatherableCost,
+    buyOnlyCost,
+    gatherablePct: gatherableCost / total * 100,
+    selfSourceProfit: profit + gatherableCost
+  };
 }
 
 // src/features/queries/runCraftFlip.ts
 init_commonFilters();
+
+// src/features/items/concentration.ts
+var HHI_THIN = 0.5;
+var HHI_MODERATE = 0.28;
+function concentrationHHI(listings, hq) {
+  const rows = listings.filter((l) => l.hq === hq && l.price > 0 && l.seller);
+  if (rows.length === 0) return null;
+  const unitsBySeller = /* @__PURE__ */ new Map();
+  let totalUnits = 0;
+  for (const l of rows) {
+    const q = l.quantity ?? 1;
+    const seller = l.seller;
+    unitsBySeller.set(seller, (unitsBySeller.get(seller) ?? 0) + q);
+    totalUnits += q;
+  }
+  if (totalUnits === 0) return null;
+  let hhi = 0;
+  let topSellerShare = 0;
+  for (const units of unitsBySeller.values()) {
+    const share = units / totalUnits;
+    hhi += share * share;
+    if (share > topSellerShare) topSellerShare = share;
+  }
+  const sellerCount = unitsBySeller.size;
+  const risk = sellerCount <= 2 || hhi >= HHI_THIN ? "thin" : hhi >= HHI_MODERATE ? "moderate" : "deep";
+  return { hhi, topSellerShare, sellerCount, risk };
+}
+
+// src/features/items/ActivityCard.tsx
+import { useMemo } from "react";
+import { Fragment, jsx, jsxs } from "react/jsx-runtime";
+function supplyDepth(listings, velocity) {
+  if (velocity <= 0) {
+    return { days: null, note: listings > 0 ? "listed but not selling" : "no recent sales" };
+  }
+  if (listings === 0) return { days: 0, note: "sold out \u2014 none listed" };
+  const days = listings / velocity;
+  if (days < 1) return { days, note: "clears in under a day" };
+  if (days < 14) return { days, note: `~${Math.round(days)}d to clear` };
+  return { days, note: `oversupplied \xB7 ~${Math.round(days)}d to clear` };
+}
+
+// src/features/items/depth.ts
+var BUCKET_COUNT = 8;
+function depthBuckets(listings, hq) {
+  const rows = listings.filter((l) => l.hq === hq && l.price > 0);
+  if (rows.length === 0) return [];
+  const prices = rows.map((l) => l.price);
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+  const width = (max - min) / BUCKET_COUNT;
+  const buckets = /* @__PURE__ */ new Map();
+  for (const l of rows) {
+    const idx = width === 0 ? 0 : Math.min(BUCKET_COUNT - 1, Math.floor((l.price - min) / width));
+    let acc = buckets.get(idx);
+    if (!acc) {
+      acc = { units: 0, sellers: /* @__PURE__ */ new Set(), listings: 0 };
+      buckets.set(idx, acc);
+    }
+    acc.units += l.quantity ?? 1;
+    acc.listings += 1;
+    if (l.seller) acc.sellers.add(l.seller);
+  }
+  return [...buckets.entries()].sort((a, b) => a[0] - b[0]).map(([idx, acc]) => ({
+    priceLow: Math.round(width === 0 ? min : min + idx * width),
+    priceHigh: Math.round(width === 0 ? max : min + (idx + 1) * width),
+    units: acc.units,
+    sellers: acc.sellers.size,
+    listings: acc.listings
+  }));
+}
+
+// src/features/queries/craftListingAnalysis.ts
+var RISK_ORDER = ["DOMINATED", "CROWDED", "HEALTHY", "OPEN", "EMPTY"];
+var GAP_GREEN = 0.2;
+var GAP_AMBER = 0.05;
+function listingGap(listings, hq) {
+  const prices = listings.filter((x) => x.hq === hq && x.price > 0).map((x) => x.price).sort((a, b) => a - b);
+  if (prices.length === 0) {
+    return { cheapest: 0, secondTier: null, gap: 0, gapPct: 0, hasSecondTier: false, onlyListing: false, empty: true };
+  }
+  const cheapest = prices[0];
+  const onlyListing = prices.length <= 1;
+  const second = prices.find((p) => p > cheapest) ?? null;
+  if (second == null) {
+    return {
+      cheapest,
+      secondTier: null,
+      gap: 0,
+      gapPct: onlyListing ? Infinity : 0,
+      hasSecondTier: false,
+      onlyListing,
+      empty: false
+    };
+  }
+  const gap = second - cheapest;
+  return {
+    cheapest,
+    secondTier: second,
+    gap,
+    gapPct: cheapest > 0 ? gap / cheapest : 0,
+    hasSecondTier: true,
+    onlyListing: false,
+    empty: false
+  };
+}
+function classifyCraftRisk(a) {
+  if (a.empty) return "EMPTY";
+  if (a.onlyListing || a.sellerCount <= 1) return "OPEN";
+  if (a.topSellerShare > 0.6) return "DOMINATED";
+  if (a.gapPct < 0.02 && a.sellerCount > 5) return "DOMINATED";
+  if (a.gapPct >= GAP_GREEN && (a.sellerCount <= 3 || a.topSellerShare < 0.4) && a.clearDays !== null && a.clearDays < 3) return "OPEN";
+  if (a.gapPct < GAP_AMBER && a.sellerCount > 3) return "CROWDED";
+  if (a.sellerCount >= 8) return "CROWDED";
+  if (a.clearDays !== null && a.clearDays > 5) return "CROWDED";
+  return "HEALTHY";
+}
+function analyzeCraftListings(m, hq) {
+  const gap = listingGap(m.worldListings, hq);
+  const conc = concentrationHHI(m.worldListings, hq);
+  const { days, note } = supplyDepth(m.listingCount, m.velocity);
+  const depth = depthBuckets(m.worldListings, hq);
+  const sellerCount = conc?.sellerCount ?? 0;
+  const topSellerShare = conc?.topSellerShare ?? 0;
+  const totalUnits = depth.reduce((s, b) => s + b.units, 0);
+  const risk = classifyCraftRisk({
+    empty: gap.empty,
+    onlyListing: gap.onlyListing,
+    gapPct: gap.gapPct,
+    sellerCount,
+    topSellerShare,
+    clearDays: days
+  });
+  return {
+    risk,
+    gap,
+    sellerCount,
+    topSellerShare,
+    concentrationRisk: conc?.risk ?? "deep",
+    clearDays: days,
+    clearNote: note,
+    captureRate: captureShare(m.listingCount),
+    totalUnits,
+    depth
+  };
+}
+
+// src/features/queries/runCraftFlip.ts
 function narrowForCraftFlip(snapshot, priceMap, filter) {
   const catSet = filter.searchCategories.length ? new Set(filter.searchCategories) : null;
   const out = [];
@@ -494,12 +720,18 @@ function compare(a, b, sort) {
       return b.velocity - a.velocity;
     case "unitPrice":
       return b.unitPrice - a.unitPrice;
+    case "risk":
+      return RISK_ORDER.indexOf(a.risk) - RISK_ORDER.indexOf(b.risk);
+    // worst (DOMINATED) first
+    case "selfSourceGilFlow":
+      return b.selfSourceGilPerDay - a.selfSourceGilPerDay;
     case "discount":
       return b.profit / Math.max(1, b.unitPrice) - a.profit / Math.max(1, a.unitPrice);
   }
 }
-function runCraftFlip(snapshot, priceMap, recipeMap, filter, levels) {
+function runCraftFlip(snapshot, priceMap, recipeMap, filter, levels, gathering) {
   const narrowed = new Set(narrowForCraftFlip(snapshot, priceMap, filter));
+  const scById = new Map(snapshot.map((i) => [i.id, i.sc]));
   const out = [];
   for (const item of snapshot) {
     if (!narrowed.has(item.id)) continue;
@@ -515,11 +747,18 @@ function runCraftFlip(snapshot, priceMap, recipeMap, filter, levels) {
     const m = priceMap[item.id];
     const tier = pickFirstTrustedTier(m, filter.hq, item.canHq);
     if (!tier) continue;
-    const materialCost = computeMaterialCost(recipe, recipeMap, priceMap, {});
+    const leaves = computeMaterialLeaves(recipe, recipeMap, priceMap, {});
+    const materialCost = leaves.reduce((s, l) => s + l.qty * l.unitPrice, 0);
     const profit = tier.unit - materialCost;
     if (profit <= 0) continue;
     if (filter.minPrice != null && tier.unit < filter.minPrice) continue;
     if (filter.maxPrice != null && tier.unit > filter.maxPrice) continue;
+    const analysis = analyzeCraftListings(m, tier.isHq);
+    const sourcing = gathering ? deriveSourcing(leaves, scById, gathering, profit) : null;
+    if (filter.minGatherablePct != null) {
+      if (!sourcing || sourcing.gatherablePct < filter.minGatherablePct) continue;
+    }
+    const selfSourceProfit = sourcing ? sourcing.selfSourceProfit : profit;
     out.push({
       id: item.id,
       name: item.name,
@@ -529,7 +768,22 @@ function runCraftFlip(snapshot, priceMap, recipeMap, filter, levels) {
       profit,
       velocity: m.velocity,
       gilPerDay: profit * m.velocity,
-      hq: tier.isHq
+      hq: tier.isHq,
+      risk: analysis.risk,
+      gap: analysis.gap.gap,
+      gapPct: analysis.gap.gapPct,
+      hasSecondTier: analysis.gap.hasSecondTier,
+      onlyListing: analysis.gap.onlyListing,
+      sellerCount: analysis.sellerCount,
+      topSellerShare: analysis.topSellerShare,
+      concentrationRisk: analysis.concentrationRisk,
+      clearDays: analysis.clearDays,
+      clearNote: analysis.clearNote,
+      captureRate: analysis.captureRate,
+      totalUnits: analysis.totalUnits,
+      depth: analysis.depth,
+      sourcing,
+      selfSourceGilPerDay: selfSourceProfit * m.velocity
     });
   }
   out.sort((a, b) => compare(a, b, filter.sort));
@@ -2872,6 +3126,10 @@ async function loadSnapshots(baseUrl) {
 
 // src/bot/craftStore.ts
 import { createClient } from "@libsql/client";
+import { randomUUID } from "node:crypto";
+function genListId() {
+  return randomUUID().replace(/-/g, "").slice(0, 12);
+}
 async function openCraftStore(url, authToken) {
   const isLocal = url === ":memory:" || url.startsWith("file:");
   const client = createClient({
@@ -2943,6 +3201,24 @@ async function openCraftStore(url, authToken) {
       access      TEXT NOT NULL DEFAULT 'default',
       first_seen  INTEGER NOT NULL,
       last_seen   INTEGER NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS lists (
+      id          TEXT PRIMARY KEY,
+      owner_id    TEXT NOT NULL,
+      name        TEXT NOT NULL,
+      created_at  INTEGER NOT NULL,
+      updated_at  INTEGER NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS list_items (
+      id        INTEGER PRIMARY KEY AUTOINCREMENT,
+      list_id   TEXT NOT NULL REFERENCES lists(id) ON DELETE CASCADE,
+      item_id   INTEGER NOT NULL,
+      item_name TEXT NOT NULL,
+      qty       INTEGER NOT NULL,
+      is_hq     INTEGER NOT NULL DEFAULT 0,
+      position  INTEGER NOT NULL DEFAULT 0
     );
   `;
   const statements = SCHEMA.split(";").map((s) => s.trim()).filter((s) => s.length > 0);
@@ -3292,6 +3568,103 @@ async function openCraftStore(url, authToken) {
         args: [access, discordId]
       });
     },
+    async createList(ownerId, name, items) {
+      const id = genListId();
+      const now = Date.now();
+      const statements2 = [
+        {
+          sql: "INSERT INTO lists (id, owner_id, name, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
+          args: [id, ownerId, name, now, now]
+        },
+        ...items.map((it, i) => ({
+          sql: "INSERT INTO list_items (list_id, item_id, item_name, qty, is_hq, position) VALUES (?, ?, ?, ?, ?, ?)",
+          args: [id, it.itemId, it.itemName, it.qty, it.isHq ? 1 : 0, i]
+        }))
+      ];
+      await client.batch(statements2, "write");
+      return id;
+    },
+    async getList(id) {
+      const head = await client.execute({ sql: "SELECT * FROM lists WHERE id = ?", args: [id] });
+      const row = head.rows[0];
+      if (!row) return null;
+      const itemRows = await client.execute({
+        sql: "SELECT * FROM list_items WHERE list_id = ? ORDER BY position ASC",
+        args: [id]
+      });
+      return {
+        id: String(row.id),
+        ownerId: String(row.owner_id),
+        name: String(row.name),
+        createdAt: Number(row.created_at),
+        updatedAt: Number(row.updated_at),
+        items: itemRows.rows.map((r) => ({
+          id: Number(r.id),
+          itemId: Number(r.item_id),
+          itemName: String(r.item_name),
+          qty: Number(r.qty),
+          isHq: Number(r.is_hq) === 1,
+          position: Number(r.position)
+        }))
+      };
+    },
+    async listListsForOwner(ownerId) {
+      const result = await client.execute({
+        sql: `
+          SELECT l.id, l.name, l.created_at, l.updated_at,
+                 (SELECT COUNT(*) FROM list_items WHERE list_id = l.id) AS item_count
+          FROM lists l
+          WHERE l.owner_id = ?
+          ORDER BY l.updated_at DESC
+        `,
+        args: [ownerId]
+      });
+      return result.rows.map((r) => ({
+        id: String(r.id),
+        name: String(r.name),
+        itemCount: Number(r.item_count),
+        createdAt: Number(r.created_at),
+        updatedAt: Number(r.updated_at)
+      }));
+    },
+    async updateListMeta(id, ownerId, name) {
+      const now = Date.now();
+      const result = await client.execute({
+        sql: "UPDATE lists SET name = ?, updated_at = ? WHERE id = ? AND owner_id = ?",
+        args: [name, now, id, ownerId]
+      });
+      return result.rowsAffected > 0;
+    },
+    async replaceListItems(id, ownerId, items) {
+      const owned = await client.execute({
+        sql: "SELECT id FROM lists WHERE id = ? AND owner_id = ?",
+        args: [id, ownerId]
+      });
+      if (owned.rows.length === 0) return false;
+      const now = Date.now();
+      const statements2 = [
+        { sql: "DELETE FROM list_items WHERE list_id = ?", args: [id] },
+        ...items.map((it, i) => ({
+          sql: "INSERT INTO list_items (list_id, item_id, item_name, qty, is_hq, position) VALUES (?, ?, ?, ?, ?, ?)",
+          args: [id, it.itemId, it.itemName, it.qty, it.isHq ? 1 : 0, i]
+        })),
+        { sql: "UPDATE lists SET updated_at = ? WHERE id = ?", args: [now, id] }
+      ];
+      await client.batch(statements2, "write");
+      return true;
+    },
+    async deleteList(id, ownerId) {
+      const owned = await client.execute({
+        sql: "SELECT id FROM lists WHERE id = ? AND owner_id = ?",
+        args: [id, ownerId]
+      });
+      if (owned.rows.length === 0) return false;
+      await client.batch([
+        { sql: "DELETE FROM list_items WHERE list_id = ?", args: [id] },
+        { sql: "DELETE FROM lists WHERE id = ?", args: [id] }
+      ], "write");
+      return true;
+    },
     async close() {
       await client.close();
     }
@@ -3302,7 +3675,7 @@ async function openCraftStore(url, authToken) {
 var BATCH_SIZE = 100;
 var MAX_CONCURRENT = 8;
 async function fetchBatch(scope, ids) {
-  const url = `https://universalis.app/api/v2/${scope}/${ids.join(",")}?listings=${LISTINGS_CAP}&entries=15`;
+  const url = `https://universalis.app/api/v2/${scope}/${ids.join(",")}?listings=${LISTINGS_CAP}&entries=15&fields=${marketFields(ids.length)}`;
   let res = await fetch(url);
   if (!res.ok) {
     await new Promise((r) => setTimeout(r, 400));
