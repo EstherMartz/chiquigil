@@ -36,7 +36,10 @@ vi.mock('../queries/useSpecialShopSnapshot', () => ({
 }));
 
 vi.mock('../settings/store', () => ({
-  useSettingsStore: () => ({ world: 'Phantom' }),
+  useSettingsStore: (selector?: (s: any) => any) => {
+    const state = { world: 'Phantom', hideCrystals: false, hideIgnored: true, ignoredItemIds: [] };
+    return selector ? selector(state) : state;
+  },
 }));
 
 const fetchMarketDataMock = vi.fn(async (_scope: string, ids: number[]) => {

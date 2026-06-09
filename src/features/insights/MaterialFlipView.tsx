@@ -12,7 +12,8 @@ import { MaterialFlipResults } from '../queries/MaterialFlipResults';
 import { defaultMaterialFlipFilter, type MaterialFlipFilter, type MaterialFlipRow, type MaterialFlipSort } from '../queries/types';
 import type { SnapshotItem } from '../../lib/itemSnapshot';
 import type { Recipe } from '../../lib/recipes';
-import { CRYSTALS_SEARCH_CATEGORY } from '../queries/commonFilters';
+import { isItemHidden } from '../queries/commonFilters';
+import { useIgnoredItemSet } from '../settings/useIgnoredItems';
 import { Spinner } from '../../components/Spinner';
 import { StatusBanner } from '../../components/StatusBanner';
 import { useInitialScan } from '../queries/useInitialScan';
@@ -39,6 +40,8 @@ function scanParamsChanged(a: MaterialFlipFilter, b: MaterialFlipFilter): boolea
 
 export function MaterialFlipView() {
   const { world, hideCrystals } = useSettingsStore();
+  const hideIgnored = useSettingsStore((s) => s.hideIgnored);
+  const ignored = useIgnoredItemSet();
   const snapshot = useItemSnapshot();
   const [filter, setFilter] = useState<MaterialFlipFilter>(defaultMaterialFlipFilter());
   const [sort, setSort] = useState<MaterialFlipSort>(defaultMaterialFlipFilter().sort);
@@ -49,13 +52,13 @@ export function MaterialFlipView() {
     const catSet = filter.searchCategories.length ? new Set(filter.searchCategories) : null;
     const out: number[] = [];
     for (const item of snapshot.data.items) {
-      if (hideCrystals && item.sc === CRYSTALS_SEARCH_CATEGORY) continue;
+      if (isItemHidden(item, { hideCrystals, hideIgnored, ignored })) continue;
       if (catSet && !catSet.has(item.sc)) continue;
       if (filter.hq === 'hq' && !item.canHq) continue;
       out.push(item.id);
     }
     return out;
-  }, [snapshot.data, filter.searchCategories, filter.hq, hideCrystals]);
+  }, [snapshot.data, filter.searchCategories, filter.hq, hideCrystals, hideIgnored, ignored]);
 
   const run = useMutation<RunResult>({
     mutationFn: async () => {

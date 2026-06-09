@@ -8,7 +8,8 @@ import { fetchMarketData, type MarketData } from '../../lib/universalis';
 import { runVendorFlip } from '../queries/runVendorFlip';
 import { VendorFlipResults } from '../queries/VendorFlipResults';
 import { defaultVendorFlipFilter, type VendorFlipFilter, type VendorFlipSort, type HqMode } from '../queries/types';
-import { CRYSTALS_SEARCH_CATEGORY } from '../queries/commonFilters';
+import { isItemHidden } from '../queries/commonFilters';
+import { useIgnoredItemSet } from '../settings/useIgnoredItems';
 import { Spinner } from '../../components/Spinner';
 import { StatusBanner } from '../../components/StatusBanner';
 import { EmptyState } from '../../components/EmptyState';
@@ -24,6 +25,8 @@ interface RunResult {
 
 export function VendorFlipView() {
   const { world, hideCrystals } = useSettingsStore();
+  const hideIgnored = useSettingsStore((s) => s.hideIgnored);
+  const ignored = useIgnoredItemSet();
   const snapshot = useItemSnapshot();
   const vendors = useVendorShopSnapshot();
   const [filter, setFilter] = useState<VendorFlipFilter>(defaultVendorFlipFilter());
@@ -34,12 +37,12 @@ export function VendorFlipView() {
     if (!snapshot.data || !vendors.data) return [];
     const out: number[] = [];
     for (const item of snapshot.data.items) {
-      if (hideCrystals && item.sc === CRYSTALS_SEARCH_CATEGORY) continue;
+      if (isItemHidden(item, { hideCrystals, hideIgnored, ignored })) continue;
       if (!vendors.data.snapshot.has(item.id)) continue;
       out.push(item.id);
     }
     return out;
-  }, [snapshot.data, vendors.data, hideCrystals]);
+  }, [snapshot.data, vendors.data, hideCrystals, hideIgnored, ignored]);
 
   const run = useMutation<RunResult>({
     mutationFn: async () => {

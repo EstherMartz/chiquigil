@@ -11,7 +11,8 @@ import { CurrencyFlipResults } from '../queries/CurrencyFlipResults';
 import { defaultCurrencyFlipFilter, type CurrencyFlipFilter, type CurrencyFlipSort } from '../queries/types';
 import { CURRENCIES, getCurrencyById, type CurrencyId } from '../../lib/currencies';
 import { CurrencyIcon } from '../../lib/icons';
-import { CRYSTALS_SEARCH_CATEGORY } from '../queries/commonFilters';
+import { isItemHidden } from '../queries/commonFilters';
+import { useIgnoredItemSet } from '../settings/useIgnoredItems';
 import { Spinner, SpinGlyph } from '../../components/Spinner';
 import { StatusBanner } from '../../components/StatusBanner';
 import { EmptyState } from '../../components/EmptyState';
@@ -37,6 +38,8 @@ function scanParamsChanged(a: CurrencyFlipFilter, b: CurrencyFlipFilter): boolea
 
 export function CurrencyFlipView() {
   const { world, hideCrystals } = useSettingsStore();
+  const hideIgnored = useSettingsStore((s) => s.hideIgnored);
+  const ignored = useIgnoredItemSet();
   const snapshot = useItemSnapshot();
   const shop = useSpecialShopSnapshot();
   const refreshShop = useRefreshSpecialShopSnapshot();
@@ -65,11 +68,11 @@ export function CurrencyFlipView() {
       return [...itemIds].filter((id) => {
         const it = snapshot.data!.items.find((i) => i.id === id);
         if (!it) return false;
-        if (hideCrystals && it.sc === CRYSTALS_SEARCH_CATEGORY) return false;
+        if (isItemHidden(it, { hideCrystals, hideIgnored, ignored })) return false;
         return true;
       });
     };
-  }, [snapshot.data, shop.data, hideCrystals]);
+  }, [snapshot.data, shop.data, hideCrystals, hideIgnored, ignored]);
 
   const candidateIds = useMemo(
     () => candidateIdsFor(filter),

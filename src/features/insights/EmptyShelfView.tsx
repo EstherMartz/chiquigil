@@ -7,7 +7,8 @@ import { fetchMarketData, type MarketData } from '../../lib/universalis';
 import { runEmptyShelf } from '../queries/runEmptyShelf';
 import { EmptyShelfResults } from '../queries/EmptyShelfResults';
 import { defaultEmptyShelfFilter, type EmptyShelfFilter, type EmptyShelfSort, type HqMode } from '../queries/types';
-import { CRYSTALS_SEARCH_CATEGORY } from '../queries/commonFilters';
+import { isItemHidden } from '../queries/commonFilters';
+import { useIgnoredItemSet } from '../settings/useIgnoredItems';
 import { Spinner, SpinGlyph } from '../../components/Spinner';
 import { StatusBanner } from '../../components/StatusBanner';
 import { EmptyState } from '../../components/EmptyState';
@@ -23,6 +24,8 @@ function scanParamsChanged(a: EmptyShelfFilter, b: EmptyShelfFilter): boolean {
 
 export function EmptyShelfView() {
   const { world, hideCrystals } = useSettingsStore();
+  const hideIgnored = useSettingsStore((s) => s.hideIgnored);
+  const ignored = useIgnoredItemSet();
   const snapshot = useItemSnapshot();
   const [filter, setFilter] = useState<EmptyShelfFilter>(defaultEmptyShelfFilter());
   const [sort, setSort] = useState<EmptyShelfSort>(defaultEmptyShelfFilter().sort);
@@ -31,12 +34,12 @@ export function EmptyShelfView() {
     if (!snapshot.data) return [];
     const out: number[] = [];
     for (const item of snapshot.data.items) {
-      if (hideCrystals && item.sc === CRYSTALS_SEARCH_CATEGORY) continue;
+      if (isItemHidden(item, { hideCrystals, hideIgnored, ignored })) continue;
       if (filter.hq === 'hq' && !item.canHq) continue;
       out.push(item.id);
     }
     return out;
-  }, [snapshot.data, filter.hq, hideCrystals]);
+  }, [snapshot.data, filter.hq, hideCrystals, hideIgnored, ignored]);
 
   const run = useMutation<RunResult>({
     mutationFn: async () => {
