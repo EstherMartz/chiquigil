@@ -25,7 +25,7 @@ import { SupplyDepthBlock } from '../features/items/SupplyDepthBlock';
 import { ConcentrationBlock } from '../features/items/ConcentrationBlock';
 import { StackAnalyzerBlock } from '../features/items/StackAnalyzerBlock';
 import { VerdictCard } from '../features/items/VerdictCard';
-import { MarketSnapshotRow } from '../features/items/MarketSnapshotRow';
+import { MarketSnapshotRow, hasMarketPresence } from '../features/items/MarketSnapshotRow';
 import { LiveRefreshBar } from '../features/items/LiveRefreshBar';
 import { findItemCurrencyOffers } from '../features/items/currencyOffers';
 import { findBestSingleStopFor } from '../features/items/materialCost';
@@ -38,6 +38,7 @@ import { Gil } from '../components/Gil';
 import { rarityBorderLeftClass, rarityLabel, rarityTextClass } from '../features/items/rarity';
 import { categoryLabel } from '../lib/itemSearchCategories';
 import { Spinner } from '../components/Spinner';
+import { Skeleton } from '../components/Skeleton';
 import { StatusBanner } from '../components/StatusBanner';
 import { SectionHeader } from '../components/SectionHeader';
 import { HqStar } from '../components/HqStar';
@@ -134,12 +135,20 @@ export default function Item() {
     [market.data?.dc, live.liveItem, itemId],
   );
 
+  // Single 90-day history fetch, shared by the verdict card AND the market
+  // snapshot row. Fetched at the *active* scope — the home world when it has real
+  // activity, else the DC (matching MarketSnapshotRow's display rule) — so a
+  // quiet-on-home item makes ONE Universalis round-trip instead of two
+  // (home for the verdict + DC for the chart). Gated on `!market.isLoading` so
+  // the scope is decided from settled market data and never flips home→DC
+  // mid-flight (which would double-fetch).
   const NINETY_DAYS_SEC = 90 * 24 * 60 * 60;
+  const historyScope = hasMarketPresence(market.data?.phantom[itemId]) ? world : dc;
   const historyQ = useQuery({
-    queryKey: ['item-history', world, itemId, 90],
-    enabled: valid,
+    queryKey: ['item-history', historyScope, itemId, 90],
+    enabled: valid && !market.isLoading,
     staleTime: 30 * 60 * 1000,
-    queryFn: async () => (await fetchHistoryWithin(world, [itemId], NINETY_DAYS_SEC)).get(itemId) ?? [],
+    queryFn: async () => (await fetchHistoryWithin(historyScope, [itemId], NINETY_DAYS_SEC)).get(itemId) ?? [],
   });
 
   const vendors = useVendorShopSnapshot();
@@ -269,44 +278,47 @@ export default function Item() {
         <StatusBanner kind="error">Universalis fetch failed: {(market.error as Error).message}</StatusBanner>
       )}
 
-      {!market.isLoading && (
-        <VerdictCard
-          phantom={phantomMarket}
-          region={regionMarket}
-          recipe={recipe ?? undefined}
-          vendorPrice={vendorPrice || undefined}
-          materialCost={recipeMaterialCost}
-          homeWorld={world}
-          canHq={canHq}
-          now={Date.now()}
-          history={historyQ.data ?? []}
-        />
-      )}
-
-      {!market.isLoading && (
-        <div className="flex items-center justify-end gap-3 flex-wrap">
-          <LiveStreamChip status={live.status} liveAt={live.liveAt} />
-          <LiveRefreshBar
-            itemId={itemId}
+      {market.isLoading ? (
+        <MarketSectionSkeleton />
+      ) : (
+        <>
+          <VerdictCard
+            phantom={phantomMarket}
+            region={regionMarket}
+            recipe={recipe ?? undefined}
+            vendorPrice={vendorPrice || undefined}
+            materialCost={recipeMaterialCost}
             homeWorld={world}
-            dc={dc}
-            region="Europe"
-            onRefreshed={() => market.refetch()}
+            canHq={canHq}
+            now={Date.now()}
+            history={historyQ.data ?? []}
           />
-        </div>
-      )}
 
-      <MarketSnapshotRow
-        itemId={itemId}
-        homeWorld={world}
-        dcLabel={dc}
-        phantom={phantomMarket}
-        dc={dcMarket}
-        region={regionMarket}
-        canHq={canHq}
-        floor={recipe && recipeMaterialCost > 0 ? recipeMaterialCost : null}
-        ceiling={vendorPrice || null}
-      />
+          <div className="flex items-center justify-end gap-3 flex-wrap">
+            <LiveStreamChip status={live.status} liveAt={live.liveAt} />
+            <LiveRefreshBar
+              itemId={itemId}
+              homeWorld={world}
+              dc={dc}
+              region="Europe"
+              onRefreshed={() => market.refetch()}
+            />
+          </div>
+
+          <MarketSnapshotRow
+            homeWorld={world}
+            dcLabel={dc}
+            phantom={phantomMarket}
+            dc={dcMarket}
+            region={regionMarket}
+            canHq={canHq}
+            floor={recipe && recipeMaterialCost > 0 ? recipeMaterialCost : null}
+            ceiling={vendorPrice || null}
+            history={historyQ.data ?? []}
+            historyLoading={historyQ.isLoading}
+          />
+        </>
+      )}
 
       {vendorPrice ? (
         <VendorSourceCard
@@ -421,6 +433,27 @@ export default function Item() {
           onClose={() => setShowBreakdown(false)}
         />
       )}
+    </div>
+  );
+}
+
+/**
+ * Placeholder shown while the live market fetch is in flight. The item page's
+ * market data is a cache-first-then-live-fill round trip (often several batched
+ * Universalis requests for craftable items), so without this the verdict +
+ * snapshot area was just a blank gap with no feedback. Mirrors the real layout:
+ * verdict card, the live/refresh row, and the 3-up snapshot grid.
+ */
+function MarketSectionSkeleton() {
+  return (
+    <div className="space-y-6" aria-busy="true" aria-label="Loading market data">
+      <Skeleton height={116} className="w-full" />
+      <Skeleton height={32} className="w-40 ml-auto" />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <Skeleton height={340} className="w-full" />
+        <Skeleton height={340} className="w-full" />
+        <Skeleton height={340} className="w-full" />
+      </div>
     </div>
   );
 }

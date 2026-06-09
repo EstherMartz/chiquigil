@@ -1,16 +1,12 @@
-import { useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { fetchHistoryWithin, type HistoryEntry } from '../../lib/universalisHistory';
+import { useState } from 'react';
+import type { HistoryEntry } from '../../lib/universalisHistory';
 import type { MarketItem } from '../../lib/universalis';
 import { PriceHistoryCard } from './PriceHistoryCard';
 import { CrossWorldArbCard } from './CrossWorldArbCard';
 import { ActivityCard } from './ActivityCard';
 import { CrossWorldListingsBlock } from './CrossWorldListingsBlock';
 
-const NINETY_DAYS_SEC = 90 * 24 * 60 * 60;
-
 interface Props {
-  itemId: number;
   homeWorld: string;
   dcLabel: string;
   phantom?: MarketItem;
@@ -20,15 +16,23 @@ interface Props {
   /** Crafting material cost (support) + vendor price (ceiling) for fair value. */
   floor?: number | null;
   ceiling?: number | null;
+  /**
+   * 90-day sale history for the *active* scope, fetched once by the parent and
+   * shared with the verdict card (avoids a duplicate Universalis round-trip).
+   * The parent must pick the scope with the same `hasMarketPresence(phantom)`
+   * rule used here so the chart and its data describe the same market.
+   */
+  history: HistoryEntry[];
+  historyLoading: boolean;
 }
 
 /** Does this market item show any real activity (price, listings, or velocity)? */
-function hasMarketPresence(m?: MarketItem): boolean {
+export function hasMarketPresence(m?: MarketItem): boolean {
   if (!m) return false;
   return (m.minNQ != null || m.minHQ != null) || (m.listingCount ?? 0) > 0 || (m.velocity ?? 0) > 0;
 }
 
-export function MarketSnapshotRow({ itemId, homeWorld, dcLabel, phantom, dc, region, canHq, floor, ceiling }: Props) {
+export function MarketSnapshotRow({ homeWorld, dcLabel, phantom, dc, region, canHq, floor, ceiling, history, historyLoading }: Props) {
   const [showAllWorlds, setShowAllWorlds] = useState(false);
 
   // ONE active scope drives the whole card: the player's home world, or the DC
@@ -41,13 +45,7 @@ export function MarketSnapshotRow({ itemId, homeWorld, dcLabel, phantom, dc, reg
   const compareLabel = useHome ? dcLabel : homeWorld;
   const fellBack = !useHome && hasMarketPresence(dc);
 
-  const history = useQuery({
-    queryKey: ['item-history', activeLabel, itemId, 90],
-    enabled: itemId > 0,
-    staleTime: 30 * 60 * 1000,
-    queryFn: async () => (await fetchHistoryWithin(activeLabel, [itemId], NINETY_DAYS_SEC)).get(itemId) ?? [],
-  });
-  const entries: HistoryEntry[] = useMemo(() => history.data ?? [], [history.data]);
+  const entries = history;
 
   return (
     <>
@@ -60,7 +58,7 @@ export function MarketSnapshotRow({ itemId, homeWorld, dcLabel, phantom, dc, reg
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         <PriceHistoryCard
           entries={entries}
-          loading={history.isLoading}
+          loading={historyLoading}
           market={activeMarket}
           listings={activeMarket?.worldListings}
           canHq={canHq}
@@ -84,7 +82,7 @@ export function MarketSnapshotRow({ itemId, homeWorld, dcLabel, phantom, dc, reg
           compare={compareMarket}
           compareLabel={compareLabel}
           entries={entries}
-          loading={history.isLoading}
+          loading={historyLoading}
         />
       </div>
 
