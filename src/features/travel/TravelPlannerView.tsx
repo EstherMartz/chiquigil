@@ -9,9 +9,9 @@ import { useCooldown } from '../../lib/useCooldown';
 import { useInitialScan } from '../queries/useInitialScan';
 import { CRYSTALS_SEARCH_CATEGORY } from '../queries/commonFilters';
 import { EU_WORLDS, dcOf } from '../../lib/europeWorlds';
-import { planTravel } from './planTravel';
+import { planTravel, TRAVEL_COMPARATORS } from './planTravel';
 import { TravelResults } from './TravelResults';
-import type { HqMode, TravelMetric, TravelPlan } from './types';
+import type { HqMode, TravelMetric, TravelPlan, TravelSort } from './types';
 import { fmtGil } from '../../lib/format';
 import { Spinner, SpinGlyph } from '../../components/Spinner';
 import { StatusBanner } from '../../components/StatusBanner';
@@ -47,6 +47,7 @@ export function TravelPlannerView() {
   const [hq, setHq] = useState<HqMode>('either');
   const [minVelocity, setMinVelocity] = useState(1);
   const [horizonDays, setHorizonDays] = useState(7);
+  const [sort, setSort] = useState<TravelSort>('profit');
 
   const candidateIds = useMemo(() => {
     if (!snapshot.data) return [];
@@ -103,6 +104,13 @@ export function TravelPlannerView() {
     });
   }, [snapshot.data, run.data, world, budget, metric, hq, minVelocity, horizonDays, applyMarketTax]);
 
+  // Table column sort, independent of the allocation `metric` above (which
+  // decides *which* units get bought within budget). Re-orders the finished rows.
+  const sortedRows = useMemo(
+    () => (plan ? [...plan.rows].sort(TRAVEL_COMPARATORS[sort]) : []),
+    [plan, sort],
+  );
+
   const ready = snapshot.data != null && dest !== '';
   useInitialScan(ready, () => { run.reset(); run.mutate(false); });
 
@@ -138,7 +146,7 @@ export function TravelPlannerView() {
       {plan && run.data && (
         <>
           <SummaryBand plan={plan} dest={run.data.destWorld} home={world} budget={budget} />
-          <TravelResults rows={plan.rows} totalCandidates={candidateIds.length} skippedChunks={run.data.skipped} />
+          <TravelResults rows={sortedRows} totalCandidates={candidateIds.length} skippedChunks={run.data.skipped} sort={sort} onSortChange={setSort} />
         </>
       )}
     </div>

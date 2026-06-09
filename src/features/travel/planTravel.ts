@@ -2,7 +2,22 @@ import type { SnapshotItem } from '../../lib/itemSnapshot';
 import type { MarketData } from '../../lib/universalis';
 import { pickHighestTrustedTier } from '../../lib/priceTrust';
 import { applyTax } from '../items/verdict/pricing';
-import type { TravelMetric, TravelOpts, TravelPlan, TravelRow } from './types';
+import type { TravelMetric, TravelOpts, TravelPlan, TravelRow, TravelSort } from './types';
+
+/**
+ * Comparators for the results-table column sort, keyed by `TravelSort`. All
+ * descending (highest first) — the table header is a single-click descending
+ * sort, matching the other insight tables (material/vendor/currency flip).
+ */
+export const TRAVEL_COMPARATORS: Record<TravelSort, (a: TravelRow, b: TravelRow) => number> = {
+  units: (a, b) => b.units - a.units,
+  avgBuyPrice: (a, b) => b.avgBuyPrice - a.avgBuyPrice,
+  homeSell: (a, b) => b.homeSell - a.homeSell,
+  cost: (a, b) => b.cost - a.cost,
+  profit: (a, b) => b.profit - a.profit,
+  roi: (a, b) => b.roi - a.roi,
+  velocity: (a, b) => b.velocity - a.velocity,
+};
 
 interface Unit {
   id: number;

@@ -3,13 +3,36 @@ import { ItemNameLinks } from '../../components/ItemNameLinks';
 import { HqStar } from '../../components/HqStar';
 import { ResultTableScaffold, EmptyResults } from '../queries/ResultTableScaffold';
 import { useUiStore, rowPadClass } from '../ui/uiStore';
-import type { TravelRow } from './types';
+import type { TravelRow, TravelSort } from './types';
 import type { CsvColumn } from '../../lib/csv';
 
 interface Props {
   rows: TravelRow[];
   totalCandidates: number;
   skippedChunks: number;
+  sort: TravelSort;
+  onSortChange: (next: TravelSort) => void;
+}
+
+function SortableHeader({
+  active, onClick, children, hideOnMobile = false,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+  hideOnMobile?: boolean;
+}) {
+  return (
+    <th
+      className={`px-3 py-2 cursor-pointer select-none text-right ${
+        hideOnMobile ? 'hidden md:table-cell' : ''
+      } ${active ? 'text-aether' : 'text-text-dim hover:text-aether'}`}
+      onClick={onClick}
+      aria-sort={active ? 'descending' : 'none'}
+    >
+      {children}{active ? ' ▼' : ''}
+    </th>
+  );
 }
 
 const CSV_COLUMNS: CsvColumn<TravelRow>[] = [
@@ -24,7 +47,7 @@ const CSV_COLUMNS: CsvColumn<TravelRow>[] = [
   { key: 'velocity', label: 'Velocity (sales/day)' },
 ];
 
-export function TravelResults({ rows, totalCandidates, skippedChunks }: Props) {
+export function TravelResults({ rows, totalCandidates, skippedChunks, sort, onSortChange }: Props) {
   const density = useUiStore((s) => s.density);
   const rowY = rowPadClass(density);
   return (
@@ -41,13 +64,13 @@ export function TravelResults({ rows, totalCandidates, skippedChunks }: Props) {
             <tr className="font-mono text-[10px] tracking-widest uppercase text-text-dim">
               <th className="text-left px-3 py-2">#</th>
               <th className="text-left px-3 py-2">Item</th>
-              <th className="text-right px-3 py-2">Units</th>
-              <th className="text-right px-3 py-2">Avg buy</th>
-              <th className="text-right px-3 py-2">Home sell</th>
-              <th className="text-right px-3 py-2 hidden md:table-cell">Cost</th>
-              <th className="text-right px-3 py-2">Profit</th>
-              <th className="text-right px-3 py-2">ROI</th>
-              <th className="text-right px-3 py-2 hidden md:table-cell">Vel</th>
+              <SortableHeader active={sort === 'units'} onClick={() => onSortChange('units')}>Units</SortableHeader>
+              <SortableHeader active={sort === 'avgBuyPrice'} onClick={() => onSortChange('avgBuyPrice')}>Avg buy</SortableHeader>
+              <SortableHeader active={sort === 'homeSell'} onClick={() => onSortChange('homeSell')}>Home sell</SortableHeader>
+              <SortableHeader active={sort === 'cost'} onClick={() => onSortChange('cost')} hideOnMobile>Cost</SortableHeader>
+              <SortableHeader active={sort === 'profit'} onClick={() => onSortChange('profit')}>Profit</SortableHeader>
+              <SortableHeader active={sort === 'roi'} onClick={() => onSortChange('roi')}>ROI</SortableHeader>
+              <SortableHeader active={sort === 'velocity'} onClick={() => onSortChange('velocity')} hideOnMobile>Vel</SortableHeader>
             </tr>
           </thead>
           <tbody>

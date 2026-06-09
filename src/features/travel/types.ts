@@ -4,13 +4,17 @@ export type { HqMode };
 
 export type TravelMetric = 'profit' | 'roi' | 'spread';
 
+/** Column the results table is sorted by (always descending). */
+export type TravelSort = 'units' | 'avgBuyPrice' | 'homeSell' | 'cost' | 'profit' | 'roi' | 'velocity';
+
 export interface TravelOpts {
   /** The user's home world (where items are resold). */
   homeWorld: string;
   /**
-   * The destination world being scouted. The destination book passed to
-   * planTravel is the region-scope market (listings span every world in the
-   * region), so we filter `worldListings` to this world to price the trip.
+   * The destination world being scouted. Its buy-side book is fetched live from
+   * Universalis at the destination world scope (a world-scoped fetch omits
+   * worldName, so planTravel accepts listings whose world is '' as well as an
+   * explicit match), then `worldListings` is filtered to this world.
    */
   destWorld: string;
   /** Spend cap in gil. null or 0 = unlimited. */

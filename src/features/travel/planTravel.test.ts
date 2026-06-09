@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { planTravel } from './planTravel';
+import { planTravel, TRAVEL_COMPARATORS } from './planTravel';
 import type { MarketData, MarketItem, WorldListing } from '../../lib/universalis';
 import type { SnapshotItem } from '../../lib/itemSnapshot';
-import type { TravelOpts } from './types';
+import type { TravelOpts, TravelRow } from './types';
 
 function mkMarket(p: Partial<MarketItem>): MarketItem {
   return {
@@ -140,5 +140,21 @@ describe('planTravel', () => {
     const plan = planTravel(items, dest, home, { ...baseOpts, metric: 'spread', applyMarketTax: true });
     expect(plan.rows).toHaveLength(2);
     expect(plan.rows[0].id).toBe(1); // higher gross spread leads
+  });
+});
+
+describe('TRAVEL_COMPARATORS', () => {
+  const mk = (p: Partial<TravelRow>): TravelRow => ({
+    id: 0, name: '', sc: 0, units: 0, avgBuyPrice: 0, homeSell: 0,
+    cost: 0, profit: 0, roi: 0, velocity: 0, hq: false, ...p,
+  });
+
+  it('sorts every column descending (highest first)', () => {
+    const lo = mk({ id: 1, units: 1, avgBuyPrice: 1, homeSell: 1, cost: 1, profit: 1, roi: 0.1, velocity: 1 });
+    const hi = mk({ id: 2, units: 9, avgBuyPrice: 9, homeSell: 9, cost: 9, profit: 9, roi: 0.9, velocity: 9 });
+    for (const key of Object.keys(TRAVEL_COMPARATORS) as (keyof typeof TRAVEL_COMPARATORS)[]) {
+      const sorted = [lo, hi].sort(TRAVEL_COMPARATORS[key]);
+      expect(sorted[0].id, key).toBe(2);
+    }
   });
 });
