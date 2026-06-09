@@ -42,6 +42,28 @@ export default defineConfig(({ mode }) => ({
     __APP_VERSION__: JSON.stringify(pkg.version),
     __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // Keep the heavy, rarely-changing vendor libs in their own long-lived
+        // chunks so app-code deploys don't bust their cache, and so recharts
+        // (shared by the Item + Dashboard charts) loads once and is reused.
+        // Order matters: match recharts/d3 before react so React itself stays
+        // in react-vendor and the recharts chunk just depends on it.
+        manualChunks(id: string) {
+          if (!id.includes('node_modules')) return
+          if (id.includes('recharts') || id.includes('d3-') || id.includes('victory-vendor')) return 'recharts'
+          if (
+            id.includes('/react-dom/') ||
+            id.includes('/react-router') ||
+            id.includes('/react/') ||
+            id.includes('/scheduler/') ||
+            id.includes('@tanstack')
+          ) return 'react-vendor'
+        },
+      },
+    },
+  },
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],

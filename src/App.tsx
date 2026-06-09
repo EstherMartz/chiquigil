@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, lazy, Suspense } from 'react';
 import { Analytics } from '@vercel/analytics/react';
 import { Sidebar } from './components/layout/Sidebar';
 import { ContentBar } from './components/layout/ContentBar';
@@ -11,43 +11,50 @@ import { AuthProvider } from './features/auth/AuthProvider';
 import { RequireAuth } from './features/auth/RequireAuth';
 import { RequireAdmin } from './features/auth/RequireAdmin';
 import { UserMenu } from './features/auth/UserMenu';
+import { Spinner } from './components/Spinner';
 import Login from './routes/Login';
-import Home from './routes/Home';
-import Dashboard from './routes/Dashboard';
-import Watchlist from './routes/Watchlist';
-import Discover from './routes/Discover';
-import Crafts from './routes/Crafts';
-import Trading from './routes/Trading';
-import Gathering from './routes/Gathering';
-import GatheringPlan from './routes/GatheringPlan';
-import LevePlan from './routes/LevePlan';
-import GcSeals from './routes/GcSeals';
-import ShoppingList from './routes/ShoppingList';
-import VendorFlip from './routes/VendorFlip';
-import EmptyShelf from './routes/EmptyShelf';
-import WhatsNew from './routes/WhatsNew';
-import Travel from './routes/Travel';
-import CurrencyFlip from './routes/CurrencyFlip';
-import Cleanup from './routes/Cleanup';
-import CraftFromInventory from './routes/CraftFromInventory';
-import QuestItems from './routes/QuestItems';
-import Housing from './routes/Housing';
-import Heatmap from './routes/Heatmap';
-import GlamourDemand from './routes/GlamourDemand';
-import CraftBatch from './routes/CraftBatch';
-import BatchHistory from './routes/BatchHistory';
-import Compare from './routes/Compare';
-import Item from './routes/Item';
-import Settings from './routes/Settings';
-import Submarines from './routes/Submarines';
-import Planner from './routes/Planner';
-import Projects from './routes/Projects';
-import Project from './routes/Project';
-import CraftLists from './routes/CraftLists';
-import YourLists from './routes/YourLists';
-import ListDetail from './routes/ListDetail';
-import Opportunities from './routes/Opportunities';
-import Admin from './routes/Admin';
+
+// Routes are code-split: each becomes its own chunk loaded on demand, so the
+// initial download is just the app shell + the visited route instead of one
+// ~1.5 MB bundle carrying every page (recharts, the craft engine, all 40+
+// views). Login stays eager — it's the unauthenticated landing and must paint
+// without waiting on a second round-trip.
+const Home = lazy(() => import('./routes/Home'));
+const Dashboard = lazy(() => import('./routes/Dashboard'));
+const Watchlist = lazy(() => import('./routes/Watchlist'));
+const Discover = lazy(() => import('./routes/Discover'));
+const Crafts = lazy(() => import('./routes/Crafts'));
+const Trading = lazy(() => import('./routes/Trading'));
+const Gathering = lazy(() => import('./routes/Gathering'));
+const GatheringPlan = lazy(() => import('./routes/GatheringPlan'));
+const LevePlan = lazy(() => import('./routes/LevePlan'));
+const GcSeals = lazy(() => import('./routes/GcSeals'));
+const ShoppingList = lazy(() => import('./routes/ShoppingList'));
+const VendorFlip = lazy(() => import('./routes/VendorFlip'));
+const EmptyShelf = lazy(() => import('./routes/EmptyShelf'));
+const WhatsNew = lazy(() => import('./routes/WhatsNew'));
+const Travel = lazy(() => import('./routes/Travel'));
+const CurrencyFlip = lazy(() => import('./routes/CurrencyFlip'));
+const Cleanup = lazy(() => import('./routes/Cleanup'));
+const CraftFromInventory = lazy(() => import('./routes/CraftFromInventory'));
+const QuestItems = lazy(() => import('./routes/QuestItems'));
+const Housing = lazy(() => import('./routes/Housing'));
+const Heatmap = lazy(() => import('./routes/Heatmap'));
+const GlamourDemand = lazy(() => import('./routes/GlamourDemand'));
+const CraftBatch = lazy(() => import('./routes/CraftBatch'));
+const BatchHistory = lazy(() => import('./routes/BatchHistory'));
+const Compare = lazy(() => import('./routes/Compare'));
+const Item = lazy(() => import('./routes/Item'));
+const Settings = lazy(() => import('./routes/Settings'));
+const Submarines = lazy(() => import('./routes/Submarines'));
+const Planner = lazy(() => import('./routes/Planner'));
+const Projects = lazy(() => import('./routes/Projects'));
+const Project = lazy(() => import('./routes/Project'));
+const CraftLists = lazy(() => import('./routes/CraftLists'));
+const YourLists = lazy(() => import('./routes/YourLists'));
+const ListDetail = lazy(() => import('./routes/ListDetail'));
+const Opportunities = lazy(() => import('./routes/Opportunities'));
+const Admin = lazy(() => import('./routes/Admin'));
 
 const PAGE_TITLES: Record<string, string> = {
   '/home': 'What Now?',
@@ -84,6 +91,16 @@ const PAGE_TITLES: Record<string, string> = {
   '/craft-lists/saved': 'Your Lists',
   '/admin': 'Admin',
 };
+
+/** Shown while a route's code-split chunk is fetched. Keeps the shell (sidebar,
+ *  content bar) on screen so navigation never flashes to a blank page. */
+function RouteFallback() {
+  return (
+    <div className="py-16">
+      <Spinner label="Loading…" />
+    </div>
+  );
+}
 
 function DocumentTitle() {
   const { pathname } = useLocation();
@@ -127,6 +144,7 @@ export default function App() {
                     <div className="flex justify-end"><UserMenu /></div>
                     <ContentBar />
                     <ErrorBoundary>
+                      <Suspense fallback={<RouteFallback />}>
                       <Routes>
                         <Route path="/" element={<Navigate to="/dashboard" replace />} />
                         <Route path="/home" element={<Home />} />
@@ -169,6 +187,7 @@ export default function App() {
                         <Route path="/craft-lists/saved" element={<YourLists />} />
                         <Route path="/craft-lists/:id" element={<ListDetail />} />
                       </Routes>
+                      </Suspense>
                     </ErrorBoundary>
                   </div>
                 </main>

@@ -1,10 +1,37 @@
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import type { HistoryEntry } from '../../lib/universalisHistory';
 import type { MarketItem } from '../../lib/universalis';
-import { PriceHistoryCard } from './PriceHistoryCard';
 import { CrossWorldArbCard } from './CrossWorldArbCard';
 import { ActivityCard } from './ActivityCard';
 import { CrossWorldListingsBlock } from './CrossWorldListingsBlock';
+
+// The price-history chart is the only consumer of recharts on the item page
+// (~110 KB gzipped). Loading it lazily keeps recharts out of the Item route
+// chunk, so the verdict, current prices, and the other two snapshot cards paint
+// from the much smaller Item bundle while the chart streams in right after.
+const PriceHistoryCard = lazy(() =>
+  import('./PriceHistoryCard').then((m) => ({ default: m.PriceHistoryCard })),
+);
+
+/** Placeholder matching PriceHistoryCard's chrome + height so the lazy chart
+ *  load doesn't shift the 3-up grid. */
+function PriceHistoryFallback({ scopeLabel, canHq }: { scopeLabel: string; canHq: boolean }) {
+  return (
+    <div className="border border-border-base bg-bg-card p-4">
+      <div className="flex items-center justify-between mb-3">
+        <div className="font-mono text-[10px] tracking-widest uppercase text-text-low">Price History</div>
+        <div className="font-mono text-[9px] tracking-widest uppercase text-text-low">
+          {scopeLabel} {canHq ? 'HQ/NQ' : 'NQ'}
+        </div>
+      </div>
+      <div className="animate-pulse space-y-2">
+        <div className="h-7 w-24 bg-bg-card-hi" />
+        <div className="h-3 w-40 bg-bg-card-hi" />
+        <div className="bg-bg-card-hi" style={{ height: 140 }} />
+      </div>
+    </div>
+  );
+}
 
 interface Props {
   homeWorld: string;
@@ -56,16 +83,18 @@ export function MarketSnapshotRow({ homeWorld, dcLabel, phantom, dc, region, can
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        <PriceHistoryCard
-          entries={entries}
-          loading={historyLoading}
-          market={activeMarket}
-          listings={activeMarket?.worldListings}
-          canHq={canHq}
-          scopeLabel={activeLabel}
-          floor={floor}
-          ceiling={ceiling}
-        />
+        <Suspense fallback={<PriceHistoryFallback scopeLabel={activeLabel} canHq={canHq} />}>
+          <PriceHistoryCard
+            entries={entries}
+            loading={historyLoading}
+            market={activeMarket}
+            listings={activeMarket?.worldListings}
+            canHq={canHq}
+            scopeLabel={activeLabel}
+            floor={floor}
+            ceiling={ceiling}
+          />
+        </Suspense>
 
         <CrossWorldArbCard
           region={region}
