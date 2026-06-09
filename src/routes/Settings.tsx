@@ -6,6 +6,7 @@ import { OnboardingWizard } from '../features/onboarding/OnboardingWizard';
 import { PluginPanel } from '../features/plugin/PluginPanel';
 import { useSettingsStore } from '../features/settings/store';
 import { useUiStore, type Density } from '../features/ui/uiStore';
+import { useSnapshotById } from '../features/queries/useSnapshotById';
 import { btnPrimaryLarge, btnDanger } from '../components/buttonStyles';
 import { fmtDateTime } from '../lib/format';
 import {
@@ -59,6 +60,11 @@ export default function Settings() {
   const setShowSparklines = useSettingsStore((s) => s.setShowSparklines);
   const applyMarketTax = useSettingsStore((s) => s.applyMarketTax);
   const setApplyMarketTax = useSettingsStore((s) => s.setApplyMarketTax);
+  const ignoredItemIds = useSettingsStore((s) => s.ignoredItemIds);
+  const hideIgnored = useSettingsStore((s) => s.hideIgnored);
+  const setHideIgnored = useSettingsStore((s) => s.setHideIgnored);
+  const unignoreItem = useSettingsStore((s) => s.unignoreItem);
+  const clearIgnored = useSettingsStore((s) => s.clearIgnored);
 
   const [showRedo, setShowRedo] = useState(false);
 
@@ -220,6 +226,25 @@ export default function Settings() {
         <p className="font-mono text-[10px] text-text-low mt-1 ml-6">
           Excludes elemental crystals (category 58) from all scan results. Quest items always exclude them.
         </p>
+      </section>
+      <section>
+        <SectionHeader label="Ignored items" />
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={hideIgnored}
+            onChange={(e) => setHideIgnored(e.target.checked)}
+            className="accent-gold w-4 h-4"
+          />
+          <span className="font-mono text-[10px] tracking-widest uppercase text-text-dim">
+            Hide ignored items
+          </span>
+        </label>
+        <p className="font-mono text-[10px] text-text-low mt-1 ml-6">
+          Turn off to temporarily show ignored items again without losing your list.
+          Add items by clicking the ✕ next to an item in any scan.
+        </p>
+        <IgnoredItemsList ids={ignoredItemIds} onRemove={unignoreItem} onClear={clearIgnored} />
       </section>
       <section>
         <SectionHeader label="In-game plugin" />
@@ -393,5 +418,41 @@ function CacheRow({ label, status, detail, error, busy, onRefresh, hideStale }: 
         </button>
       </td>
     </tr>
+  );
+}
+
+function IgnoredItemsList({ ids, onRemove, onClear }: {
+  ids: number[]; onRemove: (id: number) => void; onClear: () => void;
+}) {
+  const byId = useSnapshotById();
+  if (ids.length === 0) {
+    return <p className="font-mono text-[10px] text-text-low mt-2 ml-6 italic">No ignored items yet.</p>;
+  }
+  return (
+    <div className="mt-2 ml-6 space-y-1">
+      <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto">
+        {ids.map((id) => (
+          <span key={id} className="inline-flex items-center gap-1 border border-border-base px-1.5 py-0.5 font-mono text-[10px] text-text-cream">
+            {byId.get(id)?.name ?? `#${id}`}
+            <button
+              type="button"
+              onClick={() => onRemove(id)}
+              title="Remove from ignore list"
+              aria-label={`Stop ignoring ${byId.get(id)?.name ?? id}`}
+              className="text-text-low hover:text-crimson transition-colors"
+            >
+              ✕
+            </button>
+          </span>
+        ))}
+      </div>
+      <button
+        type="button"
+        onClick={onClear}
+        className="font-mono text-[10px] tracking-widest uppercase text-text-dim hover:text-crimson transition-colors"
+      >
+        Clear all ({ids.length})
+      </button>
+    </div>
   );
 }
