@@ -1,6 +1,7 @@
 import { callGroq, parseResponse, type ChatMessage } from './llm';
 import { TOOL_DEFINITIONS, executeTool, type ToolDeps } from './tools';
 import { SYSTEM_PROMPT } from './systemPrompt';
+import { linkifyItems } from './linkifyItems';
 import type { CraftStore } from './craftStore';
 
 const MARKET_KEYWORDS = /precio|comprar|vender|vende|craft|craftear|gil|mercado|market|ganancia|rentable|barato|caro|flip|materia|tinte|dye|pocion|poción|comida|arma|armadura|accesorio|mueble|minion|oferta|ganga|npc|vendor|recipe|receta|ingrediente|material|madera|metal|tela|cuero|piedra|lumber|cloth|leather|stone|item|objeto|cuanto|cuánto|cuesta|vale/i;
@@ -133,6 +134,11 @@ export async function handleChat(question: string, deps: ChatHandlerDeps): Promi
 
   // Strip any leaked tool-call markup from the response
   finalContent = stripLeakedMarkup(finalContent) || 'Qiqirn no encontró nada... intenta otra vez ✨';
+
+  // Linkify any item the bot named (bolded) to its web detail page, so players
+  // can click straight through to the item view. Deterministic match against
+  // the loaded catalog — non-item bold is left alone.
+  finalContent = linkifyItems(finalContent, deps.toolDeps.nameIndex);
 
   // ~15% chance: add a random cat GIF to the response object
   const gifUrl = Math.random() < CAT_CHANCE ? CAT_GIFS[Math.floor(Math.random() * CAT_GIFS.length)] : undefined;
