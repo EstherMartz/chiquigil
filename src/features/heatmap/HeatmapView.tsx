@@ -11,7 +11,8 @@ import { fetchInBatches } from '../../lib/universalisBulk';
 import { fetchMarketData, type MarketItem } from '../../lib/universalis';
 import { buildHeatmapCells, CURATED_VIEWS, type HeatmapCell, type CellKind } from './buildHeatmapData';
 import { HeatmapChart, KIND_BASE, KIND_LABEL } from './HeatmapChart';
-import { CRYSTALS_SEARCH_CATEGORY } from '../queries/commonFilters';
+import { isItemHidden } from '../queries/commonFilters';
+import { useIgnoredItemSet } from '../settings/useIgnoredItems';
 import { Spinner } from '../../components/Spinner';
 import { StatusBanner } from '../../components/StatusBanner';
 import { fmtGil } from '../../lib/format';
@@ -51,6 +52,8 @@ function freshnessTone(ageMin: number): { dot: string; text: string; label: stri
 
 export function HeatmapView() {
   const { world, hideCrystals } = useSettingsStore();
+  const hideIgnored = useSettingsStore((s) => s.hideIgnored);
+  const ignored = useIgnoredItemSet();
   const snapshot = useItemSnapshot();
   const recipes = useRecipeSnapshot();
   const vendorSnap = useVendorShopSnapshot();
@@ -76,10 +79,10 @@ export function HeatmapView() {
     if (!snapshot.data) return [];
     return snapshot.data.items.filter((item) => {
       if (item.sc === 0) return false;
-      if (hideCrystals && item.sc === CRYSTALS_SEARCH_CATEGORY) return false;
+      if (isItemHidden(item, { hideCrystals, hideIgnored, ignored })) return false;
       return true;
     });
-  }, [snapshot.data, hideCrystals]);
+  }, [snapshot.data, hideCrystals, hideIgnored, ignored]);
 
   const candidateIds = useMemo(() => candidateItems.map((i) => i.id), [candidateItems]);
 

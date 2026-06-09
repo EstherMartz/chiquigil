@@ -25,7 +25,8 @@ import { InfoTooltip } from '../../components/InfoTooltip';
 import { filterToParams, paramsToFilter } from '../../lib/queryUrlParams';
 import { filterHash } from './types';
 import { passesMaxRisk } from './craftListingAnalysis';
-import { CRYSTALS_SEARCH_CATEGORY } from './commonFilters';
+import { isItemHidden } from './commonFilters';
+import { useIgnoredItemSet } from '../settings/useIgnoredItems';
 
 interface PriceFetchResult {
   priceMap: MarketData;
@@ -45,6 +46,8 @@ interface Props {
 
 export function QueriesView({ category, heading, onRowsChange, initialPresetId }: Props) {
   const { world, dc, retainerLevels, hideCrystals, showSparklines } = useSettingsStore();
+  const hideIgnored = useSettingsStore((s) => s.hideIgnored);
+  const ignored = useIgnoredItemSet();
   const [params, setParams] = useSearchParams();
   const snapshot = useItemSnapshot();
   const isGathering = category === 'gathering';
@@ -64,7 +67,7 @@ export function QueriesView({ category, heading, onRowsChange, initialPresetId }
       const gatherSet = isGathering ? gatheringCatalog.data : null;
       const out: number[] = [];
       for (const item of snapshot.data.items) {
-        if (hideCrystals && item.sc === CRYSTALS_SEARCH_CATEGORY) continue;
+        if (isItemHidden(item, { hideCrystals, hideIgnored, ignored })) continue;
         if (catSet && !catSet.has(item.sc)) continue;
         if (f.hq === 'hq' && !item.canHq) continue;
         if (gatherSet && !gatherSet.has(item.id)) continue;
@@ -72,7 +75,7 @@ export function QueriesView({ category, heading, onRowsChange, initialPresetId }
       }
       return out;
     };
-  }, [snapshot.data, isGathering, gatheringCatalog.data, hideCrystals]);
+  }, [snapshot.data, isGathering, gatheringCatalog.data, hideCrystals, hideIgnored, ignored]);
 
   const candidateIds = useMemo(
     () => candidateIdsFor(filter),

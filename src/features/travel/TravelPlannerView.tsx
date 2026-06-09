@@ -7,7 +7,8 @@ import { fetchInBatches } from '../../lib/universalisBulk';
 import { fetchMarketData, fetchMarketLive, type MarketData } from '../../lib/universalis';
 import { useCooldown } from '../../lib/useCooldown';
 import { useInitialScan } from '../queries/useInitialScan';
-import { CRYSTALS_SEARCH_CATEGORY } from '../queries/commonFilters';
+import { isItemHidden } from '../queries/commonFilters';
+import { useIgnoredItemSet } from '../settings/useIgnoredItems';
 import { EU_WORLDS, dcOf } from '../../lib/europeWorlds';
 import { planTravel, TRAVEL_COMPARATORS } from './planTravel';
 import { TravelResults } from './TravelResults';
@@ -28,6 +29,8 @@ interface RunResult {
 
 export function TravelPlannerView() {
   const { world, hideCrystals, applyMarketTax } = useSettingsStore();
+  const hideIgnored = useSettingsStore((s) => s.hideIgnored);
+  const ignored = useIgnoredItemSet();
   const snapshot = useItemSnapshot();
   const watchlistItems = useSelectedItems();
 
@@ -55,7 +58,7 @@ export function TravelPlannerView() {
     for (const it of watchlistItems) ids.add(it.id);
     const catalog = [...snapshot.data.items]
       .filter((i) => i.sc > 0)
-      .filter((i) => !(hideCrystals && i.sc === CRYSTALS_SEARCH_CATEGORY))
+      .filter((i) => !isItemHidden(i, { hideCrystals, hideIgnored, ignored }))
       .filter((i) => (hq === 'hq' ? i.canHq : true))
       .sort((a, b) => b.ilvl - a.ilvl);
     for (const it of catalog) {
@@ -63,7 +66,7 @@ export function TravelPlannerView() {
       ids.add(it.id);
     }
     return [...ids];
-  }, [snapshot.data, watchlistItems, hideCrystals, hq]);
+  }, [snapshot.data, watchlistItems, hideCrystals, hideIgnored, ignored, hq]);
 
   const cooldown = useCooldown(60_000);
   const [liveAt, setLiveAt] = useState<number | null>(null);
