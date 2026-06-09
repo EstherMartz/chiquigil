@@ -209,6 +209,9 @@ export default function Item() {
   // Prefer the live overlay (patched from the WebSocket) over the cached DC item.
   const dcMarket = live.liveItem ?? market.data?.dc[itemId];
   const regionMarket = market.data?.region[itemId];
+  // Book the stack analyzer reads from: the same scope the history is fetched at
+  // (home when active, else DC) so its sales + listings share one world set.
+  const stackMarket = historyScope === world ? phantomMarket : dcMarket;
 
   // NOTE: the `if (!valid) return` guard above makes the hooks below
   // technically conditional. This is pre-existing; grandfathered here (rather
@@ -349,11 +352,15 @@ export default function Item() {
         <ConcentrationBlock listings={phantomMarket.worldListings} canHq={canHq} />
       )}
 
-      {phantomMarket && (
+      {stackMarket && (
+        // Scope the stack analyzer to the same book the page prices/charts from
+        // (home when it has activity, else the DC). This dedupes the 90-day
+        // history fetch with the shared one above AND keeps sales-by-stack and
+        // listings-by-stack on one consistent world set for quiet-on-home items.
         <StackAnalyzerBlock
           itemId={itemId}
-          scope={world}
-          listings={phantomMarket.worldListings}
+          scope={historyScope}
+          listings={stackMarket.worldListings}
           canHq={canHq}
         />
       )}

@@ -52,12 +52,6 @@ export function parseHistoryResponse(raw: RawHistoryResponse): Map<number, Histo
   return out;
 }
 
-/** History is not cached locally — always returns empty. */
-export async function fetchHistoryFor(_scope: string, ids: number[]): Promise<Map<number, HistoryEntry[]>> {
-  if (ids.length === 0) return new Map();
-  return new Map();
-}
-
 const DAY_MS = 86_400_000;
 
 export function dailyBuckets(entries: HistoryEntry[], lookbackDays: number): DailyBucket[] {
