@@ -7,7 +7,9 @@ describe('formatSparklineTooltip', () => {
       [1700, 1650, null, 1720, 1800, 1750, 1780],
       new Date('2026-05-23T12:00:00'),
     );
-    expect(result).toContain('1700');
+    // Match the source's own locale formatting (e.g. "1,700") so the assertion
+    // doesn't break under runners whose default locale groups thousands.
+    expect(result).toContain((1700).toLocaleString());
     expect(result).toContain('—');
     expect(result).toContain('← today');
     expect(result.split('\n')).toHaveLength(7);
