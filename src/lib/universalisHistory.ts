@@ -1,3 +1,5 @@
+import { getCachedHistories, putCachedHistories } from './recipeCache';
+
 export interface HistoryEntry {
   pricePerUnit: number;
   quantity: number;
@@ -52,12 +54,6 @@ export function parseHistoryResponse(raw: RawHistoryResponse): Map<number, Histo
   return out;
 }
 
-/** History is not cached locally — always returns empty. */
-export async function fetchHistoryFor(_scope: string, ids: number[]): Promise<Map<number, HistoryEntry[]>> {
-  if (ids.length === 0) return new Map();
-  return new Map();
-}
-
 const DAY_MS = 86_400_000;
 
 export function dailyBuckets(entries: HistoryEntry[], lookbackDays: number): DailyBucket[] {
@@ -105,6 +101,66 @@ export async function fetchHistoryWithin(
   } catch {
     return new Map();
   }
+}
+
+const HISTORY_CHUNK = 100;
+const HISTORY_MAX_AGE_MS = 30 * 60 * 1000;
+
+function histKey(scope: string, id: number, withinSeconds: number): string {
+  return `${scope}:${id}:${withinSeconds}`;
+}
+
+/**
+ * Persistent-cache-first wrapper over `fetchHistoryWithin`. Serves rows younger
+ * than `maxAgeMs` straight from IndexedDB (instant on revisit / reload), fetches
+ * only the misses from Universalis — in safe-sized chunks, 100 ids at a time with
+ * a short delay between — then writes them back. Same return shape as
+ * `fetchHistoryWithin`. IDB failures degrade gracefully to a plain live fetch.
+ * The cache is keyed per (scope, item, window), so a 30-day and a 90-day request
+ * for the same item stay distinct (their entry sets differ).
+ */
+export async function fetchHistoryWithinCached(
+  scope: string,
+  ids: number[],
+  withinSeconds: number,
+  maxAgeMs: number = HISTORY_MAX_AGE_MS,
+): Promise<Map<number, HistoryEntry[]>> {
+  if (ids.length === 0) return new Map();
+  const now = Date.now();
+  const out = new Map<number, HistoryEntry[]>();
+
+  let cached = new Map<string, { ts: number; entries: unknown[] }>();
+  try {
+    cached = await getCachedHistories(ids.map((id) => histKey(scope, id, withinSeconds)));
+  } catch {
+    // IDB unavailable — treat everything as a miss.
+  }
+
+  const misses: number[] = [];
+  for (const id of ids) {
+    const hit = cached.get(histKey(scope, id, withinSeconds));
+    if (hit && now - hit.ts < maxAgeMs) out.set(id, hit.entries as HistoryEntry[]);
+    else misses.push(id);
+  }
+  if (misses.length === 0) return out;
+
+  const toPut: Array<[string, { ts: number; entries: HistoryEntry[] }]> = [];
+  for (let i = 0; i < misses.length; i += HISTORY_CHUNK) {
+    const chunk = misses.slice(i, i + HISTORY_CHUNK);
+    const fresh = await fetchHistoryWithin(scope, chunk, withinSeconds);
+    for (const id of chunk) {
+      const entries = fresh.get(id) ?? [];
+      out.set(id, entries);
+      toPut.push([histKey(scope, id, withinSeconds), { ts: now, entries }]);
+    }
+    if (i + HISTORY_CHUNK < misses.length) await new Promise((r) => setTimeout(r, 100));
+  }
+  try {
+    await putCachedHistories(toPut);
+  } catch {
+    // IDB unavailable — skip persistence, data is still returned.
+  }
+  return out;
 }
 
 function median(values: number[]): number {

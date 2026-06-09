@@ -8,7 +8,7 @@ import { useGatheringCatalog } from '../queries/useGatheringCatalog';
 import { useSpecialShopSnapshot } from '../queries/useSpecialShopSnapshot';
 import { useMarketData } from '../watchlist/useMarketData';
 import { findItemCurrencyOffers } from '../items/currencyOffers';
-import { fetchHistoryWithin, type HistoryEntry } from '../../lib/universalisHistory';
+import { fetchHistoryWithinCached, type HistoryEntry } from '../../lib/universalisHistory';
 import {
   recipeMaterialCostHome,
   findBestSingleStopFor,
@@ -136,7 +136,7 @@ export function useComparePaths(
     queryKey: ['compare-history', world, historyIds],
     enabled: valid && historyIds.length > 0,
     staleTime: 30 * 60 * 1000,
-    queryFn: () => fetchHistoryWithin(world, historyIds, NINETY_DAYS_SEC),
+    queryFn: () => fetchHistoryWithinCached(world, historyIds, NINETY_DAYS_SEC),
   });
 
   const comparison = useMemo<Comparison | null>(() => {

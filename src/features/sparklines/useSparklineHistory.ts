@@ -1,31 +1,19 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchHistoryWithin, dailyMedianBuckets } from '../../lib/universalisHistory';
+import { fetchHistoryWithinCached, dailyMedianBuckets } from '../../lib/universalisHistory';
 
 const SEVEN_DAYS_SEC = 7 * 24 * 60 * 60;
-const CHUNK_SIZE = 100;
 
 async function fetchBatched(
   world: string,
   ids: number[],
 ): Promise<Map<number, (number | null)[]>> {
+  // The cached fetcher chunks misses (100 at a time), rate-limits, persists, and
+  // returns empty entries for any failed/absent id — so a miss degrades to a flat
+  // sparkline exactly as before, but revisits now serve straight from IndexedDB.
+  const entries = await fetchHistoryWithinCached(world, ids, SEVEN_DAYS_SEC);
   const result = new Map<number, (number | null)[]>();
-  for (let i = 0; i < ids.length; i += CHUNK_SIZE) {
-    const chunk = ids.slice(i, i + CHUNK_SIZE);
-    try {
-      const entries = await fetchHistoryWithin(world, chunk, SEVEN_DAYS_SEC);
-      for (const id of chunk) {
-        result.set(id, dailyMedianBuckets(entries.get(id) ?? [], 7));
-      }
-    } catch {
-      // Sparklines are non-critical — swallow errors, fill with empty
-      for (const id of chunk) {
-        result.set(id, [null, null, null, null, null, null, null]);
-      }
-    }
-    // Rate-limit: 100ms between batches (skip delay for last/only batch)
-    if (i + CHUNK_SIZE < ids.length) {
-      await new Promise((r) => setTimeout(r, 100));
-    }
+  for (const id of ids) {
+    result.set(id, dailyMedianBuckets(entries.get(id) ?? [], 7));
   }
   return result;
 }

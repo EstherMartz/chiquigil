@@ -1,6 +1,6 @@
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid } from 'recharts';
 import { useQuery } from '@tanstack/react-query';
-import { fetchHistoryWithin, type HistoryEntry } from '../../lib/universalisHistory';
+import { fetchHistoryWithinCached, type HistoryEntry } from '../../lib/universalisHistory';
 import { SectionHeader } from '../../components/SectionHeader';
 import { Spinner } from '../../components/Spinner';
 import { StatusBanner } from '../../components/StatusBanner';
@@ -20,7 +20,7 @@ export function SaleHistoryBlock({ itemId, scope, canHq }: Props) {
     enabled: Number.isFinite(itemId) && itemId > 0,
     staleTime: 30 * 60 * 1000,
     queryFn: async () => {
-      const map = await fetchHistoryWithin(scope, [itemId], THIRTY_DAYS_SEC);
+      const map = await fetchHistoryWithinCached(scope, [itemId], THIRTY_DAYS_SEC);
       return map.get(itemId) ?? [];
     },
   });

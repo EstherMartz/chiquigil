@@ -1,7 +1,7 @@
 import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery } from '@tanstack/react-query';
-import { fetchHistoryWithin, type HistoryEntry } from '../../lib/universalisHistory';
+import { fetchHistoryWithinCached, type HistoryEntry } from '../../lib/universalisHistory';
 import type { WorldListing } from '../../lib/universalis';
 import { SectionHeader } from '../../components/SectionHeader';
 import { Spinner } from '../../components/Spinner';
@@ -23,7 +23,7 @@ export function StackAnalyzerBlock({ itemId, scope, listings, canHq }: BlockProp
     queryKey: ['item-history', scope, itemId, 90],
     enabled: Number.isFinite(itemId) && itemId > 0,
     staleTime: 30 * 60 * 1000,
-    queryFn: async () => (await fetchHistoryWithin(scope, [itemId], NINETY_DAYS_SEC)).get(itemId) ?? [],
+    queryFn: async () => (await fetchHistoryWithinCached(scope, [itemId], NINETY_DAYS_SEC)).get(itemId) ?? [],
   });
   const entries: HistoryEntry[] = q.data ?? [];
 

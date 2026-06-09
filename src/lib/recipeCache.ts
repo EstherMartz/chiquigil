@@ -8,7 +8,7 @@ import type { CurrencyId } from './currencies';
 import type { SnapshotQuest } from './questSnapshot';
 
 const DB_NAME = 'ffxiv-helper';
-const DB_VERSION = 11;
+const DB_VERSION = 12;
 const RECIPE_STORE = 'recipes';
 const NAME_STORE = 'names';
 const ITEM_STORE = 'items';
@@ -20,6 +20,7 @@ const LEVE_STORE = 'leves';
 const GILSHOP_STORE = 'gilShop';
 const SPECIALSHOP_STORE = 'specialShop';
 const QUEST_STORE = 'quest';
+const HISTORY_STORE = 'history';
 
 let dbPromise: Promise<IDBPDatabase> | null = null;
 
@@ -59,6 +60,9 @@ function db(): Promise<IDBPDatabase> {
         }
         if (!database.objectStoreNames.contains(QUEST_STORE)) {
           database.createObjectStore(QUEST_STORE);
+        }
+        if (!database.objectStoreNames.contains(HISTORY_STORE)) {
+          database.createObjectStore(HISTORY_STORE);
         }
         if (oldVersion > 0 && oldVersion < 10) {
           // v10 added priceLow to SnapshotItem; wipe the item store so the next load
@@ -294,4 +298,34 @@ export async function clearQuestCache(): Promise<void> {
 
 export async function getQuestSnapshotUpdatedAt(): Promise<number | undefined> {
   return (await db()).get(META_STORE, QUEST_SNAPSHOT_TS_KEY);
+}
+
+// Sale-history cache: one record per (scope, item, window), keyed
+// `${scope}:${itemId}:${withinSeconds}`. Value carries a fetch timestamp so the
+// caller can TTL it. Batched get/put share a single transaction so a watchlist's
+// worth of items costs one round-trip, not one per id.
+
+export interface HistoryCacheEntry { ts: number; entries: unknown[] }
+
+export async function getCachedHistories(keys: string[]): Promise<Map<string, HistoryCacheEntry>> {
+  const out = new Map<string, HistoryCacheEntry>();
+  if (keys.length === 0) return out;
+  const tx = (await db()).transaction(HISTORY_STORE, 'readonly');
+  await Promise.all(keys.map(async (k) => {
+    const v = (await tx.store.get(k)) as HistoryCacheEntry | undefined;
+    if (v) out.set(k, v);
+  }));
+  await tx.done;
+  return out;
+}
+
+export async function putCachedHistories(entries: Array<[string, HistoryCacheEntry]>): Promise<void> {
+  if (entries.length === 0) return;
+  const tx = (await db()).transaction(HISTORY_STORE, 'readwrite');
+  await Promise.all(entries.map(([k, v]) => tx.store.put(v, k)));
+  await tx.done;
+}
+
+export async function clearHistoryCache(): Promise<void> {
+  await (await db()).clear(HISTORY_STORE);
 }
