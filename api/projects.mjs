@@ -1,5 +1,9 @@
 // src/bot/craftStore.ts
 import { createClient } from "@libsql/client";
+import { randomUUID } from "node:crypto";
+function genListId() {
+  return randomUUID().replace(/-/g, "").slice(0, 12);
+}
 async function openCraftStore(url, authToken) {
   const isLocal = url === ":memory:" || url.startsWith("file:");
   const client = createClient({
@@ -71,6 +75,24 @@ async function openCraftStore(url, authToken) {
       access      TEXT NOT NULL DEFAULT 'default',
       first_seen  INTEGER NOT NULL,
       last_seen   INTEGER NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS lists (
+      id          TEXT PRIMARY KEY,
+      owner_id    TEXT NOT NULL,
+      name        TEXT NOT NULL,
+      created_at  INTEGER NOT NULL,
+      updated_at  INTEGER NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS list_items (
+      id        INTEGER PRIMARY KEY AUTOINCREMENT,
+      list_id   TEXT NOT NULL REFERENCES lists(id) ON DELETE CASCADE,
+      item_id   INTEGER NOT NULL,
+      item_name TEXT NOT NULL,
+      qty       INTEGER NOT NULL,
+      is_hq     INTEGER NOT NULL DEFAULT 0,
+      position  INTEGER NOT NULL DEFAULT 0
     );
   `;
   const statements = SCHEMA.split(";").map((s) => s.trim()).filter((s) => s.length > 0);
@@ -376,7 +398,7 @@ async function openCraftStore(url, authToken) {
         language: String(row.language)
       };
     },
-    async setGuildConfig(config2) {
+    async setGuildConfig(config) {
       await client.execute({
         sql: `
           INSERT INTO guild_config (guild_id, craft_channel_id, language)
@@ -385,7 +407,7 @@ async function openCraftStore(url, authToken) {
             craft_channel_id = ?,
             language = ?
         `,
-        args: [config2.guildId, config2.craftChannelId, config2.language, config2.craftChannelId, config2.language]
+        args: [config.guildId, config.craftChannelId, config.language, config.craftChannelId, config.language]
       });
     },
     async upsertAppUser(u) {
@@ -419,6 +441,103 @@ async function openCraftStore(url, authToken) {
         sql: "UPDATE app_users SET access = ? WHERE discord_id = ?",
         args: [access, discordId]
       });
+    },
+    async createList(ownerId, name, items) {
+      const id = genListId();
+      const now = Date.now();
+      const statements2 = [
+        {
+          sql: "INSERT INTO lists (id, owner_id, name, created_at, updated_at) VALUES (?, ?, ?, ?, ?)",
+          args: [id, ownerId, name, now, now]
+        },
+        ...items.map((it, i) => ({
+          sql: "INSERT INTO list_items (list_id, item_id, item_name, qty, is_hq, position) VALUES (?, ?, ?, ?, ?, ?)",
+          args: [id, it.itemId, it.itemName, it.qty, it.isHq ? 1 : 0, i]
+        }))
+      ];
+      await client.batch(statements2, "write");
+      return id;
+    },
+    async getList(id) {
+      const head = await client.execute({ sql: "SELECT * FROM lists WHERE id = ?", args: [id] });
+      const row = head.rows[0];
+      if (!row) return null;
+      const itemRows = await client.execute({
+        sql: "SELECT * FROM list_items WHERE list_id = ? ORDER BY position ASC",
+        args: [id]
+      });
+      return {
+        id: String(row.id),
+        ownerId: String(row.owner_id),
+        name: String(row.name),
+        createdAt: Number(row.created_at),
+        updatedAt: Number(row.updated_at),
+        items: itemRows.rows.map((r) => ({
+          id: Number(r.id),
+          itemId: Number(r.item_id),
+          itemName: String(r.item_name),
+          qty: Number(r.qty),
+          isHq: Number(r.is_hq) === 1,
+          position: Number(r.position)
+        }))
+      };
+    },
+    async listListsForOwner(ownerId) {
+      const result = await client.execute({
+        sql: `
+          SELECT l.id, l.name, l.created_at, l.updated_at,
+                 (SELECT COUNT(*) FROM list_items WHERE list_id = l.id) AS item_count
+          FROM lists l
+          WHERE l.owner_id = ?
+          ORDER BY l.updated_at DESC
+        `,
+        args: [ownerId]
+      });
+      return result.rows.map((r) => ({
+        id: String(r.id),
+        name: String(r.name),
+        itemCount: Number(r.item_count),
+        createdAt: Number(r.created_at),
+        updatedAt: Number(r.updated_at)
+      }));
+    },
+    async updateListMeta(id, ownerId, name) {
+      const now = Date.now();
+      const result = await client.execute({
+        sql: "UPDATE lists SET name = ?, updated_at = ? WHERE id = ? AND owner_id = ?",
+        args: [name, now, id, ownerId]
+      });
+      return result.rowsAffected > 0;
+    },
+    async replaceListItems(id, ownerId, items) {
+      const owned = await client.execute({
+        sql: "SELECT id FROM lists WHERE id = ? AND owner_id = ?",
+        args: [id, ownerId]
+      });
+      if (owned.rows.length === 0) return false;
+      const now = Date.now();
+      const statements2 = [
+        { sql: "DELETE FROM list_items WHERE list_id = ?", args: [id] },
+        ...items.map((it, i) => ({
+          sql: "INSERT INTO list_items (list_id, item_id, item_name, qty, is_hq, position) VALUES (?, ?, ?, ?, ?, ?)",
+          args: [id, it.itemId, it.itemName, it.qty, it.isHq ? 1 : 0, i]
+        })),
+        { sql: "UPDATE lists SET updated_at = ? WHERE id = ?", args: [now, id] }
+      ];
+      await client.batch(statements2, "write");
+      return true;
+    },
+    async deleteList(id, ownerId) {
+      const owned = await client.execute({
+        sql: "SELECT id FROM lists WHERE id = ? AND owner_id = ?",
+        args: [id, ownerId]
+      });
+      if (owned.rows.length === 0) return false;
+      await client.batch([
+        { sql: "DELETE FROM list_items WHERE list_id = ?", args: [id] },
+        { sql: "DELETE FROM lists WHERE id = ?", args: [id] }
+      ], "write");
+      return true;
     },
     async close() {
       await client.close();
@@ -590,6 +709,71 @@ async function getProjectDetail(store, id) {
   };
 }
 
+// src/api/_lists-core.ts
+var MAX_NAME = 120;
+var MAX_ITEMS = 200;
+function sanitizeItems(raw) {
+  if (!Array.isArray(raw) || raw.length === 0 || raw.length > MAX_ITEMS) return null;
+  const out = [];
+  for (const r of raw) {
+    const o = r;
+    const itemId = Number(o.itemId);
+    const qty = Number(o.qty);
+    const itemName = String(o.itemName ?? "").trim();
+    if (!Number.isInteger(itemId) || itemId <= 0) return null;
+    if (!Number.isInteger(qty) || qty < 1 || qty > 99999) return null;
+    if (itemName.length === 0) return null;
+    out.push({ itemId, itemName, qty, isHq: !!o.isHq });
+  }
+  return out;
+}
+function sanitizeName(raw) {
+  const name = String(raw ?? "").trim();
+  if (name.length === 0 || name.length > MAX_NAME) return null;
+  return name;
+}
+async function handleCreateList(store, ownerId, body) {
+  const name = sanitizeName(body?.name);
+  const items = sanitizeItems(body?.items);
+  if (!name) return { status: 400, body: { error: "List name is required" } };
+  if (!items) return { status: 400, body: { error: "List must have 1\u2013200 valid items" } };
+  const id = await store.createList(ownerId, name, items);
+  return { status: 201, body: { id } };
+}
+async function handleListLists(store, ownerId) {
+  const lists = await store.listListsForOwner(ownerId);
+  return { status: 200, body: { lists } };
+}
+async function handleGetList(store, id) {
+  const list = await store.getList(id);
+  if (!list) return { status: 404, body: { error: "List not found" } };
+  return { status: 200, body: list };
+}
+async function handleUpdateList(store, id, ownerId, body) {
+  const existing = await store.getList(id);
+  if (!existing) return { status: 404, body: { error: "List not found" } };
+  if (existing.ownerId !== ownerId) return { status: 403, body: { error: "Not your list" } };
+  if (body?.name !== void 0) {
+    const name = sanitizeName(body.name);
+    if (!name) return { status: 400, body: { error: "Invalid name" } };
+    await store.updateListMeta(id, ownerId, name);
+  }
+  if (body?.items !== void 0) {
+    const items = sanitizeItems(body.items);
+    if (!items) return { status: 400, body: { error: "Invalid items" } };
+    await store.replaceListItems(id, ownerId, items);
+  }
+  const updated = await store.getList(id);
+  return { status: 200, body: updated };
+}
+async function handleDeleteList(store, id, ownerId) {
+  const existing = await store.getList(id);
+  if (!existing) return { status: 404, body: { error: "List not found" } };
+  if (existing.ownerId !== ownerId) return { status: 403, body: { error: "Not your list" } };
+  await store.deleteList(id, ownerId);
+  return { status: 200, body: { ok: true } };
+}
+
 // src/api/projects.ts
 var storePromise = null;
 function getStore() {
@@ -600,14 +784,34 @@ function getStore() {
   }
   return storePromise;
 }
+async function handleLists(req, res, store, ownerId, url) {
+  const idMatch = /\/api\/lists\/([^/?]+)/.exec(url);
+  const id = idMatch ? decodeURIComponent(idMatch[1]) : null;
+  const body = req.body ?? {};
+  if (id) {
+    if (req.method === "GET") return send(res, await handleGetList(store, id));
+    if (req.method === "PUT") return send(res, await handleUpdateList(store, id, ownerId, body));
+    if (req.method === "DELETE") return send(res, await handleDeleteList(store, id, ownerId));
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+  if (req.method === "GET") return send(res, await handleListLists(store, ownerId));
+  if (req.method === "POST") return send(res, await handleCreateList(store, ownerId, body));
+  return res.status(405).json({ error: "Method not allowed" });
+}
+function send(res, r) {
+  return res.status(r.status).json(r.body);
+}
 async function handler(req, res) {
-  if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
   const session = await requireSession(req);
   if (!session) return res.status(401).json({ error: "Not authenticated" });
   res.setHeader("Cache-Control", "no-store");
   const url = req.url ?? "";
-  const detailMatch = /\/api\/projects\/(\d+)/.exec(url);
   const store = await getStore();
+  if (url.startsWith("/api/lists")) {
+    return handleLists(req, res, store, session.sub, url);
+  }
+  if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
+  const detailMatch = /\/api\/projects\/(\d+)/.exec(url);
   if (detailMatch) {
     const detail = await getProjectDetail(store, Number(detailMatch[1]));
     if (!detail) return res.status(404).json({ error: "Not found" });
@@ -620,8 +824,6 @@ async function handler(req, res) {
   const payload = await listProjectSummaries(store, guildId, statusFilter);
   return res.status(200).json(payload);
 }
-var config = { api: { bodyParser: false } };
 export {
-  config,
   handler as default
 };

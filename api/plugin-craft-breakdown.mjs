@@ -301,8 +301,178 @@ function buildBreakdown(targetId, targetQty, market, deps, opts = {}) {
   return { crafts: [], acquire: [] };
 }
 
+// src/features/queries/commonFilters.ts
+var CRYSTALS_SEARCH_CATEGORY = 58;
+
+// src/features/craftLists/resolveList.ts
+var MAX_DEPTH = 20;
+function classifyLeaf(itemId, deps) {
+  if (deps.itemsById.get(itemId)?.sc === CRYSTALS_SEARCH_CATEGORY) return "Crystal";
+  const g = deps.gathering.get(itemId);
+  if (g) return g.timed ? "TimedGather" : "Gathered";
+  for (const entries of deps.specialShop.byCurrency.values()) {
+    if (entries.some((e) => e.itemId === itemId)) return "Tome";
+  }
+  if (deps.vendorMap.has(itemId)) return "Vendor";
+  return "MonsterDrop";
+}
+function resolveList(inputs, deps) {
+  const nodes = /* @__PURE__ */ new Map();
+  function touch(id, qty, depth, root) {
+    let n = nodes.get(id);
+    if (!n) {
+      n = { qty: 0, minDepth: depth, roots: /* @__PURE__ */ new Set(), isCraft: false };
+      nodes.set(id, n);
+    }
+    n.qty += qty;
+    if (depth < n.minDepth) n.minDepth = depth;
+    n.roots.add(root);
+    return n;
+  }
+  function walk(id, qty, depth, root, path) {
+    const recipe = depth > MAX_DEPTH || path.has(id) ? null : deps.recipes.get(id);
+    const node = touch(id, qty, depth, root);
+    if (recipe) {
+      node.isCraft = true;
+      node.job = recipe.classJob;
+      node.recipeLevel = recipe.recipeLevel;
+      const craftCount = Math.ceil(qty / (recipe.amountResult ?? 1));
+      path.add(id);
+      for (const ing of recipe.ingredients) {
+        walk(ing.itemId, ing.amount * craftCount, depth + 1, root, path);
+      }
+      path.delete(id);
+    }
+  }
+  const finalItems = [];
+  for (const input of inputs) {
+    const recipe = deps.recipes.get(input.itemId) ?? void 0;
+    const meta = deps.itemsById.get(input.itemId);
+    const rootName = meta?.name ?? `Item #${input.itemId}`;
+    finalItems.push({
+      itemId: input.itemId,
+      itemName: rootName,
+      qty: input.qty,
+      isHq: !!input.isHq,
+      job: recipe?.classJob,
+      recipeLevel: recipe?.recipeLevel,
+      stars: recipe?.stats?.stars
+    });
+    if (recipe) {
+      const craftCount = Math.ceil(input.qty / (recipe.amountResult ?? 1));
+      const path = /* @__PURE__ */ new Set([input.itemId]);
+      for (const ing of recipe.ingredients) {
+        walk(ing.itemId, ing.amount * craftCount, 1, rootName, path);
+      }
+    }
+  }
+  const subCraftsByDepth = /* @__PURE__ */ new Map();
+  const gathered = [];
+  const otherAcquired = [];
+  const crystals = [];
+  const all = [];
+  for (const [id, n] of nodes) {
+    const meta = deps.itemsById.get(id);
+    const name = meta?.name ?? `Item #${id}`;
+    const usedToCraft = [...n.roots].sort((a, b) => a.localeCompare(b));
+    const base = {
+      itemId: id,
+      itemName: name,
+      requiredQty: n.qty,
+      usedToCraft,
+      canHq: meta?.canHq,
+      source: "MonsterDrop"
+    };
+    if (n.isCraft) {
+      const row = {
+        ...base,
+        source: "Crafted",
+        depth: n.minDepth,
+        craftedByJob: n.job,
+        recipeLevel: n.recipeLevel
+      };
+      const bucket = subCraftsByDepth.get(n.minDepth) ?? [];
+      bucket.push(row);
+      subCraftsByDepth.set(n.minDepth, bucket);
+      all.push(row);
+    } else {
+      const source = classifyLeaf(id, deps);
+      const row = { ...base, source };
+      if (source === "Crystal") crystals.push(row);
+      else if (source === "Gathered" || source === "TimedGather") gathered.push(row);
+      else otherAcquired.push(row);
+      all.push(row);
+    }
+  }
+  const byName = (a, b) => a.itemName.localeCompare(b.itemName);
+  for (const rows of subCraftsByDepth.values()) rows.sort(byName);
+  gathered.sort(byName);
+  otherAcquired.sort(byName);
+  crystals.sort(byName);
+  all.sort(byName);
+  return { finalItems, subCraftsByDepth, gathered, otherAcquired, crystals, all };
+}
+
+// src/api/_list-breakdown-core.ts
+var MAX_ITEMS = 200;
+function validateBreakdownItems(raw) {
+  if (!Array.isArray(raw) || raw.length === 0 || raw.length > MAX_ITEMS) return null;
+  const out = [];
+  for (const r of raw) {
+    const o = r;
+    const itemId = Number(o.itemId);
+    const qty = Number(o.qty);
+    if (!Number.isInteger(itemId) || itemId <= 0) return null;
+    if (!Number.isInteger(qty) || qty < 1 || qty > 99999) return null;
+    out.push({ itemId, qty, isHq: !!o.hq });
+  }
+  return out;
+}
+function buildListBreakdown(items, deps) {
+  const r = resolveList(items, deps);
+  return {
+    finalItems: r.finalItems.map((f) => ({
+      itemId: f.itemId,
+      itemName: f.itemName,
+      qty: f.qty,
+      isHq: f.isHq,
+      job: f.job,
+      recipeLevel: f.recipeLevel,
+      stars: f.stars
+    })),
+    ingredients: r.all.map((i) => ({
+      itemId: i.itemId,
+      itemName: i.itemName,
+      requiredQty: i.requiredQty,
+      source: i.source,
+      craftedByJob: i.craftedByJob,
+      recipeLevel: i.recipeLevel,
+      usedToCraft: i.usedToCraft,
+      depth: i.depth,
+      canHq: i.canHq
+    }))
+  };
+}
+
 // src/api/plugin-craft-breakdown.ts
 async function handler(req, res) {
+  if (req.method === "POST") {
+    const items = validateBreakdownItems((req.body ?? {}).items);
+    if (!items) {
+      return res.status(400).json({ error: "items must be a 1\u2013200 entry array of { itemId, qty, hq? }" });
+    }
+    const baseUrl2 = process.env.VITE_APP_URL ?? "https://qiqirn.tools";
+    const snapshots2 = await loadSnapshots(baseUrl2);
+    const deps = {
+      recipes: snapshots2.recipes,
+      gathering: snapshots2.gatheringCatalog,
+      vendorMap: snapshots2.vendorMap,
+      specialShop: snapshots2.specialShop,
+      itemsById: snapshots2.itemsById
+    };
+    res.setHeader("Cache-Control", "no-store");
+    return res.status(200).json(buildListBreakdown(items, deps));
+  }
   if (req.method !== "GET") {
     return res.status(405).json({ error: "Method not allowed" });
   }
