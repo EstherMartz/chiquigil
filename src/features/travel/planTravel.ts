@@ -42,8 +42,13 @@ export function planTravel(
 
     const cap = Math.max(1, Math.ceil(home.velocity * opts.horizonDays));
 
+    // Keep only listings on the destination world. A world-scoped Universalis
+    // fetch omits worldName (every row comes back with world === ''), so accept
+    // those too — they are, by definition, all on the scoped destination world.
+    // A region/DC-scoped book carries explicit world names, so the equality
+    // check still filters those down to the chosen world.
     const listings = dest.worldListings
-      .filter((l) => l.world === opts.destWorld)
+      .filter((l) => l.world === opts.destWorld || l.world === '')
       .filter((l) => (opts.hq === 'hq' ? l.hq : opts.hq === 'nq' ? !l.hq : true))
       .slice()
       .sort((a, b) => a.price - b.price);

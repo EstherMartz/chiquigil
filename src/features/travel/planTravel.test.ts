@@ -59,6 +59,19 @@ describe('planTravel', () => {
     expect(plan.rows[0].profit).toBe(600);       // 2 × (1000 − 700)
   });
 
+  it('accepts world-scoped listings (Universalis omits worldName for a single-world fetch)', () => {
+    const home: MarketData = { 1: homeSell(1000, 5) };
+    // A world-scoped fetch (the live destination book) returns every listing with
+    // world === '' — there is no per-row world name. These must still be bought.
+    const dest: MarketData = { 1: mkMarket({ worldListings: [
+      { world: '', price: 600, hq: false, quantity: 3 },
+    ] }) };
+    const plan = planTravel([items[0]], dest, home, { ...baseOpts, destWorld: 'Lich' });
+    expect(plan.rows).toHaveLength(1);
+    expect(plan.rows[0].units).toBe(3);
+    expect(plan.rows[0].profit).toBe(1200);
+  });
+
   it('respects the budget cap', () => {
     const home: MarketData = { 1: homeSell(1000, 5) };
     const dest: MarketData = { 1: mkMarket({ worldListings: [listing(600, 3)] }) };

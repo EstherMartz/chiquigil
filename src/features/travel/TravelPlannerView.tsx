@@ -19,13 +19,6 @@ import { EmptyState } from '../../components/EmptyState';
 
 const MAX_CANDIDATES = 500;
 
-/**
- * Destination books come from the region-scope cache (every world you can
- * DC-travel to lives in your physical region). Must match the scope seeded at
- * startup in main.tsx (`loadSharedMarketCache(world, dc, 'Europe')`).
- */
-const REGION = 'Europe';
-
 interface RunResult {
   destMarket: MarketData;
   homeMarket: MarketData;
@@ -74,26 +67,27 @@ export function TravelPlannerView() {
   const cooldown = useCooldown(60_000);
   const [liveAt, setLiveAt] = useState<number | null>(null);
 
-  // `live` = pull straight from Universalis; otherwise read the hourly cache.
-  // Destination listings come from the region scope (filtered to the chosen
-  // world in planTravel); the per-world scope is never seeded.
+  // The destination world's buy-side book is never seeded in any cache (only the
+  // home world / home DC / region scopes are), so it MUST be pulled live from
+  // Universalis on every scan — fetching the region scope and filtering to one
+  // world doesn't work: the region book only keeps the cheapest ~10 listings per
+  // item, spanning ~4 worlds, so most destinations come back empty.
+  //
+  // `live` controls only the HOME resale book: cache on a normal scan, live when
+  // the user explicitly refreshes. Fetch sequentially (dest then home) so peak
+  // connections stay at concurrency 6, under Universalis's ~8-connection cap.
   const run = useMutation<RunResult, Error, boolean>({
     mutationFn: async (live: boolean) => {
       if (!snapshot.data) throw new Error('Item snapshot not ready');
       if (!dest) throw new Error('Pick a destination world');
-      const fetchScope = (scope: string) => (chunk: number[]) =>
-        live ? fetchMarketLive(scope, chunk) : fetchMarketData(scope, chunk);
-      if (live) {
-        // Fetch the two scopes sequentially at concurrency 6 → peak 6 connections,
-        // under Universalis's 8-connection cap (~5 requests/scope at 100 ids each).
-        const destRes = await fetchInBatches<MarketData[string]>(candidateIds, fetchScope(REGION), { chunkSize: 100, concurrency: 6 });
-        const homeRes = await fetchInBatches<MarketData[string]>(candidateIds, fetchScope(world), { chunkSize: 100, concurrency: 6 });
-        return { destMarket: destRes.data, homeMarket: homeRes.data, skipped: destRes.errors.length + homeRes.errors.length, destWorld: dest };
-      }
-      const [destRes, homeRes] = await Promise.all([
-        fetchInBatches<MarketData[string]>(candidateIds, fetchScope(REGION), { chunkSize: 100, concurrency: 4 }),
-        fetchInBatches<MarketData[string]>(candidateIds, fetchScope(world), { chunkSize: 100, concurrency: 4 }),
-      ]);
+      const destRes = await fetchInBatches<MarketData[string]>(
+        candidateIds, (chunk) => fetchMarketLive(dest, chunk), { chunkSize: 100, concurrency: 6 },
+      );
+      const homeRes = await fetchInBatches<MarketData[string]>(
+        candidateIds,
+        (chunk) => (live ? fetchMarketLive(world, chunk) : fetchMarketData(world, chunk)),
+        { chunkSize: 100, concurrency: live ? 6 : 4 },
+      );
       return { destMarket: destRes.data, homeMarket: homeRes.data, skipped: destRes.errors.length + homeRes.errors.length, destWorld: dest };
     },
     onSuccess: (_data, live) => {
