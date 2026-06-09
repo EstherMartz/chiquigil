@@ -1,6 +1,7 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen } from '@testing-library/react';
 import { ResultTableScaffold } from './ResultTableScaffold';
+import { useSettingsStore } from '../settings/store';
 
 interface Row { id: number }
 
@@ -39,5 +40,45 @@ describe('ResultTableScaffold onVisibleRows', () => {
         />,
       ),
     ).not.toThrow();
+  });
+});
+
+describe('ResultTableScaffold ignore filtering', () => {
+  beforeEach(() => useSettingsStore.setState({ ignoredItemIds: [], hideIgnored: true }));
+
+  it('drops ignored rows when hideIgnored is on', () => {
+    useSettingsStore.setState({ ignoredItemIds: [2], hideIgnored: true });
+    const rows = [{ id: 1, name: 'Keep' }, { id: 2, name: 'Drop' }];
+    render(
+      <ResultTableScaffold
+        rows={rows}
+        totalCandidates={2}
+        skippedChunks={0}
+        emptyState={<div>empty</div>}
+        renderTable={(visible) => (
+          <ul>{visible.map((r) => <li key={r.id}>{(r as any).name}</li>)}</ul>
+        )}
+      />,
+    );
+    expect(screen.getByText('Keep')).toBeInTheDocument();
+    expect(screen.queryByText('Drop')).toBeNull();
+    expect(screen.getByText(/1 matches from 2 candidates/)).toBeInTheDocument();
+  });
+
+  it('keeps ignored rows when hideIgnored is off', () => {
+    useSettingsStore.setState({ ignoredItemIds: [2], hideIgnored: false });
+    const rows = [{ id: 1, name: 'Keep' }, { id: 2, name: 'Drop' }];
+    render(
+      <ResultTableScaffold
+        rows={rows}
+        totalCandidates={2}
+        skippedChunks={0}
+        emptyState={<div>empty</div>}
+        renderTable={(visible) => (
+          <ul>{visible.map((r) => <li key={r.id}>{(r as any).name}</li>)}</ul>
+        )}
+      />,
+    );
+    expect(screen.getByText('Drop')).toBeInTheDocument();
   });
 });

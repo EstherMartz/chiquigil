@@ -1,10 +1,13 @@
 import type { ReactNode } from 'react';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { LoadMoreFooter } from '../../components/LoadMoreFooter';
 import { useLoadMore } from '../../lib/useLoadMore';
 import { ExportCsvButton } from '../../components/ExportCsvButton';
 import { useUiStore } from '../ui/uiStore';
 import type { CsvColumn } from '../../lib/csv';
+import { useSettingsStore } from '../settings/store';
+import { useIgnoredItemSet } from '../settings/useIgnoredItems';
+import { IgnoreAffordanceContext } from '../items/ignoreAffordance';
 
 interface Props<T extends { id: number }> {
   rows: T[];
@@ -32,37 +35,55 @@ interface Props<T extends { id: number }> {
  * differ — but everything around the table is now one piece.
  */
 export function ResultTableScaffold<T extends { id: number }>({
-  rows, totalCandidates, skippedChunks, emptyState, renderTable, renderMobile, csvColumns, csvFilename, onVisibleRows,
+  rows: allRows, totalCandidates, skippedChunks, emptyState, renderTable, renderMobile, csvColumns, csvFilename, onVisibleRows,
 }: Props<T>) {
+  const hideIgnored = useSettingsStore((s) => s.hideIgnored);
+  const ignored = useIgnoredItemSet();
+  const rows = useMemo(
+    () => (hideIgnored ? allRows.filter((r) => !ignored.has(r.id)) : allRows),
+    [allRows, hideIgnored, ignored],
+  );
+
   const lm = useLoadMore(rows, 25);
   const visibleSig = lm.visible.map((r) => r.id).join(',');
   useEffect(() => {
     onVisibleRows?.(lm.visible);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visibleSig]);
-  if (rows.length === 0) return <>{emptyState}</>;
+  if (rows.length === 0) return <IgnoreAffordanceContext.Provider value={true}>{emptyState}</IgnoreAffordanceContext.Provider>;
   const tableWrapClass = renderMobile
     ? 'hidden md:block border border-border-base bg-bg-card overflow-x-auto'
     : 'border border-border-base bg-bg-card overflow-x-auto';
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="font-mono text-[10px] text-text-low">
-          {rows.length} matches from {totalCandidates} candidates
-          {skippedChunks > 0 && (
-            <span className="text-crimson"> · {skippedChunks} batch(es) skipped (Universalis error)</span>
-          )}
+    <IgnoreAffordanceContext.Provider value={true}>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="font-mono text-[10px] text-text-low">
+            {rows.length} matches from {totalCandidates} candidates
+            {skippedChunks > 0 && (
+              <span className="text-crimson"> · {skippedChunks} batch(es) skipped (Universalis error)</span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <InlineDensityToggle />
+            {csvColumns && csvFilename && (
+              <ExportCsvButton rows={rows} columns={csvColumns} filename={csvFilename} />
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <InlineDensityToggle />
-          {csvColumns && csvFilename && (
-            <ExportCsvButton rows={rows} columns={csvColumns} filename={csvFilename} />
-          )}
-        </div>
-      </div>
-      {renderMobile && (
-        <div className="md:hidden border border-border-base bg-bg-card divide-y divide-border-base">
-          {renderMobile(lm.visible)}
+        {renderMobile && (
+          <div className="md:hidden border border-border-base bg-bg-card divide-y divide-border-base">
+            {renderMobile(lm.visible)}
+            <LoadMoreFooter
+              hasMore={lm.hasMore}
+              total={lm.total}
+              shown={lm.shown}
+              onLoadMore={lm.loadMore}
+            />
+          </div>
+        )}
+        <div className={tableWrapClass}>
+          {renderTable(lm.visible)}
           <LoadMoreFooter
             hasMore={lm.hasMore}
             total={lm.total}
@@ -70,17 +91,8 @@ export function ResultTableScaffold<T extends { id: number }>({
             onLoadMore={lm.loadMore}
           />
         </div>
-      )}
-      <div className={tableWrapClass}>
-        {renderTable(lm.visible)}
-        <LoadMoreFooter
-          hasMore={lm.hasMore}
-          total={lm.total}
-          shown={lm.shown}
-          onLoadMore={lm.loadMore}
-        />
       </div>
-    </div>
+    </IgnoreAffordanceContext.Provider>
   );
 }
 
