@@ -89,13 +89,16 @@ inline `hideCrystals && item.sc === CRYSTALS_SEARCH_CATEGORY` check, threading i
 - `features/craftBatch/CraftBatchView.tsx`
 - `features/session/SessionPlanner.tsx`
 - `features/whatnow/WhatNowView.tsx`
-- `routes/ShoppingList.tsx`
-- `features/craftFromInventory/CraftFromInventoryView.tsx` — **special case.**
-  Here `hideCrystals` excludes crystals as *ingredients to auto-source*. The
-  ignore list is about *output items you don't want to craft/see*, which is a
-  different axis — so for this view, apply `isItemHidden` to the craftable-output
-  candidate list, and leave the ingredient-exclusion logic keyed on `hideCrystals`
-  alone. (Flagged so the implementer doesn't blindly swap the ingredient check.)
+
+**Ingredient-axis sites — deliberately NOT swapped.** Two views use `hideCrystals`
+to exclude crystal *materials* from a buy/source list, which is a different axis
+from the output-item ignore list. Excluding an ignored item here could drop a
+material a craft actually needs, so they keep their `hideCrystals`-only logic:
+
+- `routes/ShoppingList.tsx` — crystal materials excluded from the shopping buy list.
+- `features/craftFromInventory/CraftFromInventoryView.tsx` — `excludeIngredientIds`
+  for auto-sourcing. **However**, its list of craftable *outputs* (`rows`, keyed by
+  `recipeItemId`) IS filtered by the ignore list — that is the output axis.
 
 This is the "true parity with `hideCrystals`" layer: ignored items are excluded
 from scans/plans at selection time everywhere, and never priced on the next scan.
