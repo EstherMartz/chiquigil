@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { fmtGil } from '../../../lib/format';
 import { Skeleton } from '../../../components/Skeleton';
@@ -5,6 +6,8 @@ import type { WatchlistRow } from '../../watchlist/buildRows';
 import type { MoversDigest } from '../aggregate';
 import type { Valuation } from '../../fairvalue/fairValue';
 import type { PatchMover } from '../patchMovers';
+import { useSettingsStore } from '../../settings/store';
+import { useIgnoredItemSet } from '../../settings/useIgnoredItems';
 
 // "So what" tag bridging a price move to action. cheap/rich come from the
 // fair-value signal; profitable is a craftable now turning a positive margin.
@@ -141,6 +144,14 @@ export function ChangedDigest({
   showNewPatch?: boolean;
   trackedIds?: Set<number>;
 }) {
+  const hideIgnored = useSettingsStore((s) => s.hideIgnored);
+  const ignored = useIgnoredItemSet();
+  const shown = useMemo(() => {
+    if (!hideIgnored) return digest;
+    const keep = <T extends { id: number }>(rs: T[]) => rs.filter((r) => !ignored.has(r.id));
+    return { ...digest, gainers: keep(digest.gainers), losers: keep(digest.losers), stale: keep(digest.stale) };
+  }, [digest, hideIgnored, ignored]);
+
   const gridCols = showNewPatch ? 'sm:grid-cols-4' : 'sm:grid-cols-3';
   return (
     <div className="border border-border-base bg-bg-card p-4">
@@ -157,9 +168,9 @@ export function ChangedDigest({
           </>
         ) : (
           <>
-            <Column title="▲ Spiking" accent="text-jade" rows={digest.gainers} kind="up" empty="Nothing spiking." valuationById={valuationById} />
-            <Column title="▼ Crashing" accent="text-crimson" rows={digest.losers} kind="down" empty="Nothing crashing." valuationById={valuationById} />
-            <Column title="◇ Going stale" accent="text-gold" rows={digest.stale} kind="stale" empty="All fresh." valuationById={valuationById} />
+            <Column title="▲ Spiking" accent="text-jade" rows={shown.gainers} kind="up" empty="Nothing spiking." valuationById={valuationById} />
+            <Column title="▼ Crashing" accent="text-crimson" rows={shown.losers} kind="down" empty="Nothing crashing." valuationById={valuationById} />
+            <Column title="◇ Going stale" accent="text-gold" rows={shown.stale} kind="stale" empty="All fresh." valuationById={valuationById} />
             {showNewPatch && <NewPatchColumn items={newPatchItems ?? []} trackedIds={trackedIds} />}
           </>
         )}
