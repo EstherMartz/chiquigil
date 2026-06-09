@@ -21,7 +21,8 @@ import { ExportTeamcraftButton } from '../../components/ExportTeamcraftButton';
 import { useUiStore, rowPadClass } from '../ui/uiStore';
 import { EmptyState } from '../../components/EmptyState';
 import type { BatchItem, BatchResult } from './types';
-import { CRYSTALS_SEARCH_CATEGORY } from '../queries/commonFilters';
+import { isItemHidden } from '../queries/commonFilters';
+import { useIgnoredItemSet } from '../settings/useIgnoredItems';
 import type { CsvColumn } from '../../lib/csv';
 
 const CSV_COLUMNS: CsvColumn<BatchItem>[] = [
@@ -48,6 +49,8 @@ interface RunResult {
 export function CraftBatchView() {
   const navigate = useNavigate();
   const { world, hideCrystals } = useSettingsStore();
+  const hideIgnored = useSettingsStore((s) => s.hideIgnored);
+  const ignored = useIgnoredItemSet();
   const snapshot = useItemSnapshot();
   const recipes = useRecipeSnapshot();
   const addItem = useShoppingListStore((s) => s.addItem);
@@ -64,11 +67,11 @@ export function CraftBatchView() {
     if (!snapshot.data || !recipes.data) return [];
     const ids: number[] = [];
     for (const item of snapshot.data.items) {
-      if (hideCrystals && item.sc === CRYSTALS_SEARCH_CATEGORY) continue;
+      if (isItemHidden(item, { hideCrystals, hideIgnored, ignored })) continue;
       if (recipes.data.get(item.id)) ids.push(item.id);
     }
     return ids;
-  }, [snapshot.data, recipes.data, hideCrystals]);
+  }, [snapshot.data, recipes.data, hideCrystals, hideIgnored, ignored]);
 
   const run = useMutation<RunResult>({
     mutationFn: async () => {

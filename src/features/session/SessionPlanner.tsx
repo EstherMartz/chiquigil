@@ -20,7 +20,8 @@ import { HomePanel } from '../home/HomePanel';
 import { SessionDefaults } from '../settings/SessionDefaults';
 import { LevelsEditor } from '../settings/LevelsEditor';
 import { WorldDcPicker } from '../settings/WorldDcPicker';
-import { CRYSTALS_SEARCH_CATEGORY } from '../queries/commonFilters';
+import { isItemHidden } from '../queries/commonFilters';
+import { useIgnoredItemSet } from '../settings/useIgnoredItems';
 import type { QueryFilter } from '../queries/types';
 
 interface Committed {
@@ -68,6 +69,8 @@ interface ScanResult {
 
 export default function SessionPlanner() {
   const settings = useSettingsStore();
+  const hideIgnored = useSettingsStore((s) => s.hideIgnored);
+  const ignored = useIgnoredItemSet();
   const { perItemFlags } = useWatchlistStore();
   const snapshot = useItemSnapshot();
 
@@ -84,9 +87,9 @@ export default function SessionPlanner() {
   const allIds = useMemo(() => {
     if (!snapshot.data) return [];
     return snapshot.data.items
-      .filter((i) => !(settings.hideCrystals && i.sc === CRYSTALS_SEARCH_CATEGORY))
+      .filter((i) => !isItemHidden(i, { hideCrystals: settings.hideCrystals, hideIgnored, ignored }))
       .map((i) => i.id);
-  }, [snapshot.data, settings.hideCrystals]);
+  }, [snapshot.data, settings.hideCrystals, hideIgnored, ignored]);
 
   const ilvlById = useMemo(() => {
     const m = new Map<number, number>();

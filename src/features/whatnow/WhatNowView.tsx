@@ -17,7 +17,8 @@ import { runQuestItemFlip, defaultQuestItemFilter } from '../queries/runQuestIte
 import { defaultVendorFlipFilter, defaultCurrencyFlipFilter } from '../queries/types';
 import type { CraftFlipRow, VendorFlipRow, CurrencyFlipRow } from '../queries/types';
 import type { QuestItemRow } from '../queries/runQuestItemFlip';
-import { CRYSTALS_SEARCH_CATEGORY } from '../queries/commonFilters';
+import { isItemHidden } from '../queries/commonFilters';
+import { useIgnoredItemSet } from '../settings/useIgnoredItems';
 import { buildHeatmapCells, type HeatmapCell } from '../heatmap/buildHeatmapData';
 import { fmtGil } from '../../lib/format';
 import { Spinner } from '../../components/Spinner';
@@ -143,6 +144,8 @@ function freshnessTone(ageMin: number): { dot: string; text: string; label: stri
 
 export function WhatNowView() {
   const { world, hideCrystals } = useSettingsStore();
+  const hideIgnored = useSettingsStore((s) => s.hideIgnored);
+  const ignored = useIgnoredItemSet();
   const itemSnap = useItemSnapshot();
   const recipeSnap = useRecipeSnapshot();
   const vendorSnap = useVendorShopSnapshot();
@@ -169,7 +172,7 @@ export function WhatNowView() {
     }
     for (const [id] of gatherSnap.data!) {
       const item = items.find((i) => i.id === id);
-      if (item && item.sc > 0 && !(hideCrystals && item.sc === CRYSTALS_SEARCH_CATEGORY)) ids.add(id);
+      if (item && item.sc > 0 && !isItemHidden(item, { hideCrystals, hideIgnored, ignored })) ids.add(id);
     }
     for (const i of craftable.slice(0, SAMPLE_SIZE)) {
       const recipe = recipeSnap.data!.get(i.id);
@@ -177,7 +180,7 @@ export function WhatNowView() {
     }
 
     return [...ids];
-  }, [notReady, itemSnap.data, recipeSnap.data, vendorSnap.data, shopSnap.data, questSnap.data, gatherSnap.data, hideCrystals]);
+  }, [notReady, itemSnap.data, recipeSnap.data, vendorSnap.data, shopSnap.data, questSnap.data, gatherSnap.data, hideCrystals, hideIgnored, ignored]);
 
   const [scanTimestamp, setScanTimestamp] = useState<number | null>(null);
   const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
