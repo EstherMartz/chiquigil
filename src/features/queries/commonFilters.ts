@@ -26,3 +26,16 @@ export function passesMarketGate(market: MarketItem, gate: MarketGate): boolean 
   if (gate.maxListings != null && market.listingCount > gate.maxListings) return false;
   return true;
 }
+
+export interface ItemHideOpts {
+  hideCrystals: boolean;
+  hideIgnored: boolean;
+  ignored: ReadonlySet<number>;
+}
+
+/** True when an item should be hidden from scans/plans (crystal category or on the personal ignore list). */
+export function isItemHidden(item: { id: number; sc: number }, o: ItemHideOpts): boolean {
+  if (o.hideCrystals && item.sc === CRYSTALS_SEARCH_CATEGORY) return true;
+  if (o.hideIgnored && o.ignored.has(item.id)) return true;
+  return false;
+}

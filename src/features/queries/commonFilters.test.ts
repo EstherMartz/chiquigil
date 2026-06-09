@@ -1,35 +1,22 @@
 import { describe, it, expect } from 'vitest';
-import { passesMarketGate } from './commonFilters';
-import type { MarketItem } from '../../lib/universalis';
+import { isItemHidden, CRYSTALS_SEARCH_CATEGORY } from './commonFilters';
 
-function mkMarket(velocity: number, listingCount: number): MarketItem {
-  return {
-    minNQ: null, minHQ: null, avgNQ: null, avgHQ: null,
-    medianNQ: null, medianHQ: null,
-    recentSalesNQ: 0, recentSalesHQ: 0,
-    velocity, lastUploadTime: 0, listingCount,
-    worldListings: [], averagePriceNQ: null, averagePriceHQ: null,
-  };
-}
+const opts = (over = {}) => ({ hideCrystals: true, hideIgnored: true, ignored: new Set<number>([7]), ...over });
 
-describe('passesMarketGate', () => {
-  it('passes when velocity meets minimum and maxListings is null', () => {
-    expect(passesMarketGate(mkMarket(5, 100), { minVelocity: 1, maxListings: null })).toBe(true);
+describe('isItemHidden', () => {
+  it('hides crystals when hideCrystals is on', () => {
+    expect(isItemHidden({ id: 1, sc: CRYSTALS_SEARCH_CATEGORY }, opts())).toBe(true);
   });
-
-  it('fails when velocity is below minimum', () => {
-    expect(passesMarketGate(mkMarket(0.5, 10), { minVelocity: 1, maxListings: null })).toBe(false);
+  it('keeps crystals when hideCrystals is off', () => {
+    expect(isItemHidden({ id: 1, sc: CRYSTALS_SEARCH_CATEGORY }, opts({ hideCrystals: false }))).toBe(false);
   });
-
-  it('fails when listingCount exceeds maxListings', () => {
-    expect(passesMarketGate(mkMarket(5, 25), { minVelocity: 1, maxListings: 20 })).toBe(false);
+  it('hides an ignored id when hideIgnored is on', () => {
+    expect(isItemHidden({ id: 7, sc: 5 }, opts())).toBe(true);
   });
-
-  it('passes when listingCount equals maxListings (inclusive upper bound)', () => {
-    expect(passesMarketGate(mkMarket(5, 20), { minVelocity: 1, maxListings: 20 })).toBe(true);
+  it('keeps an ignored id when hideIgnored is off', () => {
+    expect(isItemHidden({ id: 7, sc: 5 }, opts({ hideIgnored: false }))).toBe(false);
   });
-
-  it('passes with minVelocity 0 (no velocity filter)', () => {
-    expect(passesMarketGate(mkMarket(0, 100), { minVelocity: 0, maxListings: null })).toBe(true);
+  it('keeps an ordinary item', () => {
+    expect(isItemHidden({ id: 3, sc: 5 }, opts())).toBe(false);
   });
 });
