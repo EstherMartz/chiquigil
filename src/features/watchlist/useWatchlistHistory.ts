@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchHistoryWithin, computeWeekDelta } from '../../lib/universalisHistory';
+import { fetchHistoryWithinCached, computeWeekDelta } from '../../lib/universalisHistory';
 import { summarizeHistory, type HistorySummary } from '../fairvalue/fairValue';
 
 const THIRTY_DAYS_SEC = 30 * 24 * 60 * 60;
@@ -25,7 +25,7 @@ export function useWatchlistHistory(ids: number[], scope: string) {
     enabled: ids.length > 0,
     staleTime: 30 * 60 * 1000,
     queryFn: async () => {
-      const map = await fetchHistoryWithin(scope, sortedIds, THIRTY_DAYS_SEC);
+      const map = await fetchHistoryWithinCached(scope, sortedIds, THIRTY_DAYS_SEC);
       const out = new Map<number, ItemHistory>();
       for (const id of sortedIds) {
         const entries = map.get(id) ?? [];

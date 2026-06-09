@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { chunkIds } from '../../lib/universalisBulk';
-import { fetchHistoryWithin } from '../../lib/universalisHistory';
+import { fetchHistoryWithinCached } from '../../lib/universalisHistory';
 import { idsToFetch, mergeDeltas } from './spikeSignal';
 
 const FOURTEEN_DAYS_SECONDS = 14 * 86400;
@@ -34,7 +34,7 @@ export function useHousingMomentum(
     let cancelled = false;
     (async () => {
       for (const chunk of chunkIds(missing, 100)) {
-        const history = await fetchHistoryWithin(world, chunk, FOURTEEN_DAYS_SECONDS);
+        const history = await fetchHistoryWithinCached(world, chunk, FOURTEEN_DAYS_SECONDS);
         if (cancelled) return;
         setCache((prev) => mergeDeltas(prev, chunk, history, Date.now()));
       }

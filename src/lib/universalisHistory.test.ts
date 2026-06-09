@@ -1,5 +1,9 @@
-import { describe, it, expect } from 'vitest';
-import { parseHistoryResponse, dailyBuckets, computeWeekDelta, dailyMedianBuckets } from './universalisHistory';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import {
+  parseHistoryResponse, dailyBuckets, computeWeekDelta, dailyMedianBuckets,
+  fetchHistoryWithinCached,
+} from './universalisHistory';
+import { clearHistoryCache } from './recipeCache';
 
 describe('parseHistoryResponse', () => {
   it('extracts entries per item id', () => {
@@ -199,5 +203,77 @@ describe('dailyMedianBuckets', () => {
     const result = dailyMedianBuckets(entries, 7);
     expect(result[6]).toBe(100);
     expect(result.slice(0, 6).every((v) => v === null)).toBe(true);
+  });
+});
+
+describe('fetchHistoryWithinCached', () => {
+  const WITHIN = 30 * 86400;
+
+  // Build a fetch mock returning the single-item history shape for the requested id.
+  function stubHistoryFetch(price = 100) {
+    const spy = vi.fn((url: string) => {
+      const id = Number(url.split('/').pop()!.split('?')[0].split(',')[0]);
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ itemID: id, entries: [{ pricePerUnit: price, quantity: 1, timestamp: 1700, hq: false }] }),
+      });
+    });
+    vi.stubGlobal('fetch', spy);
+    return spy;
+  }
+
+  beforeEach(async () => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+    await clearHistoryCache();
+  });
+
+  it('fetches on a cold cache and returns the entries', async () => {
+    const spy = stubHistoryFetch(123);
+    const map = await fetchHistoryWithinCached('Phantom', [5], WITHIN);
+    expect(map.get(5)).toEqual([{ pricePerUnit: 123, quantity: 1, timestamp: 1700, hq: false }]);
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+
+  it('serves a warm entry from IndexedDB without a second fetch', async () => {
+    const spy = stubHistoryFetch();
+    await fetchHistoryWithinCached('Phantom', [5], WITHIN); // warms the cache
+    expect(spy).toHaveBeenCalledTimes(1);
+
+    spy.mockClear();
+    const map = await fetchHistoryWithinCached('Phantom', [5], WITHIN); // served from cache
+    expect(map.get(5)).toHaveLength(1);
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('only fetches the ids missing from the cache', async () => {
+    const spy = stubHistoryFetch();
+    await fetchHistoryWithinCached('Phantom', [5], WITHIN); // 5 now cached
+    spy.mockClear();
+
+    await fetchHistoryWithinCached('Phantom', [5, 6], WITHIN); // only 6 is a miss
+    expect(spy).toHaveBeenCalledTimes(1);
+    const fetchedUrl = spy.mock.calls[0][0] as string;
+    expect(fetchedUrl).toContain('/6?');
+    expect(fetchedUrl).not.toContain('/5,6');
+  });
+
+  it('refetches once the cached row is older than maxAgeMs', async () => {
+    const spy = stubHistoryFetch();
+    await fetchHistoryWithinCached('Phantom', [5], WITHIN);
+    spy.mockClear();
+
+    // maxAgeMs=0 → the just-written row is already stale → refetch.
+    await fetchHistoryWithinCached('Phantom', [5], WITHIN, 0);
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+
+  it('keys separate windows independently (30d vs 90d do not collide)', async () => {
+    const spy = stubHistoryFetch();
+    await fetchHistoryWithinCached('Phantom', [5], 30 * 86400);
+    spy.mockClear();
+
+    await fetchHistoryWithinCached('Phantom', [5], 90 * 86400); // different window → miss
+    expect(spy).toHaveBeenCalledTimes(1);
   });
 });

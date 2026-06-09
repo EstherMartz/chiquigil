@@ -33,7 +33,7 @@ import { AddToWatchlistButton } from '../features/items/AddToWatchlistButton';
 import { AddToShoppingListButton } from '../features/shoppingList/AddToShoppingListButton';
 import { PluginItemActions } from '../features/plugin/PluginItemActions';
 import { fmtGil, fmtRelative, fmtDateTime, garlandItemUrl, gamerEscapeItemUrl, universalisItemUrl } from '../lib/format';
-import { fetchHistoryWithin } from '../lib/universalisHistory';
+import { fetchHistoryWithinCached } from '../lib/universalisHistory';
 import { Gil } from '../components/Gil';
 import { rarityBorderLeftClass, rarityLabel, rarityTextClass } from '../features/items/rarity';
 import { categoryLabel } from '../lib/itemSearchCategories';
@@ -148,7 +148,7 @@ export default function Item() {
     queryKey: ['item-history', historyScope, itemId, 90],
     enabled: valid && !market.isLoading,
     staleTime: 30 * 60 * 1000,
-    queryFn: async () => (await fetchHistoryWithin(historyScope, [itemId], NINETY_DAYS_SEC)).get(itemId) ?? [],
+    queryFn: async () => (await fetchHistoryWithinCached(historyScope, [itemId], NINETY_DAYS_SEC)).get(itemId) ?? [],
   });
 
   const vendors = useVendorShopSnapshot();

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchHistoryWithin, dailyBuckets, type DailyBucket } from '../../lib/universalisHistory';
+import { fetchHistoryWithinCached, dailyBuckets, type DailyBucket } from '../../lib/universalisHistory';
 
 export function useItemHistory(itemId: number | null, scope: string, lookbackDays = 30) {
   return useQuery<DailyBucket[]>({
@@ -8,7 +8,7 @@ export function useItemHistory(itemId: number | null, scope: string, lookbackDay
     staleTime: 30 * 60 * 1000,
     queryFn: async () => {
       const within = lookbackDays * 24 * 60 * 60;
-      const map = await fetchHistoryWithin(scope, [itemId!], within);
+      const map = await fetchHistoryWithinCached(scope, [itemId!], within);
       const entries = map.get(itemId!) ?? [];
       return dailyBuckets(entries, lookbackDays);
     },
