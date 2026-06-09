@@ -1,9 +1,12 @@
+import { useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { garlandItemUrl, gamerEscapeItemUrl, universalisItemUrl } from '../lib/format';
 import { useSnapshotById } from '../features/queries/useSnapshotById';
 import { CopyButton } from './CopyButton';
 import { RecipeHover } from './RecipeHover';
 import { crafterBeadClass } from '../features/items/crafterColors';
+import { IgnoreAffordanceContext } from '../features/items/ignoreAffordance';
+import { useSettingsStore } from '../features/settings/store';
 
 interface Props {
   id: number;
@@ -27,6 +30,10 @@ interface Props {
 export function ItemNameLinks({ id, name, suffix, sub, crafter }: Props) {
   const byId = useSnapshotById();
   const ilvl = byId.get(id)?.ilvl;
+
+  const canHide = useContext(IgnoreAffordanceContext);
+  const isIgnored = useSettingsStore((s) => s.ignoredItemIds.includes(id));
+  const ignoreItem = useSettingsStore((s) => s.ignoreItem);
 
   return (
     <>
@@ -71,6 +78,17 @@ export function ItemNameLinks({ id, name, suffix, sub, crafter }: Props) {
         >
           UV
         </a>
+        {canHide && !isIgnored && (
+          <button
+            type="button"
+            onClick={() => ignoreItem(id)}
+            title="Hide this item from scans"
+            aria-label={`Hide ${name} from scans`}
+            className="font-mono text-[9px] text-text-low hover:text-crimson transition-colors shrink-0"
+          >
+            ✕
+          </button>
+        )}
       </RecipeHover>
       {(sub || crafter) && (
         <div className="font-mono text-[10px] text-text-low mt-0.5 flex items-center gap-2 flex-wrap">
