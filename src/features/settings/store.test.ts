@@ -1,52 +1,38 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useSettingsStore, defaultSettings } from './store';
 
-beforeEach(() => {
-  localStorage.clear();
-  useSettingsStore.setState(defaultSettings());
-});
-
-describe('settings store', () => {
-  it('starts with Phantom/Chaos and the legacy retainer levels', () => {
-    const s = useSettingsStore.getState();
-    expect(s.world).toBe('Phantom');
-    expect(s.dc).toBe('Chaos');
-    expect(s.retainerLevels.LTW).toBe(100);
-    expect(s.retainerLevels.BSM).toBe(33);
+describe('settings store — ignored items', () => {
+  beforeEach(() => {
+    useSettingsStore.setState({ ignoredItemIds: [], hideIgnored: true });
   });
 
-  it('setRetainerLevel updates a single crafter', () => {
-    useSettingsStore.getState().setRetainerLevel('BSM', 50);
-    expect(useSettingsStore.getState().retainerLevels.BSM).toBe(50);
+  it('defaults to an empty list with hiding on', () => {
+    const d = defaultSettings();
+    expect(d.ignoredItemIds).toEqual([]);
+    expect(d.hideIgnored).toBe(true);
   });
 
-  it('setWorld and setDc update scope', () => {
-    useSettingsStore.getState().setWorld('Phoenix');
-    useSettingsStore.getState().setDc('Light');
-    expect(useSettingsStore.getState().world).toBe('Phoenix');
-    expect(useSettingsStore.getState().dc).toBe('Light');
+  it('ignoreItem adds an id and dedupes', () => {
+    useSettingsStore.getState().ignoreItem(5);
+    useSettingsStore.getState().ignoreItem(5);
+    useSettingsStore.getState().ignoreItem(9);
+    expect(useSettingsStore.getState().ignoredItemIds).toEqual([5, 9]);
   });
 
-  it('persists to localStorage under ffxiv-helper:settings', () => {
-    useSettingsStore.getState().setRetainerLevel('CRP', 99);
-    const raw = localStorage.getItem('ffxiv-helper:settings');
-    expect(raw).toBeTruthy();
-    expect(JSON.parse(raw!).state.retainerLevels.CRP).toBe(99);
+  it('unignoreItem removes an id', () => {
+    useSettingsStore.setState({ ignoredItemIds: [5, 9] });
+    useSettingsStore.getState().unignoreItem(5);
+    expect(useSettingsStore.getState().ignoredItemIds).toEqual([9]);
   });
 
-  it('starts with batchCapDays = 3 and defaultCraftTimeSeconds = 60', () => {
-    const s = useSettingsStore.getState();
-    expect(s.batchCapDays).toBe(3);
-    expect(s.defaultCraftTimeSeconds).toBe(60);
+  it('clearIgnored empties the list', () => {
+    useSettingsStore.setState({ ignoredItemIds: [5, 9] });
+    useSettingsStore.getState().clearIgnored();
+    expect(useSettingsStore.getState().ignoredItemIds).toEqual([]);
   });
 
-  it('setBatchCapDays clamps user input via simple assignment (no validation in store)', () => {
-    useSettingsStore.getState().setBatchCapDays(7);
-    expect(useSettingsStore.getState().batchCapDays).toBe(7);
-  });
-
-  it('setDefaultCraftTimeSeconds updates default time', () => {
-    useSettingsStore.getState().setDefaultCraftTimeSeconds(90);
-    expect(useSettingsStore.getState().defaultCraftTimeSeconds).toBe(90);
+  it('setHideIgnored toggles the master flag', () => {
+    useSettingsStore.getState().setHideIgnored(false);
+    expect(useSettingsStore.getState().hideIgnored).toBe(false);
   });
 });

@@ -21,6 +21,8 @@ export interface SettingsState {
   concentrationBannerSuppressed: boolean;
   lastSeenPatchDate: string | null;
   patchBannerDismissedDate: string | null;
+  ignoredItemIds: number[];
+  hideIgnored: boolean;
   setWorld: (w: string) => void;
   setDc: (d: string) => void;
   setRetainerLevel: (c: keyof CrafterLevels, lvl: number) => void;
@@ -36,9 +38,13 @@ export interface SettingsState {
   setConcentrationBannerSuppressed: (v: boolean) => void;
   setLastSeenPatchDate: (iso: string | null) => void;
   setPatchBannerDismissedDate: (iso: string | null) => void;
+  ignoreItem: (id: number) => void;
+  unignoreItem: (id: number) => void;
+  clearIgnored: () => void;
+  setHideIgnored: (v: boolean) => void;
 }
 
-export function defaultSettings(): Pick<SettingsState, '_v' | 'world' | 'dc' | 'retainerLevels' | 'overheadMinutes' | 'batchCapDays' | 'defaultCraftTimeSeconds' | 'hideCrystals' | 'showSparklines' | 'applyMarketTax' | 'submarineRank' | 'submarineSlots' | 'concentrationBannerLastDismissed' | 'concentrationBannerSuppressed' | 'lastSeenPatchDate' | 'patchBannerDismissedDate'> {
+export function defaultSettings(): Pick<SettingsState, '_v' | 'world' | 'dc' | 'retainerLevels' | 'overheadMinutes' | 'batchCapDays' | 'defaultCraftTimeSeconds' | 'hideCrystals' | 'showSparklines' | 'applyMarketTax' | 'submarineRank' | 'submarineSlots' | 'concentrationBannerLastDismissed' | 'concentrationBannerSuppressed' | 'lastSeenPatchDate' | 'patchBannerDismissedDate' | 'ignoredItemIds' | 'hideIgnored'> {
   return {
     _v: 1,
     world: 'Phantom',
@@ -58,6 +64,8 @@ export function defaultSettings(): Pick<SettingsState, '_v' | 'world' | 'dc' | '
     concentrationBannerSuppressed: false,
     lastSeenPatchDate: null,
     patchBannerDismissedDate: null,
+    ignoredItemIds: [],
+    hideIgnored: true,
   };
 }
 
@@ -80,6 +88,12 @@ export const useSettingsStore = create<SettingsState>()(
       setConcentrationBannerSuppressed: (concentrationBannerSuppressed) => set({ concentrationBannerSuppressed }),
       setLastSeenPatchDate: (lastSeenPatchDate) => set({ lastSeenPatchDate }),
       setPatchBannerDismissedDate: (patchBannerDismissedDate) => set({ patchBannerDismissedDate }),
+      ignoreItem: (id) => set((s) => (s.ignoredItemIds.includes(id)
+        ? s
+        : { ignoredItemIds: [...s.ignoredItemIds, id] })),
+      unignoreItem: (id) => set((s) => ({ ignoredItemIds: s.ignoredItemIds.filter((x) => x !== id) })),
+      clearIgnored: () => set({ ignoredItemIds: [] }),
+      setHideIgnored: (hideIgnored) => set({ hideIgnored }),
     }),
     { name: 'ffxiv-helper:settings' },
   ),
