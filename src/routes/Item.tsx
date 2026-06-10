@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useSettingsStore } from '../features/settings/store';
@@ -221,6 +221,16 @@ export default function Item() {
     return map.size ? map : undefined;
   }, [garland.data, locations.data]);
 
+  // Put the item name in the tab title so multiple open item tabs are
+  // distinguishable. The central <DocumentTitle> sets "Item — qiqirn.tools" on
+  // navigation and only re-runs when the pathname changes, so once a real name
+  // resolves we override it here and it sticks. Stays on the generic title while
+  // loading rather than flashing a raw "Item #123".
+  const resolvedName = item?.name ?? garland.data?.name;
+  useEffect(() => {
+    if (resolvedName) document.title = `${resolvedName} — qiqirn.tools`;
+  }, [resolvedName]);
+
   if (!valid) {
     return (
       <div className="max-w-3xl mx-auto px-4">
@@ -230,7 +240,7 @@ export default function Item() {
   }
 
   // Fall back to Garland's name/ilvl if the snapshot doesn't have this item.
-  const displayName = item?.name ?? garland.data?.name ?? `Item #${itemId}`;
+  const displayName = resolvedName ?? `Item #${itemId}`;
   const displayIlvl = item?.ilvl ?? garland.data?.ilvl ?? 0;
   const displaySc = item?.sc ?? 0;
   const canHq = item?.canHq ?? false;

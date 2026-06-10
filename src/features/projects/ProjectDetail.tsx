@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Spinner } from '../../components/Spinner';
 import { SectionHeader } from '../../components/SectionHeader';
@@ -110,6 +110,15 @@ export function ProjectDetail({ projectId }: { projectId: number }) {
   const [activePhase, setActivePhase] = useState<{ partKey: string; phaseIndex: number } | null>(null);
   const recipes = useRecipeSnapshot(true);
   const [viewMode, setViewMode] = useState<'tree' | 'source'>('tree');
+
+  // Put the project name in the tab title so multiple open project tabs are
+  // distinguishable. The central <DocumentTitle> sets "Project — qiqirn.tools" on
+  // navigation and only re-runs when the pathname changes, so once the name loads
+  // we override it here and it sticks.
+  const projectName = q.data?.project.name;
+  useEffect(() => {
+    if (projectName) document.title = `${projectName} — qiqirn.tools`;
+  }, [projectName]);
 
   if (q.isLoading) {
     return (

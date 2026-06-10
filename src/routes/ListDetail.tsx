@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useCraftList } from '../features/craftLists/useCraftLists';
 import { useResolvedList } from '../features/craftLists/useResolvedList';
@@ -158,6 +158,15 @@ export default function ListDetail() {
   );
   const { ready, resolved } = useResolvedList(inputs);
   const [view, setView] = useState<View>('sections');
+
+  // Put the list name in the tab title so multiple open craft-list tabs are
+  // distinguishable. The central <DocumentTitle> sets "Craft List — qiqirn.tools"
+  // on navigation and only re-runs when the pathname changes, so once the name
+  // loads we override it here and it sticks.
+  const listName = list.data?.name;
+  useEffect(() => {
+    if (listName) document.title = `${listName} — qiqirn.tools`;
+  }, [listName]);
 
   if (list.isLoading) return <div className="p-8 text-center text-text-low font-mono text-xs">Loading…</div>;
   if (list.isError || !list.data) {
