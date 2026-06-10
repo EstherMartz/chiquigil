@@ -113,13 +113,44 @@ export default function Item() {
     const { crafts, leaves } = explode(itemId, 1, recipes.data, { craftIntermediates: true });
     return [...crafts.keys(), ...leaves.keys()];
   }, [valid, recipe, recipes.data, itemId]);
-  const priceIds = useMemo(() => {
+
+  // Two market fetches so the verdict + live prices aren't held hostage by the
+  // craft tree. The HEADLINE set (the item + its direct ingredients) is small and
+  // mostly already cached, so it resolves fast and is what gates the page's market
+  // skeleton. The TREE set (deep descendants + "used in" results) is priced in the
+  // BACKGROUND — many of those are non-traded intermediates absent from the cron
+  // blob, so live-filling them takes several Universalis round-trips; letting that
+  // block the whole section was the bulk of the "individual view takes a while"
+  // delay. Tree ids exclude the headline ones so nothing is fetched twice.
+  const headlineIds = useMemo(() => {
     if (!valid) return [];
-    return [...new Set<number>([itemId, ...ingredientIds, ...usedInIds, ...craftTreeIds])];
+    return [...new Set<number>([itemId, ...ingredientIds])];
+  }, [itemId, ingredientIds, valid]);
+  const treeIds = useMemo(() => {
+    if (!valid) return [];
+    const head = new Set<number>([itemId, ...ingredientIds]);
+    return [...new Set<number>([...usedInIds, ...craftTreeIds])].filter((id) => !head.has(id));
   }, [itemId, ingredientIds, usedInIds, craftTreeIds, valid]);
 
-  // Live: a single tracked/viewed item may sell too slowly to be in the cron's bulk blob.
-  const market = useMarketData(priceIds, world, dc, 'Europe', { live: true });
+  const market = useMarketData(headlineIds, world, dc, 'Europe', { live: true });
+  const treeMarket = useMarketData(treeIds, world, dc, 'Europe', { live: true, enabled: treeIds.length > 0 });
+
+  // Deep blocks (craft-tree make-vs-buy, self-source floor, ingredient breakdown,
+  // "used in") read these merged maps: the background tree overlaid with the
+  // headline rows, so the item + its direct ingredients are always present and the
+  // descendants fill in as the background fetch lands.
+  const phantomAll = useMemo(
+    () => ({ ...treeMarket.data?.phantom, ...market.data?.phantom }),
+    [treeMarket.data?.phantom, market.data?.phantom],
+  );
+  const regionAll = useMemo(
+    () => ({ ...treeMarket.data?.region, ...market.data?.region }),
+    [treeMarket.data?.region, market.data?.region],
+  );
+  const dcAll = useMemo(
+    () => ({ ...treeMarket.data?.dc, ...market.data?.dc }),
+    [treeMarket.data?.dc, market.data?.dc],
+  );
 
   // Real-time DC stream for this item: subscribe to the home DC's worlds over the Universalis
   // WebSocket and patch the DC-scope price as listings/sales arrive. `baseDcItem` is a stable
@@ -131,8 +162,8 @@ export default function Item() {
   // DC map with the live overlay folded in for this item, so blocks that price the item
   // from the whole-DC map (e.g. CraftTreeBlock's make-vs-buy) also reflect live prices.
   const dcMap = useMemo(
-    () => (live.liveItem ? { ...(market.data?.dc ?? {}), [itemId]: live.liveItem } : market.data?.dc),
-    [market.data?.dc, live.liveItem, itemId],
+    () => (live.liveItem ? { ...dcAll, [itemId]: live.liveItem } : dcAll),
+    [dcAll, live.liveItem, itemId],
   );
 
   // Single 90-day history fetch, shared by the verdict card AND the market
@@ -304,7 +335,7 @@ export default function Item() {
               homeWorld={world}
               dc={dc}
               region="Europe"
-              onRefreshed={() => market.refetch()}
+              onRefreshed={() => { market.refetch(); treeMarket.refetch(); }}
             />
           </div>
 
@@ -379,12 +410,12 @@ export default function Item() {
           <CraftSellMathCard
             recipe={recipe}
             materialsHome={recipeMaterialCost}
-            regionMap={market.data?.region}
+            regionMap={regionAll}
             homeWorld={world}
             phantom={phantomMarket}
             canHq={canHq}
             recipeMap={recipes.data}
-            homeMarket={market.data?.phantom}
+            homeMarket={phantomAll}
             gatherableIds={gatherableIds}
             currencyOf={currencyOf}
             onShowBreakdown={() => setShowBreakdown(true)}
@@ -396,7 +427,7 @@ export default function Item() {
         <MaterialShoppingBlock
           recipe={recipe}
           homeWorld={world}
-          regionMap={market.data?.region}
+          regionMap={regionAll}
           itemNames={snapshot.data?.items}
         />
       )}
@@ -406,12 +437,12 @@ export default function Item() {
           itemId={itemId}
           recipeMap={recipes.data}
           dc={dcMap}
-          phantom={market.data?.phantom}
+          phantom={phantomAll}
           nameOf={nameOf}
         />
       )}
 
-      <UsedInBlock entries={usedIn} itemNames={snapshot.data?.items} phantom={market.data?.phantom} />
+      <UsedInBlock entries={usedIn} itemNames={snapshot.data?.items} phantom={phantomAll} />
 
       <DeliverablesBlock
         gcSupply={gcSupplyDeliverables}
@@ -427,13 +458,13 @@ export default function Item() {
 
       {canCompare && <ComparePathsSection ref={compareRef} itemId={itemId} />}
 
-      {showBreakdown && recipe && recipes.data && market.data && (
+      {showBreakdown && recipe && recipes.data && (
         <IngredientBreakdownModal
           itemId={itemId}
           itemName={displayName}
           recipe={recipe}
           recipeMap={recipes.data}
-          market={market.data.phantom}
+          market={phantomAll}
           gatherableIds={gatherableIds}
           currencyOf={currencyOf}
           nameOf={nameOf}
