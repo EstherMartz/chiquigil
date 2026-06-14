@@ -13,7 +13,16 @@ async function fetchBatch(scope: string, ids: number[]): Promise<MarketData> {
     res = await fetch(url);
   }
   if (!res.ok) return {};
-  const raw = await res.json();
+  // Universalis sometimes returns 200 with a non-JSON body (a rate-limit / Cloudflare
+  // page). res.json() then throws; without this guard the rejection propagates through
+  // the worker pool and 500s the whole refresh. Treat a bad body as an empty batch.
+  let raw: unknown;
+  try {
+    raw = await res.json();
+  } catch (e) {
+    console.warn(`[marketFetch] ${scope}: non-JSON body for ${ids.length}-id batch — ${e instanceof Error ? e.message : String(e)}`);
+    return {};
+  }
   return parseMarketResponse(raw as Parameters<typeof parseMarketResponse>[0]);
 }
 
