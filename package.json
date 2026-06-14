@@ -10,7 +10,8 @@
     "lint": "eslint . --max-warnings 0",
     "preview": "vite preview",
     "test": "vitest",
-    "snapshots": "tsx scripts/bake-snapshots.ts",
+    "snapshots": "tsx scripts/bake-snapshots.ts && tsx scripts/bake-marketable.ts",
+    "bake:marketable": "tsx scripts/bake-marketable.ts",
     "register-commands": "tsx --env-file=.env scripts/register-commands.ts"
   },
   "dependencies": {
