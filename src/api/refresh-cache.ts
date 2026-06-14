@@ -32,13 +32,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Item set per tier:
     //   hot  → the small hot set (fast, every ~5 min)
-    //   cold → the "traded" set (items with real velocity; hourly, stays well under the
-    //          function timeout). Falls back to the full catalog until `full` has seeded it.
-    //   full → the entire ~50k catalog (heavy; run occasionally to (re)discover the traded set).
+    //   cold → the "traded" set (items with real velocity; hourly)
+    //   full → the entire ~50k catalog (heavy; run occasionally to (re)discover the traded set)
+    // hot/cold read a pre-seeded id blob and deliberately do NOT fall back to the full catalog:
+    // that fallback ran the ~50k fetch on the frequent crons, pinning the function at its
+    // timeout and silently burning the whole Fluid CPU budget. If the blob isn't seeded yet,
+    // bail cheap (a one-off `?tier=full` run writes hot-ids.json + traded-ids.json).
     let ids: number[];
-    if (tier === 'hot') ids = (await readBlobJson<number[]>('hot-ids.json')) ?? (await loadItemIds(baseUrl));
-    else if (tier === 'full') ids = await loadItemIds(baseUrl);
-    else ids = (await readBlobJson<number[]>('traded-ids.json')) ?? (await loadItemIds(baseUrl));
+    if (tier === 'full') {
+      ids = await loadItemIds(baseUrl);
+    } else {
+      const blobName = tier === 'hot' ? 'hot-ids.json' : 'traded-ids.json';
+      const seeded = await readBlobJson<number[]>(blobName);
+      if (!seeded || seeded.length === 0) {
+        console.warn(`[refresh:${tier}] ${blobName} not seeded — run ?tier=full first`);
+        return res.status(503).json({ error: `${blobName} not seeded — run ?tier=full first`, tier });
+      }
+      ids = seeded;
+    }
 
     console.log(`[refresh:${tier}] fetching ${ids.length} items across 3 scopes...`);
     const bundle = await fetchMarketForOutputs(ids, WORLD, DC, REGION);

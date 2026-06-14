@@ -243,9 +243,17 @@ async function handler(req, res) {
     const host = req.headers["x-forwarded-host"] ?? req.headers.host ?? "localhost";
     const baseUrl = `${proto}://${host}`;
     let ids;
-    if (tier === "hot") ids = await readBlobJson("hot-ids.json") ?? await loadItemIds(baseUrl);
-    else if (tier === "full") ids = await loadItemIds(baseUrl);
-    else ids = await readBlobJson("traded-ids.json") ?? await loadItemIds(baseUrl);
+    if (tier === "full") {
+      ids = await loadItemIds(baseUrl);
+    } else {
+      const blobName2 = tier === "hot" ? "hot-ids.json" : "traded-ids.json";
+      const seeded = await readBlobJson(blobName2);
+      if (!seeded || seeded.length === 0) {
+        console.warn(`[refresh:${tier}] ${blobName2} not seeded \u2014 run ?tier=full first`);
+        return res.status(503).json({ error: `${blobName2} not seeded \u2014 run ?tier=full first`, tier });
+      }
+      ids = seeded;
+    }
     console.log(`[refresh:${tier}] fetching ${ids.length} items across 3 scopes...`);
     const bundle = await fetchMarketForOutputs(ids, WORLD, DC, REGION);
     const blobName = tier === "hot" ? "market-cache-hot.json" : "market-cache-cold.json";
