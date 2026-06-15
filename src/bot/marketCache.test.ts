@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 const awsFetch = vi.fn();
 vi.mock('aws4fetch', () => {
@@ -10,14 +10,27 @@ vi.mock('aws4fetch', () => {
 
 import { writeBlobJson, writeMarketCache, readBlobJson } from './marketCache';
 
+// These env vars aren't normally set in the test env; save/restore them so this
+// file never leaks R2_* into other test files (which could cause order-dependent flakes).
+const R2_ENV_KEYS = ['R2_ACCOUNT_ID', 'R2_BUCKET', 'R2_ACCESS_KEY_ID', 'R2_SECRET_ACCESS_KEY', 'R2_PUBLIC_URL'] as const;
+const savedEnv: Record<string, string | undefined> = {};
+
 beforeEach(() => {
   awsFetch.mockReset();
   vi.unstubAllGlobals();
+  for (const k of R2_ENV_KEYS) savedEnv[k] = process.env[k];
   process.env.R2_ACCOUNT_ID = 'acct';
   process.env.R2_BUCKET = 'bucket';
   process.env.R2_ACCESS_KEY_ID = 'ak';
   process.env.R2_SECRET_ACCESS_KEY = 'sk';
   process.env.R2_PUBLIC_URL = 'https://cache.example.com';
+});
+
+afterEach(() => {
+  for (const k of R2_ENV_KEYS) {
+    if (savedEnv[k] === undefined) delete process.env[k];
+    else process.env[k] = savedEnv[k];
+  }
 });
 
 describe('writeBlobJson', () => {
