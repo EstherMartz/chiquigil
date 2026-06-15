@@ -1,48 +1,72 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const put = vi.fn();
-const head = vi.fn();
-vi.mock('@vercel/blob', () => ({ put: (...a: unknown[]) => put(...a), head: (...a: unknown[]) => head(...a) }));
+const awsFetch = vi.fn();
+vi.mock('aws4fetch', () => {
+  const mockClass = class {
+    fetch = awsFetch;
+  };
+  return { AwsClient: mockClass };
+});
 
-import { writeMarketCache, writeBlobJson, readBlobJson } from './marketCache';
+import { writeBlobJson, writeMarketCache, readBlobJson } from './marketCache';
 
-beforeEach(() => { put.mockReset(); head.mockReset(); vi.unstubAllGlobals(); });
+beforeEach(() => {
+  awsFetch.mockReset();
+  vi.unstubAllGlobals();
+  process.env.R2_ACCOUNT_ID = 'acct';
+  process.env.R2_BUCKET = 'bucket';
+  process.env.R2_ACCESS_KEY_ID = 'ak';
+  process.env.R2_SECRET_ACCESS_KEY = 'sk';
+  process.env.R2_PUBLIC_URL = 'https://cache.example.com';
+});
 
-describe('blob helpers', () => {
-  it('writeBlobJson writes a named public blob and returns the url', async () => {
-    put.mockResolvedValue({ url: 'https://blob/hot-ids.json' });
-    const url = await writeBlobJson('hot-ids.json', [1, 2, 3]);
-    expect(put).toHaveBeenCalledWith('hot-ids.json', JSON.stringify([1, 2, 3]), expect.objectContaining({ access: 'public' }));
-    expect(url).toBe('https://blob/hot-ids.json');
+describe('writeBlobJson', () => {
+  it('PUTs to the R2 object url with content-type + cache-control, returns the public url', async () => {
+    awsFetch.mockResolvedValue({ ok: true });
+    const url = await writeBlobJson('hot-ids.json', [1, 2, 3], 300);
+    expect(awsFetch).toHaveBeenCalledWith(
+      'https://acct.r2.cloudflarestorage.com/bucket/hot-ids.json',
+      expect.objectContaining({
+        method: 'PUT',
+        body: JSON.stringify([1, 2, 3]),
+        headers: expect.objectContaining({ 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' }),
+      }),
+    );
+    expect(url).toBe('https://cache.example.com/hot-ids.json');
   });
 
-  it('writeBlobJson passes cacheControlMaxAge to put', async () => {
-    put.mockResolvedValue({ url: 'https://blob/test.json' });
-    await writeBlobJson('test.json', [1], 300);
-    expect(put).toHaveBeenCalledWith('test.json', expect.any(String), expect.objectContaining({ cacheControlMaxAge: 300 }));
+  it('throws when R2 credentials are missing', async () => {
+    delete process.env.R2_ACCESS_KEY_ID;
+    await expect(writeBlobJson('x.json', {})).rejects.toThrow(/R2 credentials missing/);
   });
 
-  it('writeMarketCache defaults to market-cache.json and returns the url', async () => {
-    put.mockResolvedValue({ url: 'https://blob/market-cache.json' });
-    const url = await writeMarketCache({ phantom: {}, dc: {}, region: {}, ts: 1 });
-    expect(put).toHaveBeenCalledWith('market-cache.json', expect.any(String), expect.objectContaining({ access: 'public' }));
-    expect(url).toBe('https://blob/market-cache.json');
+  it('throws on a non-OK R2 response', async () => {
+    awsFetch.mockResolvedValue({ ok: false, status: 403, text: async () => 'denied' });
+    await expect(writeBlobJson('x.json', {})).rejects.toThrow(/R2 put x\.json failed: 403/);
   });
+});
 
-  it('writeMarketCache honours an explicit blob name', async () => {
-    put.mockResolvedValue({ url: 'https://blob/market-cache-hot.json' });
-    await writeMarketCache({ phantom: {}, dc: {}, region: {}, ts: 1 }, 'market-cache-hot.json');
-    expect(put).toHaveBeenCalledWith('market-cache-hot.json', expect.any(String), expect.anything());
+describe('writeMarketCache', () => {
+  it('writes to the given blob name via R2 and returns its public url', async () => {
+    awsFetch.mockResolvedValue({ ok: true });
+    const url = await writeMarketCache({ phantom: {}, dc: {}, region: {}, ts: 1 }, 'market-cache-hot.json', 300);
+    expect(awsFetch).toHaveBeenCalledWith(
+      'https://acct.r2.cloudflarestorage.com/bucket/market-cache-hot.json',
+      expect.objectContaining({ method: 'PUT', headers: expect.objectContaining({ 'Cache-Control': 'public, max-age=300' }) }),
+    );
+    expect(url).toBe('https://cache.example.com/market-cache-hot.json');
   });
+});
 
-  it('readBlobJson resolves the url via head and parses it', async () => {
-    head.mockResolvedValue({ url: 'https://blob/hot-ids.json' });
+describe('readBlobJson', () => {
+  it('fetches the public url (no-store) and parses JSON', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => [1, 2, 3] }));
     expect(await readBlobJson<number[]>('hot-ids.json')).toEqual([1, 2, 3]);
+    expect(fetch).toHaveBeenCalledWith('https://cache.example.com/hot-ids.json', { cache: 'no-store' });
   });
 
-  it('readBlobJson returns null when the blob is missing', async () => {
-    head.mockRejectedValue(new Error('not found'));
+  it('returns null on a non-OK response', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }));
     expect(await readBlobJson('missing.json')).toBeNull();
   });
 });
