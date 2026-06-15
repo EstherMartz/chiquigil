@@ -138,11 +138,12 @@ async function fetchMarketForOutputs(ids, world, dc, region) {
 
 // src/bot/marketCache.ts
 import { put, head } from "@vercel/blob";
-async function writeBlobJson(name, data) {
+async function writeBlobJson(name, data, cacheControlMaxAge = 2592e3) {
   const blob = await put(name, JSON.stringify(data), {
     access: "public",
     addRandomSuffix: false,
-    allowOverwrite: true
+    allowOverwrite: true,
+    cacheControlMaxAge
   });
   return blob.url;
 }
@@ -156,8 +157,8 @@ async function readBlobJson(name) {
     return null;
   }
 }
-async function writeMarketCache(cache, name = "market-cache.json") {
-  return writeBlobJson(name, cache);
+async function writeMarketCache(cache, name = "market-cache.json", cacheControlMaxAge) {
+  return writeBlobJson(name, cache, cacheControlMaxAge);
 }
 
 // src/bot/refreshMarket.ts
@@ -168,7 +169,9 @@ async function refreshHot(cfg) {
   const ts = Date.now();
   const blobUrl = await writeMarketCache(
     { phantom: bundle.phantom, dc: bundle.dc, region: bundle.region, ts },
-    "market-cache-hot.json"
+    "market-cache-hot.json",
+    300
+    // 5 min: matches hot-cache refresh cadence
   );
   return { seeded: true, items: ids.length, blobUrl };
 }

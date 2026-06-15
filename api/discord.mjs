@@ -3696,7 +3696,13 @@ async function fetchBatch(scope, ids) {
     res = await fetch(url);
   }
   if (!res.ok) return {};
-  const raw = await res.json();
+  let raw;
+  try {
+    raw = await res.json();
+  } catch (e) {
+    console.warn(`[marketFetch] ${scope}: non-JSON body for ${ids.length}-id batch \u2014 ${e instanceof Error ? e.message : String(e)}`);
+    return {};
+  }
   return parseMarketResponse(raw);
 }
 async function fetchScope(scope, batches) {
