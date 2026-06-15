@@ -16,6 +16,12 @@ describe('blob helpers', () => {
     expect(url).toBe('https://blob/hot-ids.json');
   });
 
+  it('writeBlobJson passes cacheControlMaxAge to put', async () => {
+    put.mockResolvedValue({ url: 'https://blob/test.json' });
+    await writeBlobJson('test.json', [1], 300);
+    expect(put).toHaveBeenCalledWith('test.json', expect.any(String), expect.objectContaining({ cacheControlMaxAge: 300 }));
+  });
+
   it('writeMarketCache defaults to market-cache.json and returns the url', async () => {
     put.mockResolvedValue({ url: 'https://blob/market-cache.json' });
     const url = await writeMarketCache({ phantom: {}, dc: {}, region: {}, ts: 1 });

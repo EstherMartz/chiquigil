@@ -11,7 +11,10 @@ const EMPTY: OpportunitiesFile = { ts: 0, opportunities: [] };
 export async function loadOpportunities(): Promise<OpportunitiesFile> {
   try {
     const url = (import.meta as any).env?.VITE_OPPORTUNITIES_URL || '/data/opportunities.json';
-    const res = await fetch(url, { cache: 'no-store' });
+    // 'default' lets the browser/CDN cache the blob per its Cache-Control header (the
+    // refresh writes set a 1h max-age). Stale data is not a risk since items are filtered
+    // by age and the feed refreshes every hour anyway.
+    const res = await fetch(url, { cache: 'default' });
     if (!res.ok) return EMPTY;
     const data = (await res.json()) as Partial<OpportunitiesFile>;
     // Guard against a malformed / partially-written blob (writes aren't atomic).

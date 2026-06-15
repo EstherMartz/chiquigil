@@ -33,6 +33,7 @@ export async function refreshHot(cfg: ScopeConfig): Promise<HotResult> {
   const blobUrl = await writeMarketCache(
     { phantom: bundle.phantom, dc: bundle.dc, region: bundle.region, ts },
     'market-cache-hot.json',
+    300  // 5 min: matches hot-cache refresh cadence
   );
   return { seeded: true, items: ids.length, blobUrl };
 }
@@ -50,15 +51,20 @@ export async function refreshFull(
   const blobUrl = await writeMarketCache(
     { phantom: bundle.phantom, dc: bundle.dc, region: bundle.region, ts },
     'market-cache-cold.json',
+    3600  // 1 hour: matches cold-cache hourly refresh cadence
   );
 
   const current: Opportunity[] = scanDeals(bundle.dc, ts, cfg.dealPct);
   const existing = (await readBlobJson<OpportunitiesFile>('opportunities.json'))?.opportunities ?? [];
   const merged = mergeDeals(existing, current);
-  await writeBlobJson('opportunities.json', { ts, opportunities: merged } satisfies OpportunitiesFile);
+  await writeBlobJson(
+    'opportunities.json',
+    { ts, opportunities: merged } satisfies OpportunitiesFile,
+    3600  // 1 hour: same as cold cache
+  );
 
   const hotIds = selectHotIds(bundle, cfg.velocityThreshold);
-  await writeBlobJson('hot-ids.json', hotIds);
+  await writeBlobJson('hot-ids.json', hotIds, 3600);  // 1 hour: same as cold cache
 
   return { items: cfg.ids.length, hotCount: hotIds.length, oppCount: merged.length, blobUrl };
 }

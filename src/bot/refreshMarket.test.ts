@@ -40,7 +40,7 @@ describe('refreshHot', () => {
     writeMarketCache.mockResolvedValue('https://blob/market-cache-hot.json');
     const r = await refreshHot({ world: 'Phantom', dc: 'Chaos', region: 'Europe' });
     expect(fetchMarketForOutputs).toHaveBeenCalledWith([1, 2], 'Phantom', 'Chaos', 'Europe');
-    expect(writeMarketCache).toHaveBeenCalledWith(expect.objectContaining({ ts: expect.any(Number) }), 'market-cache-hot.json');
+    expect(writeMarketCache).toHaveBeenCalledWith(expect.objectContaining({ ts: expect.any(Number) }), 'market-cache-hot.json', 300);
     expect(r).toMatchObject({ seeded: true, items: 2 });
   });
 });
@@ -54,9 +54,9 @@ describe('refreshFull', () => {
     readBlobJson.mockResolvedValue(null); // no existing opportunities feed
     writeBlobJson.mockResolvedValue('https://blob/x.json');
     const r = await refreshFull({ ids: [1], world: 'Phantom', dc: 'Chaos', region: 'Europe', velocityThreshold: 10, dealPct: 25 });
-    expect(writeMarketCache).toHaveBeenCalledWith(expect.objectContaining({ ts: expect.any(Number) }), 'market-cache-cold.json');
-    expect(writeBlobJson).toHaveBeenCalledWith('hot-ids.json', [1]);
-    expect(writeBlobJson).toHaveBeenCalledWith('opportunities.json', expect.objectContaining({ opportunities: expect.any(Array) }));
+    expect(writeMarketCache).toHaveBeenCalledWith(expect.objectContaining({ ts: expect.any(Number) }), 'market-cache-cold.json', 3600);
+    expect(writeBlobJson).toHaveBeenCalledWith('hot-ids.json', [1], 3600);
+    expect(writeBlobJson).toHaveBeenCalledWith('opportunities.json', expect.objectContaining({ opportunities: expect.any(Array) }), 3600);
     expect(r).toMatchObject({ items: 1, hotCount: 1 });
   });
 });

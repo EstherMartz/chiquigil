@@ -222,7 +222,7 @@ export function _resetSharedCacheForTests(): void {
 
 async function fetchCacheBlob(url: string): Promise<SharedCache | null> {
   try {
-    const res = await fetch(url, { cache: 'no-store' });
+    const res = await fetch(url, { cache: 'default' });
     if (!res.ok) return null;
     return (await res.json()) as SharedCache;
   } catch {

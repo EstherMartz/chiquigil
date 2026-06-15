@@ -9,11 +9,16 @@ interface SharedCache {
 }
 
 /** Write any JSON value to a deterministically-named public blob; returns its url. */
-export async function writeBlobJson(name: string, data: unknown): Promise<string> {
+export async function writeBlobJson(
+  name: string,
+  data: unknown,
+  cacheControlMaxAge: number = 2592000
+): Promise<string> {
   const blob = await put(name, JSON.stringify(data), {
     access: 'public',
     addRandomSuffix: false,
     allowOverwrite: true,
+    cacheControlMaxAge,
   });
   return blob.url;
 }
@@ -31,6 +36,10 @@ export async function readBlobJson<T>(name: string): Promise<T | null> {
 }
 
 /** Write a market bundle to `name` (default keeps the legacy single-blob path). */
-export async function writeMarketCache(cache: SharedCache, name = 'market-cache.json'): Promise<string> {
-  return writeBlobJson(name, cache);
+export async function writeMarketCache(
+  cache: SharedCache,
+  name = 'market-cache.json',
+  cacheControlMaxAge?: number
+): Promise<string> {
+  return writeBlobJson(name, cache, cacheControlMaxAge);
 }
