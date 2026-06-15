@@ -137,20 +137,40 @@ async function fetchMarketForOutputs(ids, world, dc, region) {
 }
 
 // src/bot/marketCache.ts
-import { put, head } from "@vercel/blob";
-async function writeBlobJson(name, data, cacheControlMaxAge = 2592e3) {
-  const blob = await put(name, JSON.stringify(data), {
-    access: "public",
-    addRandomSuffix: false,
-    allowOverwrite: true,
-    cacheControlMaxAge
+import { AwsClient } from "aws4fetch";
+var DEFAULT_MAX_AGE = 2592e3;
+function r2() {
+  const accountId = process.env.R2_ACCOUNT_ID;
+  const bucket = process.env.R2_BUCKET;
+  const accessKeyId = process.env.R2_ACCESS_KEY_ID;
+  const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
+  const publicUrl = (process.env.R2_PUBLIC_URL ?? "").replace(/\/+$/, "");
+  return { accountId, bucket, accessKeyId, secretAccessKey, publicUrl };
+}
+async function writeBlobJson(name, data, cacheControlMaxAge = DEFAULT_MAX_AGE) {
+  const { accountId, bucket, accessKeyId, secretAccessKey, publicUrl } = r2();
+  if (!accountId || !bucket || !accessKeyId || !secretAccessKey) {
+    throw new Error("R2 credentials missing (need R2_ACCOUNT_ID, R2_BUCKET, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY)");
+  }
+  const client = new AwsClient({ accessKeyId, secretAccessKey, region: "auto", service: "s3" });
+  const res = await client.fetch(`https://${accountId}.r2.cloudflarestorage.com/${bucket}/${name}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": `public, max-age=${cacheControlMaxAge}`
+    }
   });
-  return blob.url;
+  if (!res.ok) {
+    throw new Error(`R2 put ${name} failed: ${res.status} ${await res.text().catch(() => "")}`);
+  }
+  return `${publicUrl}/${name}`;
 }
 async function readBlobJson(name) {
+  const { publicUrl } = r2();
+  if (!publicUrl) return null;
   try {
-    const meta = await head(name);
-    const res = await fetch(meta.url, { cache: "no-store" });
+    const res = await fetch(`${publicUrl}/${name}`, { cache: "no-store" });
     if (!res.ok) return null;
     return await res.json();
   } catch {
