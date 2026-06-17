@@ -128,11 +128,9 @@ async function fetchMarketForOutputs(ids, world, dc, region) {
   for (let i = 0; i < unique.length; i += BATCH_SIZE) {
     batches.push(unique.slice(i, i + BATCH_SIZE));
   }
-  const [phantom, dcData, regionData] = await Promise.all([
-    fetchScope(world, batches),
-    fetchScope(dc, batches),
-    fetchScope(region, batches)
-  ]);
+  const phantom = await fetchScope(world, batches);
+  const dcData = await fetchScope(dc, batches);
+  const regionData = await fetchScope(region, batches);
   return { phantom, dc: dcData, region: regionData };
 }
 

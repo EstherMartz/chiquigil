@@ -62,11 +62,14 @@ export async function fetchMarketForOutputs(
     batches.push(unique.slice(i, i + BATCH_SIZE));
   }
 
-  const [phantom, dcData, regionData] = await Promise.all([
-    fetchScope(world, batches),
-    fetchScope(dc, batches),
-    fetchScope(region, batches),
-  ]);
+  // Fetch the three scopes SEQUENTIALLY, not with Promise.all. Running them
+  // concurrently fires MAX_CONCURRENT requests per scope at once (~24 in flight),
+  // which Universalis rate-limits — and in practice the first scope (world) wins the
+  // budget while the dc/region requests get starved and come back empty. One scope
+  // at a time keeps it to MAX_CONCURRENT in flight, so every scope gets full data.
+  const phantom = await fetchScope(world, batches);
+  const dcData = await fetchScope(dc, batches);
+  const regionData = await fetchScope(region, batches);
 
   return { phantom, dc: dcData, region: regionData };
 }
