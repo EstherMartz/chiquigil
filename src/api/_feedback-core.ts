@@ -62,7 +62,7 @@ export function buildEmbed(input: FeedbackInput): Record<string, unknown> {
 export async function postFeedback(
   deps: FeedbackDeps,
   input: FeedbackInput,
-): Promise<{ id: string | null }> {
+): Promise<{ id: string }> {
   const getChannel = deps.getChannel ?? realGetChannel;
   const createForumPost = deps.createForumPost ?? realCreateForumPost;
   const sendToChannel = deps.sendToChannel ?? realSendToChannel;
@@ -70,16 +70,29 @@ export async function postFeedback(
   const embed = { ...buildEmbed(input), timestamp: new Date().toISOString() };
   const channel = await getChannel(deps.botToken, deps.channelId);
 
-  if (channel?.type === 15) {
+  if (!channel) {
+    throw new Error('Feedback channel not found');
+  }
+
+  // Discord channel type 15 = forum
+  if (channel.type === 15) {
     const res = await createForumPost(
       deps.botToken,
       deps.channelId,
       buildTitle(input.category, input.message),
       { embeds: [embed] },
     );
-    return { id: (res?.id as string) ?? null };
+    const id = res?.id as string | undefined;
+    if (!id) {
+      throw new Error('Feedback post failed');
+    }
+    return { id };
   }
 
   const res = await sendToChannel(deps.botToken, deps.channelId, { embeds: [embed] });
-  return { id: (res?.id as string) ?? null };
+  const id = res?.id as string | undefined;
+  if (!id) {
+    throw new Error('Feedback post failed');
+  }
+  return { id };
 }

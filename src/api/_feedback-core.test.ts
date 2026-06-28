@@ -66,4 +66,11 @@ describe('postFeedback', () => {
     expect(createForumPost).not.toHaveBeenCalled();
     expect(out.id).toBe('msg1');
   });
+
+  it('throws when the text-channel post fails (null response)', async () => {
+    const getChannel = vi.fn().mockResolvedValue({ id: 'ch', type: 0, name: 'feedback' });
+    const sendToChannel = vi.fn().mockResolvedValue(null);
+    const deps: FeedbackDeps = { botToken: 'tok', channelId: 'ch', getChannel, createForumPost: vi.fn(), sendToChannel };
+    await expect(postFeedback(deps, input)).rejects.toThrow();
+  });
 });
