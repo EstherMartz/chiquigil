@@ -131,3 +131,58 @@ describe('projects API auth gate', () => {
     expect(res.status).toHaveBeenCalledWith(200);
   });
 });
+
+describe('POST /api/feedback', () => {
+  beforeEach(() => {
+    process.env.DISCORD_BOT_TOKEN = 'bot-token';
+    process.env.FEEDBACK_CHANNEL_ID = 'feedback-channel';
+  });
+
+  it('401s without a session cookie', async () => {
+    const req = { method: 'POST', url: '/api/feedback', headers: {}, body: { message: 'hi' } } as any;
+    const res = mockRes();
+    await handler(req, res);
+    expect(res.status).toHaveBeenCalledWith(401);
+  });
+
+  it('400s on an empty message', async () => {
+    const token = await signSession({ sub: '1', username: 'E', avatar: null, guilds: ['G1'] });
+    const req = {
+      method: 'POST', url: '/api/feedback',
+      headers: { cookie: `${SESSION_COOKIE}=${token}` }, body: { message: '   ' },
+    } as any;
+    const res = mockRes();
+    await handler(req, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
+
+  it('405s on a non-POST method', async () => {
+    const token = await signSession({ sub: '1', username: 'E', avatar: null, guilds: ['G1'] });
+    const req = {
+      method: 'PUT', url: '/api/feedback',
+      headers: { cookie: `${SESSION_COOKIE}=${token}` }, body: {},
+    } as any;
+    const res = mockRes();
+    await handler(req, res);
+    expect(res.status).toHaveBeenCalledWith(405);
+  });
+
+  it('posts and returns 200 with a valid message', async () => {
+    const post = vi.fn().mockResolvedValue({ id: 'thread1' });
+    (globalThis as any).__testPostFeedback = post;
+    const token = await signSession({ sub: '42', username: 'Esther', avatar: null, guilds: ['G1'] });
+    const req = {
+      method: 'POST', url: '/api/feedback',
+      headers: { cookie: `${SESSION_COOKIE}=${token}` },
+      body: { category: 'bug', message: 'Crafts page crashes', context: { path: '/crafts', build: '0.0.1' } },
+    } as any;
+    const res = mockRes();
+    await handler(req, res);
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(post).toHaveBeenCalledOnce();
+    const [deps, input] = post.mock.calls[0];
+    expect(deps).toMatchObject({ botToken: 'bot-token', channelId: 'feedback-channel' });
+    expect(input).toMatchObject({ category: 'bug', message: 'Crafts page crashes', reporter: { sub: '42', username: 'Esther' } });
+    delete (globalThis as any).__testPostFeedback;
+  });
+});

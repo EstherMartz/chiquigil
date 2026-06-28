@@ -39,6 +39,7 @@
     { "source": "/api/projects/:id", "destination": "/api/projects" },
     { "source": "/api/lists/:id", "destination": "/api/projects" },
     { "source": "/api/lists", "destination": "/api/projects" },
+    { "source": "/api/feedback", "destination": "/api/projects" },
     { "source": "/api/auth/admin/(.*)", "destination": "/api/auth" },
     { "source": "/api/auth/:action", "destination": "/api/auth" },
     { "source": "/api/plugin/claim", "destination": "/api/plugin-claim" },
