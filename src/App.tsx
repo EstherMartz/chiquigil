@@ -11,6 +11,7 @@ import { AuthProvider } from './features/auth/AuthProvider';
 import { RequireAuth } from './features/auth/RequireAuth';
 import { RequireAdmin } from './features/auth/RequireAdmin';
 import { UserMenu } from './features/auth/UserMenu';
+import { FeedbackButton } from './features/feedback/FeedbackButton';
 import { Spinner } from './components/Spinner';
 import Login from './routes/Login';
 
@@ -141,7 +142,7 @@ export default function App() {
                 )}
                 <main className="flex-1 min-w-0 pt-16 md:pt-8 px-4 pb-[max(5rem,env(safe-area-inset-bottom))]">
                   <div className="mx-auto w-full max-w-[1280px]">
-                    <div className="flex justify-end"><UserMenu /></div>
+                    <div className="flex justify-end items-center gap-3"><FeedbackButton /><UserMenu /></div>
                     <ContentBar />
                     <ErrorBoundary>
                       <Suspense fallback={<RouteFallback />}>

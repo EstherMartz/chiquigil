@@ -131,3 +131,86 @@ describe('projects API auth gate', () => {
     expect(res.status).toHaveBeenCalledWith(200);
   });
 });
+
+describe('POST /api/feedback', () => {
+  beforeEach(() => {
+    process.env.DISCORD_BOT_TOKEN = 'bot-token';
+    process.env.FEEDBACK_CHANNEL_ID = 'feedback-channel';
+  });
+
+  it('401s without a session cookie', async () => {
+    const req = { method: 'POST', url: '/api/feedback', headers: {}, body: { message: 'hi' } } as any;
+    const res = mockRes();
+    await handler(req, res);
+    expect(res.status).toHaveBeenCalledWith(401);
+  });
+
+  it('400s on an empty message', async () => {
+    const token = await signSession({ sub: '1', username: 'E', avatar: null, guilds: ['G1'] });
+    const req = {
+      method: 'POST', url: '/api/feedback',
+      headers: { cookie: `${SESSION_COOKIE}=${token}` }, body: { message: '   ' },
+    } as any;
+    const res = mockRes();
+    await handler(req, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
+
+  it('405s on a non-POST method', async () => {
+    const token = await signSession({ sub: '1', username: 'E', avatar: null, guilds: ['G1'] });
+    const req = {
+      method: 'PUT', url: '/api/feedback',
+      headers: { cookie: `${SESSION_COOKIE}=${token}` }, body: {},
+    } as any;
+    const res = mockRes();
+    await handler(req, res);
+    expect(res.status).toHaveBeenCalledWith(405);
+  });
+
+  it('posts and returns 200 with a valid message', async () => {
+    const post = vi.fn().mockResolvedValue({ id: 'thread1' });
+    (globalThis as any).__testPostFeedback = post;
+    const token = await signSession({ sub: '42', username: 'Esther', avatar: null, guilds: ['G1'] });
+    const req = {
+      method: 'POST', url: '/api/feedback',
+      headers: { cookie: `${SESSION_COOKIE}=${token}` },
+      body: { category: 'bug', message: 'Crafts page crashes', context: { path: '/crafts', build: '0.0.1' } },
+    } as any;
+    const res = mockRes();
+    await handler(req, res);
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(post).toHaveBeenCalledOnce();
+    const [deps, input] = post.mock.calls[0];
+    expect(deps).toMatchObject({ botToken: 'bot-token', channelId: 'feedback-channel' });
+    expect(input).toMatchObject({ category: 'bug', message: 'Crafts page crashes', reporter: { sub: '42', username: 'Esther' } });
+    delete (globalThis as any).__testPostFeedback;
+  });
+
+  it('429s after 5 reports from the same user within the window', async () => {
+    const post = vi.fn().mockResolvedValue({ id: 'thread1' });
+    (globalThis as any).__testPostFeedback = post;
+    const token = await signSession({ sub: 'rl', username: 'E', avatar: null, guilds: ['G1'] });
+    for (let i = 0; i < 5; i++) {
+      const req = { method: 'POST', url: '/api/feedback',
+        headers: { cookie: `${SESSION_COOKIE}=${token}` }, body: { message: `msg ${i}` } } as any;
+      const res = mockRes();
+      await handler(req, res);
+      expect(res.status).toHaveBeenCalledWith(200);
+    }
+    const req6 = { method: 'POST', url: '/api/feedback',
+      headers: { cookie: `${SESSION_COOKIE}=${token}` }, body: { message: 'over limit' } } as any;
+    const res6 = mockRes();
+    await handler(req6, res6);
+    expect(res6.status).toHaveBeenCalledWith(429);
+    delete (globalThis as any).__testPostFeedback;
+  });
+
+  it('400s on a message longer than 1000 chars', async () => {
+    const token = await signSession({ sub: 'len', username: 'E', avatar: null, guilds: ['G1'] });
+    const req = { method: 'POST', url: '/api/feedback',
+      headers: { cookie: `${SESSION_COOKIE}=${token}` }, body: { message: 'x'.repeat(1001) } } as any;
+    const res = mockRes();
+    await handler(req, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+  });
+});

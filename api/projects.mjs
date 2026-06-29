@@ -774,6 +774,106 @@ async function handleDeleteList(store, id, ownerId) {
   return { status: 200, body: { ok: true } };
 }
 
+// src/bot/discordApi.ts
+var BASE = "https://discord.com/api/v10";
+function headers(botToken) {
+  return { "Content-Type": "application/json", Authorization: `Bot ${botToken}` };
+}
+async function sendToChannel(botToken, channelId, payload) {
+  const res = await fetch(`${BASE}/channels/${channelId}/messages`, { method: "POST", headers: headers(botToken), body: JSON.stringify(payload) });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    console.error(`[discord] sendToChannel ${channelId} \u2192 ${res.status}:`, detail.slice(0, 800));
+    return null;
+  }
+  return res.json();
+}
+async function getChannel(botToken, channelId) {
+  const res = await fetch(`${BASE}/channels/${channelId}`, { headers: headers(botToken) });
+  if (!res.ok) {
+    console.error(`[discord] getChannel ${channelId} \u2192 ${res.status}`);
+    return null;
+  }
+  const data = await res.json();
+  return { id: data.id, type: data.type, name: data.name };
+}
+async function createForumPost(botToken, channelId, name, payload) {
+  const threadPayload = {
+    name,
+    auto_archive_duration: 10080,
+    message: payload
+  };
+  const res = await fetch(`${BASE}/channels/${channelId}/threads`, {
+    method: "POST",
+    headers: headers(botToken),
+    body: JSON.stringify(threadPayload)
+  });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    console.error(`[discord] createForumPost ${channelId} \u2192 ${res.status}:`, detail.slice(0, 800));
+    throw new Error(`Discord ${res.status}: ${detail.slice(0, 300)}`);
+  }
+  return res.json();
+}
+
+// src/api/_feedback-core.ts
+var CATEGORY_META = {
+  bug: { emoji: "\u{1F41B}", label: "Bug", color: 14703965 },
+  idea: { emoji: "\u{1F4A1}", label: "Idea", color: 13936984 },
+  feedback: { emoji: "\u{1F4AC}", label: "Feedback", color: 6138336 }
+};
+var TITLE_MAX = 60;
+function buildTitle(category, message) {
+  const meta = CATEGORY_META[category];
+  const oneLine = message.replace(/\s+/g, " ").trim();
+  const snippet = oneLine.length > TITLE_MAX ? `${oneLine.slice(0, TITLE_MAX - 1)}\u2026` : oneLine;
+  return `[${meta.emoji} ${meta.label}] ${snippet}`;
+}
+function buildEmbed(input) {
+  const meta = CATEGORY_META[input.category];
+  return {
+    color: meta.color,
+    title: `${meta.emoji} ${meta.label}`,
+    description: input.message,
+    fields: [
+      { name: "Reporter", value: `${input.reporter.username} (<@${input.reporter.sub}>)`, inline: true },
+      { name: "Page", value: input.context.path || "\u2014", inline: true },
+      { name: "Build", value: input.context.build || "\u2014", inline: true },
+      { name: "Viewport", value: input.context.viewport || "\u2014", inline: true },
+      { name: "Client", value: input.context.userAgent || "\u2014", inline: false }
+    ]
+  };
+}
+async function postFeedback(deps, input) {
+  const getChannel2 = deps.getChannel ?? getChannel;
+  const createForumPost2 = deps.createForumPost ?? createForumPost;
+  const sendToChannel2 = deps.sendToChannel ?? sendToChannel;
+  const embed = { ...buildEmbed(input), timestamp: (/* @__PURE__ */ new Date()).toISOString() };
+  const channel = await getChannel2(deps.botToken, deps.channelId);
+  if (!channel) {
+    throw new Error("Feedback channel not found");
+  }
+  if (channel.type === 15) {
+    const res2 = await createForumPost2(
+      deps.botToken,
+      deps.channelId,
+      buildTitle(input.category, input.message),
+      { embeds: [embed] }
+    );
+    const id2 = res2?.id;
+    if (!id2) {
+      throw new Error("Feedback post failed");
+    }
+    return { id: id2 };
+  }
+  const res = await sendToChannel2(deps.botToken, deps.channelId, { embeds: [embed] });
+  const id = res?.id;
+  if (!id) {
+    throw new Error("Feedback post failed");
+  }
+  return { id };
+}
+
 // src/api/projects.ts
 var storePromise = null;
 function getStore() {
@@ -801,11 +901,63 @@ async function handleLists(req, res, store, ownerId, url) {
 function send(res, r) {
   return res.status(r.status).json(r.body);
 }
+var FEEDBACK_WINDOW_MS = 6e4;
+var FEEDBACK_MAX = 5;
+var feedbackHits = /* @__PURE__ */ new Map();
+function feedbackRateLimited(sub) {
+  const now = Date.now();
+  const recent = (feedbackHits.get(sub) ?? []).filter((t) => now - t < FEEDBACK_WINDOW_MS);
+  if (recent.length >= FEEDBACK_MAX) {
+    feedbackHits.set(sub, recent);
+    return true;
+  }
+  recent.push(now);
+  feedbackHits.set(sub, recent);
+  return false;
+}
+function normalizeCategory(v) {
+  return v === "idea" || v === "feedback" ? v : "bug";
+}
+async function handleFeedback(req, res, session) {
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+  const body = req.body ?? {};
+  const message = typeof body.message === "string" ? body.message.trim() : "";
+  if (!message) return res.status(400).json({ error: "Message is required" });
+  if (message.length > 1e3) return res.status(400).json({ error: "Message too long" });
+  if (feedbackRateLimited(session.sub)) return res.status(429).json({ error: "Too many reports \u2014 slow down" });
+  const channelId = process.env.FEEDBACK_CHANNEL_ID;
+  const botToken = process.env.DISCORD_BOT_TOKEN;
+  if (!channelId || !botToken) return res.status(500).json({ error: "Feedback channel not configured" });
+  const ctx = body.context ?? {};
+  const str = (v, max) => typeof v === "string" ? v.slice(0, max) : "";
+  const input = {
+    category: normalizeCategory(body.category),
+    message,
+    context: {
+      path: str(ctx.path, 200),
+      build: str(ctx.build, 40),
+      userAgent: str(ctx.userAgent, 300),
+      viewport: str(ctx.viewport, 20)
+    },
+    reporter: { sub: session.sub, username: session.username }
+  };
+  const post = globalThis.__testPostFeedback ?? postFeedback;
+  try {
+    await post({ botToken, channelId }, input);
+    return res.status(200).json({ ok: true });
+  } catch (e) {
+    console.error("[feedback] post failed:", e);
+    return res.status(502).json({ error: "Could not send feedback" });
+  }
+}
 async function handler(req, res) {
   const session = await requireSession(req);
   if (!session) return res.status(401).json({ error: "Not authenticated" });
   res.setHeader("Cache-Control", "no-store");
   const url = req.url ?? "";
+  if (url.startsWith("/api/feedback")) {
+    return handleFeedback(req, res, session);
+  }
   const store = await getStore();
   if (url.startsWith("/api/lists")) {
     return handleLists(req, res, store, session.sub, url);
