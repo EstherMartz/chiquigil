@@ -2,6 +2,7 @@ import { loadSnapshots } from '../bot/loadSnapshots';
 import { cheapestWorld } from '../lib/cheapestWorld';
 import { categoriesByGroup } from '../lib/itemSearchCategories';
 import { runCraftFlip } from '../features/queries/runCraftFlip';
+import { loadMarketBundle, type SharedCache } from '../lib/marketBundle';
 
 // ── Resolved category group IDs (shared with the web's category map) ────────
 const HOUSING_CATS = categoriesByGroup('Housing');
@@ -90,25 +91,24 @@ const PRESETS: Preset[] = [
 
 const PRESET_MAP = new Map(PRESETS.map(p => [p.id, p]));
 
-// ── Market cache loading ───────────────────────────────────────────────────
-let marketCache: { phantom: Record<string, any>; dc: Record<string, any> } | null = null;
+// ── Market cache loading (shared cold+hot loader) ──────────────────────────
+let marketCache: SharedCache | null = null;
 let marketCacheTs = 0;
 const CACHE_TTL_MS = 10 * 60 * 1000; // 10 min
 
-async function loadMarketCache() {
+async function loadMarketCache(baseUrl: string): Promise<SharedCache> {
   const now = Date.now();
   if (marketCache && now - marketCacheTs < CACHE_TTL_MS) return marketCache;
-  const url = process.env.VITE_CACHE_BLOB_URL;
-  if (!url) return { phantom: {}, dc: {} };
-  try {
-    const res = await fetch(url);
-    if (!res.ok) return marketCache ?? { phantom: {}, dc: {} };
-    marketCache = await res.json();
+  // Merges the hourly cold blob with the ~5-min hot blob (hot wins). See marketBundle.ts.
+  const bundle = await loadMarketBundle(process.env, {
+    defaultColdUrl: `${baseUrl}/data/market-cache-cold.json`,
+    defaultHotUrl: `${baseUrl}/data/market-cache-hot.json`,
+  });
+  if (bundle) {
+    marketCache = bundle;
     marketCacheTs = now;
-    return marketCache!;
-  } catch {
-    return marketCache ?? { phantom: {}, dc: {} };
   }
+  return marketCache ?? { phantom: {}, dc: {}, region: {}, ts: 0 };
 }
 
 // ── runQuery (ported from src/features/queries/runQuery.ts) ───────────────
@@ -248,7 +248,7 @@ async function handler(req: any, res: any) {
   const baseUrl = process.env.VITE_APP_URL ?? 'https://qiqirn.tools';
   const [snapshots, market] = await Promise.all([
     loadSnapshots(baseUrl),
-    loadMarketCache(),
+    loadMarketCache(baseUrl),
   ]);
 
   const snapshot = [...snapshots.itemsById.values()];

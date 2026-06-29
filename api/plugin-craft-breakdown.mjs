@@ -454,6 +454,42 @@ function buildListBreakdown(items, deps) {
   };
 }
 
+// src/lib/marketBundle.ts
+var COLD_BLOB = "market-cache-cold.json";
+var HOT_BLOB = "market-cache-hot.json";
+function resolveCacheUrls(env, opts = {}) {
+  const r2 = (env.R2_PUBLIC_URL ?? "").replace(/\/+$/, "");
+  const coldUrl = env.VITE_CACHE_COLD_URL || (r2 ? `${r2}/${COLD_BLOB}` : "") || env.VITE_CACHE_BLOB_URL || env.MARKET_CACHE_BLOB_URL || opts.defaultColdUrl || `/data/${COLD_BLOB}`;
+  const hotUrl = env.VITE_CACHE_HOT_URL || (r2 ? `${r2}/${HOT_BLOB}` : "") || opts.defaultHotUrl || `/data/${HOT_BLOB}`;
+  return { coldUrl, hotUrl };
+}
+async function fetchCacheBlob(url, cache = "default") {
+  try {
+    const res = await fetch(url, { cache });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+function overlayScope(cold, hot) {
+  return { ...cold ?? {}, ...hot ?? {} };
+}
+async function loadMarketBundle(env, opts = {}) {
+  const { coldUrl, hotUrl } = resolveCacheUrls(env, opts);
+  const [cold, hot] = await Promise.all([
+    fetchCacheBlob(coldUrl, "no-store"),
+    fetchCacheBlob(hotUrl, "no-store")
+  ]);
+  if (!cold && !hot) return null;
+  return {
+    phantom: overlayScope(cold?.phantom, hot?.phantom),
+    dc: overlayScope(cold?.dc, hot?.dc),
+    region: overlayScope(cold?.region, hot?.region),
+    ts: Math.max(cold?.ts ?? 0, hot?.ts ?? 0)
+  };
+}
+
 // src/api/plugin-craft-breakdown.ts
 async function handler(req, res) {
   if (req.method === "POST") {
@@ -499,18 +535,17 @@ async function handler(req, res) {
     prices: /* @__PURE__ */ new Map()
   };
   try {
-    const cacheUrl = process.env.MARKET_CACHE_BLOB_URL ?? `${baseUrl}/data/market-cache.json`;
-    const cacheRes = await fetch(cacheUrl, { cache: "no-store" });
-    if (cacheRes.ok) {
-      const cache = await cacheRes.json();
-      const marketData = cache.phantom;
-      for (const [itemIdStr2, entry] of Object.entries(marketData)) {
-        const id = parseInt(itemIdStr2);
-        market.prices.set(id, {
-          minNQ: entry.minNQ,
-          velocity: entry.velocity
-        });
-      }
+    const cache = await loadMarketBundle(process.env, {
+      defaultColdUrl: `${baseUrl}/data/market-cache-cold.json`,
+      defaultHotUrl: `${baseUrl}/data/market-cache-hot.json`
+    });
+    const marketData = cache?.phantom ?? {};
+    for (const [itemIdStr2, entry] of Object.entries(marketData)) {
+      const id = parseInt(itemIdStr2);
+      market.prices.set(id, {
+        minNQ: entry.minNQ,
+        velocity: entry.velocity
+      });
     }
   } catch {
   }

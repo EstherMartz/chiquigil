@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 // Mock the heavy create-path dependencies so POST tests don't hit the network.
 vi.mock('../bot/loadSnapshots', () => ({
@@ -48,9 +48,19 @@ beforeEach(async () => {
   process.env.GUILD_ALLOWLIST = 'G1';
   process.env.TURSO_DATABASE_URL = ':memory:';
   delete process.env.DISCORD_BOT_TOKEN;
-  delete process.env.VITE_CACHE_BLOB_URL; // loadMarketCache returns empty
+  // The shared cache loader always resolves a default URL, so stub fetch to keep
+  // the create path hermetic — no real network; an empty market bundle is fine here.
+  delete process.env.VITE_CACHE_BLOB_URL;
+  delete process.env.VITE_CACHE_COLD_URL;
+  delete process.env.VITE_CACHE_HOT_URL;
+  delete process.env.R2_PUBLIC_URL;
+  vi.stubGlobal('fetch', vi.fn(() => Promise.resolve({ ok: false, json: async () => ({}) })));
   (globalThis as any).__testCraftStore = store;
   vi.clearAllMocks();
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
 });
 
 describe('GET /api/plugin/projects', () => {

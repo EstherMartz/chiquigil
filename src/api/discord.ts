@@ -3,6 +3,7 @@ import { verifyKey } from 'discord-interactions';
 import { waitUntil } from '@vercel/functions';
 import { handleChat } from '../bot/chatHandler';
 import { GROQ_MODEL } from '../bot/llm';
+import { loadMarketBundle } from '../lib/marketBundle';
 import {
   handleCraftNew,
   handleCraftAddItem,
@@ -53,15 +54,17 @@ function getCraftStore() {
 }
 
 async function loadMarketCache(): Promise<Record<string, Record<string, unknown>>> {
-  const url = process.env.VITE_CACHE_BLOB_URL;
-  if (!url) return { phantom: {}, dc: {}, region: {} };
-  try {
-    const res = await fetch(url);
-    if (!res.ok) return { phantom: {}, dc: {}, region: {} };
-    return (await res.json()) as Record<string, Record<string, unknown>>;
-  } catch {
-    return { phantom: {}, dc: {}, region: {} };
-  }
+  const baseUrl = process.env.VITE_APP_URL ?? 'https://qiqirn.tools';
+  // Shared cold+hot loader (hourly cold + ~5-min hot, hot wins). See marketBundle.ts.
+  const bundle = await loadMarketBundle(process.env, {
+    defaultColdUrl: `${baseUrl}/data/market-cache-cold.json`,
+    defaultHotUrl: `${baseUrl}/data/market-cache-hot.json`,
+  });
+  return {
+    phantom: bundle?.phantom ?? {},
+    dc: bundle?.dc ?? {},
+    region: bundle?.region ?? {},
+  };
 }
 
 export const config = { api: { bodyParser: false } };

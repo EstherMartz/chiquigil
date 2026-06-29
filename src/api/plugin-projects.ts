@@ -4,6 +4,7 @@ import { loadSnapshots } from '../bot/loadSnapshots';
 import { buildNameIndex } from '../bot/nameIndex';
 import { handleCraftNew, handleCraftNewFromList, type CraftCommandDeps } from '../bot/craftCommands';
 import { isAllowed, listProjectSummaries, getProjectDetail } from './_projects-core';
+import { loadMarketBundle } from '../lib/marketBundle';
 
 let storePromise: Promise<CraftStore> | null = null;
 function getStore(): Promise<CraftStore> {
@@ -15,16 +16,17 @@ function getStore(): Promise<CraftStore> {
   return storePromise;
 }
 
-async function loadMarketCache(): Promise<Record<string, Record<string, unknown>>> {
-  const url = process.env.VITE_CACHE_BLOB_URL;
-  if (!url) return { phantom: {}, dc: {}, region: {} };
-  try {
-    const res = await fetch(url);
-    if (!res.ok) return { phantom: {}, dc: {}, region: {} };
-    return (await res.json()) as Record<string, Record<string, unknown>>;
-  } catch {
-    return { phantom: {}, dc: {}, region: {} };
-  }
+async function loadMarketCache(baseUrl: string): Promise<Record<string, Record<string, unknown>>> {
+  // Shared cold+hot loader (hourly cold + ~5-min hot, hot wins). See marketBundle.ts.
+  const bundle = await loadMarketBundle(process.env, {
+    defaultColdUrl: `${baseUrl}/data/market-cache-cold.json`,
+    defaultHotUrl: `${baseUrl}/data/market-cache-hot.json`,
+  });
+  return {
+    phantom: bundle?.phantom ?? {},
+    dc: bundle?.dc ?? {},
+    region: bundle?.region ?? {},
+  };
 }
 
 async function buildCreateDeps(req: VercelRequest): Promise<CraftCommandDeps> {
@@ -35,7 +37,7 @@ async function buildCreateDeps(req: VercelRequest): Promise<CraftCommandDeps> {
   const [store, snapshots, cache] = await Promise.all([
     getStore(),
     loadSnapshots(baseUrl),
-    loadMarketCache(),
+    loadMarketCache(baseUrl),
   ]);
   const nameIndex = buildNameIndex(snapshots.namesById);
   const marketBundle = { phantom: cache.phantom ?? {}, dc: cache.dc ?? {}, region: cache.region ?? {} };

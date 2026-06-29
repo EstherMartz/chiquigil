@@ -315,6 +315,42 @@ import { useMemo } from "react";
 // src/lib/recipeCache.ts
 import { openDB } from "idb";
 
+// src/lib/marketBundle.ts
+var COLD_BLOB = "market-cache-cold.json";
+var HOT_BLOB = "market-cache-hot.json";
+function resolveCacheUrls(env, opts = {}) {
+  const r2 = (env.R2_PUBLIC_URL ?? "").replace(/\/+$/, "");
+  const coldUrl = env.VITE_CACHE_COLD_URL || (r2 ? `${r2}/${COLD_BLOB}` : "") || env.VITE_CACHE_BLOB_URL || env.MARKET_CACHE_BLOB_URL || opts.defaultColdUrl || `/data/${COLD_BLOB}`;
+  const hotUrl = env.VITE_CACHE_HOT_URL || (r2 ? `${r2}/${HOT_BLOB}` : "") || opts.defaultHotUrl || `/data/${HOT_BLOB}`;
+  return { coldUrl, hotUrl };
+}
+async function fetchCacheBlob(url, cache = "default") {
+  try {
+    const res = await fetch(url, { cache });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+function overlayScope(cold, hot) {
+  return { ...cold ?? {}, ...hot ?? {} };
+}
+async function loadMarketBundle(env, opts = {}) {
+  const { coldUrl, hotUrl } = resolveCacheUrls(env, opts);
+  const [cold, hot] = await Promise.all([
+    fetchCacheBlob(coldUrl, "no-store"),
+    fetchCacheBlob(hotUrl, "no-store")
+  ]);
+  if (!cold && !hot) return null;
+  return {
+    phantom: overlayScope(cold?.phantom, hot?.phantom),
+    dc: overlayScope(cold?.dc, hot?.dc),
+    region: overlayScope(cold?.region, hot?.region),
+    ts: Math.max(cold?.ts ?? 0, hot?.ts ?? 0)
+  };
+}
+
 // src/features/items/ActivityCard.tsx
 import { Fragment, jsx, jsxs } from "react/jsx-runtime";
 function supplyDepth(listings, velocity) {
@@ -681,20 +717,18 @@ var PRESET_MAP = new Map(PRESETS.map((p) => [p.id, p]));
 var marketCache = null;
 var marketCacheTs = 0;
 var CACHE_TTL_MS = 10 * 60 * 1e3;
-async function loadMarketCache() {
+async function loadMarketCache(baseUrl) {
   const now = Date.now();
   if (marketCache && now - marketCacheTs < CACHE_TTL_MS) return marketCache;
-  const url = process.env.VITE_CACHE_BLOB_URL;
-  if (!url) return { phantom: {}, dc: {} };
-  try {
-    const res = await fetch(url);
-    if (!res.ok) return marketCache ?? { phantom: {}, dc: {} };
-    marketCache = await res.json();
+  const bundle = await loadMarketBundle(process.env, {
+    defaultColdUrl: `${baseUrl}/data/market-cache-cold.json`,
+    defaultHotUrl: `${baseUrl}/data/market-cache-hot.json`
+  });
+  if (bundle) {
+    marketCache = bundle;
     marketCacheTs = now;
-    return marketCache;
-  } catch {
-    return marketCache ?? { phantom: {}, dc: {} };
   }
+  return marketCache ?? { phantom: {}, dc: {}, region: {}, ts: 0 };
 }
 function pickTier(m, hq) {
   function tierFor(unit, avg, isHq) {
@@ -792,7 +826,7 @@ async function handler(req, res) {
   const baseUrl = process.env.VITE_APP_URL ?? "https://qiqirn.tools";
   const [snapshots, market] = await Promise.all([
     loadSnapshots(baseUrl),
-    loadMarketCache()
+    loadMarketCache(baseUrl)
   ]);
   const snapshot = [...snapshots.itemsById.values()];
   const gatherSet = filter.gatherableOnly ? new Set(snapshots.gatheringCatalog.keys()) : null;

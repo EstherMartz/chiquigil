@@ -299,6 +299,42 @@ function parseGcSupply(raw) {
   return out;
 }
 
+// src/lib/marketBundle.ts
+var COLD_BLOB = "market-cache-cold.json";
+var HOT_BLOB = "market-cache-hot.json";
+function resolveCacheUrls(env, opts = {}) {
+  const r2 = (env.R2_PUBLIC_URL ?? "").replace(/\/+$/, "");
+  const coldUrl = env.VITE_CACHE_COLD_URL || (r2 ? `${r2}/${COLD_BLOB}` : "") || env.VITE_CACHE_BLOB_URL || env.MARKET_CACHE_BLOB_URL || opts.defaultColdUrl || `/data/${COLD_BLOB}`;
+  const hotUrl = env.VITE_CACHE_HOT_URL || (r2 ? `${r2}/${HOT_BLOB}` : "") || opts.defaultHotUrl || `/data/${HOT_BLOB}`;
+  return { coldUrl, hotUrl };
+}
+async function fetchCacheBlob(url, cache = "default") {
+  try {
+    const res = await fetch(url, { cache });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+function overlayScope(cold, hot) {
+  return { ...cold ?? {}, ...hot ?? {} };
+}
+async function loadMarketBundle(env, opts = {}) {
+  const { coldUrl, hotUrl } = resolveCacheUrls(env, opts);
+  const [cold, hot] = await Promise.all([
+    fetchCacheBlob(coldUrl, "no-store"),
+    fetchCacheBlob(hotUrl, "no-store")
+  ]);
+  if (!cold && !hot) return null;
+  return {
+    phantom: overlayScope(cold?.phantom, hot?.phantom),
+    dc: overlayScope(cold?.dc, hot?.dc),
+    region: overlayScope(cold?.region, hot?.region),
+    ts: Math.max(cold?.ts ?? 0, hot?.ts ?? 0)
+  };
+}
+
 // src/api/plugin-cleanup.ts
 var GC_SUPPLY_URL = "https://raw.githubusercontent.com/ffxiv-teamcraft/ffxiv-teamcraft/master/libs/data/src/lib/json/gc-supply.json";
 var gcIds = null;
@@ -327,16 +363,15 @@ var MKT_TTL_MS = 10 * 60 * 1e3;
 async function loadMarket(baseUrl) {
   const now = Date.now();
   if (marketCache && now - marketTs < MKT_TTL_MS) return marketCache;
-  const url = process.env.VITE_CACHE_BLOB_URL ?? process.env.MARKET_CACHE_BLOB_URL ?? `${baseUrl}/data/market-cache.json`;
-  try {
-    const res = await fetch(url, { cache: "no-store" });
-    if (!res.ok) return marketCache ?? { phantom: {}, dc: {}, region: {}, ts: 0 };
-    marketCache = await res.json();
+  const bundle = await loadMarketBundle(process.env, {
+    defaultColdUrl: `${baseUrl}/data/market-cache-cold.json`,
+    defaultHotUrl: `${baseUrl}/data/market-cache-hot.json`
+  });
+  if (bundle) {
+    marketCache = bundle;
     marketTs = now;
-    return marketCache;
-  } catch {
-    return marketCache ?? { phantom: {}, dc: {}, region: {}, ts: 0 };
   }
+  return marketCache ?? { phantom: {}, dc: {}, region: {}, ts: 0 };
 }
 async function handler(req, res) {
   if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });

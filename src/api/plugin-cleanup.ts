@@ -7,6 +7,7 @@ import { runCleanup } from '../features/cleanup/runCleanup';
 import { findCraftOpportunities } from '../features/cleanup/findCraftOpportunities';
 import { parseGcSupply } from '../lib/questSnapshot';
 import type { InventoryEntry } from '../features/cleanup/types';
+import { loadMarketBundle } from '../lib/marketBundle';
 
 // Teamcraft GC-supply turn-in data (questSnapshot.ts keeps this private).
 const GC_SUPPLY_URL =
@@ -52,16 +53,16 @@ const MKT_TTL_MS = 10 * 60 * 1000;
 async function loadMarket(baseUrl: string): Promise<SharedCache> {
   const now = Date.now();
   if (marketCache && now - marketTs < MKT_TTL_MS) return marketCache;
-  const url = process.env.VITE_CACHE_BLOB_URL ?? process.env.MARKET_CACHE_BLOB_URL ?? `${baseUrl}/data/market-cache.json`;
-  try {
-    const res = await fetch(url, { cache: 'no-store' } as RequestInit);
-    if (!res.ok) return marketCache ?? { phantom: {}, dc: {}, region: {}, ts: 0 };
-    marketCache = (await res.json()) as SharedCache;
+  // Shared cold+hot loader (hourly cold + ~5-min hot, hot wins). See marketBundle.ts.
+  const bundle = await loadMarketBundle(process.env, {
+    defaultColdUrl: `${baseUrl}/data/market-cache-cold.json`,
+    defaultHotUrl: `${baseUrl}/data/market-cache-hot.json`,
+  });
+  if (bundle) {
+    marketCache = bundle;
     marketTs = now;
-    return marketCache;
-  } catch {
-    return marketCache ?? { phantom: {}, dc: {}, region: {}, ts: 0 };
   }
+  return marketCache ?? { phantom: {}, dc: {}, region: {}, ts: 0 };
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {

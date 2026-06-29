@@ -1,5 +1,6 @@
 import { getCachedMarketScope, putCachedMarketScope, type MarketScopeBlob } from './recipeCache';
 import { trimmedMedian } from './priceTrust';
+import { resolveCacheUrls, fetchCacheBlob } from './marketBundle';
 
 export type Scope = string; // world or DC name, e.g. 'Phantom' | 'Chaos'
 
@@ -204,13 +205,8 @@ let seedPromise: Promise<void> | null = null;
 function awaitSeed(): Promise<void> { return seedPromise ?? Promise.resolve(); }
 
 // ---------- Bot shared cache pre-seeding ----------
-
-interface SharedCache {
-  phantom: MarketData;
-  dc: MarketData;
-  region: MarketData;
-  ts: number;
-}
+// SharedCache shape + cold/hot URL resolution + blob fetch all live in
+// ./marketBundle so the server endpoints share one source of truth.
 
 let sharedCacheLoaded = false;
 
@@ -218,16 +214,6 @@ let sharedCacheLoaded = false;
 export function _resetSharedCacheForTests(): void {
   sharedCacheLoaded = false;
   seedPromise = null;
-}
-
-async function fetchCacheBlob(url: string): Promise<SharedCache | null> {
-  try {
-    const res = await fetch(url, { cache: 'default' });
-    if (!res.ok) return null;
-    return (await res.json()) as SharedCache;
-  } catch {
-    return null;
-  }
 }
 
 /**
@@ -248,8 +234,7 @@ export function loadSharedMarketCache(homeWorld: string, dc: string, region: str
       await Promise.all([homeWorld, dc, region].map((s) => ensureHydrated(s)));
 
       const env = (import.meta as any).env ?? {};
-      const coldUrl = env.VITE_CACHE_COLD_URL || env.VITE_CACHE_BLOB_URL || '/data/market-cache-cold.json';
-      const hotUrl = env.VITE_CACHE_HOT_URL || '/data/market-cache-hot.json';
+      const { coldUrl, hotUrl } = resolveCacheUrls(env);
 
       const [cold, hot] = await Promise.all([fetchCacheBlob(coldUrl), fetchCacheBlob(hotUrl)]);
       if (cold || hot) {

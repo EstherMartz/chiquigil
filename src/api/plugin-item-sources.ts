@@ -4,6 +4,7 @@ import type { MarketData } from '../lib/universalis';
 import { priceRecipe, jobNameOf } from './_item-sources-core';
 import { categoryLabel } from '../lib/itemSearchCategories';
 import { computeVerdict } from '../features/items/verdict/computeVerdict';
+import { loadMarketBundle } from '../lib/marketBundle';
 
 const HOME_WORLD = process.env.HOME_WORLD ?? 'Phantom';
 
@@ -21,17 +22,17 @@ const CACHE_TTL_MS = 10 * 60 * 1000;
 async function loadMarketCache(baseUrl: string): Promise<SharedCache> {
   const now = Date.now();
   if (marketCache && now - marketCacheTs < CACHE_TTL_MS) return marketCache;
-  // Prefer the full live blob (has dc + worldListings); fall back to static cache.
-  const url = process.env.VITE_CACHE_BLOB_URL ?? process.env.MARKET_CACHE_BLOB_URL ?? `${baseUrl}/data/market-cache.json`;
-  try {
-    const res = await fetch(url, { cache: 'no-store' } as RequestInit);
-    if (!res.ok) return marketCache ?? { phantom: {}, dc: {}, region: {}, ts: 0 };
-    marketCache = (await res.json()) as SharedCache;
+  // Shared cold+hot loader: merges the hourly cold blob with the ~5-min hot blob
+  // (hot wins), resolving the R2 URLs from env. See src/lib/marketBundle.ts.
+  const bundle = await loadMarketBundle(process.env, {
+    defaultColdUrl: `${baseUrl}/data/market-cache-cold.json`,
+    defaultHotUrl: `${baseUrl}/data/market-cache-hot.json`,
+  });
+  if (bundle) {
+    marketCache = bundle;
     marketCacheTs = now;
-    return marketCache;
-  } catch {
-    return marketCache ?? { phantom: {}, dc: {}, region: {}, ts: 0 };
   }
+  return marketCache ?? { phantom: {}, dc: {}, region: {}, ts: 0 };
 }
 
 async function handler(req: any, res: any) {

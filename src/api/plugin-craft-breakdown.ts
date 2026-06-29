@@ -4,6 +4,7 @@ import type { MarketBundle } from '../features/watchlist/useMarketData';
 import type { Recipe } from '../lib/recipes';
 import type { ResolveDeps } from '../features/craftLists/resolveList';
 import { validateBreakdownItems, buildListBreakdown } from './_list-breakdown-core';
+import { loadMarketBundle } from '../lib/marketBundle';
 
 async function handler(req: any, res: any) {
   // ── POST: whole-list breakdown (plugin Crafting Lists) ─────────────────────
@@ -61,19 +62,18 @@ async function handler(req: any, res: any) {
   };
 
   try {
-    // Fetch market prices for cost calculation
-    const cacheUrl = process.env.MARKET_CACHE_BLOB_URL ?? `${baseUrl}/data/market-cache.json`;
-    const cacheRes = await fetch(cacheUrl, { cache: 'no-store' });
-    if (cacheRes.ok) {
-      const cache = await cacheRes.json();
-      const marketData = cache.phantom;
-      for (const [itemIdStr, entry] of Object.entries(marketData)) {
-        const id = parseInt(itemIdStr);
-        market.prices.set(id, {
-          minNQ: (entry as any).minNQ,
-          velocity: (entry as any).velocity,
-        });
-      }
+    // Shared cold+hot loader (hourly cold + ~5-min hot, hot wins). See marketBundle.ts.
+    const cache = await loadMarketBundle(process.env, {
+      defaultColdUrl: `${baseUrl}/data/market-cache-cold.json`,
+      defaultHotUrl: `${baseUrl}/data/market-cache-hot.json`,
+    });
+    const marketData = cache?.phantom ?? {};
+    for (const [itemIdStr, entry] of Object.entries(marketData)) {
+      const id = parseInt(itemIdStr);
+      market.prices.set(id, {
+        minNQ: (entry as any).minNQ,
+        velocity: (entry as any).velocity,
+      });
     }
   } catch {
     // Market cache is optional

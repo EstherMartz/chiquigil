@@ -3,6 +3,7 @@ import { loadSnapshots } from '../bot/loadSnapshots';
 import { findCraftableFromInventory } from '../features/craftFromInventory/findCraftable';
 import { cheapestWorld } from '../lib/cheapestWorld';
 import type { MarketData } from '../lib/universalis';
+import { loadMarketBundle } from '../lib/marketBundle';
 
 interface InventoryEntry { id: number; qty: number }
 
@@ -100,14 +101,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({ craftable: [] });
   }
 
-  // Fetch market prices from the hourly bot cache blob
+  // Fetch market prices via the shared cold+hot loader (hourly cold + ~5-min hot,
+  // hot wins; resolves R2 URLs from env). See src/lib/marketBundle.ts.
   try {
-    // Prefer the full live blob (has dc + worldListings for cheapest-world);
-    // fall back to the static trimmed cache.
-    const cacheUrl = process.env.VITE_CACHE_BLOB_URL ?? process.env.MARKET_CACHE_BLOB_URL ?? `${baseUrl}/data/market-cache.json`;
-    const cacheRes = await fetch(cacheUrl, { cache: 'no-store' } as RequestInit);
-    if (cacheRes.ok) {
-      const cache = (await cacheRes.json()) as SharedCache;
+    const cache: SharedCache | null = await loadMarketBundle(process.env, {
+      defaultColdUrl: `${baseUrl}/data/market-cache-cold.json`,
+      defaultHotUrl: `${baseUrl}/data/market-cache-hot.json`,
+    });
+    if (cache) {
       const home = cache.phantom ?? {};
       const dc = cache.dc ?? {};
       for (const item of craftable) {
